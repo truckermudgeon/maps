@@ -1,0 +1,34 @@
+{
+  "private": true,
+  "name": "@truckermudgeon/parser",
+  "version": "0.0.0",
+  "license": "GPL-2.0-only",
+  "type": "module",
+  "gypfile": true,
+  "bin": "./index.ts",
+  "devDependencies": {
+    "@types/cli-progress": "^3.11.5",
+    "@types/jest": "^29.5.11",
+    "@types/node": "^20.10.6",
+    "@types/pngjs": "^6.0.4",
+    "@types/yargs": "^16.0.9",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@truckermudgeon/base": "0.0.0",
+    "@turf/helpers": "^6.5.0",
+    "@turf/line-intersect": "^6.5.0",
+    "@turf/line-offset": "^6.5.0",
+    "ajv": "^8.12.0",
+    "bindings": "^1.5.0",
+    "chevrotain": "^10.5.0",
+    "cli-progress": "^3.12.0",
+    "consola": "^3.2.3",
+    "dxtn": "^1.0.0",
+    "node-addon-api": "^7.0.0",
+    "pngjs": "^7.0.0",
+    "restructure": "^3.0.0",
+    "tsx": "^4.7.0",
+    "yargs": "^17.7.2"
+  }
+}

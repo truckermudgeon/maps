@@ -1,0 +1,32 @@
+{
+  "name": "maps",
+  "version": "0.0.0",
+  "private": true,
+  "license": "GPL-2.0-only",
+  "workspaces": [
+    "packages/apps/*",
+    "packages/clis/*",
+    "packages/libs/*"
+  ],
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.17.0",
+    "@typescript-eslint/parser": "^6.17.0",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.1.1",
+    "prettier-plugin-organize-imports": "^3.2.4",
+    "typescript": "^5.3.3"
+  },
+  "scripts": {
+    "prepare": "husky install"
+  },
+  "lint-staged": {
+    "**/*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "**/*": "prettier --write --ignore-unknown"
+  }
+}
