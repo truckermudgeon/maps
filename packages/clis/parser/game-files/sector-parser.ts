@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-
 import type { BaseOf } from 'restructure';
 import * as r from 'restructure';
 import { logger } from '../logger';
@@ -537,8 +535,6 @@ const ComplexItem = new r.VersionedStruct(r.uint32le, {
   },
 });
 type SectorItemKey = BaseOf<typeof ComplexItem>['version'];
-// TODO fix the VersionStruct typings.
-// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 type SectorItem<T extends SectorItemKey> = BaseOf<typeof ComplexItem> & {
   version: T;
 };
