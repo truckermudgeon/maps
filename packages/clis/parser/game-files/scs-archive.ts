@@ -87,9 +87,8 @@ export class ScsArchive {
     const files: FileEntry[] = [];
     for (const header of headers) {
       const entry = createEntry(this.fd, {
-        // TODO fix typings
-        hash: header.hash as any as bigint,
-        offset: header.offset as any as bigint,
+        hash: header.hash,
+        offset: header.offset,
         size: header.compressedSize,
         isDirectory: header.flags.isDirectory,
         isDataCompressed: header.flags.isCompressed,

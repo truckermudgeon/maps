@@ -394,7 +394,7 @@ export function parsePrefabPpd(buffer: Buffer): PrefabDescription {
       return {
         x: pos[0],
         y: pos[2],
-        action: action as unknown as string,
+        action,
       };
     }),
     // future fields, useful for routing

@@ -1,3 +1,4 @@
+import type { Base } from 'restructure';
 import * as r from 'restructure';
 
 // `restructure` parsing helpers
@@ -6,12 +7,16 @@ export const float3 = new r.Array(r.floatle, 3);
 export const float4 = new r.Array(r.floatle, 4);
 
 // add this field to the end of a struct def to output parsed struct
-export const debugStruct = new r.Array(r.uint8, function (parent: any) {
+export const debugStruct = new r.Array(r.uint8, function (parent: unknown) {
   console.log(parent);
   return 0;
 });
 
-class Uint64 {
+class Uint64 implements Base<bigint> {
+  fromBuffer(): bigint {
+    throw new Error('Method not implemented.');
+  }
+
   decode(stream: r.DecodeStream): bigint {
     return stream.readBuffer(8).readBigUInt64LE();
   }
@@ -19,25 +24,21 @@ class Uint64 {
   size() {
     return 8;
   }
-
-  encode() {
-    throw new Error('unimplemented');
-  }
 }
 
 export const uint64le = new Uint64();
 
-class Token {
+class Token implements Base<string> {
+  fromBuffer(): string {
+    throw new Error('Method not implemented.');
+  }
+
   decode(stream: r.DecodeStream): string {
     return Token.tokenToString(stream.readBuffer(8).readBigUInt64LE());
   }
 
   size() {
     return 8;
-  }
-
-  encode() {
-    throw new Error('unimplemented');
   }
 
   private static readonly tokenLetters = [
@@ -57,7 +58,11 @@ class Token {
 
 export const token64 = new Token();
 
-class PaddedString {
+class PaddedString implements Base<string> {
+  fromBuffer(): string {
+    throw new Error('Method not implemented.');
+  }
+
   decode(stream: r.DecodeStream): string {
     const length = stream.readBuffer(4).readUint32LE();
     if (length === 0) {
@@ -70,15 +75,15 @@ class PaddedString {
   size(str: string) {
     return str.length ? 8 + str.length : 4;
   }
-
-  encode() {
-    throw new Error('unimplemented');
-  }
 }
 
 export const paddedString = new PaddedString();
 
-class Uint64String {
+class Uint64String implements Base<string> {
+  fromBuffer(): string {
+    throw new Error('Method not implemented.');
+  }
+
   decode(stream: r.DecodeStream): string {
     const length = stream.readBuffer(8).readBigUInt64LE();
     if (length === 0n) {
@@ -89,10 +94,6 @@ class Uint64String {
 
   size(str: string) {
     return 8 + str.length;
-  }
-
-  encode() {
-    throw new Error('unimplemented');
   }
 }
 
