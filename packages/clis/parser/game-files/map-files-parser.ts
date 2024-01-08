@@ -1,3 +1,11 @@
+// TODO fix this file
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { distance } from '@truckermudgeon/base/geom';
 import { putIfAbsent } from '@truckermudgeon/base/map';

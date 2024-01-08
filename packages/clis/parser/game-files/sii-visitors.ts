@@ -9,19 +9,21 @@ import type {
 import { logger } from '../logger';
 import { getSiiVisitorClass } from './sii-parser';
 
-class JsonConverterVisitor extends getSiiVisitorClass<Record<string, any>>() {
+class JsonConverterVisitor extends getSiiVisitorClass<
+  Record<string, unknown>
+>() {
   constructor() {
     super();
     this.validateVisitor();
   }
 
-  convert(root: CstNode) {
+  convert(root: CstNode): Record<string, unknown> {
     const json = {};
     this.visit(root, json);
     return json;
   }
 
-  override object(children: ObjectCstChildren, json: Record<string, any>) {
+  override object(children: ObjectCstChildren, json: Record<string, unknown>) {
     const rootKey = snakeToCamel(children.Property[0].image);
     // don't camel-ify child keys; they seem to be significant
     // e.g., cityData.country references countryData keys
@@ -32,11 +34,12 @@ class JsonConverterVisitor extends getSiiVisitorClass<Record<string, any>>() {
     if (!Object.prototype.hasOwnProperty.call(json, rootKey)) {
       json[rootKey] = {};
     }
-    if (!Object.prototype.hasOwnProperty.call(json[rootKey], childKey)) {
-      json[rootKey][childKey] = {};
+    const root = json[rootKey] as Record<string, unknown>;
+    if (!Object.prototype.hasOwnProperty.call(root, childKey)) {
+      root[childKey] = {};
     }
 
-    const obj = json[rootKey][childKey];
+    const obj = root[childKey] as Record<string, unknown>;
     if (children.object) {
       this.visit(children.object, obj);
     } else if (children.objectProperty) {
@@ -47,7 +50,7 @@ class JsonConverterVisitor extends getSiiVisitorClass<Record<string, any>>() {
         //   some_array[0]: foo
         //   some_array[1]: bar
         if (p.objectPropertyIndex) {
-          let arr = obj[propKey] as any[];
+          let arr = obj[propKey] as unknown[];
           if (!Array.isArray(arr)) {
             arr = [];
             obj[propKey] = arr;
@@ -66,7 +69,7 @@ class JsonConverterVisitor extends getSiiVisitorClass<Record<string, any>>() {
 
   override objectPropertyValue(
     children: ObjectPropertyValueCstChildren,
-    json: { value: any },
+    json: { value: unknown },
   ): void {
     if (children.String) {
       json.value = quotedStringToString(children.String[0].image);

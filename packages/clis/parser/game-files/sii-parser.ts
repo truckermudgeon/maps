@@ -167,7 +167,7 @@ export const getSiiVisitorClass = <IN>() => {
   // Do this for convenience, so impls of VisitorClasses don't need to worry
   // about implementing all visitor methods.
   // https://chevrotain.io/docs/guide/concrete_syntax_tree.html#do-we-always-have-to-implement-all-the-visit-methods
-  type SiiVisitorClass = new (...args: any[]) => SiiVisitor<IN, void>;
+  type SiiVisitorClass = new (...args: unknown[]) => SiiVisitor<IN, void>;
   return class extends (baseVisitor as SiiVisitorClass) {
     override visit(node: CstNode | CstNode[], input: IN) {
       super.visit(node, input);

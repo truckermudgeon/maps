@@ -173,8 +173,6 @@ abstract class ScsArchiveEntry {
 class ScsArchiveFile extends ScsArchiveEntry implements FileEntry {
   readonly type = 'file';
 
-  // https://typescript-eslint.io/rules/no-useless-constructor/#caveat
-  // eslint-disable-next-line @typescript-eslint/no-useless-constructor
   constructor(fd: number, metadata: EntryMetadata) {
     super(fd, metadata);
   }

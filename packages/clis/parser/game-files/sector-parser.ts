@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
+import type { BaseOf } from 'restructure';
 import * as r from 'restructure';
 import { logger } from '../logger';
 import {
@@ -198,7 +201,7 @@ const SimpleItemStruct = {
         token: token64,
         coef: r.floatle,
       }),
-      (parent: any) => parent.nodeUids.length,
+      (parent: { nodeUids: unknown[] }) => parent.nodeUids.length,
     ),
     semaphoreProfile: token64,
   },
@@ -302,12 +305,15 @@ const SimpleItemStruct = {
             range: r.floatle,
             type: r.uint32le,
           }),
-          parent => parent.hasOverride >= 0,
+          (parent: { hasOverride: number }) => parent.hasOverride >= 0,
         ),
       }),
       r.uint32le,
     ),
-    radius: new r.Optional(r.floatle, parent => parent.nodeUids.length === 1),
+    radius: new r.Optional(
+      r.floatle,
+      (parent: { nodeUids: unknown[] }) => parent.nodeUids.length === 1,
+    ),
   },
   [ItemType.FuelPump]: {
     nodeUid: uint64le,
@@ -518,6 +524,7 @@ const SectorNode = new r.Struct({
   backwardCountryId: r.uint8,
   flags2: r.uint8,
 });
+type SectorNode = BaseOf<typeof SectorNode>;
 
 const SimpleItem = new r.VersionedStruct(r.uint32le, SimpleItemStruct);
 
@@ -529,6 +536,12 @@ const ComplexItem = new r.VersionedStruct(r.uint32le, {
     childNodes: new r.Array(SectorNode, r.uint32le),
   },
 });
+type SectorItemKey = BaseOf<typeof ComplexItem>['version'];
+// TODO fix the VersionStruct typings.
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+type SectorItem<T extends SectorItemKey> = BaseOf<typeof ComplexItem> & {
+  version: T;
+};
 
 const Sector = new r.Struct({
   version: r.uint32le,
@@ -563,7 +576,7 @@ export function parseSector(buffer: Buffer) {
   }
   const simples = {
     items: sector.items
-      .map((ri: any) => {
+      .map(ri => {
         switch (ri.version) {
           case ItemType.Road:
             return toRoad(ri);
@@ -600,7 +613,7 @@ export function parseSector(buffer: Buffer) {
   };
   const moreItems: Item[] = [];
   const moreNodes: Node[] = [];
-  for (const ri of sector.items as any[]) {
+  for (const ri of sector.items) {
     if (ri.version !== ItemType.Compound) {
       continue;
     }
@@ -633,7 +646,9 @@ export function parseSector(buffer: Buffer) {
   };
 }
 
-function toBaseItem<T extends ItemType>(rawItem: any): BaseItem & { type: T } {
+function toBaseItem<T extends SectorItemKey>(
+  rawItem: SectorItem<T>,
+): BaseItem & { type: T } {
   return {
     uid: rawItem.uid,
     type: rawItem.version as T,
@@ -642,9 +657,9 @@ function toBaseItem<T extends ItemType>(rawItem: any): BaseItem & { type: T } {
   };
 }
 
-function toRoad(rawItem: any): Road {
+function toRoad(rawItem: SectorItem<ItemType.Road>): Road {
   return {
-    ...toBaseItem<ItemType.Road>(rawItem),
+    ...toBaseItem(rawItem),
     hidden: (rawItem.flags & 0x02_00_00_00) !== 0 ? true : undefined,
     roadLookToken: rawItem.roadLook,
     startNodeUid: rawItem.startNodeUid,
@@ -653,9 +668,9 @@ function toRoad(rawItem: any): Road {
   };
 }
 
-function toPrefab(rawItem: any): Prefab {
+function toPrefab(rawItem: SectorItem<ItemType.Prefab>): Prefab {
   return {
-    ...toBaseItem<ItemType.Prefab>(rawItem),
+    ...toBaseItem(rawItem),
     token: rawItem.model,
     hidden: (rawItem.flags & 0x00_02_00_00) !== 0 ? true : undefined,
     nodeUids: rawItem.nodeUids,
@@ -663,18 +678,18 @@ function toPrefab(rawItem: any): Prefab {
   };
 }
 
-function toMapArea(rawItem: any): MapArea {
+function toMapArea(rawItem: SectorItem<ItemType.MapArea>): MapArea {
   return {
-    ...toBaseItem<ItemType.MapArea>(rawItem),
+    ...toBaseItem(rawItem),
     drawOver: (rawItem.flags & 0x00_00_00_01) !== 0 ? true : undefined,
     nodeUids: rawItem.nodeUids,
     color: MapColorUtils.from(rawItem.colorIndex),
   };
 }
 
-function toCityArea(rawItem: any): CityArea {
+function toCityArea(rawItem: SectorItem<ItemType.City>): CityArea {
   return {
-    ...toBaseItem<ItemType.City>(rawItem),
+    ...toBaseItem(rawItem),
     token: rawItem.token,
     hidden: (rawItem.flags & 0x01) !== 0,
     width: rawItem.width,
@@ -682,18 +697,18 @@ function toCityArea(rawItem: any): CityArea {
   };
 }
 
-function toMapOverlay(rawItem: any): MapOverlay {
+function toMapOverlay(rawItem: SectorItem<ItemType.MapOverlay>): MapOverlay {
   return {
-    ...toBaseItem<ItemType.MapOverlay>(rawItem),
+    ...toBaseItem(rawItem),
     overlayType: MapOverlayTypeUtils.from(rawItem.flags & 0x0f),
     token: rawItem.name,
     nodeUid: rawItem.nodeUid,
   };
 }
 
-function toFerry(rawItem: any): FerryItem {
+function toFerry(rawItem: SectorItem<ItemType.Ferry>): FerryItem {
   return {
-    ...toBaseItem<ItemType.Ferry>(rawItem),
+    ...toBaseItem(rawItem),
     token: rawItem.ferryPort,
     train: (rawItem.flags & 0x01) !== 0,
     prefabUid: rawItem.prefabUid,
@@ -701,9 +716,9 @@ function toFerry(rawItem: any): FerryItem {
   };
 }
 
-function toCompany(rawItem: any): CompanyItem {
+function toCompany(rawItem: SectorItem<ItemType.Company>): CompanyItem {
   return {
-    ...toBaseItem<ItemType.Company>(rawItem),
+    ...toBaseItem(rawItem),
     token: rawItem.overlayName,
     cityToken: rawItem.cityName,
     prefabUid: rawItem.prefabUid,
@@ -711,9 +726,9 @@ function toCompany(rawItem: any): CompanyItem {
   };
 }
 
-function toCutscene(rawItem: any): Cutscene {
+function toCutscene(rawItem: SectorItem<ItemType.Cutscene>): Cutscene {
   return {
-    ...toBaseItem<ItemType.Cutscene>(rawItem),
+    ...toBaseItem(rawItem),
     flags: rawItem.flags,
     tags: rawItem.tags,
     nodeUid: rawItem.nodeUid,
@@ -721,35 +736,37 @@ function toCutscene(rawItem: any): Cutscene {
   };
 }
 
-function toTrigger(rawItem: any): Trigger {
+function toTrigger(rawItem: SectorItem<ItemType.Trigger>): Trigger {
   return {
-    ...toBaseItem<ItemType.Trigger>(rawItem),
-    actionTokens: rawItem.actions.map((a: any) => a.action),
+    ...toBaseItem(rawItem),
+    actionTokens: rawItem.actions.map(a => a.action),
     nodeUids: rawItem.nodeUids,
   };
 }
 
-function toBuilding(rawItem: any): Building | undefined {
+function toBuilding(
+  rawItem: SectorItem<ItemType.Building>,
+): Building | undefined {
   // HACK because of memory issues;
   if (rawItem.scheme !== 'scheme20') {
     return;
   }
 
   return {
-    ...toBaseItem<ItemType.Building>(rawItem),
+    ...toBaseItem(rawItem),
     scheme: rawItem.scheme,
     startNodeUid: rawItem.startNodeUid,
     endNodeUid: rawItem.endNodeUid,
   };
 }
 
-function toCurve(rawItem: any): Curve | undefined {
+function toCurve(rawItem: SectorItem<ItemType.Curve>): Curve | undefined {
   if (rawItem.model !== '0i03a' && rawItem.model !== '0i03b') {
     return;
   }
 
   return {
-    ...toBaseItem<ItemType.Curve>(rawItem),
+    ...toBaseItem(rawItem),
     model: rawItem.model,
     look: rawItem.modelLook,
     numBuildings: rawItem.heightOffsets.length,
@@ -758,26 +775,26 @@ function toCurve(rawItem: any): Curve | undefined {
   };
 }
 
-function toModel(rawItem: any): Model {
+function toModel(rawItem: SectorItem<ItemType.Model>): Model {
   const [sx, sy, sz] = rawItem.scale;
   return {
-    ...toBaseItem<ItemType.Model>(rawItem),
+    ...toBaseItem(rawItem),
     token: rawItem.token,
     nodeUid: rawItem.nodeUid,
     scale: { x: sx, y: sz, z: sy },
   };
 }
 
-function toTerrain(rawItem: any): Terrain {
+function toTerrain(rawItem: SectorItem<ItemType.Terrain>): Terrain {
   return {
-    ...toBaseItem<ItemType.Terrain>(rawItem),
+    ...toBaseItem(rawItem),
     startNodeUid: rawItem.startNodeUid,
     endNodeUid: rawItem.endNodeUid,
     length: rawItem.length,
   };
 }
 
-function toNode(rawNode: any): Node {
+function toNode(rawNode: SectorNode): Node {
   const [rx, , rz] = rawNode.rot;
   let rotation = Math.PI - Math.atan2(rz, rx);
   rotation = (rotation % Math.PI) * 2 - Math.PI / 2;

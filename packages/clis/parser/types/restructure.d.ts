@@ -123,8 +123,23 @@ declare module 'restructure' {
     size(): number;
   }
 
-  export class VersionedStruct extends Base<unknown> {
-    constructor(versionField: NumberT, t: unknown);
+  type VersionedStructEntry<H, T, X = keyof T> = X extends 'header'
+    ? never
+    : X extends keyof T
+      ? { version: X } & H & T[X]
+      : never;
+
+  export class VersionedStruct<H, T> extends Base<
+    { version: keyof T } & StructType<VersionedStructEntry<H, T>>
+  > {
+    constructor(versionField: NumberT, fields: { header: H } & T);
+    fromBuffer(
+      buffer: Buffer,
+    ): { version: keyof T } & StructType<VersionedStructEntry<H, T>>;
+    decode(
+      stream: r.DecodeStream,
+    ): { version: keyof T } & StructType<VersionedStructEntry<H, T>>;
+    size(): number;
   }
 
   export { StringT as String };
