@@ -1,3 +1,13 @@
+import * as r from 'restructure';
+import { logger } from '../logger';
+import {
+  float3,
+  float4,
+  paddedString,
+  token64,
+  uint64String,
+  uint64le,
+} from './restructure-helpers';
 import type {
   BaseItem,
   Building,
@@ -17,16 +27,6 @@ import type {
   Trigger,
 } from './types';
 import { ItemType, MapColorUtils, MapOverlayTypeUtils } from './types';
-import * as r from 'restructure';
-import { logger } from '../logger';
-import {
-  float3,
-  float4,
-  paddedString,
-  token64,
-  uint64le,
-  uint64String,
-} from './restructure-helpers';
 
 // struct definitions derived from https://github.com/dariowouters/ts-map/blob/master/docs/structures/base/875/base-template.bt
 // https://github.com/sk-zk/map-docs/wiki/Map-format

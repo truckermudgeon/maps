@@ -1,9 +1,9 @@
 import { Preconditions } from '@truckermudgeon/base/precon';
 import fs from 'fs';
+import { createRequire } from 'module';
 import * as r from 'restructure';
 import zlib from 'zlib';
 import { uint64le } from './restructure-helpers';
-import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-call

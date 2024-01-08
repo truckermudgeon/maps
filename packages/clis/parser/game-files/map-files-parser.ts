@@ -1,10 +1,22 @@
-import type { JSONSchemaType } from 'ajv';
-import Ajv from 'ajv';
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { distance } from '@truckermudgeon/base/geom';
 import { putIfAbsent } from '@truckermudgeon/base/map';
 import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
+import type { JSONSchemaType } from 'ajv';
+import Ajv from 'ajv';
 import * as cliProgress from 'cli-progress';
+import path from 'path';
+import { logger } from '../logger';
+import { CombinedEntries } from './combined-entries';
+import { parseDds } from './dds-parser';
+import { parseModelPmg } from './model-pmg-parser';
+import { parsePrefabPpd } from './prefab-ppd-parser';
+import type { Entries, FileEntry } from './scs-archive';
+import { ScsArchive } from './scs-archive';
+import { parseSector } from './sector-parser';
+import { parseSii } from './sii-parser';
+import { FerryConnectionSchema } from './sii-schemas';
+import { includeDirectiveCollector, jsonConverter } from './sii-visitors';
 import { toMapPosition } from './transformers';
 import type {
   Building,
@@ -34,18 +46,6 @@ import type {
   Trigger,
 } from './types';
 import { ItemType, MapOverlayType, SpawnPointType } from './types';
-import path from 'path';
-import { logger } from '../logger';
-import { CombinedEntries } from './combined-entries';
-import { parseDds } from './dds-parser';
-import { parseModelPmg } from './model-pmg-parser';
-import { parsePrefabPpd } from './prefab-ppd-parser';
-import type { Entries, FileEntry } from './scs-archive';
-import { ScsArchive } from './scs-archive';
-import { parseSector } from './sector-parser';
-import { parseSii } from './sii-parser';
-import { FerryConnectionSchema } from './sii-schemas';
-import { includeDirectiveCollector, jsonConverter } from './sii-visitors';
 
 const emptyArray = Object.freeze([]);
 const ajv = new Ajv();

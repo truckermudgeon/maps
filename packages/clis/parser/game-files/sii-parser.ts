@@ -1,10 +1,10 @@
 import type { CstNode } from 'chevrotain';
 import {
-  createToken,
   CstParser,
-  generateCstDts,
-  Lexer,
   EMPTY_ALT,
+  Lexer,
+  createToken,
+  generateCstDts,
 } from 'chevrotain';
 import type { SiiVisitor } from 'sii-visitor';
 
