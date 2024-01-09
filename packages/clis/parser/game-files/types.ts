@@ -91,6 +91,7 @@ type UnlabeledPoi = BasePoi &
 
 export type Poi = LabeledPoi | UnlabeledPoi;
 
+// TODO move all enums and constants to a separate constants.ts file, so that this file can stay as a pure types-only file.
 export enum MapColor {
   Road = 0,
   Light,

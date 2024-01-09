@@ -49,12 +49,22 @@ Parsing can take a couple of minutes, depending on the machine and the installed
 > - All released map DLCs are supported.
 > - Third-party map mods are not supported.
 
-The JSON and PNG output can be processed further, e.g., by the `generator` tool to create
-GeoJSON files and spritesheet files.
-
 ### generator
 
-// TODO
+`generator` is a CLI tool that generates GeoJSON, PMTiles and [MapLibre](https://maplibre.org/)
+[spritesheet files](https://maplibre.org/maplibre-style-spec/sprite/) from `parser` output.
+
+```shell
+# from the repo root, run the following to see the different commands available:
+npx generator
+```
+
+> [!IMPORTANT]
+> PMTiles output requires [tippecanoe](https://github.com/felt/tippecanoe) to be installed.
+
+The generated GeoJSON for roads and prefabs is far from perfect; many
+intersections look incorrect. Improvements to how they're generated
+are slowly being made.
 
 ### demo-app
 
@@ -70,9 +80,11 @@ TruckSim Maps is licensed under GPL v2.
 
 ## Credits
 
-Parts of the TruckSim Maps `parser` project are based on:
+Parts of the `parser` and `generator` projects are based on:
 
 - [TsMap](https://github.com/dariowouters/ts-map/)
 - [TruckLib](https://github.com/sk-zk/TruckLib/)
 - [SCS Blender Tools](https://github.com/SCSSoftware/BlenderTools)
 - [CityHash](https://github.com/google/cityhash)
+
+The `generator` project makes use of data from [Natural Earth](https://www.naturalearthdata.com/).

@@ -5,6 +5,9 @@
       "path": "packages/libs/base"
     },
     {
+      "path": "packages/clis/generator"
+    },
+    {
       "path": "packages/clis/parser"
     }
   ],
