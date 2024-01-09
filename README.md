@@ -38,8 +38,7 @@ The TruckSim Maps repo contains the following projects:
 PNG files.
 
 ```shell
-# from the repo root, run:
-npx parser -i pathToGameDirectory -o directoryToWriteFilesTo
+npx parser -i pathToGameDirectory -o dirToWriteFilesTo
 ```
 
 Parsing can take a couple of minutes, depending on the machine and the installed map DLCs.
@@ -55,8 +54,20 @@ Parsing can take a couple of minutes, depending on the machine and the installed
 [spritesheet files](https://maplibre.org/maplibre-style-spec/sprite/) from `parser` output.
 
 ```shell
-# from the repo root, run the following to see the different commands available:
-npx generator
+# generate ATS pmtiles file
+npx generator map -m usa -i dirWithParserOutput -o dirToWriteFilesTo
+
+# generate ETS2 pmtiles file
+npx generator map -m europe -i dirWithParserOutput -o dirToWriteFilesTo
+
+# generate combined ATS and ETS2 cities.geojson file
+npx generator cities -m usa -m europe -i dirWithParserOutput -o dirToWriteFilesTo
+
+# generate combined ATS and ETS2 footprints.geojson file
+npx generator footprints -m usa -m europe -i dirWithParserOutput -o dirToWriteFilesTo
+
+# generate spritesheet files
+npx generator spritesheet -i dirWithParserOutput -o dirToWriteFilesTo
 ```
 
 > [!IMPORTANT]
