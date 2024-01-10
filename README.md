@@ -79,11 +79,17 @@ are slowly being made.
 
 ### demo-app
 
-// TODO
-
-### prefab-app
-
-// TODO
+```shell
+# from the project root:
+# run the `generator` commands listed above, specifying
+#
+#   packages/apps/demo/public
+#
+# as the output directory.
+#
+# Then run the following to start the web server:
+npm run start --workspace=packages/apps/demo
+```
 
 ## License
 

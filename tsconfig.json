@@ -2,13 +2,16 @@
   "extends": "./tsconfig.base.json",
   "references": [
     {
-      "path": "packages/libs/base"
+      "path": "packages/apps/demo"
     },
     {
       "path": "packages/clis/generator"
     },
     {
       "path": "packages/clis/parser"
+    },
+    {
+      "path": "packages/libs/base"
     }
   ],
   "files": []

@@ -25,7 +25,11 @@ import { readMapData } from './mapped-data';
 import { fromAtsCoordsToWgs84, fromEts2CoordsToWgs84 } from './projections';
 import { readArrayFile } from './read-array-file';
 import { createSpritesheet } from './spritesheet';
-import type { FootprintProperties } from './types';
+import type {
+  FootprintProperties,
+  ScopedCityFeature,
+  ScopedCountryFeature,
+} from './types';
 
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -418,22 +422,11 @@ function handleMapCommand(args: ReturnType<typeof mapCommandBuilder>) {
   );
 }
 
-// TODO move these types
-export type CityFeature = GeoJSON.Feature<
-  GeoJSON.Point,
-  { type: 'city'; map: 'usa' | 'europe'; countryCode: string; name: string }
->;
-
-export type CountryFeature = GeoJSON.Feature<
-  GeoJSON.Point,
-  { type: 'country'; map: 'usa' | 'europe'; code: string; name: string }
->;
-
 function toCityFeature(
   map: 'usa' | 'europe',
   countryCode: string,
   city: City,
-): CityFeature {
+): ScopedCityFeature {
   const fromGameToWgs84 =
     map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
   const toCoords = (c: City) => {
@@ -462,7 +455,7 @@ function toCityFeature(
 function toCountryFeature(
   map: 'usa' | 'europe',
   country: Country,
-): CountryFeature {
+): ScopedCountryFeature {
   return {
     type: 'Feature',
     geometry: {

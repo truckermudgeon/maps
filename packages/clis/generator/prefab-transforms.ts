@@ -24,7 +24,8 @@ import * as turf from '@turf/helpers';
 import lineIntersect from '@turf/line-intersect';
 import lineOffset from '@turf/line-offset';
 
-enum MapColor {
+// TODO unify declaration with parser package.
+export enum MapColor {
   Road = 0,
   Light,
   Dark,

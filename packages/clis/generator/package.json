@@ -5,6 +5,7 @@
   "license": "GPL-2.0-only",
   "type": "module",
   "bin": "./index.ts",
+  "types": "./types.ts",
   "devDependencies": {
     "@types/cli-progress": "^3.11.5",
     "@types/d3-quadtree": "^3.0.6",

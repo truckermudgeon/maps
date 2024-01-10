@@ -1,4 +1,7 @@
 import type { GeoJSON } from 'geojson';
+import type { MapColor } from './prefab-transforms';
+
+export type { MapColor } from './prefab-transforms';
 
 export type DebugFeature = GeoJSON.Feature<
   GeoJSON.Polygon | GeoJSON.LineString | GeoJSON.Point,
@@ -73,7 +76,7 @@ export interface FerryProperties {
 export interface PrefabProperties {
   type: 'prefab';
   zIndex: number;
-  color: number;
+  color: MapColor;
 }
 
 export interface DebugProperties {
@@ -103,3 +106,13 @@ export interface PoiProperties {
   poiType: string; // Overlay, Viewpoint, Company, etc.
   poiName?: string; // Company name, if poiType is Company
 }
+
+export type ScopedCityFeature = GeoJSON.Feature<
+  GeoJSON.Point,
+  { type: 'city'; map: 'usa' | 'europe'; countryCode: string; name: string }
+>;
+
+export type ScopedCountryFeature = GeoJSON.Feature<
+  GeoJSON.Point,
+  { type: 'country'; map: 'usa' | 'europe'; code: string; name: string }
+>;
