@@ -61,7 +61,10 @@ import { ItemType, MapOverlayType, SpawnPointType } from './types';
 
 const ajv = new Ajv();
 
-export function parseMapFiles(scsFilePaths: string[]): {
+export function parseMapFiles(
+  scsFilePaths: string[],
+  includeDlc: boolean,
+): {
   map: string;
   mapData: MapData;
   icons: Map<string, Buffer>;
@@ -70,7 +73,7 @@ export function parseMapFiles(scsFilePaths: string[]): {
   const archives = scsFilePaths
     .filter(p => {
       const fn = path.basename(p);
-      return requiredFiles.has(fn) || fn.startsWith('dlc');
+      return requiredFiles.has(fn) || (includeDlc && fn.startsWith('dlc'));
     })
     .map(p => {
       logger.log('adding', path.basename(p));

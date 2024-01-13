@@ -33,6 +33,11 @@ function main() {
       coerce: untildify,
       demandOption: true,
     })
+    .option('includeDlc', {
+      describe: 'parse DLC files',
+      type: 'boolean',
+      default: true,
+    })
     .option('dryRun', {
       describe: "Don't write out any files.",
       type: 'boolean',
@@ -45,7 +50,7 @@ function main() {
     .filter(e => e.isFile() && e.name.endsWith('.scs'))
     .map(e => path.join(args.inputDir, e.name));
 
-  const { map, mapData, icons } = parseMapFiles(scsFilePaths);
+  const { map, mapData, icons } = parseMapFiles(scsFilePaths, args.includeDlc);
   if (args.dryRun) {
     logger.success('dry run complete.');
     return;
