@@ -3,8 +3,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { distance } from '@truckermudgeon/base/geom';
@@ -23,7 +21,13 @@ import type { Entries, FileEntry } from './scs-archive';
 import { ScsArchive } from './scs-archive';
 import { parseSector } from './sector-parser';
 import { parseSii } from './sii-parser';
-import { FerryConnectionSchema } from './sii-schemas';
+import type { ModelSii, PrefabSii, RoadLookSii } from './sii-schemas';
+import {
+  FerryConnectionSchema,
+  ModelSiiSchema,
+  PrefabSiiSchema,
+  RoadLookSiiSchema,
+} from './sii-schemas';
 import { includeDirectiveCollector, jsonConverter } from './sii-visitors';
 import { toMapPosition } from './transformers';
 import type {
@@ -55,7 +59,6 @@ import type {
 } from './types';
 import { ItemType, MapOverlayType, SpawnPointType } from './types';
 
-const emptyArray = Object.freeze([]);
 const ajv = new Ajv();
 
 export function parseMapFiles(scsFilePaths: string[]): {
@@ -167,17 +170,23 @@ function parseDefFiles(entries: Entries) {
     if (!/^(prefab|road_look|model)\./.test(f) || !f.endsWith('.sii')) {
       continue;
     }
-    const json = convertSiiToJson(`def/world/${f}`, entries);
-    if (Object.keys(json).length === 0) {
-      logger.warn(`empty object parsed from def/world/${f}`);
-      continue;
-    }
 
     if (f.startsWith('prefab.')) {
+      const json = convertSiiToJson2(
+        `def/world/${f}`,
+        entries,
+        PrefabSiiSchema,
+      );
       processPrefabJson(json, entries).forEach((v, k) => prefabs.set(k, v));
     } else if (f.startsWith('model')) {
+      const json = convertSiiToJson2(`def/world/${f}`, entries, ModelSiiSchema);
       processModelJson(json, entries).forEach((v, k) => models.set(k, v));
     } else if (f.startsWith('road_look.')) {
+      const json = convertSiiToJson2(
+        `def/world/${f}`,
+        entries,
+        RoadLookSiiSchema,
+      );
       processRoadLookJson(json).forEach((v, k) => roadLooks.set(k, v));
     } else {
       throw new Error();
@@ -207,6 +216,7 @@ function parseDefFiles(entries: Entries) {
         continue;
       }
       const uid = assertExists(val.objectsUid[0]);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       const token = assertExists(val.name).replace(/(^@@)|(@@$)/g, '');
       assert(typeof uid === 'bigint');
       assert(typeof token === 'string');
@@ -224,6 +234,57 @@ function parseDefFiles(entries: Entries) {
     models,
     viewpoints,
   };
+}
+
+function convertSiiToJson2<T>(
+  siiPath: string,
+  entries: Entries,
+  schema: JSONSchemaType<T>,
+): T {
+  logger.debug('converting', siiPath, 'to json object');
+  const siiFile = Preconditions.checkExists(entries.files.get(siiPath));
+  const buffer = siiFile.read();
+
+  // Some .sii files (like locale files) may be 3nk-encrypted.
+  let sii;
+  const magic = buffer.toString('utf8', 0, 3);
+  if (magic === '3nK') {
+    // https://github.com/dariowouters/ts-map/blob/e73adad923f60bbbb637dd4642910d1a0b1154e3/TsMap/Helpers/MemoryHelper.cs#L109
+    if (buffer.length < 5) {
+      throw new Error();
+    }
+    let key = buffer.readUint8(5);
+    for (let i = 6; i < buffer.length; i++) {
+      buffer[i] = (((key << 2) ^ (key ^ 0xff)) << 3) ^ key ^ buffer[i];
+      key++;
+    }
+    sii = buffer.toString('utf8', 6);
+  } else {
+    sii = buffer.toString();
+  }
+
+  const res = parseSii(sii);
+  if (!res.ok) {
+    logger.error('error parsing', siiPath);
+    if (res.parseErrors.length) {
+      const line = res.parseErrors[0].token.startLine!;
+      const lines = sii.split('\n');
+      logger.error(lines.slice(line - 1, line + 1).join('\n'));
+      logger.error(res.parseErrors);
+    } else {
+      logger.error(res.lexErrors);
+    }
+    throw new Error();
+  }
+
+  const validate = ajv.compile(schema);
+  const json = jsonConverter.convert(res.cst);
+  if (validate(json)) {
+    return json;
+  }
+  logger.error('error validating', siiPath);
+  logger.error(ajv.errorsText(validate.errors));
+  throw new Error();
 }
 
 function convertSiiToJson(
@@ -402,11 +463,18 @@ function processFerryJson(obj: any, entries: Entries) {
   };
 }
 
-function processPrefabJson(obj: any, entries: Entries) {
-  logger.debug(Object.keys(obj.prefabModel).length, 'prefabs');
-  const prefabTuples = Object.entries(obj.prefabModel).map(
-    ([key, o]: [string, any]) =>
-      [key.split('.')[1], o.prefabDesc?.substring(1)] as [string, string],
+function processPrefabJson(
+  obj: PrefabSii,
+  entries: Entries,
+): Map<string, PrefabDescription & { path: string }> {
+  const prefabModel = obj.prefabModel;
+  if (!prefabModel) {
+    return new Map();
+  }
+
+  const prefabTuples = Object.entries(prefabModel).map(
+    ([key, o]) =>
+      [key.split('.')[1], o.prefabDesc.substring(1)] as [string, string],
   );
   const prefabs = new Map<string, PrefabDescription & { path: string }>();
   for (const [token, path] of prefabTuples) {
@@ -444,17 +512,33 @@ function processPrefabJson(obj: any, entries: Entries) {
   return prefabs;
 }
 
-function processModelJson(obj: any, entries: Entries) {
-  const modelTuples = Object.entries(obj.modelDef).map(
-    ([key, o]: [string, any]) => [key.split('.')[1], o.modelDesc?.substring(1)],
+function processModelJson(
+  obj: ModelSii,
+  entries: Entries,
+): Map<string, ModelDescription & { path: string }> {
+  const modelDef = obj.modelDef;
+  if (!modelDef) {
+    return new Map();
+  }
+
+  const modelTuples = Object.entries(modelDef).map(
+    ([key, o]) =>
+      [key.split('.')[1], o.modelDesc?.substring(1)] as [
+        string,
+        string | undefined,
+      ],
   );
   const models = new Map<string, ModelDescription & { path: string }>();
   for (const [token, path] of modelTuples) {
-    if (!path?.endsWith('.pmd')) {
+    if (path == null) {
+      continue;
+    }
+
+    if (!path.endsWith('.pmd')) {
       continue;
     }
     const isProbablyBuildingModel =
-      path.match(/^model2?\/building\//) ||
+      path.match(/^model2?\/building\//) ??
       path.match(/^model2?\/panorama\/.*building/);
     if (!isProbablyBuildingModel) {
       continue;
@@ -472,17 +556,21 @@ function processModelJson(obj: any, entries: Entries) {
   return models;
 }
 
-function processRoadLookJson(obj: any) {
-  // TODO do something with obj.roadTemplateVariant?
-  return new Map<string, any>(
-    Object.entries(obj.roadLook).map(([key, o]: [string, any]) => {
+function processRoadLookJson(obj: RoadLookSii): Map<string, RoadLook> {
+  const roadLook = obj.roadLook;
+  if (!roadLook) {
+    return new Map();
+  }
+
+  return new Map<string, RoadLook>(
+    Object.entries(roadLook).map(([key, o]) => {
       const {
-        lanesLeft = emptyArray,
-        lanesRight = emptyArray,
-        laneOffsetsLeft = emptyArray,
-        laneOffsetsRight = emptyArray,
+        lanesLeft = [],
+        lanesRight = [],
+        laneOffsetsLeft = [],
+        laneOffsetsRight = [],
       } = o;
-      let { roadOffset: offset = 0 } = o;
+      let offset = o.roadOffset;
       let laneOffset = undefined;
       if (offset === 0 && lanesLeft.length > 1 && lanesRight.length > 1) {
         // calculate an offset for two carriageways that may or may not have a
@@ -507,8 +595,8 @@ function processRoadLookJson(obj: any) {
         // Terrain items or Building items that follow the same start/ends as roads?
         laneOffset = Math.max(
           0,
-          ...(laneOffsetsLeft as [number, number][]).map(tuple => tuple[0]),
-          ...(laneOffsetsRight as [number, number][]).map(tuple => tuple[0]),
+          ...laneOffsetsLeft.map(tuple => tuple[0]),
+          ...laneOffsetsRight.map(tuple => tuple[0]),
         );
         offset = undefined;
       }
@@ -516,6 +604,7 @@ function processRoadLookJson(obj: any) {
         // keys look like "road.foo"; we just want the "foo".
         key.split('.')[1],
         {
+          // TODO add other fields from RoadLookSii; might let us better center road linestrings.
           lanesLeft,
           lanesRight,
           offset,
