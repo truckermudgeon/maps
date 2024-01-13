@@ -6,7 +6,7 @@
 
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { distance } from '@truckermudgeon/base/geom';
-import { putIfAbsent } from '@truckermudgeon/base/map';
+import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
 import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
 import type { JSONSchemaType } from 'ajv';
 import Ajv from 'ajv';
@@ -23,6 +23,7 @@ import { parseSector } from './sector-parser';
 import { parseSii } from './sii-parser';
 import type { ModelSii, PrefabSii, RoadLookSii } from './sii-schemas';
 import {
+  CityCompanySiiSchema,
   FerryConnectionSchema,
   ModelSiiSchema,
   PrefabSiiSchema,
@@ -99,7 +100,10 @@ function parseDefFiles(entries: Entries) {
   logger.log('parsing def, prefab .ppd, and model .pmg files...');
   const def = Preconditions.checkExists(entries.directories.get('def'));
 
-  const cities = new Map<string, Omit<City, 'x' | 'y' | 'areas'>>();
+  const cities = new Map<
+    string,
+    Omit<City, 'x' | 'y' | 'areas' | 'companies'>
+  >();
   const countries = new Map<string, Country>();
   const companies = new Map<string, Company>();
   const ferries = new Map<
@@ -131,7 +135,7 @@ function parseDefFiles(entries: Entries) {
         const c = processCountryJson(obj);
         countries.set(c.token, c);
       } else if (f.startsWith('company.')) {
-        const c = processCompanyJson(obj);
+        const c = processCompanyJson(obj, entries);
         companies.set(c.token, c);
       } else if (f.startsWith('ferry')) {
         const f = processFerryJson(obj, entries);
@@ -152,11 +156,11 @@ function parseDefFiles(entries: Entries) {
   for (const d of defCompany.subdirectories) {
     if (!companies.has(d)) {
       if (d.startsWith('pt_trk_')) {
-        companies.set(d, { token: d, name: 'Peterbilt' });
+        companies.set(d, { token: d, name: 'Peterbilt', cityTokens: [] });
       } else if (d.startsWith('kw_trk_')) {
-        companies.set(d, { token: d, name: 'Kenworth' });
+        companies.set(d, { token: d, name: 'Kenworth', cityTokens: [] });
       } else if (d.startsWith('ws_trk_')) {
-        companies.set(d, { token: d, name: 'Western Star' });
+        companies.set(d, { token: d, name: 'Western Star', cityTokens: [] });
       } else {
         logger.warn(d, 'has no company info');
       }
@@ -393,11 +397,30 @@ function processCountryJson(obj: any) {
   };
 }
 
-function processCompanyJson(obj: any) {
+function processCompanyJson(obj: any, entries: Entries): Company {
   const [token, rawCompany] = processSuiJson(obj, 'companyPermanent');
+  const companyToken = token.split('.')[2];
+  const cityTokens = [];
+  const editorFolder = entries.directories.get(
+    `def/company/${companyToken}/editor`,
+  );
+  if (editorFolder) {
+    for (const f of editorFolder.files) {
+      const city = convertSiiToJson2(
+        `def/company/${companyToken}/editor/${f}`,
+        entries,
+        CityCompanySiiSchema,
+      );
+      for (const [, entry] of Object.entries(city.companyDef)) {
+        cityTokens.push(entry.city);
+      }
+    }
+  }
+
   return {
-    token: token.split('.')[2],
+    token: companyToken,
     name: rawCompany.name,
+    cityTokens,
   };
 }
 
@@ -937,6 +960,8 @@ function postProcess(
 
   logger.log('scanning', poifulItems.length, 'items for points of interest...');
   const pois: Poi[] = [];
+  // company items, keyed by company token
+  const companyItems = new Map<string, CompanyItem[]>();
   for (const item of poifulItems) {
     switch (item.type) {
       case ItemType.Prefab: {
@@ -1066,7 +1091,18 @@ function postProcess(
               icon: item.token,
               label: companyName ?? item.token,
             });
+            putIfAbsent(item.token, [], companyItems).push({
+              ...item,
+              x,
+              y,
+            });
           }
+        } else {
+          logger.warn(
+            'no company spawn position for company',
+            item.token,
+            `0x${item.uid.toString(16)}`,
+          );
         }
         break;
       }
@@ -1117,7 +1153,7 @@ function postProcess(
   }
 
   // Augment partial city info from defs with position info from sectors
-  const cities = new Map<string, City>();
+  const citiesWithoutCompanies = new Map<string, Omit<City, 'companies'>>();
   for (const [token, partialCity] of defData.cities) {
     const areas = cityAreas.get(token);
     if (areas == null) {
@@ -1129,13 +1165,73 @@ function postProcess(
       logger.warn(token, 'has no "location" CityArea item. ignoring.');
       continue;
     }
-    cities.set(token, {
+    citiesWithoutCompanies.set(token, {
       ...partialCity,
       x: nonHidden.x,
       y: nonHidden.y,
       areas,
     });
   }
+
+  // Link companies to cities
+  const contains = (
+    area: { x: number; y: number; width: number; height: number },
+    p: { x: number; y: number },
+    padding: number,
+  ): boolean =>
+    // prettier-ignore
+    -padding + area.x <= p.x && p.x <= area.x + area.width + padding &&
+    -padding + area.y <= p.y && p.y <= area.y + area.height + padding;
+  const companiesByCity = new Map<string, CompanyItem[]>();
+  // keys: company token+name; values: city token[]
+  const unplacedCompanies = new Map<string, string[]>();
+  for (const company of defData.companies.values()) {
+    const thisCompanyPois = companyItems.get(company.token);
+    if (!thisCompanyPois) {
+      if (company.cityTokens.length) {
+        logger.warn(
+          'skipping city-linking for company',
+          company.token,
+          'with cityTokens',
+          company.cityTokens,
+        );
+      }
+      continue;
+    }
+    for (const cityToken of company.cityTokens) {
+      const city = assertExists(citiesWithoutCompanies.get(cityToken));
+      const item = thisCompanyPois.find(poi =>
+        city.areas.find(area => contains(area, poi, 500)),
+      );
+      if (!item) {
+        putIfAbsent(
+          `${company.token} (${company.name})`,
+          [],
+          unplacedCompanies,
+        ).push(cityToken);
+      } else {
+        putIfAbsent(cityToken, [], companiesByCity).push(item);
+      }
+    }
+  }
+  for (const [company, cities] of unplacedCompanies) {
+    logger.warn(
+      'could not find containing city areas for',
+      company,
+      'in cities',
+      cities,
+    );
+  }
+
+  const cities: Map<string, City> = mapValues(
+    citiesWithoutCompanies,
+    partialCity => {
+      return {
+        ...partialCity,
+        companies: companiesByCity.get(partialCity.token) ?? [],
+      };
+    },
+  );
 
   const withLocalizedName = <
     T extends { name: string; nameLocalized: string | undefined },

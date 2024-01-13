@@ -172,3 +172,26 @@ export const RoadLookSiiSchema: JSONSchemaType<RoadLookSii> = {
     },
   },
 };
+
+export interface CityCompanySii {
+  companyDef: Record<string, { city: string }>;
+}
+export const CityCompanySiiSchema: JSONSchemaType<CityCompanySii> = {
+  type: 'object',
+  properties: {
+    companyDef: {
+      type: 'object',
+      patternProperties: {
+        '^\\..*$': {
+          type: 'object',
+          properties: {
+            city: { type: 'string' },
+          },
+          required: ['city'],
+        },
+      },
+      required: [],
+    },
+  },
+  required: ['companyDef'],
+};

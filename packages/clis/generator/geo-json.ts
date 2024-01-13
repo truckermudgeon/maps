@@ -39,6 +39,7 @@ import type {
   AtsMapGeoJsonFeature,
   CityFeature,
   CountryFeature,
+  DebugFeature,
   FerryFeature,
   FootprintFeature,
   MapAreaFeature,
@@ -590,6 +591,7 @@ export function convertToGeoJson(
     });
   }
   const cityFeatures = rankedCities.map(cityToFeature);
+  const cityAreaFeatures = rankedCities.flatMap(cityToAreaFeatures);
 
   logger.log('creating states/countries...');
   const countryFeatures = [...countries.values()].map(countryToFeature);
@@ -604,6 +606,7 @@ export function convertToGeoJson(
     ...countryFeatures,
     ...poiFeatures,
     //...dividerFeatures,
+    //...cityAreaFeatures,
   ];
 
   return {
@@ -1077,6 +1080,27 @@ function cityToFeature(city: CityWithScaleRank): CityFeature {
       coordinates: [city.x + cityArea.width / 2, city.y + cityArea.height / 2],
     },
   };
+}
+
+function cityToAreaFeatures(city: CityWithScaleRank): DebugFeature[] {
+  return city.areas.map(area => ({
+    type: 'Feature',
+    properties: {
+      type: 'debug',
+    },
+    geometry: {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [area.x, area.y],
+          [area.x + area.width, area.y],
+          [area.x + area.width, area.y + area.height],
+          [area.x, area.y + area.height],
+          [area.x, area.y],
+        ],
+      ],
+    },
+  }));
 }
 
 function countryToFeature(country: Country): CountryFeature {

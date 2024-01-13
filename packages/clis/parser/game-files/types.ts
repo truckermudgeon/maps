@@ -23,6 +23,7 @@ export type City = Readonly<{
   x: number;
   y: number;
   areas: readonly CityArea[];
+  companies: readonly CompanyItem[];
 }>;
 
 // Note: game .sii files contain interesting things, like
@@ -40,7 +41,7 @@ export type Country = Readonly<{
 export type Company = Readonly<{
   token: string;
   name: string;
-  // cityTokens: string[] (look at company/<name>/editor folder contents)
+  cityTokens: string[];
   // cargoInTokens: string[] (look at company/<name>/in folder contents)
   // cargoOutTokens: string[] (look at company/<name>/out folder contents)
 }>;
