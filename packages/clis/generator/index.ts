@@ -36,6 +36,15 @@ const __dirname = path.dirname(__filename);
 const homeDirectory = os.homedir();
 const untildify = (path: string) =>
   homeDirectory ? path.replace(/^~(?=$|\/|\\)/, homeDirectory) : path;
+const maybeEnsureOutputDir = (args: {
+  outputDir: string;
+  dryRun?: boolean;
+}) => {
+  if (!args.dryRun && !fs.existsSync(args.outputDir)) {
+    fs.mkdirSync(args.outputDir, { recursive: true });
+  }
+  return true;
+};
 
 function mapCommandBuilder(yargs: yargs.Argv) {
   return yargs
@@ -111,6 +120,7 @@ function mapCommandBuilder(yargs: yargs.Argv) {
       type: 'boolean',
       default: true,
     })
+    .check(maybeEnsureOutputDir)
     .parse();
 }
 
@@ -132,6 +142,7 @@ function spritesheetCommandBuilder(yargs: yargs.Argv) {
       coerce: untildify,
       demandOption: true,
     })
+    .check(maybeEnsureOutputDir)
     .parse();
 }
 
@@ -160,6 +171,7 @@ function footprintsCommandBuilder(yargs: yargs.Argv) {
       coerce: untildify,
       demandOption: true,
     })
+    .check(maybeEnsureOutputDir)
     .parse();
 }
 
@@ -187,6 +199,7 @@ function citiesCommandBuilder(yargs: yargs.Argv) {
       coerce: untildify,
       demandOption: true,
     })
+    .check(maybeEnsureOutputDir)
     .parse();
 }
 

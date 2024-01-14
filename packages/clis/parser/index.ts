@@ -56,6 +56,9 @@ function main() {
     return;
   }
 
+  if (!fs.existsSync(args.outputDir)) {
+    fs.mkdirSync(args.outputDir, { recursive: true });
+  }
   for (const key of Object.keys(mapData)) {
     const collection = mapData[key as keyof MapData];
     const filename = `${map}-${key}.json`;
