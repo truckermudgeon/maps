@@ -5,8 +5,8 @@ build
 
 # generated files for the demo app
 cities.geojson
-ats.pmtiles
-ets2.pmtiles
+ats*.pmtiles
+ets2*.pmtiles
 sprites*.*
 
 .DS_Store
