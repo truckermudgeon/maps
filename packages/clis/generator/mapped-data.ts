@@ -79,12 +79,12 @@ export function readMapData(
   const toJsonFilePath = (fn: string) => path.join(inputDir, map + '-' + fn);
   const { includeHidden, focus: focusOptions } = options;
 
-  const cities = readArrayFile<City>(toJsonFilePath('cities.json'));
+  const allCities = readArrayFile<City>(toJsonFilePath('cities.json'));
   let focusCoords: [number, number] | undefined;
   if (focusOptions) {
     switch (focusOptions.type) {
       case 'city': {
-        const maybeCity = cities.find(
+        const maybeCity = allCities.find(
           c => c.name.toLowerCase() === focusOptions.city.toLowerCase(),
         );
         if (!maybeCity) {
@@ -127,6 +127,7 @@ export function readMapData(
       focus({ x: x + radius, y: y + radius });
 
   logger.log('reading ats-map JSON files...');
+  const cities = allCities.filter(focusXY);
   const countries = readArrayFile<Country>(toJsonFilePath('countries.json'));
   const nodes = readArrayFile<Node>(toJsonFilePath('nodes.json'));
   const roads = readArrayFile<Road>(
