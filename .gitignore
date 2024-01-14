@@ -9,6 +9,10 @@ ats*.pmtiles
 ets2*.pmtiles
 sprites*.*
 
+# generated files for the prefabs app
+usa-prefabDescriptions.json
+europe-prefabDescriptions.json
+
 .DS_Store
 npm-debug.log*
 tsconfig.tsbuildinfo

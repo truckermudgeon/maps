@@ -6,6 +6,9 @@
   "type": "module",
   "bin": "./index.ts",
   "types": "./types.ts",
+  "exports": {
+    "./prefab-transforms": "./prefab-transforms.ts"
+  },
   "devDependencies": {
     "@types/cli-progress": "^3.11.5",
     "@types/d3-quadtree": "^3.0.6",

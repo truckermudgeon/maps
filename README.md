@@ -79,6 +79,10 @@ are slowly being made.
 
 ### demo-app
 
+`demo-app` is a React app that renders ATS/ETS2 maps.
+
+![demo-screenshot](https://raw.githubusercontent.com/truckermudgeon/maps/main/packages/apps/demo/screenshot.png)
+
 ```shell
 # from the project root:
 # run the `generator` commands listed above, specifying
@@ -88,7 +92,26 @@ are slowly being made.
 # as the output directory.
 #
 # Then run the following to start the web server:
-npm run start --workspace=packages/apps/demo
+npm start --workspace=packages/apps/demo
+```
+
+### prefabs-app
+
+`prefabs-app` is a React app that helps visualize and debug how PrefabDescriptions are converted into LineStrings and Polygons.
+
+![prefabs-screenshot](https://raw.githubusercontent.com/truckermudgeon/maps/main/packages/apps/prefabs/screenshot.png)
+
+```shell
+# from the project root:
+#
+# 1. run the `parser` command listed above to generate
+#      usa-prefabDescriptions.json
+#
+# 2. copy usa-prefabDescriptions.json to
+#      packages/apps/prefabs/public
+#
+# Then run the following to start the web server:
+npm start --workspace=packages/apps/prefabs
 ```
 
 ## License

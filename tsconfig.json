@@ -5,6 +5,9 @@
       "path": "packages/apps/demo"
     },
     {
+      "path": "packages/apps/prefabs"
+    },
+    {
       "path": "packages/clis/generator"
     },
     {
