@@ -112,24 +112,22 @@ export function readMapData(
     );
   }
 
-  const focus =
+  const focusXY =
     focusCoords != null
-      ? (i: { x: number; y: number }) =>
-          distance([i.x, i.y], focusCoords!) <= focusOptions!.radiusMeters
+      ? (i: { x: number; y: number }, padding = 0) =>
+          distance([i.x, i.y], focusCoords!) <=
+          focusOptions!.radiusMeters + padding
       : () => true;
-  const focusXY = ({ x, y }: { x: number; y: number }) => focus({ x, y });
-  // A node for an item can be further away from that item. Define a focus
-  // function that can be used for nodes, which has a 100m-padding search
-  // radius, so that we can avoid writing referenced node logic.
-  const focusXYPlus =
-    (radius: number) =>
-    ({ x, y }: { x: number; y: number }) =>
-      focus({ x: x + radius, y: y + radius });
+  const focusXYPlus = (padding: number) => (pos: { x: number; y: number }) =>
+    focusXY(pos, padding);
 
   logger.log('reading ats-map JSON files...');
   const cities = allCities.filter(focusXY);
   const countries = readArrayFile<Country>(toJsonFilePath('countries.json'));
-  const nodes = readArrayFile<Node>(toJsonFilePath('nodes.json'));
+  const nodes = readArrayFile<Node>(
+    toJsonFilePath('nodes.json'),
+    focusXYPlus(1000),
+  );
   const roads = readArrayFile<Road>(
     toJsonFilePath('roads.json'),
     r => (includeHidden ? true : !r.hidden) && focusXY(r),

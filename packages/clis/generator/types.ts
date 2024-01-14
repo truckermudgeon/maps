@@ -81,6 +81,7 @@ export interface PrefabProperties {
 
 export interface DebugProperties {
   type: 'debug';
+  [k: string]: string;
 }
 
 export interface CityProperties {

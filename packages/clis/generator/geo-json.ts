@@ -98,6 +98,7 @@ export function convertToGeoJson(
   tsMapData: MappedData,
   populatedPlaces: FeatureCollection<Point, Record<string, string>>,
   options: {
+    includeDebug: boolean;
     skipCoalescing: boolean;
   },
 ): AtsGeoJson {
@@ -591,14 +592,35 @@ export function convertToGeoJson(
     });
   }
   const cityFeatures = rankedCities.map(cityToFeature);
-  const cityAreaFeatures = rankedCities.flatMap(cityToAreaFeatures);
 
   logger.log('creating states/countries...');
   const countryFeatures = [...countries.values()].map(countryToFeature);
 
   logger.log('creating pois...');
   const poiFeatures = pois.map(p => poiToFeature(p));
+
+  const debugCityAreaFeatures: DebugFeature[] = [];
+  const debugNodeFeatures: DebugFeature[] = [];
+  if (options.includeDebug) {
+    logger.log('creating debug features...');
+    debugCityAreaFeatures.push(...rankedCities.flatMap(cityToAreaFeatures));
+    for (const n of nodes.values()) {
+      debugNodeFeatures.push({
+        type: 'Feature',
+        properties: {
+          type: 'debug',
+          name: 'node',
+        },
+        geometry: {
+          type: 'Point',
+          coordinates: [n.x, n.y],
+        },
+      });
+    }
+  }
+
   const features = [
+    ...debugCityAreaFeatures,
     ...mapAreaFeatures,
     ...prefabFeatures,
     ...processedRoadFeatures,
@@ -606,7 +628,7 @@ export function convertToGeoJson(
     ...countryFeatures,
     ...poiFeatures,
     //...dividerFeatures,
-    //...cityAreaFeatures,
+    ...debugNodeFeatures,
   ];
 
   return {

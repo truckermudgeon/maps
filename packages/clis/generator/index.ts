@@ -82,6 +82,12 @@ function mapCommandBuilder(yargs: yargs.Argv) {
       type: 'boolean',
       default: false,
     })
+    .option('includeDebug', {
+      alias: 'd',
+      describe: 'Include debugging features in output.',
+      type: 'boolean',
+      default: false,
+    })
     .option('skipCoalescing', {
       describe:
         "Skip coalescing of road features (you probably don't want to do this).",
@@ -355,6 +361,7 @@ function handleMapCommand(args: ReturnType<typeof mapCommandBuilder>) {
   );
   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
   const geoJson = convertToGeoJson(args.map, tsMapData, popPlacesGeoJson, {
+    includeDebug: args.includeDebug,
     skipCoalescing: args.skipCoalescing,
   });
   let geoJsonPath: string | undefined;
