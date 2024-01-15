@@ -24,6 +24,9 @@ mdkir maps
 cd maps
 git clone git@github.com:truckermudgeon/maps.git .
 
+# build native addon
+npm run build -w packages/clis/parser
+
 # install maps projects
 npm install
 ```

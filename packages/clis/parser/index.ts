@@ -1,4 +1,4 @@
-#!/usr/bin/env -S npx tsx
+#!/usr/bin/env -S NODE_OPTIONS=--max-old-space-size=8192 npx tsx
 
 import fs from 'fs';
 import os from 'os';

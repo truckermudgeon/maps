@@ -7,6 +7,9 @@
   "gypfile": true,
   "bin": "./index.ts",
   "types": "./game-files/types.ts",
+  "scripts": {
+    "build": "node-gyp configure && node-gyp build"
+  },
   "devDependencies": {
     "@types/cli-progress": "^3.11.5",
     "@types/jest": "^29.5.11",
