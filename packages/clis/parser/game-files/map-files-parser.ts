@@ -668,8 +668,19 @@ function parseSectorFiles(entries: Entries) {
   bar.start(baseFiles.length, 0);
 
   const sectors = new Map<string, { items: Item[]; nodes: Node[] }>();
+  const sectorRegex = /^sec([+-]\d{4})([+-]\d{4})$/;
   for (const f of baseFiles) {
     const sectorKey = f.replace(/\.(base|aux)$/, '');
+    if (!sectorRegex.test(sectorKey)) {
+      throw new Error(`unexpected sector key "${sectorKey}"`);
+    }
+    const [, sectorX, sectorY] = Array.from(
+      assertExists(sectorKey.match(sectorRegex)),
+      parseFloat,
+    );
+    if (isNaN(sectorX) || isNaN(sectorY)) {
+      throw new Error(`couldn't parse ${sectorX} or ${sectorY}`);
+    }
     const { items, nodes } = putIfAbsent(
       sectorKey,
       { items: [], nodes: [] },
@@ -677,8 +688,8 @@ function parseSectorFiles(entries: Entries) {
     );
     const baseFile = assertExists(entries.files.get(`map/${map}/${f}`));
     const sector = parseSector(baseFile.read());
-    items.push(...sector.items);
-    nodes.push(...sector.nodes);
+    items.push(...sector.items.map(i => ({ ...i, sectorX, sectorY })));
+    nodes.push(...sector.nodes.map(n => ({ ...n, sectorX, sectorY })));
     bar.increment({ filename: f });
   }
   logger.success(

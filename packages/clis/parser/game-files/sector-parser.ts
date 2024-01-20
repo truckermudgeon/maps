@@ -17,7 +17,6 @@ import type {
   Curve,
   Cutscene,
   FerryItem,
-  Item,
   MapArea,
   MapOverlay,
   Model,
@@ -28,6 +27,11 @@ import type {
   Trigger,
 } from './types';
 import { ItemType, MapColorUtils, MapOverlayTypeUtils } from './types';
+
+type WithoutSectorXY<T extends { sectorX: number; sectorY: number }> = Omit<
+  T,
+  'sectorX' | 'sectorY'
+>;
 
 // struct definitions derived from https://github.com/dariowouters/ts-map/blob/master/docs/structures/base/875/base-template.bt
 // https://github.com/sk-zk/map-docs/wiki/Map-format
@@ -604,11 +608,11 @@ export function parseSector(buffer: Buffer) {
             return undefined;
         }
       })
-      .filter((i): i is Item => i != null),
+      .filter((i): i is NonNullable<typeof i> => i != null),
     nodes: sector.nodes.map(toNode),
   };
-  const moreItems: Item[] = [];
-  const moreNodes: Node[] = [];
+  const moreItems: typeof simples.items = [];
+  const moreNodes: WithoutSectorXY<Node>[] = [];
   for (const ri of sector.items) {
     if (ri.version !== ItemType.Compound) {
       continue;
@@ -644,7 +648,7 @@ export function parseSector(buffer: Buffer) {
 
 function toBaseItem<T extends SectorItemKey>(
   rawItem: SectorItem<T>,
-): BaseItem & { type: T } {
+): WithoutSectorXY<BaseItem> & { type: T } {
   return {
     uid: rawItem.uid,
     type: rawItem.version as T,
@@ -653,7 +657,7 @@ function toBaseItem<T extends SectorItemKey>(
   };
 }
 
-function toRoad(rawItem: SectorItem<ItemType.Road>): Road {
+function toRoad(rawItem: SectorItem<ItemType.Road>): WithoutSectorXY<Road> {
   return {
     ...toBaseItem(rawItem),
     hidden: (rawItem.flags & 0x02_00_00_00) !== 0 ? true : undefined,
@@ -664,7 +668,9 @@ function toRoad(rawItem: SectorItem<ItemType.Road>): Road {
   };
 }
 
-function toPrefab(rawItem: SectorItem<ItemType.Prefab>): Prefab {
+function toPrefab(
+  rawItem: SectorItem<ItemType.Prefab>,
+): WithoutSectorXY<Prefab> {
   return {
     ...toBaseItem(rawItem),
     token: rawItem.model,
@@ -674,7 +680,9 @@ function toPrefab(rawItem: SectorItem<ItemType.Prefab>): Prefab {
   };
 }
 
-function toMapArea(rawItem: SectorItem<ItemType.MapArea>): MapArea {
+function toMapArea(
+  rawItem: SectorItem<ItemType.MapArea>,
+): WithoutSectorXY<MapArea> {
   return {
     ...toBaseItem(rawItem),
     drawOver: (rawItem.flags & 0x00_00_00_01) !== 0 ? true : undefined,
@@ -683,7 +691,9 @@ function toMapArea(rawItem: SectorItem<ItemType.MapArea>): MapArea {
   };
 }
 
-function toCityArea(rawItem: SectorItem<ItemType.City>): CityArea {
+function toCityArea(
+  rawItem: SectorItem<ItemType.City>,
+): WithoutSectorXY<CityArea> {
   return {
     ...toBaseItem(rawItem),
     token: rawItem.token,
@@ -693,7 +703,9 @@ function toCityArea(rawItem: SectorItem<ItemType.City>): CityArea {
   };
 }
 
-function toMapOverlay(rawItem: SectorItem<ItemType.MapOverlay>): MapOverlay {
+function toMapOverlay(
+  rawItem: SectorItem<ItemType.MapOverlay>,
+): WithoutSectorXY<MapOverlay> {
   return {
     ...toBaseItem(rawItem),
     overlayType: MapOverlayTypeUtils.from(rawItem.flags & 0x0f),
@@ -702,7 +714,9 @@ function toMapOverlay(rawItem: SectorItem<ItemType.MapOverlay>): MapOverlay {
   };
 }
 
-function toFerry(rawItem: SectorItem<ItemType.Ferry>): FerryItem {
+function toFerry(
+  rawItem: SectorItem<ItemType.Ferry>,
+): WithoutSectorXY<FerryItem> {
   return {
     ...toBaseItem(rawItem),
     token: rawItem.ferryPort,
@@ -712,7 +726,9 @@ function toFerry(rawItem: SectorItem<ItemType.Ferry>): FerryItem {
   };
 }
 
-function toCompany(rawItem: SectorItem<ItemType.Company>): CompanyItem {
+function toCompany(
+  rawItem: SectorItem<ItemType.Company>,
+): WithoutSectorXY<CompanyItem> {
   return {
     ...toBaseItem(rawItem),
     token: rawItem.overlayName,
@@ -722,7 +738,9 @@ function toCompany(rawItem: SectorItem<ItemType.Company>): CompanyItem {
   };
 }
 
-function toCutscene(rawItem: SectorItem<ItemType.Cutscene>): Cutscene {
+function toCutscene(
+  rawItem: SectorItem<ItemType.Cutscene>,
+): WithoutSectorXY<Cutscene> {
   return {
     ...toBaseItem(rawItem),
     flags: rawItem.flags,
@@ -732,7 +750,9 @@ function toCutscene(rawItem: SectorItem<ItemType.Cutscene>): Cutscene {
   };
 }
 
-function toTrigger(rawItem: SectorItem<ItemType.Trigger>): Trigger {
+function toTrigger(
+  rawItem: SectorItem<ItemType.Trigger>,
+): WithoutSectorXY<Trigger> {
   return {
     ...toBaseItem(rawItem),
     actionTokens: rawItem.actions.map(a => a.action),
@@ -742,7 +762,7 @@ function toTrigger(rawItem: SectorItem<ItemType.Trigger>): Trigger {
 
 function toBuilding(
   rawItem: SectorItem<ItemType.Building>,
-): Building | undefined {
+): WithoutSectorXY<Building> | undefined {
   // HACK because of memory issues;
   if (rawItem.scheme !== 'scheme20') {
     return;
@@ -756,7 +776,9 @@ function toBuilding(
   };
 }
 
-function toCurve(rawItem: SectorItem<ItemType.Curve>): Curve | undefined {
+function toCurve(
+  rawItem: SectorItem<ItemType.Curve>,
+): WithoutSectorXY<Curve> | undefined {
   if (rawItem.model !== '0i03a' && rawItem.model !== '0i03b') {
     return;
   }
@@ -771,7 +793,7 @@ function toCurve(rawItem: SectorItem<ItemType.Curve>): Curve | undefined {
   };
 }
 
-function toModel(rawItem: SectorItem<ItemType.Model>): Model {
+function toModel(rawItem: SectorItem<ItemType.Model>): WithoutSectorXY<Model> {
   const [sx, sy, sz] = rawItem.scale;
   return {
     ...toBaseItem(rawItem),
@@ -781,7 +803,9 @@ function toModel(rawItem: SectorItem<ItemType.Model>): Model {
   };
 }
 
-function toTerrain(rawItem: SectorItem<ItemType.Terrain>): Terrain {
+function toTerrain(
+  rawItem: SectorItem<ItemType.Terrain>,
+): WithoutSectorXY<Terrain> {
   return {
     ...toBaseItem(rawItem),
     startNodeUid: rawItem.startNodeUid,
@@ -790,7 +814,7 @@ function toTerrain(rawItem: SectorItem<ItemType.Terrain>): Terrain {
   };
 }
 
-function toNode(rawNode: SectorNode): Node {
+function toNode(rawNode: SectorNode): WithoutSectorXY<Node> {
   const [rx, , rz] = rawNode.rot;
   let rotation = Math.PI - Math.atan2(rz, rx);
   rotation = (rotation % Math.PI) * 2 - Math.PI / 2;

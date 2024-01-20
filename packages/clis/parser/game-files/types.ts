@@ -12,6 +12,8 @@ export type Node = Readonly<{
   rotation: number;
   forwardItemUid: bigint;
   backwardItemUid: bigint;
+  sectorX: number;
+  sectorY: number;
 }>;
 
 export type City = Readonly<{
@@ -122,6 +124,8 @@ export type BaseItem = Readonly<{
   type: ItemType;
   x: number;
   y: number;
+  sectorX: number;
+  sectorY: number;
 }>;
 
 export type Road = BaseItem &
