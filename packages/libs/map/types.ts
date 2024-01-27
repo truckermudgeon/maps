@@ -48,8 +48,8 @@ export type Company = Readonly<{
   token: string;
   name: string;
   cityTokens: string[];
-  // cargoInTokens: string[] (look at company/<name>/in folder contents)
-  // cargoOutTokens: string[] (look at company/<name>/out folder contents)
+  cargoInTokens: string[];
+  cargoOutTokens: string[];
 }>;
 
 export type FerryConnection = Readonly<{
@@ -331,12 +331,14 @@ export interface MapData {
   roads: Road[];
   ferries: Ferry[];
   prefabs: Prefab[];
+  companies: CompanyItem[];
   models: Model[];
   mapAreas: MapArea[];
   pois: Poi[];
   dividers: (Building | Curve)[];
   countries: Country[];
   cities: City[];
+  companyDefs: Company[];
   roadLooks: WithToken<RoadLook>[];
   prefabDescriptions: WithToken<PrefabDescription>[];
   modelDescriptions: WithToken<ModelDescription>[];

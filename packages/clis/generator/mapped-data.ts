@@ -7,6 +7,8 @@ import {
 import type {
   Building,
   City,
+  Company,
+  CompanyItem,
   Country,
   Curve,
   Ferry,
@@ -30,6 +32,8 @@ import { readArrayFile } from './read-array-file';
 
 const MapDataKeys: Record<keyof MapData, void> = {
   cities: undefined,
+  companies: undefined,
+  companyDefs: undefined,
   countries: undefined,
   dividers: undefined,
   ferries: undefined,
@@ -126,7 +130,16 @@ export function readMapData(
 
   logger.log('reading ats-map JSON files...');
   const cities = allCities.filter(focusXY);
-  const countries = readArrayFile<Country>(toJsonFilePath('countries.json'));
+  const cityTokens = new Set(cities.map(c => c.token));
+  const countryTokens = new Set(cities.map(c => c.countryToken));
+  const companyDefs = readArrayFile<WithToken<Company>>(
+    toJsonFilePath('companyDefs.json'),
+    company => company.cityTokens.some(token => cityTokens.has(token)),
+  );
+  const countries = readArrayFile<Country>(
+    toJsonFilePath('countries.json'),
+    country => countryTokens.has(country.token),
+  );
   const nodes = readArrayFile<Node>(
     toJsonFilePath('nodes.json'),
     focusXYPlus(1000),
@@ -160,16 +173,40 @@ export function readMapData(
     toJsonFilePath('modelDescriptions.json'),
   );
 
+  const prefabsMap = mapify(prefabs, p => String(p.uid));
+  const nodesMap = mapify(nodes, n => String(n.uid));
+  // companies may be linked to hidden prefabs or prefabs outside the focused range.
+  // filter them out so `companies` array is consistent with prefabs.
+  const companies = readArrayFile<CompanyItem>(
+    toJsonFilePath('companies.json'),
+    company => {
+      if (!focusXY(company)) {
+        return false;
+      }
+      const prefabUid = String(company.prefabUid);
+      const nodeUid = String(company.nodeUid);
+      if (!prefabsMap.has(prefabUid)) {
+        // HACK side-effect in a .filter :grimacing:
+        prefabsMap.delete(prefabUid);
+        nodesMap.delete(nodeUid);
+        return false;
+      }
+      return true;
+    },
+  );
+
   const mapped = {
-    nodes: mapify(nodes, n => String(n.uid)),
+    nodes: nodesMap,
     roads: mapify(roads, r => String(r.uid)),
     ferries: mapify(ferries, f => f.token),
-    prefabs: mapify(prefabs, p => String(p.uid)),
+    prefabs: prefabsMap,
+    companies: mapify(companies, c => String(c.uid)),
     models: mapify(models, p => String(p.uid)),
     dividers: mapify(dividers, d => String(d.uid)),
     mapAreas: mapify(mapAreas, a => String(a.uid)),
     countries: mapify(countries, c => c.token),
     cities: mapify(cities, c => c.token),
+    companyDefs: mapify(companyDefs, c => c.token),
     roadLooks: mapify(roadLooks, r => r.token),
     prefabDescriptions: mapify(prefabDescriptions, p => p.token),
     modelDescriptions: mapify(modelDescriptions, p => p.token),

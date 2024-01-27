@@ -56,6 +56,7 @@ import { parseSector } from './sector-parser';
 import { parseSii } from './sii-parser';
 import type { ModelSii, PrefabSii, RoadLookSii } from './sii-schemas';
 import {
+  CargoSiiSchema,
   CityCompanySiiSchema,
   FerryConnectionSchema,
   ModelSiiSchema,
@@ -157,16 +158,32 @@ function parseDefFiles(entries: Entries) {
   const defCompany = Preconditions.checkExists(
     entries.directories.get('def/company'),
   );
-  for (const d of defCompany.subdirectories) {
-    if (!companies.has(d)) {
-      if (d.startsWith('pt_trk_')) {
-        companies.set(d, { token: d, name: 'Peterbilt', cityTokens: [] });
-      } else if (d.startsWith('kw_trk_')) {
-        companies.set(d, { token: d, name: 'Kenworth', cityTokens: [] });
-      } else if (d.startsWith('ws_trk_')) {
-        companies.set(d, { token: d, name: 'Western Star', cityTokens: [] });
+  for (const token of defCompany.subdirectories) {
+    if (!companies.has(token)) {
+      const companyDefaults = {
+        token,
+        // TODO truck dealers _do_ have city tokens, found within the `editor` subdirectories.
+        cityTokens: [],
+        cargoInTokens: [],
+        cargoOutTokens: [],
+      };
+      if (token.startsWith('pt_trk_')) {
+        companies.set(token, {
+          ...companyDefaults,
+          name: 'Peterbilt',
+        });
+      } else if (token.startsWith('kw_trk_')) {
+        companies.set(token, {
+          ...companyDefaults,
+          name: 'Kenworth',
+        });
+      } else if (token.startsWith('ws_trk_')) {
+        companies.set(token, {
+          ...companyDefaults,
+          name: 'Western Star',
+        });
       } else {
-        logger.warn(d, 'has no company info');
+        logger.warn(token, 'has no company info');
       }
     }
   }
@@ -404,7 +421,9 @@ function processCountryJson(obj: any) {
 function processCompanyJson(obj: any, entries: Entries): Company {
   const [token, rawCompany] = processSuiJson(obj, 'companyPermanent');
   const companyToken = token.split('.')[2];
-  const cityTokens = [];
+  const cityTokens: string[] = [];
+  const cargoInTokens: string[] = [];
+  const cargoOutTokens: string[] = [];
   const editorFolder = entries.directories.get(
     `def/company/${companyToken}/editor`,
   );
@@ -420,11 +439,31 @@ function processCompanyJson(obj: any, entries: Entries): Company {
       }
     }
   }
+  for (const direction of ['in', 'out']) {
+    const directionFolder = entries.directories.get(
+      `def/company/${companyToken}/${direction}`,
+    );
+    if (directionFolder) {
+      const arr = direction === 'in' ? cargoInTokens : cargoOutTokens;
+      for (const f of directionFolder.files) {
+        const cargo = convertSiiToJson2(
+          `def/company/${companyToken}/${direction}/${f}`,
+          entries,
+          CargoSiiSchema,
+        );
+        for (const [, entry] of Object.entries(cargo.cargoDef)) {
+          arr.push(entry.cargo);
+        }
+      }
+    }
+  }
 
   return {
     token: companyToken,
     name: rawCompany.name,
     cityTokens,
+    cargoInTokens,
+    cargoOutTokens,
   };
 }
 
@@ -975,8 +1014,7 @@ function postProcess(
 
   logger.log('scanning', poifulItems.length, 'items for points of interest...');
   const pois: Poi[] = [];
-  // company items, keyed by company token
-  const companyItems = new Map<string, CompanyItem[]>();
+  const companies: CompanyItem[] = [];
   for (const item of poifulItems) {
     switch (item.type) {
       case ItemType.Prefab: {
@@ -1106,7 +1144,7 @@ function postProcess(
               icon: item.token,
               label: companyName ?? item.token,
             });
-            putIfAbsent(item.token, [], companyItems).push({
+            companies.push({
               ...item,
               x,
               y,
@@ -1324,12 +1362,14 @@ function postProcess(
       roads,
       ferries,
       prefabs,
+      companies,
       models,
       mapAreas,
       pois,
       dividers,
       countries: valuesWithTokens(defData.countries).map(withLocalizedName),
       cities: valuesWithTokens(cities).map(withLocalizedName),
+      companyDefs: valuesWithTokens(defData.companies),
       roadLooks: valuesWithTokens(defData.roadLooks),
       prefabDescriptions: valuesWithTokens(defData.prefabs),
       modelDescriptions: valuesWithTokens(defData.models),

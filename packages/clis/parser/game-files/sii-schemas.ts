@@ -195,3 +195,29 @@ export const CityCompanySiiSchema: JSONSchemaType<CityCompanySii> = {
   },
   required: ['companyDef'],
 };
+
+export interface CargoSii {
+  cargoDef: Record<string, { cargo: string }>;
+}
+export const CargoSiiSchema: JSONSchemaType<CargoSii> = {
+  type: 'object',
+  properties: {
+    cargoDef: {
+      type: 'object',
+      patternProperties: {
+        '^\\..*$': {
+          type: 'object',
+          properties: {
+            // Note: more information (like l18n strings) for `cargo.foo` can be found in defs/cargo/foo.sui.
+            cargo: { type: 'string', pattern: '^cargo\\.' },
+          },
+          required: ['cargo'],
+        },
+      },
+      required: [],
+      minProperties: 1,
+      maxProperties: 1,
+    },
+  },
+  required: ['cargoDef'],
+};
