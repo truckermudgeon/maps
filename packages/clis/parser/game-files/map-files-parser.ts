@@ -6,7 +6,7 @@
 
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { distance } from '@truckermudgeon/base/geom';
-import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
+import { putIfAbsent } from '@truckermudgeon/base/map';
 import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
 import {
   ItemType,
@@ -1168,7 +1168,7 @@ function postProcess(
   }
 
   // Augment partial city info from defs with position info from sectors
-  const citiesWithoutCompanies = new Map<string, Omit<City, 'companies'>>();
+  const cities = new Map<string, City>();
   for (const [token, partialCity] of defData.cities) {
     const areas = cityAreas.get(token);
     if (areas == null) {
@@ -1180,73 +1180,13 @@ function postProcess(
       logger.warn(token, 'has no "location" CityArea item. ignoring.');
       continue;
     }
-    citiesWithoutCompanies.set(token, {
+    cities.set(token, {
       ...partialCity,
       x: nonHidden.x,
       y: nonHidden.y,
       areas,
     });
   }
-
-  // Link companies to cities
-  const contains = (
-    area: { x: number; y: number; width: number; height: number },
-    p: { x: number; y: number },
-    padding: number,
-  ): boolean =>
-    // prettier-ignore
-    -padding + area.x <= p.x && p.x <= area.x + area.width + padding &&
-    -padding + area.y <= p.y && p.y <= area.y + area.height + padding;
-  const companiesByCity = new Map<string, CompanyItem[]>();
-  // keys: company token+name; values: city token[]
-  const unplacedCompanies = new Map<string, string[]>();
-  for (const company of defData.companies.values()) {
-    const thisCompanyPois = companyItems.get(company.token);
-    if (!thisCompanyPois) {
-      if (company.cityTokens.length) {
-        logger.warn(
-          'skipping city-linking for company',
-          company.token,
-          'with cityTokens',
-          company.cityTokens,
-        );
-      }
-      continue;
-    }
-    for (const cityToken of company.cityTokens) {
-      const city = assertExists(citiesWithoutCompanies.get(cityToken));
-      const item = thisCompanyPois.find(poi =>
-        city.areas.find(area => contains(area, poi, 500)),
-      );
-      if (!item) {
-        putIfAbsent(
-          `${company.token} (${company.name})`,
-          [],
-          unplacedCompanies,
-        ).push(cityToken);
-      } else {
-        putIfAbsent(cityToken, [], companiesByCity).push(item);
-      }
-    }
-  }
-  for (const [company, cities] of unplacedCompanies) {
-    logger.warn(
-      'could not find containing city areas for',
-      company,
-      'in cities',
-      cities,
-    );
-  }
-
-  const cities: Map<string, City> = mapValues(
-    citiesWithoutCompanies,
-    partialCity => {
-      return {
-        ...partialCity,
-        companies: companiesByCity.get(partialCity.token) ?? [],
-      };
-    },
-  );
 
   const withLocalizedName = <
     T extends { name: string; nameLocalized: string | undefined },

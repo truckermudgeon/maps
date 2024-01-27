@@ -30,7 +30,6 @@ export type City = Readonly<{
   x: number;
   y: number;
   areas: readonly CityArea[];
-  companies: readonly CompanyItem[];
 }>;
 
 // Note: game .sii files contain interesting things, like
