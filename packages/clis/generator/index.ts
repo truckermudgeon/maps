@@ -25,6 +25,7 @@ import * as process from 'process';
 import url from 'url';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
+import { checkGraph } from './check-graph';
 import { convertToFootprintsGeoJson, convertToGeoJson } from './geo-json';
 import { generateGraph } from './graph';
 import { logger } from './logger';
@@ -70,6 +71,12 @@ function graphCommandBuilder(yargs: yargs.Argv) {
       type: 'string',
       coerce: untildify,
       demandOption: true,
+    })
+    .option('check', {
+      alias: 'c',
+      describe: 'Run a simple validity check on the generated graph',
+      type: 'boolean',
+      default: false,
     })
     .option('dryRun', {
       describe: "Don't write out any files.",
@@ -373,10 +380,14 @@ function handleGraphCommand(args: ReturnType<typeof graphCommandBuilder>) {
   });
 
   const graph = generateGraph(tsMapData);
+  if (args.check) {
+    checkGraph(graph, tsMapData);
+  }
+
   if (!args.dryRun) {
     fs.writeFileSync(
       path.join(args.outputDir, `${args.map}-graph.json`),
-      JSON.stringify(graph),
+      JSON.stringify([...graph.entries()]),
     );
   }
   logger.success('done.');

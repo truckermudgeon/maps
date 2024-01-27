@@ -16,6 +16,7 @@
     "@turf/helpers": "^6.5.0",
     "@turf/line-intersect": "^6.5.0",
     "@turf/line-offset": "^6.5.0",
+    "priorityqueue": "^2.0.0",
     "proj4": "^2.9.2"
   }
 }

@@ -306,7 +306,7 @@ export function generateGraph(tsMapData: MappedData) {
   // (e.g., 4a3f975872850005). Figure out why, and either detect + exclude them or
   // find the bug.
 
-  return [...graph.entries()];
+  return graph;
 }
 
 function getNeighborsInDirection(
