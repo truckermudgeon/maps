@@ -464,19 +464,37 @@ export type ScopedCountryFeature = GeoJSON.Feature<
 // Routing
 
 /**
- * A Neighbor is only meaningful when we have an origin Node; all Neighbor properties are relative to an origin Node.
+ * A Neighbor contains information about an edge and the vertex (or node) it leads to in a directed graph.
+ * For example, a simple two-node graph contains one Neighbor, represented by the box in the diagram below.
+ *
+ * ```
+ *           ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐
+ *       .─. │                       .─. │
+ *      ( A ) ─────────────────────▶( B )│
+ *       `─' │                       `─' │
+ *           └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
+ * ```
  */
 export interface Neighbor {
-  /** The id of this Neighbor node (not of the origin node). */
+  /** The id of this Neighbor's node (not of the origin node). */
   readonly nodeId: string; // hex form of a bigint
-  /** The distance between the origin node and this Neighbor. */
+  /** The distance between the origin node and this Neighbor's node. */
   readonly distance: number;
+  /** True if this Neighbor's edge represents a one-lane road. */
   readonly isOneLaneRoad?: true;
-  /** The direction one must travel in _after_ reaching this neighbor. */
+  /**
+   * The direction one must travel in _after_ reaching this Neighbor's node.
+   * Not the direction of this Neighbor's edge.
+   */
   readonly direction: 'forward' | 'backward';
 }
 
+/**
+ * Information about an origin Node's neighbors.
+ */
 export type Neighbors = Readonly<{
+  /** Neighbors that can be reached whilst traveling in the forward direction. */
   forward: readonly Neighbor[];
+  /** Neighbors that can be reached whilst traveling in the backward direction. */
   backward: readonly Neighbor[];
 }>;

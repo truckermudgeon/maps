@@ -26,6 +26,7 @@ import url from 'url';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { convertToFootprintsGeoJson, convertToGeoJson } from './geo-json';
+import { generateGraph } from './graph';
 import { logger } from './logger';
 import type { FocusOptions } from './mapped-data';
 import { readMapData } from './mapped-data';
@@ -47,12 +48,49 @@ const maybeEnsureOutputDir = (args: {
   return true;
 };
 
+function graphCommandBuilder(yargs: yargs.Argv) {
+  return yargs
+    .option('map', {
+      alias: 'm',
+      describe: 'Source map. Can only specify one.',
+      choices: ['usa', 'europe'] as const,
+      default: 'usa' as 'usa' | 'europe',
+      defaultDescription: 'usa',
+    })
+    .option('inputDir', {
+      alias: 'i',
+      describe: 'Path to dir containing parser-generated JSON files',
+      type: 'string',
+      coerce: untildify,
+      demandOption: true,
+    })
+    .option('outputDir', {
+      alias: 'o',
+      describe: 'Path to dir graph.json file should be written to',
+      type: 'string',
+      coerce: untildify,
+      demandOption: true,
+    })
+    .option('dryRun', {
+      describe: "Don't write out any files.",
+      type: 'boolean',
+      default: false,
+    })
+    .check(maybeEnsureOutputDir)
+    .check(argv => {
+      if (Array.isArray(argv.map)) {
+        throw new Error('Only one "map" option can be specified.');
+      }
+      return true;
+    })
+    .parse();
+}
+
 function mapCommandBuilder(yargs: yargs.Argv) {
   return yargs
     .option('map', {
       alias: 'm',
-      describe:
-        'Source map.\nSpecify multiple source maps with multiple -m arguments.',
+      describe: 'Source map. Can only specify one.',
       choices: ['usa', 'europe'] as const,
       default: 'usa' as 'usa' | 'europe',
       defaultDescription: 'usa',
@@ -97,7 +135,7 @@ function mapCommandBuilder(yargs: yargs.Argv) {
     })
     .option('inputDir', {
       alias: 'i',
-      describe: 'Path to dir containing ats-map JSON files',
+      describe: 'Path to dir containing parser-generated JSON files',
       type: 'string',
       coerce: untildify,
       demandOption: true,
@@ -128,6 +166,12 @@ function mapCommandBuilder(yargs: yargs.Argv) {
       default: true,
     })
     .check(maybeEnsureOutputDir)
+    .check(argv => {
+      if (Array.isArray(argv.map)) {
+        throw new Error('Only one "map" option can be specified.');
+      }
+      return true;
+    })
     .parse();
 }
 
@@ -238,6 +282,12 @@ async function main() {
       // eslint-disable-next-line @typescript-eslint/no-misused-promises
       handleSpritesheetCommand,
     )
+    .command(
+      'graph',
+      'Generates {usa,europe}-graph.json from map-parser JSON files',
+      graphCommandBuilder,
+      handleGraphCommand,
+    )
     .demandCommand()
     .check(argv => {
       if (argv._.length !== 1) {
@@ -316,6 +366,22 @@ async function handleSpritesheetCommand(
   logger.success('done.');
 }
 
+function handleGraphCommand(args: ReturnType<typeof graphCommandBuilder>) {
+  // TODO read only the files necessary
+  const tsMapData = readMapData(args.inputDir, args.map, {
+    includeHidden: false,
+  });
+
+  const graph = generateGraph(tsMapData);
+  if (!args.dryRun) {
+    fs.writeFileSync(
+      path.join(args.outputDir, `${args.map}-graph.json`),
+      JSON.stringify(graph),
+    );
+  }
+  logger.success('done.');
+}
+
 function handleMapCommand(args: ReturnType<typeof mapCommandBuilder>) {
   const startTime = Date.now();
 
@@ -342,6 +408,7 @@ function handleMapCommand(args: ReturnType<typeof mapCommandBuilder>) {
     };
   }
 
+  console.log(args.map);
   const tsMapData = readMapData(args.inputDir, args.map, {
     includeHidden: args.includeHidden,
     focus: focusOptions,

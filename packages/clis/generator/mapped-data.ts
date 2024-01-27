@@ -238,7 +238,7 @@ function checkJsonFilesPresent(inputDir: string, map: 'usa' | 'europe') {
       inputDir,
       '\n  ',
       missingJsonFiles.map(f => `${f}.json`).join(', '),
-      '\nre-export JSON files using map-parser and try again.',
+      '\nre-export JSON files using parser and try again.',
     );
     process.exit(1);
   }
