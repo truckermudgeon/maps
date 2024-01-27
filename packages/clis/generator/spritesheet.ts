@@ -1,4 +1,4 @@
-import type { Poi } from '@truckermudgeon/parser';
+import type { Poi } from '@truckermudgeon/map/types';
 import fs from 'fs';
 import path from 'path';
 import Spritesmith from 'spritesmith';

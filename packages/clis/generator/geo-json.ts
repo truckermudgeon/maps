@@ -11,20 +11,41 @@ import {
 } from '@truckermudgeon/base/geom';
 import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
 import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
+import type { Polygon, RoadString } from '@truckermudgeon/map/prefabs';
+import {
+  toMapPosition,
+  toRoadStringsAndPolygons,
+} from '@truckermudgeon/map/prefabs';
+import {
+  fromAtsCoordsToWgs84,
+  fromEts2CoordsToWgs84,
+} from '@truckermudgeon/map/projections';
 import type {
+  AtsMapGeoJsonFeature,
   City,
+  CityFeature,
   Country,
+  CountryFeature,
+  DebugFeature,
   Ferry,
+  FerryFeature,
+  FootprintFeature,
   MapArea,
+  MapAreaFeature,
   Model,
   ModelDescription,
   Node,
   Poi,
+  PoiFeature,
   Prefab,
   PrefabDescription,
+  PrefabFeature,
   Road,
+  RoadFeature,
   RoadLook,
-} from '@truckermudgeon/parser';
+  RoadLookProperties,
+  RoadType,
+} from '@truckermudgeon/map/types';
 import * as turf from '@turf/helpers';
 import lineOffset from '@turf/line-offset';
 import type { Quadtree } from 'd3-quadtree';
@@ -32,23 +53,6 @@ import { quadtree } from 'd3-quadtree';
 import type { FeatureCollection, GeoJSON, Point } from 'geojson';
 import { logger } from './logger';
 import type { MappedData } from './mapped-data';
-import type { Polygon, RoadString } from './prefab-transforms';
-import { toMapPosition, toRoadStringsAndPolygons } from './prefab-transforms';
-import { fromAtsCoordsToWgs84, fromEts2CoordsToWgs84 } from './projections';
-import type {
-  AtsMapGeoJsonFeature,
-  CityFeature,
-  CountryFeature,
-  DebugFeature,
-  FerryFeature,
-  FootprintFeature,
-  MapAreaFeature,
-  PoiFeature,
-  PrefabFeature,
-  RoadFeature,
-  RoadLookProperties,
-  RoadType,
-} from './types';
 
 export type AtsGeoJson = GeoJSON.FeatureCollection<
   AtsMapGeoJsonFeature['geometry'],

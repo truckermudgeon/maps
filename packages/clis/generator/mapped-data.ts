@@ -1,5 +1,9 @@
 import { distance } from '@truckermudgeon/base/geom';
 import { UnreachableError } from '@truckermudgeon/base/precon';
+import {
+  fromAtsCoordsToWgs84,
+  fromEts2CoordsToWgs84,
+} from '@truckermudgeon/map/projections';
 import type {
   Building,
   City,
@@ -17,12 +21,11 @@ import type {
   Road,
   RoadLook,
   WithToken,
-} from '@truckermudgeon/parser';
+} from '@truckermudgeon/map/types';
 import fs from 'fs';
 import path from 'path';
 import process from 'process';
 import { logger } from './logger';
-import { fromAtsCoordsToWgs84, fromEts2CoordsToWgs84 } from './projections';
 import { readArrayFile } from './read-array-file';
 
 const MapDataKeys: Record<keyof MapData, void> = {

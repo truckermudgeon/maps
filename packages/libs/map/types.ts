@@ -1,9 +1,14 @@
-// Data types returned from parsing game files.
-// Fields are declared as necessary.
-//
-// For a complete set of fields, see the "raw" types declared in
-// sector-parser.ts, and examine the json returned from parsing .sii/.sui files
-// with `convertSiiToJson`.
+import type { GeoJSON } from 'geojson';
+import type {
+  ItemType,
+  MapColor,
+  MapOverlayType,
+  SpawnPointType,
+} from './constants';
+
+export type { MapColor } from './constants';
+
+// Parsing types
 
 export type Node = Readonly<{
   uid: bigint;
@@ -93,31 +98,6 @@ type UnlabeledPoi = BasePoi &
   }>;
 
 export type Poi = LabeledPoi | UnlabeledPoi;
-
-// TODO move all enums and constants to a separate constants.ts file, so that this file can stay as a pure types-only file.
-export enum MapColor {
-  Road = 0,
-  Light,
-  Dark,
-  Green,
-}
-
-export const MapColorUtils = {
-  from: (n: number) => {
-    switch (n) {
-      case 0:
-        return MapColor.Road;
-      case 1:
-        return MapColor.Light;
-      case 2:
-        return MapColor.Dark;
-      case 3:
-        return MapColor.Green;
-      default:
-        throw new Error('unknown MapColor: ' + n);
-    }
-  },
-};
 
 export type BaseItem = Readonly<{
   uid: bigint;
@@ -255,99 +235,12 @@ export type Item =
   | Building
   | Curve;
 
-export enum MapOverlayType {
-  Road = 0,
-  Parking = 1,
-  Landmark = 4,
-}
-
-export const MapOverlayTypeUtils = {
-  from: (n: number) => {
-    switch (n) {
-      case 0:
-        return MapOverlayType.Road;
-      case 1:
-        return MapOverlayType.Parking;
-      case 4:
-        return MapOverlayType.Landmark;
-      default:
-        throw new Error('unknown MapOverlayType: ' + n);
-    }
-  },
-};
-
 export type RoadLook = Readonly<{
   lanesLeft: readonly string[];
   lanesRight: readonly string[];
   offset?: number;
   laneOffset?: number;
 }>;
-
-export enum ItemType {
-  Terrain = 1,
-  Building = 2,
-  Road = 3,
-  Prefab = 4,
-  Model = 5,
-  Company = 6,
-  Service = 7,
-  CutPlane = 8,
-  Mover = 9,
-  NoWeather = 11,
-  City = 12,
-  Hinge = 13,
-  MapOverlay = 18,
-  Ferry = 19,
-  Sound = 21,
-  Garage = 22,
-  CameraPoint = 23,
-  Trigger = 34,
-  FuelPump = 35, // services
-  Sign = 36, // sign
-  BusStop = 37,
-  TrafficRule = 38, // traffic_area
-  BezierPatch = 39,
-  Compound = 40,
-  TrajectoryItem = 41,
-  MapArea = 42,
-  FarModel = 43,
-  Curve = 44,
-  CameraPath = 45,
-  Cutscene = 46,
-  Hookup = 47,
-  VisibilityArea = 48,
-  Gate = 49,
-}
-
-// values from https://github.com/SCSSoftware/BlenderTools/blob/master/addon/io_scs_tools/consts.py
-export enum SpawnPointType {
-  None = 0,
-  TrailerPos = 1,
-  UnloadEasyPos = 2,
-  GasPos = 3,
-  ServicePos = 4,
-  TruckStopPos = 5,
-  WeightStationPos = 6,
-  TruckDealerPos = 7,
-  Hotel = 8,
-  Custom = 9,
-  Parking = 10, // also shows parking in companies which don't work/show up in game
-  Task = 11,
-  MeetPos = 12,
-  CompanyPos = 13,
-  GaragePos = 14, // manage garage
-  BuyPos = 15, // buy garage
-  RecruitmentPos = 16,
-  CameraPoint = 17,
-  BusStation = 18,
-  UnloadMediumPos = 19,
-  UnloadHardPos = 20,
-  UnloadRigidPos = 21,
-  WeightCatPos = 22,
-  CompanyUnloadPos = 23,
-  TrailerSpawn = 24,
-  LongTrailerPos = 25,
-}
 
 interface BaseMapPoint {
   x: number;
@@ -387,7 +280,9 @@ export interface PrefabDescription {
     x: number;
     y: number;
     rotation: number;
+    // indices into `navCurves`
     inputLanes: number[];
+    // indices into `navCurves`
     outputLanes: number[];
   }[];
   mapPoints: MapPoint[];
@@ -447,3 +342,140 @@ export interface MapData {
   prefabDescriptions: WithToken<PrefabDescription>[];
   modelDescriptions: WithToken<ModelDescription>[];
 }
+
+// GeoJSON
+
+export type DebugFeature = GeoJSON.Feature<
+  GeoJSON.Polygon | GeoJSON.LineString | GeoJSON.Point,
+  DebugProperties
+>;
+
+export type RoadFeature = GeoJSON.Feature<
+  GeoJSON.LineString,
+  RoadLookProperties & {
+    // an undefined startNodeUid is expected from roads converted from prefabs;
+    // signifies that a prefab road isn't connected to a prefab entry/exit node.
+    startNodeUid: string | undefined;
+    endNodeUid: string | undefined;
+  }
+> & { id: string; symbol?: string };
+
+export type FerryFeature = GeoJSON.Feature<GeoJSON.LineString, FerryProperties>;
+
+export type PrefabFeature = GeoJSON.Feature<
+  GeoJSON.Polygon,
+  PrefabProperties
+> & { id: string };
+
+export type MapAreaFeature = PrefabFeature;
+
+export type CityFeature = GeoJSON.Feature<GeoJSON.Point, CityProperties>;
+
+export type CountryFeature = GeoJSON.Feature<GeoJSON.Point, CountryProperties>;
+
+export type PoiFeature = GeoJSON.Feature<GeoJSON.Point, PoiProperties>;
+
+export type FootprintFeature = GeoJSON.Feature<
+  GeoJSON.Polygon,
+  FootprintProperties
+>;
+
+export type AtsMapGeoJsonFeature =
+  | MapAreaFeature
+  | RoadFeature
+  | FerryFeature
+  | CityFeature
+  | CountryFeature
+  | PoiFeature
+  | FootprintFeature
+  | DebugFeature;
+
+export type RoadType =
+  | 'freeway'
+  | 'divided'
+  | 'local'
+  | 'train'
+  | 'tram'
+  | 'no_vehicles'
+  | 'unknown';
+
+// RoadLookProperties is expected to contain primitive
+// value types, only.
+export interface RoadLookProperties {
+  type: 'road';
+  roadType: RoadType;
+  leftLanes: number;
+  rightLanes: number;
+  hidden: boolean;
+  laneOffset?: number;
+}
+
+export interface FerryProperties {
+  type: 'ferry' | 'train';
+  name: string;
+}
+
+export interface PrefabProperties {
+  type: 'prefab';
+  zIndex: number;
+  color: MapColor;
+}
+
+export interface DebugProperties {
+  type: 'debug';
+  [k: string]: string;
+}
+
+export interface CityProperties {
+  type: 'city';
+  name: string;
+  scaleRank: number;
+  capital: 0 | 1 | 2;
+}
+
+export interface CountryProperties {
+  type: 'country';
+  name: string;
+}
+
+export interface FootprintProperties {
+  type: 'footprint';
+  height: number;
+}
+
+export interface PoiProperties {
+  type: 'poi';
+  sprite: string;
+  poiType: string; // Overlay, Viewpoint, Company, etc.
+  poiName?: string; // Company name, if poiType is Company
+}
+
+export type ScopedCityFeature = GeoJSON.Feature<
+  GeoJSON.Point,
+  { type: 'city'; map: 'usa' | 'europe'; countryCode: string; name: string }
+>;
+
+export type ScopedCountryFeature = GeoJSON.Feature<
+  GeoJSON.Point,
+  { type: 'country'; map: 'usa' | 'europe'; code: string; name: string }
+>;
+
+// Routing
+
+/**
+ * A Neighbor is only meaningful when we have an origin Node; all Neighbor properties are relative to an origin Node.
+ */
+export interface Neighbor {
+  /** The id of this Neighbor node (not of the origin node). */
+  readonly nodeId: string; // hex form of a bigint
+  /** The distance between the origin node and this Neighbor. */
+  readonly distance: number;
+  readonly isOneLaneRoad?: true;
+  /** The direction one must travel in _after_ reaching this neighbor. */
+  readonly direction: 'forward' | 'backward';
+}
+
+export type Neighbors = Readonly<{
+  forward: readonly Neighbor[];
+  backward: readonly Neighbor[];
+}>;

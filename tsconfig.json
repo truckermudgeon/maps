@@ -15,6 +15,9 @@
     },
     {
       "path": "packages/libs/base"
+    },
+    {
+      "path": "packages/libs/map"
     }
   ],
   "files": []

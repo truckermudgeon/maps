@@ -1,14 +1,8 @@
-import type { BaseOf } from 'restructure';
-import * as r from 'restructure';
-import { logger } from '../logger';
 import {
-  float3,
-  float4,
-  paddedString,
-  token64,
-  uint64String,
-  uint64le,
-} from './restructure-helpers';
+  ItemType,
+  MapColorUtils,
+  MapOverlayTypeUtils,
+} from '@truckermudgeon/map/constants';
 import type {
   BaseItem,
   Building,
@@ -25,8 +19,18 @@ import type {
   Road,
   Terrain,
   Trigger,
-} from './types';
-import { ItemType, MapColorUtils, MapOverlayTypeUtils } from './types';
+} from '@truckermudgeon/map/types';
+import type { BaseOf } from 'restructure';
+import * as r from 'restructure';
+import { logger } from '../logger';
+import {
+  float3,
+  float4,
+  paddedString,
+  token64,
+  uint64String,
+  uint64le,
+} from './restructure-helpers';
 
 type WithoutSectorXY<T extends { sectorX: number; sectorY: number }> = Omit<
   T,

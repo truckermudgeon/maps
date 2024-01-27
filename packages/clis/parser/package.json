@@ -6,7 +6,6 @@
   "type": "module",
   "gypfile": true,
   "bin": "./index.ts",
-  "types": "./game-files/types.ts",
   "scripts": {
     "build": "node-gyp configure && node-gyp build"
   },
@@ -20,9 +19,7 @@
   },
   "dependencies": {
     "@truckermudgeon/base": "0.0.0",
-    "@turf/helpers": "^6.5.0",
-    "@turf/line-intersect": "^6.5.0",
-    "@turf/line-offset": "^6.5.0",
+    "@truckermudgeon/map": "0.0.0",
     "ajv": "^8.12.0",
     "bindings": "^1.5.0",
     "chevrotain": "^10.5.0",

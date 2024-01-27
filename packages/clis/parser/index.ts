@@ -1,5 +1,6 @@
 #!/usr/bin/env -S NODE_OPTIONS=--max-old-space-size=8192 npx tsx
 
+import type { MapData } from '@truckermudgeon/map/types';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -7,7 +8,6 @@ import * as process from 'process';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { parseMapFiles } from './game-files/map-files-parser';
-import type { MapData } from './game-files/types';
 import { logger } from './logger';
 
 const homeDirectory = os.homedir();

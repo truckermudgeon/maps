@@ -1,9 +1,9 @@
 import { assert } from '@truckermudgeon/base/assert';
+import { MapColor } from '@truckermudgeon/map/constants';
+import type { MapPoint, PrefabDescription } from '@truckermudgeon/map/types';
 import * as r from 'restructure';
 import { logger } from '../logger';
 import { float3, float4, token64 } from './restructure-helpers';
-import type { MapPoint, PrefabDescription } from './types';
-import { MapColor } from './types';
 
 // based on:
 // https://github.com/dariowouters/ts-map/blob/master/docs/structures/ppd-template.bt

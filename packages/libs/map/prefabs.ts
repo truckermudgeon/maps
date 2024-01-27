@@ -11,7 +11,12 @@ import {
   toRadians,
   translate,
 } from '@truckermudgeon/base/geom';
+import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
 import { Preconditions } from '@truckermudgeon/base/precon';
+import * as turf from '@turf/helpers';
+import lineIntersect from '@turf/line-intersect';
+import lineOffset from '@turf/line-offset';
+import { MapColor } from './constants';
 import type {
   MapPoint,
   Node,
@@ -19,21 +24,12 @@ import type {
   Prefab,
   PrefabDescription,
   RoadMapPoint,
-} from '@truckermudgeon/parser';
-import * as turf from '@turf/helpers';
-import lineIntersect from '@turf/line-intersect';
-import lineOffset from '@turf/line-offset';
-
-// TODO unify declaration with parser package.
-export enum MapColor {
-  Road = 0,
-  Light,
-  Dark,
-  Green,
-}
+} from './types';
 
 /**
  * Transforms `position` (in `PrefabDescription` space) into map space.
+ *
+ * TODO move this function to some shared maplib
  */
 export function toMapPosition(
   position: Position,
@@ -96,6 +92,7 @@ export function toRoadStringsAndPolygons(prefab: PrefabDescription): {
   roadStrings: RoadString[];
   polygons: Polygon[];
   isVJunction: boolean;
+  connections: Record<number, number[]>;
 } {
   // partition points
   const roadPoints: RoadMapPoint[] = [];
@@ -591,6 +588,12 @@ export function toRoadStringsAndPolygons(prefab: PrefabDescription): {
     });
   }
 
+  const connectionsMap = calculateNodeConnections(prefab);
+  const connections: Record<number, number[]> = {};
+  for (const [start, ends] of connectionsMap) {
+    connections[start] = ends;
+  }
+
   return {
     roadStrings: maybeParallelRoadStrings.map(r => ({
       ...r,
@@ -602,7 +605,83 @@ export function toRoadStringsAndPolygons(prefab: PrefabDescription): {
       polygons.length === 0 &&
       maybeParallelRoadStrings.length === 2 &&
       maybeParallelRoadStrings.every(rs => rs.fuse),
+    connections,
   };
+}
+
+/**
+ * Returns a map of 0-based starting node indices to a list of 0-based ending node indices
+ */
+export function calculateNodeConnections(
+  prefabDesc: PrefabDescription,
+): Map<number, number[]> {
+  const connections = new Map<number, number[]>();
+  for (
+    let startingNodeIndex = 0;
+    startingNodeIndex < prefabDesc.nodes.length;
+    startingNodeIndex++
+  ) {
+    const node = prefabDesc.nodes[startingNodeIndex];
+    for (const inputLaneIndex of node.inputLanes) {
+      const endingNodeIndices = getEndingNodeIndices(
+        prefabDesc,
+        inputLaneIndex,
+      );
+      putIfAbsent(startingNodeIndex, [], connections).push(
+        ...endingNodeIndices,
+      );
+    }
+  }
+  return mapValues(connections, numbers => [...new Set(numbers)]);
+}
+
+function getEndingNodeIndices(
+  prefabDesc: PrefabDescription,
+  inputLaneIndex: number,
+): number[] {
+  // there's probably a better way to do this, using more of the information stored in a prefab desc
+  // (e.g., navNode.connections info). but i don't get how that stuff works, so trace where
+  // curves lead.
+
+  // keys: curve index; values: node index
+  const endingCurveIndexToNodeIndex = new Map<number, number>();
+  for (let nodeIndex = 0; nodeIndex < prefabDesc.nodes.length; nodeIndex++) {
+    const node = prefabDesc.nodes[nodeIndex];
+    for (const outputLane of node.outputLanes) {
+      endingCurveIndexToNodeIndex.set(outputLane, nodeIndex);
+    }
+  }
+
+  // messy recursive logic to follow a tree of curves.
+  const visitedCurveIndices = new Set<number>();
+  let visitDepth = 0;
+  const visitCurveAtIndex = (curveIndex: number) => {
+    if (endingCurveIndexToNodeIndex.has(curveIndex)) {
+      return [curveIndex];
+    }
+
+    const endingCurveIndices: number[] = [];
+    visitDepth++;
+    if (visitedCurveIndices.has(curveIndex) && visitDepth >= 20) {
+      // probably in a cycle (like a roundabout); exit out.
+      // TODO improve cycle detection.
+      visitDepth--;
+      return [];
+    }
+    visitedCurveIndices.add(curveIndex);
+    for (const nextCurveIndex of prefabDesc.navCurves[curveIndex].nextLines) {
+      endingCurveIndices.push(...visitCurveAtIndex(nextCurveIndex));
+    }
+    visitDepth--;
+
+    return endingCurveIndices;
+  };
+
+  // follow the curve chain starting at inputLaneIndex, populating endingCurveIndices as we do.
+  const endingCurveIndices = new Set(visitCurveAtIndex(inputLaneIndex));
+  return [...endingCurveIndices].map(curveIndex =>
+    assertExists(endingCurveIndexToNodeIndex.get(curveIndex)),
+  );
 }
 
 function toNumber(numberOrAuto: number | 'auto') {

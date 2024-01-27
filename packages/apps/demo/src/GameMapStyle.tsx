@@ -1,5 +1,5 @@
 import type { DataDrivenPropertyValueSpecification } from '@maplibre/maplibre-gl-style-spec';
-import type { MapColor, RoadType } from '@truckermudgeon/generator';
+import type { MapColor, RoadType } from '@truckermudgeon/map/types';
 import type {
   ExpressionSpecification,
   LineLayerSpecification,

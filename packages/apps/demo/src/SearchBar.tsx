@@ -3,7 +3,7 @@ import { putIfAbsent } from '@truckermudgeon/base/map';
 import type {
   ScopedCityFeature,
   ScopedCountryFeature,
-} from '@truckermudgeon/generator';
+} from '@truckermudgeon/map/types';
 import type { GeoJSON } from 'geojson';
 import type { CSSProperties } from 'react';
 import { useEffect, useState } from 'react';

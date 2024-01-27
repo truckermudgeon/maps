@@ -8,29 +8,12 @@ import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { distance } from '@truckermudgeon/base/geom';
 import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
 import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
-import type { JSONSchemaType } from 'ajv';
-import Ajv from 'ajv';
-import * as cliProgress from 'cli-progress';
-import path from 'path';
-import { logger } from '../logger';
-import { CombinedEntries } from './combined-entries';
-import { parseDds } from './dds-parser';
-import { parseModelPmg } from './model-pmg-parser';
-import { parsePrefabPpd } from './prefab-ppd-parser';
-import type { Entries, FileEntry } from './scs-archive';
-import { ScsArchive } from './scs-archive';
-import { parseSector } from './sector-parser';
-import { parseSii } from './sii-parser';
-import type { ModelSii, PrefabSii, RoadLookSii } from './sii-schemas';
 import {
-  CityCompanySiiSchema,
-  FerryConnectionSchema,
-  ModelSiiSchema,
-  PrefabSiiSchema,
-  RoadLookSiiSchema,
-} from './sii-schemas';
-import { includeDirectiveCollector, jsonConverter } from './sii-visitors';
-import { toMapPosition } from './transformers';
+  ItemType,
+  MapOverlayType,
+  SpawnPointType,
+} from '@truckermudgeon/map/constants';
+import { toMapPosition } from '@truckermudgeon/map/prefabs';
 import type {
   Building,
   City,
@@ -57,8 +40,29 @@ import type {
   RoadLook,
   Terrain,
   Trigger,
-} from './types';
-import { ItemType, MapOverlayType, SpawnPointType } from './types';
+} from '@truckermudgeon/map/types';
+import type { JSONSchemaType } from 'ajv';
+import Ajv from 'ajv';
+import * as cliProgress from 'cli-progress';
+import path from 'path';
+import { logger } from '../logger';
+import { CombinedEntries } from './combined-entries';
+import { parseDds } from './dds-parser';
+import { parseModelPmg } from './model-pmg-parser';
+import { parsePrefabPpd } from './prefab-ppd-parser';
+import type { Entries, FileEntry } from './scs-archive';
+import { ScsArchive } from './scs-archive';
+import { parseSector } from './sector-parser';
+import { parseSii } from './sii-parser';
+import type { ModelSii, PrefabSii, RoadLookSii } from './sii-schemas';
+import {
+  CityCompanySiiSchema,
+  FerryConnectionSchema,
+  ModelSiiSchema,
+  PrefabSiiSchema,
+  RoadLookSiiSchema,
+} from './sii-schemas';
+import { includeDirectiveCollector, jsonConverter } from './sii-visitors';
 
 const ajv = new Ajv();
 

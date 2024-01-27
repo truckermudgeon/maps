@@ -5,10 +5,6 @@
   "license": "GPL-2.0-only",
   "type": "module",
   "bin": "./index.ts",
-  "types": "./types.ts",
-  "exports": {
-    "./prefab-transforms": "./prefab-transforms.ts"
-  },
   "devDependencies": {
     "@types/cli-progress": "^3.11.5",
     "@types/d3-quadtree": "^3.0.6",
@@ -21,14 +17,12 @@
   },
   "dependencies": {
     "@truckermudgeon/base": "0.0.0",
-    "@truckermudgeon/parser": "^0.0.0",
+    "@truckermudgeon/map": "0.0.0",
     "@turf/helpers": "^6.5.0",
-    "@turf/line-intersect": "^6.5.0",
     "@turf/line-offset": "^6.5.0",
     "cli-progress": "^3.12.0",
     "consola": "^3.2.3",
     "d3-quadtree": "^3.0.1",
-    "proj4": "^2.9.2",
     "spritesmith": "^3.4.1",
     "tsx": "^4.7.0",
     "yargs": "^17.7.2"

@@ -1,14 +1,21 @@
 #!/usr/bin/env -S npx tsx
 
 import { assertExists } from '@truckermudgeon/base/assert';
+import {
+  fromAtsCoordsToWgs84,
+  fromEts2CoordsToWgs84,
+} from '@truckermudgeon/map/projections';
 import type {
   City,
   Country,
+  FootprintProperties,
   Model,
   ModelDescription,
   Node,
   Poi,
-} from '@truckermudgeon/parser';
+  ScopedCityFeature,
+  ScopedCountryFeature,
+} from '@truckermudgeon/map/types';
 import { execSync } from 'child_process';
 import fs from 'fs';
 import type { GeoJSON } from 'geojson';
@@ -22,14 +29,8 @@ import { convertToFootprintsGeoJson, convertToGeoJson } from './geo-json';
 import { logger } from './logger';
 import type { FocusOptions } from './mapped-data';
 import { readMapData } from './mapped-data';
-import { fromAtsCoordsToWgs84, fromEts2CoordsToWgs84 } from './projections';
 import { readArrayFile } from './read-array-file';
 import { createSpritesheet } from './spritesheet';
-import type {
-  FootprintProperties,
-  ScopedCityFeature,
-  ScopedCountryFeature,
-} from './types';
 
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

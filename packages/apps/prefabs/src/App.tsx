@@ -1,6 +1,6 @@
 import { getExtent, toSplinePoints } from '@truckermudgeon/base/geom';
-import { toRoadStringsAndPolygons } from '@truckermudgeon/generator/prefab-transforms';
-import type { PrefabDescription as BasePrefab } from '@truckermudgeon/parser';
+import { toRoadStringsAndPolygons } from '@truckermudgeon/map/prefabs';
+import type { PrefabDescription as BasePrefab } from '@truckermudgeon/map/types';
 import { useState } from 'react';
 import type { SingleValue } from 'react-select';
 import AsyncSelect from 'react-select/async';
