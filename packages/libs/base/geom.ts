@@ -120,17 +120,26 @@ export function toSplinePoints(
   return res;
 }
 
-export function getExtent(items: Iterable<{ x: number; y: number }>): Extent {
+export function getExtent(
+  items: Iterable<{ x: number; y: number } | [number, number]>,
+): Extent {
   let minX = Number.POSITIVE_INFINITY;
   let minY = Number.POSITIVE_INFINITY;
   let maxX = Number.NEGATIVE_INFINITY;
   let maxY = Number.NEGATIVE_INFINITY;
 
   for (const i of items) {
-    minX = Math.min(minX, i.x);
-    maxX = Math.max(maxX, i.x);
-    minY = Math.min(minY, i.y);
-    maxY = Math.max(maxY, i.y);
+    if (Array.isArray(i)) {
+      minX = Math.min(minX, i[0]);
+      maxX = Math.max(maxX, i[0]);
+      minY = Math.min(minY, i[1]);
+      maxY = Math.max(maxY, i[1]);
+    } else {
+      minX = Math.min(minX, i.x);
+      maxX = Math.max(maxX, i.x);
+      minY = Math.min(minY, i.y);
+      maxY = Math.max(maxY, i.y);
+    }
   }
 
   return [minX, minY, maxX, maxY];

@@ -22,7 +22,7 @@ import { sceneryTownsUrl } from './SearchBar';
 const protocol = new pmtiles.Protocol();
 maplibregl.addProtocol('pmtiles', protocol.tile);
 
-const App = () => {
+const Demo = () => {
   return (
     <MapGl
       style={{ width: '100vw', height: '100vh' }} // ensure map fills page
@@ -38,8 +38,8 @@ const App = () => {
         version: 8,
         // can't specify relative urls
         // https://github.com/maplibre/maplibre-gl-js/issues/182
-        sprite: 'http://localhost:5173/sprites',
-        //sprite: 'https://truckermudgeon.github.io/sprites',
+        //sprite: 'http://localhost:5173/sprites',
+        sprite: 'https://truckermudgeon.github.io/sprites',
         // free font glyphs, required when adding text-fields.
         // https://github.com/openmaptiles/fonts
         glyphs: 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf',
@@ -84,4 +84,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default Demo;

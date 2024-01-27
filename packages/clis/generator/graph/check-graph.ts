@@ -1,8 +1,8 @@
 import { findRoute } from '@truckermudgeon/map/routing';
 import type { CompanyItem, Neighbors } from '@truckermudgeon/map/types';
 import * as cliProgress from 'cli-progress';
-import { logger } from './logger';
-import type { MappedData } from './mapped-data';
+import { logger } from '../logger';
+import type { MappedData } from '../mapped-data';
 
 export function checkGraph(
   graph: Map<string, Neighbors>,

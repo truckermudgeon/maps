@@ -498,3 +498,45 @@ export type Neighbors = Readonly<{
   /** Neighbors that can be reached whilst traveling in the backward direction. */
   backward: readonly Neighbor[];
 }>;
+
+// Routing Demo
+// Hacky, minimal versions of types needed for the fully-clientside "routes" demo page.
+
+export interface DemoNeighbor {
+  /** nodeId */
+  n: string;
+  /** distance */
+  l: number;
+  /** isOneLaneRoad */
+  o?: true;
+  /** direction */
+  d: 'f' | 'b';
+}
+
+export interface DemoNeighbors {
+  f?: DemoNeighbor[];
+  b?: DemoNeighbor[];
+}
+
+export interface DemoCompany {
+  /** node uid */
+  n: string;
+  /** token */
+  t: string;
+  /** cityToken */
+  c: string;
+}
+
+export interface DemoCompanyDef {
+  /** token */
+  t: string;
+  /** tokens of eligible destination companies */
+  d: string[];
+}
+
+export interface DemoRoutesData {
+  demoGraph: [string, DemoNeighbors][];
+  demoNodes: [string, [number, number]][];
+  demoCompanies: DemoCompany[];
+  demoCompanyDefs: DemoCompanyDef[];
+}

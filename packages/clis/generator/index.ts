@@ -25,9 +25,10 @@ import * as process from 'process';
 import url from 'url';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-import { checkGraph } from './check-graph';
 import { convertToFootprintsGeoJson, convertToGeoJson } from './geo-json';
-import { generateGraph } from './graph';
+import { checkGraph } from './graph/check-graph';
+import { toDemoGraph } from './graph/demo-graph';
+import { generateGraph } from './graph/graph';
 import { logger } from './logger';
 import type { FocusOptions } from './mapped-data';
 import { readMapData } from './mapped-data';
@@ -75,6 +76,12 @@ function graphCommandBuilder(yargs: yargs.Argv) {
     .option('check', {
       alias: 'c',
       describe: 'Run a simple validity check on the generated graph',
+      type: 'boolean',
+      default: false,
+    })
+    .option('demo', {
+      alias: 'd',
+      describe: 'Output a graph.json tailored for the demo-app',
       type: 'boolean',
       default: false,
     })
@@ -385,10 +392,17 @@ function handleGraphCommand(args: ReturnType<typeof graphCommandBuilder>) {
   }
 
   if (!args.dryRun) {
-    fs.writeFileSync(
-      path.join(args.outputDir, `${args.map}-graph.json`),
-      JSON.stringify([...graph.entries()]),
-    );
+    if (args.demo) {
+      fs.writeFileSync(
+        path.join(args.outputDir, `${args.map}-graph-demo.json`),
+        JSON.stringify(toDemoGraph(graph, tsMapData)),
+      );
+    } else {
+      fs.writeFileSync(
+        path.join(args.outputDir, `${args.map}-graph.json`),
+        JSON.stringify([...graph.entries()], null, 2),
+      );
+    }
   }
   logger.success('done.');
 }

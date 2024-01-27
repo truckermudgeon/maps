@@ -10,8 +10,8 @@ import type {
   Node,
   Prefab,
 } from '@truckermudgeon/map/types';
-import { logger } from './logger';
-import type { MappedData } from './mapped-data';
+import { logger } from '../logger';
+import type { MappedData } from '../mapped-data';
 
 type Context = Pick<
   MappedData,

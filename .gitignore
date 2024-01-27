@@ -8,6 +8,7 @@ cities.geojson
 ats*.pmtiles
 ets2*.pmtiles
 sprites*.*
+usa-graph-demo.json
 
 # generated files for the prefabs app
 usa-prefabDescriptions.json

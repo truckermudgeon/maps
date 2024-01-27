@@ -13,15 +13,18 @@ export interface Route {
   distance: number;
 }
 
+export type PartialNode = Pick<Node, 'x' | 'y'>;
+export interface Context {
+  nodeLUT: Map<string, PartialNode>;
+  graph: Map<string, Neighbors>;
+}
+
 export function findRoute(
   startNodeUid: string,
   endNodeUid: string,
   direction: Direction,
   mode: Mode,
-  context: {
-    nodeLUT: Map<string, Node>;
-    graph: Map<string, Neighbors>;
-  },
+  context: Context,
 ) {
   // console.log('finding route', startNodeUid, 'direction', endNodeUid);
   const { nodeLUT, graph } = context;
@@ -48,8 +51,8 @@ export function findRoute(
   const gScore = new Map<Neighbor, number>();
   gScore.set(startAsNeighbor, 0);
 
-  //const h = (_n: Node) => 0;
-  const h = (n: Node) => distance(n, goal);
+  //const h = (_n: PartialNode) => 0;
+  const h = (n: PartialNode) => distance(n, goal);
   const d = (_from: Neighbor, to: Neighbor) => {
     switch (mode) {
       case 'shortest':
@@ -101,13 +104,13 @@ export function findRoute(
     }
   }
 
-  // console.warn(
-  //   `no ${direction} route found from`,
-  //   start,
-  //   'and',
-  //   goal,
-  //   `(${numIters} iterations)`,
-  // );
+  console.warn(
+    `no ${direction} route found from`,
+    start,
+    'and',
+    goal,
+    `(${numIters} iterations)`,
+  );
   return undefined;
 }
 
