@@ -614,6 +614,9 @@ export function convertToGeoJson(
         properties: {
           type: 'debug',
           name: 'node',
+          nodeId: n.uid.toString(16),
+          nodeForwardItemId: n.forwardItemUid.toString(16),
+          nodeBackwardItemId: n.backwardItemUid.toString(16),
         },
         geometry: {
           type: 'Point',
