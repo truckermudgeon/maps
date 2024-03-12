@@ -1019,6 +1019,12 @@ function postProcess(
     switch (item.type) {
       case ItemType.Prefab: {
         const prefabDescription = assertExists(defData.prefabs.get(item.token));
+        const prefabMeta = {
+          prefabUid: item.uid,
+          prefabPath: (prefabDescription as unknown as { path: string }).path,
+          sectorX: item.sectorX,
+          sectorY: item.sectorY,
+        };
         for (const sp of prefabDescription.spawnPoints) {
           const [x, y] = toMapPosition(
             [sp.x, sp.y],
@@ -1026,29 +1032,58 @@ function postProcess(
             prefabDescription,
             nodesByUid,
           );
+          const pos = {
+            x,
+            y,
+          };
           switch (sp.type) {
             case SpawnPointType.GasPos:
-              pois.push({ type: 'facility', x, y, icon: 'gas_ico' });
+              pois.push({
+                ...prefabMeta,
+                ...pos,
+                type: 'facility',
+                icon: 'gas_ico',
+              });
               break;
             case SpawnPointType.ServicePos:
-              pois.push({ type: 'facility', x, y, icon: 'service_ico' });
+              pois.push({
+                ...prefabMeta,
+                ...pos,
+                type: 'facility',
+                icon: 'service_ico',
+              });
               break;
             case SpawnPointType.WeightStationPos:
               pois.push({
+                ...prefabMeta,
+                ...pos,
                 type: 'facility',
-                x,
-                y,
                 icon: 'weigh_station_ico',
               });
               break;
             case SpawnPointType.TruckDealerPos:
-              pois.push({ type: 'facility', x, y, icon: 'dealer_ico' });
+              pois.push({
+                ...prefabMeta,
+                ...pos,
+                type: 'facility',
+                icon: 'dealer_ico',
+              });
               break;
             case SpawnPointType.BuyPos:
-              pois.push({ type: 'facility', x, y, icon: 'garage_large_ico' });
+              pois.push({
+                ...prefabMeta,
+                ...pos,
+                type: 'facility',
+                icon: 'garage_large_ico',
+              });
               break;
             case SpawnPointType.RecruitmentPos:
-              pois.push({ type: 'facility', x, y, icon: 'recruitment_ico' });
+              pois.push({
+                ...prefabMeta,
+                ...pos,
+                type: 'facility',
+                icon: 'recruitment_ico',
+              });
               break;
             default:
               // TODO exhaustive switch, warn on unknown type.
@@ -1063,13 +1098,20 @@ function postProcess(
             nodesByUid,
           );
           if (tp.action === 'hud_parking') {
-            pois.push({ type: 'facility', x, y, icon: 'parking_ico' });
+            pois.push({
+              ...prefabMeta,
+              type: 'facility',
+              x,
+              y,
+              icon: 'parking_ico',
+            });
           }
         }
         break;
       }
       case ItemType.MapOverlay: {
-        const { x, y } = item;
+        const { x, y, sectorX, sectorY } = item;
+        const pos = { x, y, sectorX, sectorY };
         switch (item.overlayType) {
           case MapOverlayType.Road:
             if (item.token === '') {
@@ -1079,11 +1121,18 @@ function postProcess(
                 `unknown road overlay token "${item.token}". skipping.`,
               );
             } else {
-              pois.push({ type: 'road', x, y, icon: item.token });
+              pois.push({ ...pos, type: 'road', icon: item.token });
             }
             break;
           case MapOverlayType.Parking:
-            pois.push({ type: 'facility', x, y, icon: 'parking_ico' });
+            console.log(item);
+            pois.push({
+              ...pos,
+              type: 'facility',
+              icon: 'parking_ico',
+              fromItem: item.uid,
+              fromItemType: 'mapOverlay',
+            });
             break;
           case MapOverlayType.Landmark: {
             const label =
@@ -1092,9 +1141,8 @@ function postProcess(
               // didn't match what was in the def files.
               l10n.get(`landmark_${item.token}`) ?? item.token;
             pois.push({
+              ...pos,
               type: 'landmark',
-              x,
-              y,
               icon: 'photo_sight_captured',
               label,
             });
@@ -1128,6 +1176,8 @@ function postProcess(
             prefabDescription,
             nodesByUid,
           );
+          const { sectorX, sectorY } = item;
+          const pos = { x, y, sectorX, sectorY };
           if (!icons.has(item.token)) {
             logger.warn(
               `unknown company overlay token "${item.token}". skipping.`,
@@ -1138,9 +1188,8 @@ function postProcess(
               logger.warn('unknown company name for token', item.token);
             }
             pois.push({
+              ...pos,
               type: 'company',
-              x,
-              y,
               icon: item.token,
               label: companyName ?? item.token,
             });
@@ -1160,15 +1209,17 @@ function postProcess(
         break;
       }
       case ItemType.Ferry: {
-        const { x, y } = assertExists(nodesByUid.get(item.nodeUid));
+        const { x, y, sectorX, sectorY } = assertExists(
+          nodesByUid.get(item.nodeUid),
+        );
+        const pos = { x, y, sectorX, sectorY };
         const ferry = assertExists(defData.ferries.get(item.token))!;
         const label = ferry.nameLocalized
           ? assertExists(l10n.get(ferry.nameLocalized.replaceAll('@', '')))
           : ferry.name;
         pois.push({
+          ...pos,
           type: 'ferry',
-          x,
-          y,
           icon: item.train ? 'train_ico' : 'port_overlay',
           label,
         });
@@ -1185,21 +1236,30 @@ function postProcess(
           logger.warn('missing viewpoint info for item', item.uid.toString());
         }
         const label = l10n.get(labelToken ?? '') ?? item.tags.join(', ');
+        const { x, y, sectorX, sectorY } = item;
+        const pos = { x, y, sectorX, sectorY };
         pois.push({
+          ...pos,
           type: 'viewpoint',
-          x: item.x,
-          y: item.y,
           icon: 'viewpoint',
           label,
         });
         break;
       }
-      case ItemType.Trigger:
+      case ItemType.Trigger: {
+        const { x, y, sectorX, sectorY } = item;
+        const pos = { x, y, sectorX, sectorY };
         if (item.actionTokens.includes('hud_parking')) {
-          const { x, y } = item;
-          pois.push({ type: 'facility', x, y, icon: 'parking_ico' });
+          pois.push({
+            ...pos,
+            type: 'facility',
+            icon: 'parking_ico',
+            fromItem: item.uid,
+            fromItemType: 'trigger',
+          });
         }
         break;
+      }
       default:
         throw new UnreachableError(item);
     }

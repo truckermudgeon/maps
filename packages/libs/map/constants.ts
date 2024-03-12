@@ -1,3 +1,5 @@
+import type { FacilityIcon } from './types';
+
 export enum MapColor {
   Road = 0,
   Light,
@@ -107,4 +109,32 @@ export enum SpawnPointType {
   CompanyUnloadPos = 23,
   TrailerSpawn = 24,
   LongTrailerPos = 25,
+}
+
+export const FacilitySpawnPointTypes = new Set([
+  SpawnPointType.GasPos,
+  SpawnPointType.ServicePos,
+  SpawnPointType.WeightStationPos,
+  SpawnPointType.TruckDealerPos,
+  SpawnPointType.BuyPos,
+  SpawnPointType.RecruitmentPos,
+]);
+
+export function toFacilityIcon(spawnPointType: SpawnPointType): FacilityIcon {
+  switch (spawnPointType) {
+    case SpawnPointType.GasPos:
+      return 'gas_ico';
+    case SpawnPointType.ServicePos:
+      return 'service_ico';
+    case SpawnPointType.WeightStationPos:
+      return 'weigh_station_ico';
+    case SpawnPointType.TruckDealerPos:
+      return 'dealer_ico';
+    case SpawnPointType.BuyPos:
+      return 'garage_large_ico';
+    case SpawnPointType.RecruitmentPos:
+      return 'recruitment_ico';
+    default:
+      throw new Error(`${spawnPointType} is not a facility`);
+  }
 }

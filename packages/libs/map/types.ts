@@ -81,6 +81,8 @@ export type Ferry = Readonly<{
 type BasePoi = Readonly<{
   x: number;
   y: number;
+  sectorX: number;
+  sectorY: number;
   icon: string;
 }>;
 
@@ -90,11 +92,34 @@ type LabeledPoi = BasePoi &
     label: string;
   }>;
 
+export type FacilityIcon =
+  | 'parking_ico'
+  | 'gas_ico'
+  | 'service_ico'
+  | 'weigh_station_ico'
+  | 'dealer_ico'
+  | 'garage_large_ico'
+  | 'recruitment_ico';
+
 type UnlabeledPoi = BasePoi &
-  Readonly<{
-    type: 'road' | 'facility';
-    // label can be derived from icon token
-  }>;
+  Readonly<
+    | {
+        // label can be derived from icon token
+        type: 'road';
+      }
+    | {
+        type: 'facility';
+        icon: 'parking_ico';
+        fromItem: bigint;
+        fromItemType: string;
+      }
+    | {
+        type: 'facility';
+        icon: FacilityIcon;
+        prefabUid: bigint;
+        prefabPath: string;
+      }
+  >;
 
 export type Poi = LabeledPoi | UnlabeledPoi;
 
@@ -368,7 +393,10 @@ export type PrefabFeature = GeoJSON.Feature<
   PrefabProperties
 > & { id: string };
 
-export type MapAreaFeature = PrefabFeature;
+export type MapAreaFeature = GeoJSON.Feature<
+  GeoJSON.Polygon,
+  MapAreaProperties
+> & { id: string };
 
 export type CityFeature = GeoJSON.Feature<GeoJSON.Point, CityProperties>;
 
@@ -383,6 +411,7 @@ export type FootprintFeature = GeoJSON.Feature<
 
 export type AtsMapGeoJsonFeature =
   | MapAreaFeature
+  | PrefabFeature
   | RoadFeature
   | FerryFeature
   | CityFeature
@@ -418,6 +447,12 @@ export interface FerryProperties {
 
 export interface PrefabProperties {
   type: 'prefab';
+  zIndex: number;
+  color: MapColor;
+}
+
+export interface MapAreaProperties {
+  type: 'mapArea';
   zIndex: number;
   color: MapColor;
 }

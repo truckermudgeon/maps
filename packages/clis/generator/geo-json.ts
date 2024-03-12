@@ -915,7 +915,7 @@ function areaToFeature(
     type: 'Feature',
     id: area.uid.toString(),
     properties: {
-      type: 'prefab',
+      type: 'mapArea',
       zIndex: area.drawOver ? 1 : 0,
       color: area.color,
     },
