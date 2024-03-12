@@ -10,9 +10,13 @@ import type {
   Neighbor,
   Neighbors,
 } from '@truckermudgeon/map/types';
-import maplibregl from 'maplibre-gl';
+import {
+  BaseMapStyle,
+  GameMapStyle,
+  SceneryTownSource,
+  defaultMapStyle,
+} from '@truckermudgeon/ui';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import * as pmtiles from 'pmtiles';
 import { useCallback, useEffect, useState } from 'react';
 import type { GeoJSONSource } from 'react-map-gl';
 import type { MapRef } from 'react-map-gl/maplibre';
@@ -26,17 +30,6 @@ import MapGl, {
 } from 'react-map-gl/maplibre';
 import type { SingleValue } from 'react-select';
 import Select from 'react-select';
-import { BaseMapStyle } from './BaseMapStyle';
-import {
-  GameMapStyle,
-  baseTextLayout,
-  baseTextPaint,
-  textVariableAnchor,
-} from './GameMapStyle';
-import { sceneryTownsUrl } from './SearchBar';
-
-const protocol = new pmtiles.Protocol();
-maplibregl.addProtocol('pmtiles', protocol.tile);
 
 const RoutesDemo = () => {
   return (
@@ -48,20 +41,7 @@ const RoutesDemo = () => {
         [-135, 21], // southwest corner (lon, lat)
         [-84, 54], // northeast corner (lon, lat)
       ]}
-      mapStyle={{
-        version: 8,
-        // can't specify relative urls
-        // https://github.com/maplibre/maplibre-gl-js/issues/182
-        //sprite: 'http://localhost:5173/sprites',
-        sprite: 'https://truckermudgeon.github.io/sprites',
-        // free font glyphs, required when adding text-fields.
-        // https://github.com/openmaptiles/fonts
-        glyphs: 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf',
-        // sources and layers are empty because they're declared as child
-        // components below.
-        sources: {},
-        layers: [],
-      }}
+      mapStyle={defaultMapStyle}
       // start off in vegas
       initialViewState={{
         longitude: -115,
@@ -71,20 +51,7 @@ const RoutesDemo = () => {
     >
       <BaseMapStyle />
       <GameMapStyle game={'ats'} />
-      <Source id={`scenery-towns`} type={'geojson'} data={sceneryTownsUrl}>
-        <Layer
-          id={`scenery-towns`}
-          type={'symbol'}
-          minzoom={7}
-          layout={{
-            ...baseTextLayout,
-            'text-field': '{name}',
-            'text-variable-anchor': textVariableAnchor,
-            'text-size': 10.5,
-          }}
-          paint={baseTextPaint}
-        />
-      </Source>
+      <SceneryTownSource />
       <Source
         id={'route1'}
         type={'geojson'}

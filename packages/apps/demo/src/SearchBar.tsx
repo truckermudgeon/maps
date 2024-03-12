@@ -4,6 +4,7 @@ import type {
   ScopedCityFeature,
   ScopedCountryFeature,
 } from '@truckermudgeon/map/types';
+import { sceneryTownsUrl } from '@truckermudgeon/ui';
 import type { GeoJSON } from 'geojson';
 import type { CSSProperties } from 'react';
 import { useEffect, useState } from 'react';
@@ -45,8 +46,6 @@ interface GroupedCityOption {
   map: 'usa' | 'europe';
   options: CityOption[];
 }
-
-export const sceneryTownsUrl = `https://raw.githubusercontent.com/nautofon/ats-towns/kansas/all-towns.geojson`;
 
 type CityAndCountryFC = GeoJSON.FeatureCollection<
   GeoJSON.Point,

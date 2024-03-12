@@ -27,6 +27,9 @@
     },
     {
       "path": "packages/libs/map"
+    },
+    {
+      "path": "packages/libs/ui"
     }
   ],
   "files": []
