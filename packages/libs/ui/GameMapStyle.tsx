@@ -1,5 +1,6 @@
 import type { DataDrivenPropertyValueSpecification } from '@maplibre/maplibre-gl-style-spec';
-import type { MapColor, RoadType } from '@truckermudgeon/map/types';
+import { MapColor } from '@truckermudgeon/map/constants';
+import type { RoadType } from '@truckermudgeon/map/types';
 import type {
   ExpressionSpecification,
   LineLayerSpecification,
@@ -28,6 +29,12 @@ export const GameMapStyle = ({ game }: { game: 'ats' | 'ets2' }) => {
         }}
         paint={{
           'fill-color': mapAreaColor,
+          'fill-outline-color': [
+            'case',
+            ['==', ['get', 'color'], MapColor.Road],
+            '#999a',
+            mapAreaColor,
+          ],
         }}
       />
       <Layer
@@ -44,14 +51,6 @@ export const GameMapStyle = ({ game }: { game: 'ats' | 'ets2' }) => {
         }}
         paint={{
           'fill-color': mapAreaColor,
-          // TODO separate map areas from prefabs; render outlines for road-y
-          // map areas, but at a lower z-index.
-          //'fill-outline-color': [
-          //  'case',
-          //  ['==', ['get', 'color'], MapColor.Road],
-          //  'gray',
-          //  mapAreaColor,
-          //],
         }}
       />
       <Source
