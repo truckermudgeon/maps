@@ -4,6 +4,7 @@
   "private": true,
   "license": "GPL-2.0-only",
   "workspaces": [
+    "packages/apis/*",
     "packages/apps/*",
     "packages/clis/*",
     "packages/libs/*"

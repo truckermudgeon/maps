@@ -1,0 +1,14 @@
+{
+  "private": true,
+  "name": "@truckermudgeon/api",
+  "version": "0.0.0",
+  "license": "GPL-2.0-only",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    "./*": "./*.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

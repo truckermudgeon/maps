@@ -2,6 +2,12 @@
   "extends": "./tsconfig.base.json",
   "references": [
     {
+      "path": "packages/apis/navigation"
+    },
+    {
+      "path": "packages/apis/telemetry"
+    },
+    {
       "path": "packages/apps/demo"
     },
     {
@@ -12,6 +18,9 @@
     },
     {
       "path": "packages/clis/parser"
+    },
+    {
+      "path": "packages/libs/api"
     },
     {
       "path": "packages/libs/base"

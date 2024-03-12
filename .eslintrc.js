@@ -9,9 +9,10 @@ module.exports = {
   parserOptions: {
     tsconfigRootDir: __dirname,
     project: [
+      './packages/apis/*/tsconfig.json',
+      './packages/apps/*/tsconfig.json',
       './packages/clis/*/tsconfig.json',
       './packages/libs/*/tsconfig.json',
-      './packages/apps/*/tsconfig.json',
     ],
   },
   rules: {
