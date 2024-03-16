@@ -1,9 +1,3 @@
-// TODO fix this file
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { distance } from '@truckermudgeon/base/geom';
 import { putIfAbsent } from '@truckermudgeon/base/map';
@@ -42,7 +36,6 @@ import type {
   Trigger,
 } from '@truckermudgeon/map/types';
 import type { JSONSchemaType } from 'ajv';
-import Ajv from 'ajv';
 import * as cliProgress from 'cli-progress';
 import path from 'path';
 import { logger } from '../logger';
@@ -50,22 +43,36 @@ import { CombinedEntries } from './combined-entries';
 import { parseDds } from './dds-parser';
 import { parseModelPmg } from './model-pmg-parser';
 import { parsePrefabPpd } from './prefab-ppd-parser';
-import type { Entries, FileEntry } from './scs-archive';
+import type { Entries } from './scs-archive';
 import { ScsArchive } from './scs-archive';
 import { parseSector } from './sector-parser';
 import { parseSii } from './sii-parser';
-import type { ModelSii, PrefabSii, RoadLookSii } from './sii-schemas';
+import type {
+  CitySii,
+  CompanySii,
+  CountrySii,
+  FerrySii,
+  ModelSii,
+  PrefabSii,
+  RoadLookSii,
+} from './sii-schemas';
 import {
   CargoSiiSchema,
   CityCompanySiiSchema,
-  FerryConnectionSchema,
+  CitySiiSchema,
+  CompanySiiSchema,
+  CountrySiiSchema,
+  FerryConnectionSiiSchema,
+  FerrySiiSchema,
+  IconMatSchema,
+  LocalizationSiiSchema,
   ModelSiiSchema,
   PrefabSiiSchema,
   RoadLookSiiSchema,
+  ViewpointsSiiSchema,
+  ajv,
 } from './sii-schemas';
 import { includeDirectiveCollector, jsonConverter } from './sii-visitors';
-
-const ajv = new Ajv();
 
 export function parseMapFiles(
   scsFilePaths: string[],
@@ -120,35 +127,36 @@ function parseDefFiles(entries: Entries) {
       >[];
     }
   >();
+
+  const processAndAdd = <T extends object, U extends { token: string }>(
+    path: string,
+    schema: JSONSchemaType<T>,
+    p: (t: T, e: Entries) => U | undefined,
+    m: Map<string, U>,
+  ) => {
+    const t = convertSiiToJson(path, entries, schema);
+    const u = p(t, entries);
+    u && m.set(u.token, u);
+  };
+
   for (const f of def.files) {
     if (!/^(city|country|company|ferry)\./.test(f) || !f.endsWith('.sii')) {
       continue;
     }
-    parseIncludeOnlySii(`def/${f}`, entries, obj => {
-      if (obj == null) {
-        logger.warn('undefined obj parsed from', f);
-        return;
-      }
-      if (Object.keys(obj).length === 0) {
-        logger.warn('empty obj parsed from', f);
-        return;
-      }
+    const includePaths = parseIncludeOnlySii(`def/${f}`, entries);
+    for (const path of includePaths) {
       if (f.startsWith('city.')) {
-        const c = processCityJson(obj);
-        cities.set(c.token, c);
+        processAndAdd(path, CitySiiSchema, processCityJson, cities);
       } else if (f.startsWith('country.')) {
-        const c = processCountryJson(obj);
-        countries.set(c.token, c);
+        processAndAdd(path, CountrySiiSchema, processCountryJson, countries);
       } else if (f.startsWith('company.')) {
-        const c = processCompanyJson(obj, entries);
-        companies.set(c.token, c);
-      } else if (f.startsWith('ferry')) {
-        const f = processFerryJson(obj, entries);
-        ferries.set(f.token, f);
+        processAndAdd(path, CompanySiiSchema, processCompanyJson, companies);
+      } else if (f.startsWith('ferry.')) {
+        processAndAdd(path, FerrySiiSchema, processFerryJson, ferries);
       } else {
         throw new Error();
       }
-    });
+    }
   }
   logger.info('parsed', cities.size, 'cities');
   logger.info('parsed', countries.size, 'states/countries');
@@ -159,32 +167,33 @@ function parseDefFiles(entries: Entries) {
     entries.directories.get('def/company'),
   );
   for (const token of defCompany.subdirectories) {
-    if (!companies.has(token)) {
-      const companyDefaults = {
-        token,
-        // TODO truck dealers _do_ have city tokens, found within the `editor` subdirectories.
-        cityTokens: [],
-        cargoInTokens: [],
-        cargoOutTokens: [],
-      };
-      if (token.startsWith('pt_trk_')) {
-        companies.set(token, {
-          ...companyDefaults,
-          name: 'Peterbilt',
-        });
-      } else if (token.startsWith('kw_trk_')) {
-        companies.set(token, {
-          ...companyDefaults,
-          name: 'Kenworth',
-        });
-      } else if (token.startsWith('ws_trk_')) {
-        companies.set(token, {
-          ...companyDefaults,
-          name: 'Western Star',
-        });
-      } else {
-        logger.warn(token, 'has no company info');
-      }
+    if (companies.has(token)) {
+      continue;
+    }
+    const companyDefaults = {
+      token,
+      // TODO truck dealers _do_ have city tokens, found within the `editor` subdirectories.
+      cityTokens: [],
+      cargoInTokens: [],
+      cargoOutTokens: [],
+    };
+    if (token.startsWith('pt_trk_')) {
+      companies.set(token, {
+        ...companyDefaults,
+        name: 'Peterbilt',
+      });
+    } else if (token.startsWith('kw_trk_')) {
+      companies.set(token, {
+        ...companyDefaults,
+        name: 'Kenworth',
+      });
+    } else if (token.startsWith('ws_trk_')) {
+      companies.set(token, {
+        ...companyDefaults,
+        name: 'Western Star',
+      });
+    } else {
+      logger.warn(token, 'has no company info');
     }
   }
 
@@ -200,17 +209,13 @@ function parseDefFiles(entries: Entries) {
     }
 
     if (f.startsWith('prefab.')) {
-      const json = convertSiiToJson2(
-        `def/world/${f}`,
-        entries,
-        PrefabSiiSchema,
-      );
+      const json = convertSiiToJson(`def/world/${f}`, entries, PrefabSiiSchema);
       processPrefabJson(json, entries).forEach((v, k) => prefabs.set(k, v));
     } else if (f.startsWith('model')) {
-      const json = convertSiiToJson2(`def/world/${f}`, entries, ModelSiiSchema);
+      const json = convertSiiToJson(`def/world/${f}`, entries, ModelSiiSchema);
       processModelJson(json, entries).forEach((v, k) => models.set(k, v));
     } else if (f.startsWith('road_look.')) {
-      const json = convertSiiToJson2(
+      const json = convertSiiToJson(
         `def/world/${f}`,
         entries,
         RoadLookSiiSchema,
@@ -232,25 +237,19 @@ function parseDefFiles(entries: Entries) {
     if (!/^viewpoints\.sui$/.test(f)) {
       continue;
     }
-    const json = convertSiiToJson(`def/photo_album/${f}`, entries);
-    if (Object.keys(json).length === 0) {
-      logger.warn(`empty object parsed from def/photo_album/${f}`);
-      continue;
-    }
-    const items = json['photoAlbumItem'];
-    for (const [key, val] of Object.entries<any>(items)) {
-      const keyTokens = key.split('.');
-      if (keyTokens[0] !== 'album' || keyTokens[1] !== 'viewpoints') {
-        continue;
-      }
-      const uid = assertExists(val.objectsUid[0]);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-      const token = assertExists(val.name).replace(/(^@@)|(@@$)/g, '');
-      assert(typeof uid === 'bigint');
-      assert(typeof token === 'string');
+    const json = convertSiiToJson(
+      `def/photo_album/${f}`,
+      entries,
+      ViewpointsSiiSchema,
+    );
+    const items = json.photoAlbumItem;
+    for (const val of Object.values(items)) {
+      const uid = val.objectsUid[0];
+      const token = val.name.replace(/(^@@)|(@@$)/g, '');
       viewpoints.set(uid, token);
     }
   }
+  logger.info('parsed', viewpoints.size, 'viewpoints');
 
   return {
     cities,
@@ -264,7 +263,7 @@ function parseDefFiles(entries: Entries) {
   };
 }
 
-function convertSiiToJson2<T>(
+function convertSiiToJson<T>(
   siiPath: string,
   entries: Entries,
   schema: JSONSchemaType<T>,
@@ -305,73 +304,18 @@ function convertSiiToJson2<T>(
     throw new Error();
   }
 
-  const validate = ajv.compile(schema);
   const json = jsonConverter.convert(res.cst);
+  const validate = ajv.compile(schema);
   if (validate(json)) {
     return json;
   }
   logger.error('error validating', siiPath);
+  console.log(JSON.stringify(json, null, 2));
   logger.error(ajv.errorsText(validate.errors));
   throw new Error();
 }
 
-function convertSiiToJson(
-  siiPath: string,
-  entries: Entries,
-): Record<string, any> {
-  logger.debug('converting', siiPath, 'to json object');
-  const siiFile = Preconditions.checkExists(entries.files.get(siiPath));
-  const buffer = siiFile.read();
-
-  // Some .sii files (like locale files) may be 3nk-encrypted.
-  let sii;
-  const magic = buffer.toString('utf8', 0, 3);
-  if (magic === '3nK') {
-    // https://github.com/dariowouters/ts-map/blob/e73adad923f60bbbb637dd4642910d1a0b1154e3/TsMap/Helpers/MemoryHelper.cs#L109
-    if (buffer.length < 5) {
-      throw new Error();
-    }
-    let key = buffer.readUint8(5);
-    for (let i = 6; i < buffer.length; i++) {
-      buffer[i] = (((key << 2) ^ (key ^ 0xff)) << 3) ^ key ^ buffer[i];
-      key++;
-    }
-    sii = buffer.toString('utf8', 6);
-  } else {
-    sii = buffer.toString();
-  }
-
-  const res = parseSii(sii);
-  if (!res.ok) {
-    logger.error('error parsing', siiPath);
-    if (res.parseErrors.length) {
-      const line = res.parseErrors[0].token.startLine!;
-      const lines = sii.split('\n');
-      logger.error(lines.slice(line - 1, line + 1).join('\n'));
-      logger.error(res.parseErrors);
-    } else {
-      logger.error(res.lexErrors);
-    }
-    throw new Error();
-  }
-  return jsonConverter.convert(res.cst);
-}
-
-// TODO update convertSiiToJson to use ajv.
-function toJson<T>(fileEntry: FileEntry, schema: JSONSchemaType<T>): T {
-  const validate = ajv.compile(schema);
-  const json = jsonConverter.convert(parseSii(fileEntry.read().toString()).cst);
-  if (validate(json)) {
-    return json;
-  }
-  throw new Error();
-}
-
-function parseIncludeOnlySii<T>(
-  siiPath: string,
-  entries: Entries,
-  process: (sui: any) => T,
-): T[] {
+function parseIncludeOnlySii(siiPath: string, entries: Entries): string[] {
   logger.debug('parsing', siiPath, 'for @include directives');
   const f = Preconditions.checkExists(entries.files.get(siiPath));
   const res = parseSii(f.read().toString());
@@ -380,33 +324,36 @@ function parseIncludeOnlySii<T>(
     throw new Error();
   }
 
-  return includeDirectiveCollector
-    .collect(res.cst, 'def')
-    .map(p => process(convertSiiToJson(p, entries)));
+  return includeDirectiveCollector.collect(res.cst, 'def');
 }
 
-function processSuiJson(obj: any, primaryKey: string): [string, any] {
-  const data = Preconditions.checkExists(obj[primaryKey]);
-  const entries = Object.entries(data);
+function processCityJson(obj: CitySii) {
+  if (!obj.cityData) {
+    return;
+  }
+  const entries = Object.entries(obj.cityData);
   if (entries.length !== 1) {
     throw new Error();
   }
-  return entries[0];
-}
-
-function processCityJson(obj: any) {
-  const [token, rawCity] = processSuiJson(obj, 'cityData');
+  const [token, rawCity] = entries[0];
   return {
     token: token.split('.')[1],
     name: rawCity.cityName,
     nameLocalized: rawCity.cityNameLocalized,
     countryToken: rawCity.country,
-    population: rawCity.population,
+    population: rawCity.population ?? 0,
   };
 }
 
-function processCountryJson(obj: any) {
-  const [token, rawCountry] = processSuiJson(obj, 'countryData');
+function processCountryJson(obj: CountrySii) {
+  if (!obj.countryData) {
+    return;
+  }
+  const entries = Object.entries(obj.countryData);
+  if (entries.length !== 1) {
+    throw new Error();
+  }
+  const [token, rawCountry] = entries[0];
   return {
     token: token.split('.')[2],
     name: rawCountry.name,
@@ -418,8 +365,9 @@ function processCountryJson(obj: any) {
   };
 }
 
-function processCompanyJson(obj: any, entries: Entries): Company {
-  const [token, rawCompany] = processSuiJson(obj, 'companyPermanent');
+function processCompanyJson(obj: CompanySii, entries: Entries): Company {
+  const objEntries = Object.entries(obj.companyPermanent);
+  const [token, rawCompany] = objEntries[0];
   const companyToken = token.split('.')[2];
   const cityTokens: string[] = [];
   const cargoInTokens: string[] = [];
@@ -429,7 +377,7 @@ function processCompanyJson(obj: any, entries: Entries): Company {
   );
   if (editorFolder) {
     for (const f of editorFolder.files) {
-      const city = convertSiiToJson2(
+      const city = convertSiiToJson(
         `def/company/${companyToken}/editor/${f}`,
         entries,
         CityCompanySiiSchema,
@@ -446,7 +394,7 @@ function processCompanyJson(obj: any, entries: Entries): Company {
     if (directionFolder) {
       const arr = direction === 'in' ? cargoInTokens : cargoOutTokens;
       for (const f of directionFolder.files) {
-        const cargo = convertSiiToJson2(
+        const cargo = convertSiiToJson(
           `def/company/${companyToken}/${direction}/${f}`,
           entries,
           CargoSiiSchema,
@@ -467,8 +415,9 @@ function processCompanyJson(obj: any, entries: Entries): Company {
   };
 }
 
-function processFerryJson(obj: any, entries: Entries) {
-  const [tokenPath, rawFerry] = processSuiJson(obj, 'ferryData');
+function processFerryJson(obj: FerrySii, entries: Entries) {
+  const objEntries = Object.entries(obj.ferryData);
+  const [tokenPath, rawFerry] = objEntries[0];
   const token = tokenPath.split('.')[1];
   const defFerryConnection = Preconditions.checkExists(
     entries.directories.get('def/ferry/connection'),
@@ -483,11 +432,11 @@ function processFerryJson(obj: any, entries: Entries) {
   // this is A LOT of repeated work.
   // TODO read every file in the def/ferry/connections folder once, then match things up based on tokens.
   for (const f of defFerryConnection.files) {
-    const fileEntry = Preconditions.checkExists(
-      entries.files.get(`def/ferry/connection/${f}`),
+    const json = convertSiiToJson(
+      `def/ferry/connection/${f}`,
+      entries,
+      FerryConnectionSiiSchema,
     );
-
-    const json = toJson(fileEntry, FerryConnectionSchema);
     const ferryConnection = json.ferryConnection;
     const key = Object.keys(ferryConnection)[0];
     // key is expected to be in form: "conn.source_token.dest_token"
@@ -753,6 +702,7 @@ function parseLocaleFiles(entries: Entries): Map<string, Map<string, string>> {
   logger.log('parsing locale files...');
   const l10nStrings = new Map<string, Map<string, string>>();
 
+  let numKeys = 0;
   const locale = Preconditions.checkExists(entries.directories.get('locale'));
   for (const subdir of locale.subdirectories) {
     const localeSubdir = Preconditions.checkExists(
@@ -767,28 +717,28 @@ function parseLocaleFiles(entries: Entries): Map<string, Map<string, string>> {
       if (f !== 'local.sii' && f !== 'local.override.sii') {
         continue;
       }
-      const json = convertSiiToJson(`locale/${subdir}/${f}`, entries);
-      const l10n = json['localizationDb']['.localization'];
+      const json = convertSiiToJson(
+        `locale/${subdir}/${f}`,
+        entries,
+        LocalizationSiiSchema,
+      );
+      const l10n = json.localizationDb['.localization'];
       if (Object.keys(l10n).length === 0) {
-        // Some l10n files are empty, e.g., ETS's locale/bg_bg/local.override.sii
         continue;
       }
       const { key, val } = l10n;
       assert(key.length === val.length);
+      if (numKeys === 0) {
+        // assumes all locales have the same number of entries.
+        numKeys = key.length;
+      }
       for (let i = 0; i < key.length; i++) {
         localeMap.set(key[i], val[i]);
       }
     }
   }
 
-  logger.info(
-    l10nStrings.size,
-    'locales,',
-    // assumes all locales have the same number of entries.
-    l10nStrings.values().next().value.size,
-    'strings each',
-  );
-
+  logger.info(l10nStrings.size, 'locales,', numKeys, 'strings each');
   return l10nStrings;
 }
 
@@ -808,19 +758,19 @@ function parseIconMatFiles(entries: Entries) {
       if (!filenameFilter(f)) {
         continue;
       }
-      const json = convertSiiToJson(`${dir}/${f}`, entries);
+      const json = convertSiiToJson(`${dir}/${f}`, entries, IconMatSchema);
       if (Object.keys(json).length === 0) {
         continue;
       }
-      if (json['effect']) {
+      if (json.effect) {
         tobjPaths.set(
           f.replaceAll(replaceAll, ''),
-          `${dir}/${json['effect']['ui.rfx'].texture.texture.source}`,
+          `${dir}/${json.effect['ui.rfx'].texture.texture.source}`,
         );
-      } else if (json['material']) {
+      } else if (json.material) {
         tobjPaths.set(
           f.replaceAll(replaceAll, ''),
-          `${dir}/${json['material'].ui.texture}`,
+          `${dir}/${json.material.ui.texture}`,
         );
       } else {
         logger.warn(`unknown format for ${dir}/${f}`);
@@ -1213,7 +1163,7 @@ function postProcess(
           nodesByUid.get(item.nodeUid),
         );
         const pos = { x, y, sectorX, sectorY };
-        const ferry = assertExists(defData.ferries.get(item.token))!;
+        const ferry = assertExists(defData.ferries.get(item.token));
         const label = ferry.nameLocalized
           ? assertExists(l10n.get(ferry.nameLocalized.replaceAll('@', '')))
           : ferry.name;

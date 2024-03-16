@@ -114,6 +114,10 @@ class IncludeDirectiveCollector extends getSiiVisitorClass<string[]>() {
   ) {
     acc.push(quotedStringToString(children.String[0].image));
   }
+
+  override object() {
+    throw new Error('Non-@include directive encountered.');
+  }
 }
 
 export const jsonConverter = new JsonConverterVisitor();

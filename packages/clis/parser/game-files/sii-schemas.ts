@@ -1,4 +1,19 @@
 import type { JSONSchemaType } from 'ajv';
+import Ajv from 'ajv';
+
+export const ajv = new Ajv();
+// Workaround for bigint support
+// https://github.com/ajv-validator/ajv/issues/1116#issuecomment-664821182
+ajv.addKeyword({
+  keyword: 'dataType',
+  validate: (schema: string, data: unknown) => {
+    if (schema === 'bigint') {
+      return typeof data === 'bigint';
+    }
+    return ajv.compile({ type: schema })(data);
+  },
+  errors: true,
+});
 
 // The schemas and interfaces defined in this class are the bare minimum in order for map-files-parser.ts to work.
 // They're incomplete and don't reflect the actual schema of a given .sii file.
@@ -24,8 +39,287 @@ const StringArraySchema: JSONSchemaType<string[]> = {
   items: { type: 'string' },
   minItems: 1,
 };
+const LocaleTokenSchema: JSONSchemaType<string> = {
+  type: 'string',
+  pattern: '^@@.+@@$',
+};
 
-interface FerryConnection {
+/** Only one of `effect` or `material` are expected to be present. */
+export interface IconMat {
+  effect?: { 'ui.rfx': { texture: { texture: { source: string } } } };
+  material?: { ui: { texture: string } };
+}
+export const IconMatSchema: JSONSchemaType<IconMat> = {
+  type: 'object',
+  properties: {
+    effect: {
+      type: 'object',
+      nullable: true,
+      properties: {
+        'ui.rfx': {
+          type: 'object',
+          properties: {
+            texture: {
+              type: 'object',
+              properties: {
+                texture: {
+                  type: 'object',
+                  properties: { source: { type: 'string' } },
+                  required: ['source'],
+                },
+              },
+              required: ['texture'],
+            },
+          },
+          required: ['texture'],
+        },
+      },
+      required: ['ui.rfx'],
+    },
+    material: {
+      type: 'object',
+      nullable: true,
+      properties: {
+        ui: {
+          type: 'object',
+          properties: { texture: { type: 'string' } },
+          required: ['texture'],
+        },
+      },
+      required: ['ui'],
+    },
+  },
+  required: [],
+};
+
+export interface LocalizationSii {
+  localizationDb: {
+    '.localization':
+      | {
+          key: string[];
+          val: string[];
+        }
+      // Some l10n files are empty, e.g., ETS's locale/bg_bg/local.override.sii
+      | Record<string, never>;
+  };
+}
+export const LocalizationSiiSchema: JSONSchemaType<LocalizationSii> = {
+  type: 'object',
+  properties: {
+    localizationDb: {
+      type: 'object',
+      properties: {
+        '.localization': {
+          type: 'object',
+          properties: {
+            key: StringArraySchema,
+            val: StringArraySchema,
+          },
+          required: [],
+        },
+      },
+      required: ['.localization'],
+    },
+  },
+  required: ['localizationDb'],
+};
+
+export interface FerrySii {
+  ferryData: Record<
+    string,
+    {
+      ferryName: string;
+      ferryNameLocalized?: string;
+    }
+  >;
+}
+export const FerrySiiSchema: JSONSchemaType<FerrySii> = {
+  type: 'object',
+  properties: {
+    ferryData: {
+      type: 'object',
+      patternProperties: {
+        '^ferry\\..*$': {
+          type: 'object',
+          properties: {
+            ferryName: { type: 'string' },
+            ferryNameLocalized: { ...LocaleTokenSchema, nullable: true },
+          },
+          required: ['ferryName'],
+        },
+      },
+      required: [],
+      minProperties: 1,
+      maxProperties: 1,
+    },
+  },
+  required: ['ferryData'],
+};
+
+export interface CompanySii {
+  companyPermanent: Record<string, { name: string }>;
+}
+export const CompanySiiSchema: JSONSchemaType<CompanySii> = {
+  type: 'object',
+  properties: {
+    companyPermanent: {
+      type: 'object',
+      patternProperties: {
+        '^company\\.permanent\\..*$': {
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+          },
+          required: ['name'],
+        },
+      },
+      required: [],
+      minProperties: 1,
+      maxProperties: 1,
+    },
+  },
+  required: ['companyPermanent'],
+};
+
+export interface CountrySii {
+  countryData?: Record<
+    string,
+    {
+      name: string;
+      nameLocalized: string;
+      countryCode: string;
+      countryId: number;
+      pos: [number, number, number];
+    }
+  >;
+}
+export const CountrySiiSchema: JSONSchemaType<CountrySii> = {
+  type: 'object',
+  properties: {
+    countryData: {
+      type: 'object',
+      nullable: true,
+      patternProperties: {
+        '^country\\.data\\..*$': {
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+            nameLocalized: LocaleTokenSchema,
+            countryCode: { type: 'string' },
+            countryId: { type: 'integer' },
+            pos: NumberTripleSchema,
+          },
+          required: [
+            'name',
+            'nameLocalized',
+            'countryCode',
+            'countryId',
+            'pos',
+          ],
+        },
+      },
+      required: [],
+      maxProperties: 1,
+    },
+  },
+  required: [],
+};
+
+export interface CitySii {
+  cityData?: Record<
+    string,
+    {
+      cityName: string;
+      cityNameLocalized: string;
+      country: string;
+      population?: number;
+    }
+  >;
+}
+export const CitySiiSchema: JSONSchemaType<CitySii> = {
+  type: 'object',
+  properties: {
+    cityData: {
+      type: 'object',
+      nullable: true,
+      patternProperties: {
+        '^city\\..*$': {
+          type: 'object',
+          properties: {
+            cityName: { type: 'string' },
+            cityNameLocalized: LocaleTokenSchema,
+            country: { type: 'string' },
+            population: { type: 'integer', nullable: true },
+          },
+          required: ['cityName', 'cityNameLocalized', 'country'],
+        },
+      },
+      required: [],
+      maxProperties: 1,
+    },
+  },
+  required: [],
+};
+
+export interface ViewpointsSii {
+  photoAlbumItem: Record<
+    string,
+    {
+      name: string;
+      dlcId: string;
+      objectsUid: bigint[];
+    }
+  >;
+  photoAlbumGroup: Record<
+    string,
+    {
+      name: string;
+      items: string[];
+    }
+  >;
+}
+export const ViewpointsSiiSchema: JSONSchemaType<ViewpointsSii> = {
+  type: 'object',
+  properties: {
+    photoAlbumItem: {
+      type: 'object',
+      patternProperties: {
+        '^album\\.viewpoints\\..*$': {
+          type: 'object',
+          properties: {
+            name: LocaleTokenSchema,
+            dlcId: { type: 'string' },
+            objectsUid: {
+              type: 'array',
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+              items: { dataType: 'bigint' } as any,
+              maxItems: 1,
+            },
+          },
+          required: ['name', 'dlcId', 'objectsUid'],
+        },
+      },
+      required: [],
+    },
+    photoAlbumGroup: {
+      type: 'object',
+      patternProperties: {
+        '^album\\.viewpoints\\..*$': {
+          type: 'object',
+          properties: {
+            name: LocaleTokenSchema,
+            items: StringArraySchema,
+          },
+          required: ['name', 'items'],
+        },
+      },
+      required: [],
+    },
+  },
+  required: ['photoAlbumItem', 'photoAlbumGroup'],
+};
+
+interface FerryConnectionSii {
   ferryConnection: Record<
     string,
     {
@@ -37,7 +331,7 @@ interface FerryConnection {
     }
   >;
 }
-export const FerryConnectionSchema: JSONSchemaType<FerryConnection> = {
+export const FerryConnectionSiiSchema: JSONSchemaType<FerryConnectionSii> = {
   type: 'object',
   properties: {
     ferryConnection: {
