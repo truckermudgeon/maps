@@ -305,7 +305,7 @@ export function toRoadStringsAndPolygons(prefab: PrefabDescription): {
           ...roadEndpoints.map(p => distance(p, b.points[1])),
         );
         return aMin - bMin;
-      })[0]!;
+      })[0];
     const startDistance = Math.min(
       ...roadEndpoints.map(p => distance(p, segment.points[0])),
     );

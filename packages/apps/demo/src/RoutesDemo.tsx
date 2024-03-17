@@ -159,7 +159,7 @@ const RouteControl = () => {
       let matchingCompany: DemoCompany | undefined;
       if (demoData != null) {
         matchingCompany = assertExists(
-          demoData.demoCompanies.find(dc => dc.n === option!.value),
+          demoData.demoCompanies.find(dc => dc.n === option.value),
         );
         const matchingDef = assertExists(
           demoData.demoCompanyDefs.find(d => d.t === matchingCompany!.t),

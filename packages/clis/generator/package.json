@@ -13,7 +13,7 @@
     "@types/proj4": "^2.5.5",
     "@types/spritesmith": "^3.4.5",
     "@types/yargs": "^16.0.9",
-    "typescript": "^5.3.3"
+    "typescript": "^5.4.2"
   },
   "dependencies": {
     "@truckermudgeon/base": "0.0.0",

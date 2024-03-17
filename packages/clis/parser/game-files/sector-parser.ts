@@ -655,7 +655,7 @@ function toBaseItem<T extends SectorItemKey>(
 ): WithoutSectorXY<BaseItem> & { type: T } {
   return {
     uid: rawItem.uid,
-    type: rawItem.version as T,
+    type: rawItem.version,
     x: rawItem.pos[0],
     y: rawItem.pos[2],
   };

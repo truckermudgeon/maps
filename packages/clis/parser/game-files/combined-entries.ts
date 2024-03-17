@@ -59,7 +59,7 @@ class CompositeDirectory implements DirectoryEntry {
 
   constructor(directories: DirectoryEntry[]) {
     Preconditions.checkArgument(directories.length > 0);
-    this.hash = directories[0]!.hash;
+    this.hash = directories[0].hash;
     this.files = [...new Set(directories.flatMap(d => d.files))];
     this.subdirectories = [
       ...new Set(directories.flatMap(d => d.subdirectories)),

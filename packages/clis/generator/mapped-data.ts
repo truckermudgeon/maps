@@ -122,7 +122,7 @@ export function readMapData(
   const focusXY =
     focusCoords != null
       ? (i: { x: number; y: number }, padding = 0) =>
-          distance([i.x, i.y], focusCoords!) <=
+          distance([i.x, i.y], focusCoords) <=
           focusOptions!.radiusMeters + padding
       : () => true;
   const focusXYPlus = (padding: number) => (pos: { x: number; y: number }) =>
