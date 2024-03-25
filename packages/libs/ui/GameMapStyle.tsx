@@ -122,6 +122,7 @@ export const GameMapStyle = ({ game }: { game: 'ats' | 'ets2' }) => {
           'all',
           ['==', ['geometry-type'], 'LineString'],
           ['==', ['get', 'type'], 'road'],
+          ['!=', ['get', 'roadType'], 'train'],
           ['==', ['get', 'hidden'], false],
         ]}
         layout={roadLineLayout}
@@ -149,6 +150,7 @@ export const GameMapStyle = ({ game }: { game: 'ats' | 'ets2' }) => {
           'all',
           ['==', ['geometry-type'], 'LineString'],
           ['==', ['get', 'type'], 'road'],
+          ['!=', ['get', 'roadType'], 'train'],
           ['==', ['get', 'hidden'], false],
         ]}
         layout={roadLineLayout}
@@ -180,22 +182,32 @@ export const GameMapStyle = ({ game }: { game: 'ats' | 'ets2' }) => {
         source-layer={game}
         type={'line'}
         filter={[
-          'all',
-          ['==', ['geometry-type'], 'LineString'],
-          ['==', ['get', 'type'], 'train'],
+          'any',
+          [
+            'all',
+            ['==', ['geometry-type'], 'LineString'],
+            ['==', ['get', 'type'], 'train'],
+          ],
+          [
+            'all',
+            ['==', ['geometry-type'], 'LineString'],
+            ['==', ['get', 'type'], 'road'],
+            ['==', ['get', 'roadType'], 'train'],
+            ['==', ['get', 'hidden'], false],
+          ],
         ]}
         paint={{
           'line-color': '#aaa',
-          'line-width': 1,
+          'line-width': 2,
           'line-opacity': 0.8,
           'line-offset': [
             'interpolate',
             ['exponential', 1.5],
             ['zoom'],
-            4,
+            9,
             0,
-            10,
-            -3.5,
+            14,
+            -6,
           ],
         }}
       />
@@ -204,22 +216,32 @@ export const GameMapStyle = ({ game }: { game: 'ats' | 'ets2' }) => {
         source-layer={game}
         type={'line'}
         filter={[
-          'all',
-          ['==', ['geometry-type'], 'LineString'],
-          ['==', ['get', 'type'], 'train'],
+          'any',
+          [
+            'all',
+            ['==', ['geometry-type'], 'LineString'],
+            ['==', ['get', 'type'], 'train'],
+          ],
+          [
+            'all',
+            ['==', ['geometry-type'], 'LineString'],
+            ['==', ['get', 'type'], 'road'],
+            ['==', ['get', 'roadType'], 'train'],
+            ['==', ['get', 'hidden'], false],
+          ],
         ]}
         paint={{
           'line-color': '#aaa',
-          'line-width': 1,
+          'line-width': 2,
           'line-opacity': 0.8,
           'line-offset': [
             'interpolate',
             ['exponential', 1.5],
             ['zoom'],
-            4,
+            9,
             0,
-            10,
-            3.5,
+            14,
+            6,
           ],
         }}
       />
@@ -228,15 +250,25 @@ export const GameMapStyle = ({ game }: { game: 'ats' | 'ets2' }) => {
         source-layer={game}
         type={'line'}
         filter={[
-          'all',
-          ['==', ['geometry-type'], 'LineString'],
-          ['==', ['get', 'type'], 'train'],
+          'any',
+          [
+            'all',
+            ['==', ['geometry-type'], 'LineString'],
+            ['==', ['get', 'type'], 'train'],
+          ],
+          [
+            'all',
+            ['==', ['geometry-type'], 'LineString'],
+            ['==', ['get', 'type'], 'road'],
+            ['==', ['get', 'roadType'], 'train'],
+            ['==', ['get', 'hidden'], false],
+          ],
         ]}
         paint={{
           'line-color': '#aaa',
-          'line-width': 8,
-          'line-opacity': 0.6,
-          'line-dasharray': [0.1, 8],
+          'line-width': 10,
+          'line-opacity': 0.8,
+          'line-dasharray': [0.1, 1],
         }}
       />
       <Layer
