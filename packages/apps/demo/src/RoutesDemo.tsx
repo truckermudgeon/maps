@@ -1,3 +1,5 @@
+import { Autocomplete, List, ListDivider, Typography } from '@mui/joy';
+import type { AutocompleteRenderGroupParams } from '@mui/joy/Autocomplete/AutocompleteProps';
 import { assertExists } from '@truckermudgeon/base/assert';
 import { getExtent } from '@truckermudgeon/base/geom';
 import { putIfAbsent } from '@truckermudgeon/base/map';
@@ -28,8 +30,6 @@ import MapGl, {
   Source,
   useMap,
 } from 'react-map-gl/maplibre';
-import type { SingleValue } from 'react-select';
-import Select from 'react-select';
 
 const RoutesDemo = () => {
   return (
@@ -153,7 +153,7 @@ const RouteControl = () => {
   const [start, setStart] = useState<string | undefined>(undefined);
   const [end, setEnd] = useState<string | undefined>(undefined);
   const onSelectStart = useCallback(
-    (option: SingleValue<CompanyOption>) => {
+    (option: CompanyOption) => {
       option = assertExists(option);
       setStart(option.value);
       let matchingCompany: DemoCompany | undefined;
@@ -204,7 +204,7 @@ const RouteControl = () => {
     [map, end, context, demoData],
   );
   const onSelectEnd = useCallback(
-    (option: SingleValue<CompanyOption>) => {
+    (option: CompanyOption) => {
       option = assertExists(option);
       setEnd(option.value);
       if (map == null || context == null) {
@@ -257,6 +257,21 @@ const RouteControl = () => {
     );
   };
 
+  const startOptions = startCompaniesByCity.reduce<CompanyOption[]>(
+    (acc, group) => {
+      acc.push(...group.options);
+      return acc;
+    },
+    [],
+  );
+  const endOptions = endCompaniesByCity.reduce<CompanyOption[]>(
+    (acc, group) => {
+      acc.push(...group.options);
+      return acc;
+    },
+    [],
+  );
+
   return (
     <div
       style={{
@@ -269,21 +284,45 @@ const RouteControl = () => {
       }}
     >
       <h2>Start</h2>
-      <Select<CompanyOption, false, GroupedCompanyOption>
-        options={startCompaniesByCity}
-        onChange={onSelectStart}
+      <Autocomplete
+        options={startOptions}
+        onChange={(_, v) => v && onSelectStart(v)}
+        groupBy={option => option.city}
+        placeholder={'Select...'}
+        blurOnSelect
+        autoComplete
+        disableClearable
+        renderGroup={formatGroupLabel}
       />
       <h2>End</h2>
-      <Select<CompanyOption, false, GroupedCompanyOption>
+      <Autocomplete
         // Hack to clear selection when `start` changes.
         key={start}
-        options={endCompaniesByCity}
-        onChange={onSelectEnd}
-        isDisabled={start == null}
+        options={endOptions}
+        onChange={(_, v) => v && onSelectEnd(v)}
+        groupBy={option => option.city}
+        placeholder={'Select...'}
+        blurOnSelect
+        autoComplete
+        disableClearable
+        disabled={start == null}
+        renderGroup={formatGroupLabel}
       />
     </div>
   );
 };
+
+function formatGroupLabel(params: AutocompleteRenderGroupParams) {
+  return (
+    <>
+      <Typography m={1} level={'body-xs'} textTransform={'uppercase'}>
+        {params.group}
+      </Typography>
+      <List>{params.children}</List>
+      <ListDivider />
+    </>
+  );
+}
 
 function toContext(data: DemoRoutesData): Context {
   const graph = new Map<string, Neighbors>();

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useMap } from 'react-map-gl/maplibre';
-import type { SingleValue } from 'react-select';
 import type { GameOption } from './MapSelect';
 import { MapSelect } from './MapSelect';
 import type { CityOption } from './SearchBar';
@@ -20,7 +19,7 @@ export const MapSelectAndSearch = () => {
         };
   const [gameMap, setGameMap] = useState<GameOption>(initialMap);
   const onMapSelect = React.useCallback(
-    (option: SingleValue<GameOption>) => {
+    (option: GameOption) => {
       if (option == null) {
         return;
       }
@@ -48,7 +47,7 @@ export const MapSelectAndSearch = () => {
   );
 
   const onSearchBarSelect = React.useCallback(
-    (option: SingleValue<CityOption>) => {
+    (option: CityOption) => {
       if (map == null || option == null) {
         return;
       }

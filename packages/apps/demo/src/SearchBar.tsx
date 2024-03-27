@@ -1,3 +1,11 @@
+import {
+  Autocomplete,
+  createFilterOptions,
+  List,
+  ListDivider,
+  Typography,
+} from '@mui/joy';
+import type { AutocompleteRenderGroupParams } from '@mui/joy/Autocomplete/AutocompleteProps';
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { putIfAbsent } from '@truckermudgeon/base/map';
 import type {
@@ -6,29 +14,7 @@ import type {
 } from '@truckermudgeon/map/types';
 import { sceneryTownsUrl } from '@truckermudgeon/ui';
 import type { GeoJSON } from 'geojson';
-import type { CSSProperties } from 'react';
 import { useEffect, useState } from 'react';
-import type { SingleValue } from 'react-select';
-import Select from 'react-select';
-import type { FilterOptionOption } from 'react-select/dist/declarations/src/filters';
-
-const groupStyles = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-};
-const groupBadgeStyles: CSSProperties = {
-  backgroundColor: '#EBECF0',
-  borderRadius: '2em',
-  color: '#172B4D',
-  display: 'inline-block',
-  fontSize: 12,
-  fontWeight: 'normal',
-  lineHeight: '1',
-  minWidth: 1,
-  padding: '0.166em 0.5em',
-  textAlign: 'center',
-};
 
 export interface CityOption {
   label: string;
@@ -60,7 +46,7 @@ type CityFC = GeoJSON.FeatureCollection<
 
 interface SearchBarProps {
   map: 'usa' | 'europe';
-  onSelect: (option: SingleValue<CityOption>) => void;
+  onSelect: (option: CityOption) => void;
 }
 
 export const SearchBar = ({ map, onSelect }: SearchBarProps) => {
@@ -77,38 +63,17 @@ export const SearchBar = ({ map, onSelect }: SearchBarProps) => {
     );
   }, []);
 
-  const normalize = (s: string) =>
-    s
-      .normalize('NFD')
-      .replace(/\p{Diacritic}/gu, '')
-      .toLowerCase();
+  const options = citiesByState
+    .filter(group => group.map === map)
+    .reduce<CityOption[]>((acc, group) => {
+      acc.push(...group.options);
+      return acc;
+    }, []);
 
-  const filterOptions = (
-    { label, data }: FilterOptionOption<CityOption>,
-    input: string,
-  ) => {
-    if (data.map !== map) {
-      return false;
-    }
-    label = normalize(label);
-    input = normalize(input);
-    if (label.split(' ').some(word => word.startsWith(input))) {
-      return true;
-    }
-
-    const groupOptions = citiesByState.filter(group =>
-      normalize(group.label)
-        .split(' ')
-        .some(word => word.startsWith(input)),
-    );
-    for (const groupOption of groupOptions) {
-      const option = groupOption.options.find(opt => opt.state === data.state);
-      if (option) {
-        return true;
-      }
-    }
-    return false;
-  };
+  const filterOptions = createFilterOptions<CityOption>({
+    // stringify the state so that users can search for all cities in a state.
+    stringify: option => [option.state, option.label].join(' '),
+  });
 
   return (
     <div
@@ -119,25 +84,31 @@ export const SearchBar = ({ map, onSelect }: SearchBarProps) => {
         display: 'inline-block',
       }}
     >
-      <Select<CityOption, false, GroupedCityOption>
+      <Autocomplete
         // Hacky way to clear the current selection when `map` prop changes.
         key={map}
-        options={citiesByState}
-        formatGroupLabel={formatGroupLabel}
-        onChange={onSelect}
-        filterOption={filterOptions}
-        placeholder={'Fly to a city...'}
+        onChange={(_, v) => v && onSelect(v)}
+        placeholder={'Fly to...'}
+        options={options}
+        filterOptions={filterOptions}
+        groupBy={option => option.state}
+        blurOnSelect
+        autoComplete
+        renderGroup={formatGroupLabel}
       />
     </div>
   );
 };
 
-function formatGroupLabel(group: GroupedCityOption) {
+function formatGroupLabel(params: AutocompleteRenderGroupParams) {
   return (
-    <div style={groupStyles}>
-      <span>{group.label}</span>
-      <span style={groupBadgeStyles}>{group.options.length}</span>
-    </div>
+    <>
+      <Typography m={1} level={'body-xs'} textTransform={'uppercase'}>
+        {params.group}
+      </Typography>
+      <List>{params.children}</List>
+      <ListDivider />
+    </>
   );
 }
 

@@ -1,5 +1,5 @@
-import type { SingleValue } from 'react-select';
-import Select from 'react-select';
+import { Option, Select } from '@mui/joy';
+import { assertExists } from '@truckermudgeon/base/assert';
 
 export type GameOption =
   | {
@@ -18,7 +18,7 @@ const options: GameOption[] = [
 
 interface MapSelectProps {
   map: 'usa' | 'europe';
-  onSelect: (option: SingleValue<GameOption>) => void;
+  onSelect: (option: GameOption) => void;
 }
 
 export const MapSelect = ({ map, onSelect }: MapSelectProps) => {
@@ -30,12 +30,18 @@ export const MapSelect = ({ map, onSelect }: MapSelectProps) => {
         display: 'inline-block',
       }}
     >
-      <Select<GameOption, false>
-        options={options}
-        isSearchable={false}
-        value={options.find(o => o.value === map)}
-        onChange={onSelect}
-      />
+      <Select
+        value={map}
+        onChange={(_, v) =>
+          onSelect(assertExists(options.find(o => o.value === v)))
+        }
+      >
+        {options.map(o => (
+          <Option key={o.value} value={o.value}>
+            {o.label}
+          </Option>
+        ))}
+      </Select>
     </div>
   );
 };

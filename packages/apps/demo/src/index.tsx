@@ -1,14 +1,15 @@
+import { CssBaseline, CssVarsProvider } from '@mui/joy';
 import * as React from 'react';
 import { createRoot } from 'react-dom/client';
 import {
-  createBrowserRouter,
-  createRoutesFromElements,
   Route,
   RouterProvider,
+  createBrowserRouter,
+  createRoutesFromElements,
 } from 'react-router-dom';
 import Demo from './Demo';
-import './index.css';
 import RoutesDemo from './RoutesDemo';
+import './index.css';
 
 const router = createBrowserRouter(
   createRoutesFromElements([
@@ -21,6 +22,9 @@ const container = document.getElementById('root')!;
 const root = createRoot(container);
 root.render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <CssVarsProvider>
+      <CssBaseline />
+      <RouterProvider router={router} />
+    </CssVarsProvider>
   </React.StrictMode>,
 );

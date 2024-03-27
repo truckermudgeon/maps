@@ -1,9 +1,15 @@
+import {
+  Autocomplete,
+  createFilterOptions,
+  List,
+  ListDivider,
+  Typography,
+} from '@mui/joy';
+import type { AutocompleteRenderGroupParams } from '@mui/joy/Autocomplete/AutocompleteProps';
 import { getExtent, toSplinePoints } from '@truckermudgeon/base/geom';
 import { toRoadStringsAndPolygons } from '@truckermudgeon/map/prefabs';
 import type { PrefabDescription as BasePrefab } from '@truckermudgeon/map/types';
-import { useState } from 'react';
-import type { SingleValue } from 'react-select';
-import AsyncSelect from 'react-select/async';
+import { useEffect, useState } from 'react';
 
 type PrefabDescription = BasePrefab & { path: string };
 
@@ -16,6 +22,7 @@ const mapColors = {
 
 interface PrefabOption {
   label: string;
+  group: string;
   value: PrefabDescription;
 }
 
@@ -25,42 +32,40 @@ interface GroupedPrefabOption {
 }
 
 const App = () => {
+  const [open, setOpen] = useState(false);
   const [prefabs, setPrefabs] = useState<GroupedPrefabOption[]>([]);
   const [active, setActive] = useState<PrefabDescription | undefined>(
     undefined,
   );
 
-  const onChange = (p: SingleValue<PrefabOption>) => {
+  const onChange = (p: PrefabOption) => {
     setActive(p?.value);
   };
 
-  const promiseOptions = async (inputValue: string) => {
+  const promiseOptions = async () => {
     const toGroups = (
       ps: PrefabDescription[],
-      filter: (p: PrefabDescription) => boolean = () => true,
     ): [GroupedPrefabOption, GroupedPrefabOption] => [
       {
         label: 'Roads',
-        options: ps.filter(p => p.navCurves.length && filter(p)).map(toOption),
+        options: ps.filter(p => p.navCurves.length).map(toOption('Roads')),
       },
       {
         label: 'Non-roads',
-        options: ps.filter(p => !p.navCurves.length && filter(p)).map(toOption),
+        options: ps.filter(p => !p.navCurves.length).map(toOption('Non-roads')),
       },
     ];
 
-    const toOption = (p: PrefabDescription) => ({
+    const toOption = (group: string) => (p: PrefabDescription) => ({
+      group,
       label: p.path,
       value: p,
     });
 
-    const filterByInput = (p: PrefabDescription) =>
-      p.path.toLowerCase().includes(inputValue);
-
     if (prefabs.length) {
       const ps1 = prefabs[0].options.map(o => o.value);
       const ps2 = prefabs[1].options.map(o => o.value);
-      return toGroups([...ps1, ...ps2], filterByInput);
+      return toGroups([...ps1, ...ps2]);
     }
 
     const res = await fetch('/usa-prefabDescriptions.json');
@@ -88,24 +93,68 @@ const App = () => {
       //);
     });
 
-    setPrefabs(toGroups(json));
-    return toGroups(json, filterByInput);
+    const groups = toGroups(json);
+    setPrefabs(groups);
+    return groups;
   };
+
+  const options = prefabs.reduce<PrefabOption[]>((acc, group) => {
+    acc.push(...group.options);
+    return acc;
+  }, []);
+  const loading = open && options.length === 0;
+  useEffect(() => {
+    let active = true;
+    if (!loading) {
+      return undefined;
+    }
+
+    void promiseOptions().then(groups => {
+      if (active) {
+        setPrefabs(groups);
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [loading]);
+
+  const filterOptions = createFilterOptions<PrefabOption>({
+    stringify: option => option.label.replaceAll('_', ' '),
+  });
 
   return (
     <>
-      <AsyncSelect<PrefabOption, false, GroupedPrefabOption>
-        cacheOptions={true}
-        defaultOptions={true}
-        loadOptions={promiseOptions}
-        onChange={onChange}
-        closeMenuOnSelect={false}
-        defaultMenuIsOpen={true}
+      <Autocomplete
+        open={open}
+        onOpen={() => setOpen(true)}
+        onClose={() => setOpen(false)}
+        onChange={(_, v) => v && onChange(v)}
+        placeholder={'Select...'}
+        options={options}
+        filterOptions={filterOptions}
+        blurOnSelect
+        autoComplete
+        renderGroup={formatGroupLabel}
+        groupBy={option => option.group}
       />
       <Preview prefab={active} />
     </>
   );
 };
+
+function formatGroupLabel(params: AutocompleteRenderGroupParams) {
+  return (
+    <>
+      <Typography m={1} level={'body-xs'} textTransform={'uppercase'}>
+        {params.group}
+      </Typography>
+      <List>{params.children}</List>
+      <ListDivider />
+    </>
+  );
+}
 
 const Preview = ({ prefab }: { prefab: PrefabDescription | undefined }) => {
   if (!prefab) {
