@@ -2,6 +2,8 @@ import type { StyleSpecification } from 'maplibre-gl';
 export { BaseMapStyle } from './BaseMapStyle';
 export {
   GameMapStyle,
+  MapIcon,
+  allIcons,
   baseTextLayout,
   baseTextPaint,
   textVariableAnchor,

@@ -799,6 +799,10 @@ function parseIconMatFiles(entries: Entries) {
       'dealer_ico',
       'garage_large_ico',
       'recruitment_ico',
+      // not rendered on map, but useful for Map Legend UI
+      'city_names_ico',
+      'companies_ico',
+      'road_numbers_ico',
       // these 4 files can be combined to help trace state / country borders
       // 'map0',
       // 'map1',
@@ -1071,6 +1075,8 @@ function postProcess(
                 `unknown road overlay token "${item.token}". skipping.`,
               );
             } else {
+              // TODO look into ets2 road overlays with token 'weigh_ico'.
+              // can they be considered facilities? do they have linked prefabs?
               pois.push({ ...pos, type: 'road', icon: item.token });
             }
             break;
@@ -1169,7 +1175,7 @@ function postProcess(
           : ferry.name;
         pois.push({
           ...pos,
-          type: 'ferry',
+          type: item.train ? 'train' : 'ferry',
           icon: item.train ? 'train_ico' : 'port_overlay',
           label,
         });

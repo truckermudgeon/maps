@@ -7,15 +7,18 @@ import {
 
 export const sceneryTownsUrl = `https://raw.githubusercontent.com/nautofon/ats-towns/kansas/all-towns.geojson`;
 
-export const SceneryTownSource = () => (
+export const SceneryTownSource = (
+  props: { enableAutoHide?: boolean } = { enableAutoHide: true },
+) => (
   <Source id={`scenery-towns`} type={'geojson'} data={sceneryTownsUrl}>
     <Layer
       id={`scenery-towns`}
       type={'symbol'}
-      minzoom={7}
+      minzoom={props.enableAutoHide ? 7 : 0}
       layout={{
         ...baseTextLayout,
         'text-field': '{name}',
+        'text-allow-overlap': !props.enableAutoHide,
         'text-variable-anchor': textVariableAnchor,
         'text-size': 10.5,
       }}

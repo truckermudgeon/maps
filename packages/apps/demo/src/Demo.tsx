@@ -1,10 +1,13 @@
 import {
+  allIcons,
   BaseMapStyle,
   defaultMapStyle,
   GameMapStyle,
+  MapIcon,
   SceneryTownSource,
 } from '@truckermudgeon/ui';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { useState } from 'react';
 import MapGl, {
   AttributionControl,
   FullscreenControl,
@@ -14,6 +17,9 @@ import { Legend } from './Legend';
 import { MapSelectAndSearch } from './MapSelectAndSearch';
 
 const Demo = () => {
+  const [autoHide, setAutoHide] = useState(true);
+  const [visibleIcons, setVisibleIcons] = useState(new Set(allIcons));
+
   return (
     <MapGl
       style={{ width: '100vw', height: '100vh' }} // ensure map fills page
@@ -34,9 +40,19 @@ const Demo = () => {
       }}
     >
       <BaseMapStyle />
-      <GameMapStyle game={'ats'} />
-      <GameMapStyle game={'ets2'} />
-      <SceneryTownSource />
+      <GameMapStyle
+        game={'ats'}
+        enableIconAutoHide={autoHide}
+        visibleIcons={visibleIcons}
+      />
+      <GameMapStyle
+        game={'ets2'}
+        enableIconAutoHide={autoHide}
+        visibleIcons={visibleIcons}
+      />
+      {visibleIcons.has(MapIcon.CityNames) && (
+        <SceneryTownSource enableAutoHide={autoHide} />
+      )}
       <NavigationControl visualizePitch={true} />
       <FullscreenControl />
       <AttributionControl
@@ -44,7 +60,25 @@ const Demo = () => {
         customAttribution="&copy; Trucker Mudgeon. scenery town data by <a href='https://github.com/nautofon/ats-towns'>nautofon</a>."
       />
       <MapSelectAndSearch />
-      <Legend />
+      <Legend
+        enableAutoHiding={autoHide}
+        visibleIcons={visibleIcons}
+        onAutoHidingToggle={newValue => setAutoHide(newValue)}
+        onSelectAllToggle={newValue =>
+          setVisibleIcons(new Set(newValue ? allIcons : []))
+        }
+        onVisibleIconsToggle={(icon: MapIcon, newValue: boolean) => {
+          setVisibleIcons(prevState => {
+            const newState = new Set(prevState);
+            if (newValue) {
+              newState.add(icon);
+            } else {
+              newState.delete(icon);
+            }
+            return newState;
+          });
+        }}
+      />
     </MapGl>
   );
 };

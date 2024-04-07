@@ -86,9 +86,16 @@ type BasePoi = Readonly<{
   icon: string;
 }>;
 
+export type NonFacilityPoi =
+  | 'company'
+  | 'landmark'
+  | 'viewpoint'
+  | 'ferry'
+  | 'train';
+
 type LabeledPoi = BasePoi &
   Readonly<{
-    type: 'company' | 'landmark' | 'viewpoint' | 'ferry';
+    type: NonFacilityPoi;
     label: string;
   }>;
 

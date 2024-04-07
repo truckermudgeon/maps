@@ -51,7 +51,7 @@ const RoutesDemo = () => {
     >
       <BaseMapStyle />
       <GameMapStyle game={'ats'} />
-      <SceneryTownSource />
+      <SceneryTownSource enableAutoHide={true} />
       <Source
         id={'route1'}
         type={'geojson'}
