@@ -64,7 +64,7 @@ const Demo = () => {
         enableAutoHiding={autoHide}
         visibleIcons={visibleIcons}
         onAutoHidingToggle={newValue => setAutoHide(newValue)}
-        onSelectAllToggle={newValue =>
+        onSelectAllIconsToggle={newValue =>
           setVisibleIcons(new Set(newValue ? allIcons : []))
         }
         onVisibleIconsToggle={(icon: MapIcon, newValue: boolean) => {

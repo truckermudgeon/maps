@@ -12,6 +12,10 @@ import {
   ModalClose,
   Sheet,
   Stack,
+  Tab,
+  TabList,
+  TabPanel,
+  Tabs,
   Tooltip,
 } from '@mui/joy';
 import { MapIcon } from '@truckermudgeon/ui';
@@ -54,26 +58,29 @@ export interface LegendProps {
   visibleIcons: Set<MapIcon>;
   enableAutoHiding: boolean;
   onAutoHidingToggle: (newValue: boolean) => void;
-  onSelectAllToggle: (newValue: boolean) => void;
+  onSelectAllIconsToggle: (newValue: boolean) => void;
   onVisibleIconsToggle: (icon: MapIcon, newValue: boolean) => void;
 }
 export const Legend = (props: LegendProps) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<number>(0);
   return (
     <>
-      <IconButton
-        variant={'outlined'}
-        sx={{
-          backgroundColor: 'background.body',
-          position: 'absolute',
-          left: 0,
-          bottom: 0,
-          m: 2,
-        }}
-        onClick={() => setIsOpen(true)}
-      >
-        <ListAlt />
-      </IconButton>
+      <Tooltip title={'Map Options'}>
+        <IconButton
+          variant={'outlined'}
+          sx={{
+            backgroundColor: 'background.body',
+            position: 'absolute',
+            left: 0,
+            bottom: 0,
+            m: 2,
+          }}
+          onClick={() => setIsOpen(true)}
+        >
+          <ListAlt />
+        </IconButton>
+      </Tooltip>
       <Drawer
         open={isOpen}
         onClose={() => setIsOpen(false)}
@@ -108,22 +115,44 @@ export const Legend = (props: LegendProps) => {
             overflow: 'auto',
           }}
         >
-          <DialogTitle>Map Icons</DialogTitle>
+          <DialogTitle>Map Options</DialogTitle>
           <ModalClose />
-          <Divider />
+          <Tabs onChange={(_, value) => setActiveTab(Number(value))}>
+            <TabList tabFlex={1}>
+              <Tab>Icons</Tab>
+              <Tab>ATS DLC</Tab>
+              <Tab>ETS DLC</Tab>
+            </TabList>
+          </Tabs>
           <DialogContent sx={{ overflowX: 'hidden' }}>
-            <IconList
-              visibleIcons={props.visibleIcons}
-              onVisibleIconsToggle={props.onVisibleIconsToggle}
-            />
+            <Tabs value={activeTab}>
+              <TabPanel sx={{ p: 0 }} value={0}>
+                <IconList
+                  visibleIcons={props.visibleIcons}
+                  onVisibleIconsToggle={props.onVisibleIconsToggle}
+                />
+              </TabPanel>
+              <TabPanel value={1}></TabPanel>
+              <TabPanel value={2}>Coming Soon</TabPanel>
+            </Tabs>
           </DialogContent>
           <Divider />
-          <Footer
-            enableAutoHiding={props.enableAutoHiding}
-            enableSelectAll={props.visibleIcons.size === numIcons}
-            onAutoHidingToggle={props.onAutoHidingToggle}
-            onSelectAllToggle={props.onSelectAllToggle}
-          />
+          {activeTab === 0 && (
+            <IconFooter
+              enableAutoHiding={props.enableAutoHiding}
+              enableSelectAll={props.visibleIcons.size === numIcons}
+              onAutoHidingToggle={props.onAutoHidingToggle}
+              onSelectAllToggle={props.onSelectAllIconsToggle}
+            />
+          )}
+          {activeTab === 1 && (
+            <IconFooter
+              enableAutoHiding={props.enableAutoHiding}
+              enableSelectAll={props.visibleIcons.size === numIcons}
+              onAutoHidingToggle={props.onAutoHidingToggle}
+              onSelectAllToggle={props.onSelectAllIconsToggle}
+            />
+          )}
         </Sheet>
       </Drawer>
     </>
@@ -138,6 +167,7 @@ const IconList = memo((props: IconListProps) => (
   <List
     size={'lg'}
     sx={{
+      p: 0,
       [`& .${checkboxClasses.root}`]: {
         flexGrow: 1,
         alignItems: 'center',
@@ -161,14 +191,14 @@ const IconList = memo((props: IconListProps) => (
   </List>
 ));
 
-interface FooterProps {
+interface IconFooterProps {
   enableAutoHiding: boolean;
   enableSelectAll: boolean;
   onAutoHidingToggle: (newValue: boolean) => void;
   onSelectAllToggle: (newValue: boolean) => void;
 }
-const Footer = memo((props: FooterProps) => (
-  <Stack direction={'row'} justifyContent={'space-between'} gap={1}>
+const IconFooter = memo((props: IconFooterProps) => (
+  <Stack direction={'row'} justifyContent={'space-between'} gap={1} mx={2}>
     <Tooltip
       enterDelay={500}
       title={
@@ -185,7 +215,6 @@ const Footer = memo((props: FooterProps) => (
       sx={{
         flexDirection: 'row-reverse',
         flexShrink: 0,
-        mr: 2,
       }}
       label={'Select all'}
       checked={props.enableSelectAll}
