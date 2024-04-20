@@ -1055,6 +1055,9 @@ function postProcess(
             pois.push({
               ...prefabMeta,
               type: 'facility',
+              dlcGuard: item.dlcGuard,
+              itemNodeUids: item.nodeUids,
+              fromItemType: 'prefab',
               x,
               y,
               icon: 'parking_ico',
@@ -1081,6 +1084,7 @@ function postProcess(
                 ...pos,
                 type: 'road',
                 dlcGuard: item.dlcGuard,
+                nodeUid: item.nodeUid,
                 icon: item.token,
               });
             }
@@ -1090,8 +1094,9 @@ function postProcess(
             pois.push({
               ...pos,
               type: 'facility',
+              dlcGuard: item.dlcGuard,
+              itemNodeUids: [item.nodeUid],
               icon: 'parking_ico',
-              fromItem: item.uid,
               fromItemType: 'mapOverlay',
             });
             break;
@@ -1104,6 +1109,8 @@ function postProcess(
             pois.push({
               ...pos,
               type: 'landmark',
+              dlcGuard: item.dlcGuard,
+              nodeUid: item.nodeUid,
               icon: 'photo_sight_captured',
               label,
             });
@@ -1214,8 +1221,9 @@ function postProcess(
           pois.push({
             ...pos,
             type: 'facility',
+            dlcGuard: item.dlcGuard,
+            itemNodeUids: item.nodeUids,
             icon: 'parking_ico',
-            fromItem: item.uid,
             fromItemType: 'trigger',
           });
         }

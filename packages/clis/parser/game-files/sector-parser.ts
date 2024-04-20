@@ -764,6 +764,7 @@ function toTrigger(
 ): WithoutSectorXY<Trigger> {
   return {
     ...toBaseItem(rawItem),
+    dlcGuard: (rawItem.flags & 0x00_00_ff_00) >> 8,
     actionTokens: rawItem.actions.map(a => a.action),
     nodeUids: rawItem.nodeUids,
   };
@@ -835,5 +836,7 @@ function toNode(rawNode: SectorNode): WithoutSectorXY<Node> {
     rotation,
     forwardItemUid: rawNode.forwardItemUid,
     backwardItemUid: rawNode.backwardItemUid,
+    forwardCountryId: rawNode.forwardCountryId,
+    backwardCountryId: rawNode.backwardCountryId,
   };
 }

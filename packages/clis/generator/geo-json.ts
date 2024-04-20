@@ -11,6 +11,12 @@ import {
 } from '@truckermudgeon/base/geom';
 import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
 import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
+import type { AtsCountryId, AtsDlcGuard } from '@truckermudgeon/map/constants';
+import {
+  AtsBaseDlcs,
+  AtsCountryIdToDlcGuard,
+  AtsDlcGuards,
+} from '@truckermudgeon/map/constants';
 import type { Polygon, RoadString } from '@truckermudgeon/map/prefabs';
 import {
   toMapPosition,
@@ -120,6 +126,9 @@ export function convertToGeoJson(
     prefabDescriptions,
   } = tsMapData;
 
+  logger.log('normalizing dlcGuard values...');
+  normalizeDlcGuards(roads, prefabs, mapAreas, pois, { map, nodes });
+
   const normalize = createNormalize(map);
   const normalizeCoordinates = createNormalizeCoordinates(map);
 
@@ -146,6 +155,7 @@ export function convertToGeoJson(
     areaToFeature(a, nodes),
   );
 
+  // TODO ferry lines shown are dependent on DLCs present.
   logger.log('creating ferry/train lines...');
   const uniqFerries: Ferry[] = [];
   const pairs = new Set<string>();
@@ -647,6 +657,176 @@ export function convertToGeoJson(
   };
 }
 
+function normalizeDlcGuards(
+  roads: Map<string, Road>,
+  prefabs: Map<string, Prefab>,
+  mapAreas: Map<string, MapArea>,
+  pois: Poi[],
+  context: {
+    map: 'usa' | 'europe';
+    nodes: Map<string, Node>;
+  },
+) {
+  const { map, nodes } = context;
+  if (map === 'europe') {
+    logger.error('ets2 dlc guard normalization is not yet supported.');
+    return;
+  }
+
+  const unknownCountryIds = new Set<number>();
+  const unknownDlcGuards = new Set<number>();
+
+  for (const [key, road] of roads) {
+    const dlcGuard = road.dlcGuard as AtsDlcGuard;
+    if (AtsDlcGuards[dlcGuard] == null) {
+      unknownDlcGuards.add(dlcGuard);
+      continue;
+    }
+
+    if (AtsBaseDlcs.has(dlcGuard)) {
+      // make "0" the dlcGuard value for "base map".
+      roads.set(key, { ...road, dlcGuard: 0 });
+      continue;
+    } else if (dlcGuard !== 0) {
+      continue;
+    }
+
+    const startCountryId = getCountryId(road.startNodeUid, nodes);
+    const endCountryId = getCountryId(road.endNodeUid, nodes);
+    if (startCountryId !== endCountryId) {
+      logger.warn('road country mismatch', startCountryId, endCountryId);
+    }
+    const countryId = startCountryId || endCountryId;
+    let newDlcGuard: number = AtsCountryIdToDlcGuard[countryId as AtsCountryId];
+    if (newDlcGuard == null) {
+      // What can be done in this case? Find the nearest node with a valid country id?
+      unknownCountryIds.add(countryId);
+      newDlcGuard = -1;
+    }
+    roads.set(key, { ...road, dlcGuard: newDlcGuard });
+  }
+
+  for (const [key, prefab] of prefabs) {
+    const dlcGuard = prefab.dlcGuard as AtsDlcGuard;
+    if (AtsDlcGuards[dlcGuard] == null) {
+      unknownDlcGuards.add(dlcGuard);
+      continue;
+    }
+
+    if (AtsBaseDlcs.has(dlcGuard)) {
+      // make "0" the dlcGuard value for "base map".
+      prefabs.set(key, { ...prefab, dlcGuard: 0 });
+      continue;
+    } else if (dlcGuard !== 0) {
+      continue;
+    }
+
+    // Using the first node is probably insufficient.
+    const countryId = getCountryId(prefab.nodeUids[0], nodes);
+    let newDlcGuard: number = AtsCountryIdToDlcGuard[countryId as AtsCountryId];
+    if (newDlcGuard == null) {
+      // What can be done in this case? Find the nearest node with a valid country id?
+      unknownCountryIds.add(countryId);
+      newDlcGuard = -1;
+    }
+    prefabs.set(key, { ...prefab, dlcGuard: newDlcGuard });
+  }
+
+  for (const [key, mapArea] of mapAreas) {
+    const dlcGuard = mapArea.dlcGuard as AtsDlcGuard;
+    if (AtsDlcGuards[dlcGuard] == null) {
+      unknownDlcGuards.add(dlcGuard);
+      continue;
+    }
+
+    if (AtsBaseDlcs.has(dlcGuard)) {
+      // make "0" the dlcGuard value for "base map".
+      mapAreas.set(key, { ...mapArea, dlcGuard: 0 });
+      continue;
+    } else if (dlcGuard !== 0) {
+      continue;
+    }
+
+    // Using the first node is probably insufficient.
+    const countryId = getCountryId(mapArea.nodeUids[0], nodes);
+    let newDlcGuard: number = AtsCountryIdToDlcGuard[countryId as AtsCountryId];
+    if (newDlcGuard == null) {
+      // What can be done in this case? Find the nearest node with a valid country id?
+      unknownCountryIds.add(countryId);
+      newDlcGuard = -1;
+    }
+    mapAreas.set(key, { ...mapArea, dlcGuard: newDlcGuard });
+  }
+
+  for (let i = 0; i < pois.length; i++) {
+    const poi = pois[i];
+    if (poi.type === 'landmark' || poi.type === 'road') {
+      const dlcGuard = poi.dlcGuard as AtsDlcGuard;
+      if (AtsDlcGuards[dlcGuard] == null) {
+        unknownDlcGuards.add(dlcGuard);
+        continue;
+      }
+
+      if (AtsBaseDlcs.has(dlcGuard)) {
+        // make "0" the dlcGuard value for "base map".
+        pois[i] = { ...poi, dlcGuard: 0 };
+        continue;
+      } else if (dlcGuard !== 0) {
+        continue;
+      }
+
+      const countryId = getCountryId(poi.nodeUid, nodes);
+      let newDlcGuard: number =
+        AtsCountryIdToDlcGuard[countryId as AtsCountryId];
+      if (newDlcGuard == null) {
+        // What can be done in this case? Find the nearest node with a valid country id?
+        unknownCountryIds.add(countryId);
+        newDlcGuard = -1;
+      }
+      pois[i] = { ...poi, dlcGuard: newDlcGuard };
+    } else if (poi.type === 'facility' && poi.icon === 'parking_ico') {
+      const dlcGuard = poi.dlcGuard as AtsDlcGuard;
+      if (AtsDlcGuards[dlcGuard] == null) {
+        unknownDlcGuards.add(dlcGuard);
+        continue;
+      }
+
+      if (AtsBaseDlcs.has(dlcGuard)) {
+        // make "0" the dlcGuard value for "base map".
+        pois[i] = { ...poi, dlcGuard: 0 };
+        continue;
+      } else if (dlcGuard !== 0) {
+        continue;
+      }
+
+      // Using the first node is probably insufficient.
+      const countryId = getCountryId(poi.itemNodeUids[0], nodes);
+      let newDlcGuard: number =
+        AtsCountryIdToDlcGuard[countryId as AtsCountryId];
+      if (newDlcGuard == null) {
+        // What can be done in this case? Find the nearest node with a valid country id?
+        unknownCountryIds.add(countryId);
+        newDlcGuard = -1;
+      }
+      pois[i] = { ...poi, dlcGuard: newDlcGuard };
+    }
+  }
+
+  logger.warn('Unknown ATS dlc guards', unknownDlcGuards);
+  logger.warn('Unknown Country IDs', unknownCountryIds);
+}
+
+function getCountryId(nodeUid: bigint, nodes: Map<string, Node>) {
+  const node = assertExists(nodes.get(nodeUid.toString(16)));
+
+  const { forwardCountryId, backwardCountryId } = node;
+  if (forwardCountryId !== backwardCountryId) {
+    logger.warn('country mismatch', forwardCountryId, backwardCountryId);
+  }
+  // Note: 0 isn't a valid country id, so fallback to a non-zero value if possible.
+  return forwardCountryId || backwardCountryId;
+}
+
 export function convertToFootprintsGeoJson({
   map,
   nodes,
@@ -1082,6 +1262,7 @@ function poiToFeature(poi: Poi): PoiFeature {
       poiType: poi.type,
       // TODO labels should be present for all `Poi` of type `LabeledPoi`
       poiName: poi.type === 'company' ? poi.label : poi.icon,
+      dlcGuard: 'dlcGuard' in poi ? poi.dlcGuard : undefined,
     },
     geometry: {
       type: 'Point',
@@ -1460,7 +1641,14 @@ function roadLookToProperties(
   };
 }
 
-function arePropsConnectable(a: RoadLookProperties, b: RoadLookProperties) {
+function arePropsConnectable(
+  a: RoadLookProperties & { dlcGuard: number },
+  b: RoadLookProperties & { dlcGuard: number },
+) {
+  if (a.dlcGuard !== b.dlcGuard) {
+    return false;
+  }
+
   // we don't care about hidden roads; they can be joined all the time since they're
   // currently rendered the same, regardless of roadType.
   if (a.hidden && b.hidden) {

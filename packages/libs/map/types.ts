@@ -19,6 +19,8 @@ export type Node = Readonly<{
   backwardItemUid: bigint;
   sectorX: number;
   sectorY: number;
+  forwardCountryId: number;
+  backwardCountryId: number;
 }>;
 
 export type City = Readonly<{
@@ -94,10 +96,18 @@ export type NonFacilityPoi =
   | 'train';
 
 type LabeledPoi = BasePoi &
-  Readonly<{
-    type: NonFacilityPoi;
-    label: string;
-  }>;
+  Readonly<
+    | {
+        type: Exclude<NonFacilityPoi, 'landmark'>;
+        label: string;
+      }
+    | {
+        type: 'landmark';
+        label: string;
+        dlcGuard: number;
+        nodeUid: bigint;
+      }
+  >;
 
 export type FacilityIcon =
   | 'parking_ico'
@@ -114,18 +124,20 @@ type UnlabeledPoi = BasePoi &
         // label can be derived from icon token
         type: 'road';
         dlcGuard: number;
+        nodeUid: bigint;
+      }
+    | {
+        type: 'facility';
+        icon: Exclude<FacilityIcon, 'parking_ico'>;
+        prefabUid: bigint;
+        prefabPath: string;
       }
     | {
         type: 'facility';
         icon: 'parking_ico';
-        fromItem: bigint;
-        fromItemType: string;
-      }
-    | {
-        type: 'facility';
-        icon: FacilityIcon;
-        prefabUid: bigint;
-        prefabPath: string;
+        fromItemType: 'trigger' | 'mapOverlay' | 'prefab';
+        itemNodeUids: readonly bigint[];
+        dlcGuard: number;
       }
   >;
 
@@ -236,6 +248,7 @@ export type Cutscene = BaseItem &
 export type Trigger = BaseItem &
   Readonly<{
     type: ItemType.Trigger;
+    dlcGuard: number;
     actionTokens: readonly string[];
     nodeUids: readonly bigint[];
   }>;
@@ -499,6 +512,7 @@ export interface PoiProperties {
   sprite: string;
   poiType: string; // Overlay, Viewpoint, Company, etc.
   poiName?: string; // Company name, if poiType is Company
+  dlcGuard?: number; // For dlc-guarded POIs, like road icons
 }
 
 export type ScopedCityFeature = GeoJSON.Feature<
