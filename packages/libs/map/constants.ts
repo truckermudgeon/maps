@@ -1,5 +1,24 @@
 import type { FacilityIcon } from './types';
 
+export enum AtsDlc {
+  Nevada,
+  Arizona,
+  NewMexico,
+  Oregon,
+  Washington,
+  Utah,
+  Idaho,
+  Colorado,
+  Wyoming,
+  Texas,
+  Montana,
+  Oklahoma,
+  Kansas,
+  Nebraska,
+}
+
+export const AtsUnreleasedDlc: ReadonlySet<AtsDlc> = new Set([AtsDlc.Nebraska]);
+
 // from /def/country.sii
 export enum AtsCountryId {
   // Released
@@ -57,23 +76,6 @@ export enum AtsCountryId {
   WestVirginia = 48,
   Wisconsin = 49,
   */
-}
-
-export enum AtsDlc {
-  Nevada,
-  Arizona,
-  NewMexico,
-  Oregon,
-  Washington,
-  Utah,
-  Idaho,
-  Colorado,
-  Wyoming,
-  Texas,
-  Montana,
-  Oklahoma,
-  Kansas,
-  Nebraska,
 }
 
 export const AtsCountryIdToDlcGuard: Record<AtsCountryId, AtsDlcGuard> = {
@@ -136,7 +138,7 @@ export const AtsDlcGuards: Record<AtsDlcGuard, ReadonlySet<AtsDlc>> = {
   35: new Set([AtsDlc.Nebraska, AtsDlc.Wyoming]),
 } as const;
 
-export const AtsBaseDlcs = new Set<AtsDlcGuard>([1, 2]);
+export const AtsBaseDlcs: ReadonlySet<AtsDlcGuard> = new Set([1, 2]);
 
 export enum Ets2Dlc {
   GoingEast,
