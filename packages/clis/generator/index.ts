@@ -478,6 +478,7 @@ function handleMapCommand(args: ReturnType<typeof mapCommandBuilder>) {
     // expressions in map styles).
     const minAttributes = [
       'type',
+      'dlcGuard',
       'zIndex',
       'height',
       'hidden',

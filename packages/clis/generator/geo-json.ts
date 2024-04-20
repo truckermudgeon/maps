@@ -916,6 +916,7 @@ function areaToFeature(
     id: area.uid.toString(),
     properties: {
       type: 'mapArea',
+      dlcGuard: area.dlcGuard,
       zIndex: area.drawOver ? 1 : 0,
       color: area.color,
     },
@@ -1186,6 +1187,7 @@ function prefabToFeatures(
         id: prefab.uid + 'poly' + i,
         properties: {
           type: 'prefab',
+          dlcGuard: prefab.dlcGuard,
           zIndex: polygon.zIndex,
           color: polygon.color,
         },
@@ -1271,6 +1273,7 @@ function prefabToFeatures(
         id: prefab.uid + 'road' + i,
         properties: {
           type: 'road',
+          dlcGuard: prefab.dlcGuard,
           prefab: prefab.token,
           roadType: nearestRoadType,
           offset: road.offset,
@@ -1309,6 +1312,7 @@ function roadToFeature(
   );
   const properties = {
     ...roadLookToProperties(roadLook, !!road.hidden),
+    dlcGuard: road.dlcGuard,
     startNodeUid: road.startNodeUid.toString(16),
     endNodeUid: road.endNodeUid.toString(16),
   };

@@ -1077,7 +1077,12 @@ function postProcess(
             } else {
               // TODO look into ets2 road overlays with token 'weigh_ico'.
               // can they be considered facilities? do they have linked prefabs?
-              pois.push({ ...pos, type: 'road', icon: item.token });
+              pois.push({
+                ...pos,
+                type: 'road',
+                dlcGuard: item.dlcGuard,
+                icon: item.token,
+              });
             }
             break;
           case MapOverlayType.Parking:

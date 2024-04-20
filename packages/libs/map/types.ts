@@ -113,6 +113,7 @@ type UnlabeledPoi = BasePoi &
     | {
         // label can be derived from icon token
         type: 'road';
+        dlcGuard: number;
       }
     | {
         type: 'facility';
@@ -142,6 +143,7 @@ export type BaseItem = Readonly<{
 export type Road = BaseItem &
   Readonly<{
     type: ItemType.Road;
+    dlcGuard: number;
     hidden?: true;
     roadLookToken: string;
     startNodeUid: bigint;
@@ -153,6 +155,7 @@ export type Road = BaseItem &
 export type Prefab = BaseItem &
   Readonly<{
     type: ItemType.Prefab;
+    dlcGuard: number;
     hidden?: true;
     token: string;
     nodeUids: readonly bigint[];
@@ -162,6 +165,7 @@ export type Prefab = BaseItem &
 export type MapArea = BaseItem &
   Readonly<{
     type: ItemType.MapArea;
+    dlcGuard: number;
     drawOver?: true;
     nodeUids: readonly bigint[];
     color: MapColor;
@@ -179,6 +183,7 @@ export type CityArea = BaseItem &
 export type MapOverlay = BaseItem &
   Readonly<{
     type: ItemType.MapOverlay;
+    dlcGuard: number;
     overlayType: MapOverlayType;
     token: string;
     nodeUid: bigint;
@@ -386,6 +391,7 @@ export type DebugFeature = GeoJSON.Feature<
 export type RoadFeature = GeoJSON.Feature<
   GeoJSON.LineString,
   RoadLookProperties & {
+    dlcGuard: number;
     // an undefined startNodeUid is expected from roads converted from prefabs;
     // signifies that a prefab road isn't connected to a prefab entry/exit node.
     startNodeUid: string | undefined;
@@ -454,12 +460,14 @@ export interface FerryProperties {
 
 export interface PrefabProperties {
   type: 'prefab';
+  dlcGuard: number;
   zIndex: number;
   color: MapColor;
 }
 
 export interface MapAreaProperties {
   type: 'mapArea';
+  dlcGuard: number;
   zIndex: number;
   color: MapColor;
 }
