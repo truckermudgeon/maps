@@ -1,6 +1,6 @@
 import type { FacilityIcon } from './types';
 
-export enum AtsDlc {
+enum AtsDlc {
   Arizona,
   Colorado,
   Idaho,
@@ -167,7 +167,7 @@ export const AtsDlcGuards: Record<AtsDlcGuard, ReadonlySet<AtsDlc>> = {
   35: new Set([AtsDlc.Nebraska, AtsDlc.Wyoming]),
 } as const;
 
-export enum Ets2Dlc {
+enum Ets2Dlc {
   GoingEast,
   Scandinavia,
   ViveLaFrance,
