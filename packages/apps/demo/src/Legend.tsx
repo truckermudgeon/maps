@@ -18,10 +18,13 @@ import {
   Tabs,
   Tooltip,
 } from '@mui/joy';
+import type { AtsSelectableDlc } from '@truckermudgeon/map/constants';
+import { AtsDlc, AtsReleasedDlcs } from '@truckermudgeon/map/constants';
 import { MapIcon } from '@truckermudgeon/ui';
+import type { ReactElement } from 'react';
 import { memo, useState } from 'react';
 
-const MapIcons: Record<MapIcon, { label: string; iconName: string }> = {
+const mapIconInfo: Record<MapIcon, { label: string; iconName: string }> = {
   [MapIcon.FuelStation]: { iconName: 'gas_ico', label: 'Fuel station' },
   [MapIcon.Toll]: { iconName: 'toll_ico', label: 'Toll gate' },
   [MapIcon.Parking]: { iconName: 'parking_ico', label: 'Rest stop' },
@@ -52,14 +55,38 @@ const MapIcons: Record<MapIcon, { label: string; iconName: string }> = {
   [MapIcon.Company]: { iconName: 'companies_ico', label: 'Companies' },
   [MapIcon.RoadNumber]: { iconName: 'road_numbers_ico', label: 'Road numbers' },
 };
-const numIcons = Object.keys(MapIcons).length;
+const mapIcons = new Map<MapIcon, string>(
+  Object.entries(mapIconInfo).map(([k, v]) => [Number(k), v.label]),
+);
+
+const atsDlcInfo: Record<AtsSelectableDlc, string> = {
+  [AtsDlc.NewMexico]: 'New Mexico',
+  [AtsDlc.Oregon]: 'Oregon',
+  [AtsDlc.Washington]: 'Washington',
+  [AtsDlc.Utah]: 'Utah',
+  [AtsDlc.Idaho]: 'Idaho',
+  [AtsDlc.Colorado]: 'Colorado',
+  [AtsDlc.Wyoming]: 'Wyoming',
+  [AtsDlc.Montana]: 'Montana',
+  [AtsDlc.Texas]: 'Texas',
+  [AtsDlc.Oklahoma]: 'Oklahoma',
+  [AtsDlc.Kansas]: 'Kansas',
+};
+const atsDlcs = new Map<AtsSelectableDlc, string>(
+  Object.entries(atsDlcInfo).map(([k, v]) => [Number(k), v]),
+);
 
 export interface LegendProps {
+  // Icons
   visibleIcons: Set<MapIcon>;
   enableAutoHiding: boolean;
   onAutoHidingToggle: (newValue: boolean) => void;
   onSelectAllIconsToggle: (newValue: boolean) => void;
   onVisibleIconsToggle: (icon: MapIcon, newValue: boolean) => void;
+  // ATS DLC
+  visibleAtsDlcs: Set<AtsSelectableDlc>;
+  onSelectAllAtsDlcsToggle: (newValue: boolean) => void;
+  onVisibleAtsDlcsToggle: (icon: AtsSelectableDlc, newValue: boolean) => void;
 }
 export const Legend = (props: LegendProps) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -121,36 +148,54 @@ export const Legend = (props: LegendProps) => {
             <TabList tabFlex={1}>
               <Tab>Icons</Tab>
               <Tab>ATS DLC</Tab>
-              <Tab>ETS DLC</Tab>
+              <Tab>ETS2 DLC</Tab>
             </TabList>
           </Tabs>
           <DialogContent sx={{ overflowX: 'hidden' }}>
             <Tabs value={activeTab}>
               <TabPanel sx={{ p: 0 }} value={0}>
-                <IconList
-                  visibleIcons={props.visibleIcons}
-                  onVisibleIconsToggle={props.onVisibleIconsToggle}
+                <CheckList
+                  items={mapIcons}
+                  selectedItems={props.visibleIcons}
+                  onItemToggle={props.onVisibleIconsToggle}
+                  icon={icon => (
+                    <img
+                      // icons have 3px of transparent padding around the actual content.
+                      style={{ marginLeft: -3 }}
+                      width={32}
+                      height={32}
+                      src={`map-icons/${mapIconInfo[icon].iconName}.png`}
+                    />
+                  )}
                 />
               </TabPanel>
-              <TabPanel value={1}></TabPanel>
-              <TabPanel value={2}>Coming Soon</TabPanel>
+              <TabPanel sx={{ p: 0 }} value={1}>
+                <CheckList
+                  items={atsDlcs}
+                  selectedItems={props.visibleAtsDlcs}
+                  onItemToggle={props.onVisibleAtsDlcsToggle}
+                />
+              </TabPanel>
+              <TabPanel sx={{ p: 0 }} value={2}>
+                Coming Soon
+              </TabPanel>
             </Tabs>
           </DialogContent>
           <Divider />
           {activeTab === 0 && (
             <IconFooter
               enableAutoHiding={props.enableAutoHiding}
-              enableSelectAll={props.visibleIcons.size === numIcons}
+              enableSelectAll={props.visibleIcons.size === mapIcons.size}
               onAutoHidingToggle={props.onAutoHidingToggle}
               onSelectAllToggle={props.onSelectAllIconsToggle}
             />
           )}
           {activeTab === 1 && (
-            <IconFooter
-              enableAutoHiding={props.enableAutoHiding}
-              enableSelectAll={props.visibleIcons.size === numIcons}
-              onAutoHidingToggle={props.onAutoHidingToggle}
-              onSelectAllToggle={props.onSelectAllIconsToggle}
+            <DlcFooter
+              enableSelectAll={
+                props.visibleAtsDlcs.size === AtsReleasedDlcs.size
+              }
+              onSelectAllToggle={props.onSelectAllAtsDlcsToggle}
             />
           )}
         </Sheet>
@@ -158,38 +203,6 @@ export const Legend = (props: LegendProps) => {
     </>
   );
 };
-
-interface IconListProps {
-  visibleIcons: Set<MapIcon>;
-  onVisibleIconsToggle: (icon: MapIcon, newValue: boolean) => void;
-}
-const IconList = memo((props: IconListProps) => (
-  <List
-    size={'lg'}
-    sx={{
-      p: 0,
-      [`& .${checkboxClasses.root}`]: {
-        flexGrow: 1,
-        alignItems: 'center',
-        flexDirection: 'row-reverse',
-      },
-    }}
-  >
-    {Object.entries(MapIcons).map(([key, icon]) => (
-      <ListItem key={key}>
-        <img width={32} height={32} src={`map-icons/${icon.iconName}.png`} />
-        <Checkbox
-          overlay
-          label={icon.label}
-          checked={props.visibleIcons.has(Number(key))}
-          onChange={e =>
-            props.onVisibleIconsToggle(Number(key), e.target.checked)
-          }
-        />
-      </ListItem>
-    ))}
-  </List>
-));
 
 interface IconFooterProps {
   enableAutoHiding: boolean;
@@ -211,6 +224,58 @@ const IconFooter = memo((props: IconFooterProps) => (
         onChange={e => props.onAutoHidingToggle?.(e.target.checked)}
       />
     </Tooltip>
+    <Checkbox
+      sx={{
+        flexDirection: 'row-reverse',
+        flexShrink: 0,
+      }}
+      label={'Select all'}
+      checked={props.enableSelectAll}
+      onChange={e => props.onSelectAllToggle?.(e.target.checked)}
+    />
+  </Stack>
+));
+
+interface CheckListProps<T> {
+  items: Map<T, string>;
+  selectedItems: Set<T>;
+  onItemToggle: (item: T, newValue: boolean) => void;
+  icon?: (k: T) => ReactElement;
+}
+const _CheckList = <T,>(props: CheckListProps<T>) => (
+  <List
+    size={'lg'}
+    sx={{
+      p: 0,
+      [`& .${checkboxClasses.root}`]: {
+        flexGrow: 1,
+        alignItems: 'center',
+        flexDirection: 'row-reverse',
+      },
+    }}
+  >
+    {[...props.items.entries()].map(([key, label]) => (
+      <ListItem key={String(key)}>
+        {props.icon?.(key)}
+        <Checkbox
+          overlay
+          label={label}
+          checked={props.selectedItems.has(key)}
+          onChange={e => props.onItemToggle(key, e.target.checked)}
+        />
+      </ListItem>
+    ))}
+  </List>
+);
+// Casting because React.memo doesn't support generics.
+const CheckList = memo(_CheckList) as typeof _CheckList;
+
+interface DlcFooterProps {
+  enableSelectAll: boolean;
+  onSelectAllToggle: (newValue: boolean) => void;
+}
+const DlcFooter = memo((props: DlcFooterProps) => (
+  <Stack direction={'row'} justifyContent={'end'} gap={1} mx={2}>
     <Checkbox
       sx={{
         flexDirection: 'row-reverse',

@@ -1,10 +1,12 @@
+import type { AtsSelectableDlc } from '@truckermudgeon/map/constants';
+import { AtsReleasedDlcs } from '@truckermudgeon/map/constants';
 import {
-  allIcons,
   BaseMapStyle,
-  defaultMapStyle,
   GameMapStyle,
   MapIcon,
   SceneryTownSource,
+  allIcons,
+  defaultMapStyle,
 } from '@truckermudgeon/ui';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useState } from 'react';
@@ -19,6 +21,9 @@ import { MapSelectAndSearch } from './MapSelectAndSearch';
 const Demo = () => {
   const [autoHide, setAutoHide] = useState(true);
   const [visibleIcons, setVisibleIcons] = useState(new Set(allIcons));
+  const [visibleAtsDlcs, setVisibleAtsDlcs] = useState(
+    new Set(AtsReleasedDlcs),
+  );
 
   return (
     <MapGl
@@ -74,6 +79,21 @@ const Demo = () => {
               newState.add(icon);
             } else {
               newState.delete(icon);
+            }
+            return newState;
+          });
+        }}
+        visibleAtsDlcs={visibleAtsDlcs}
+        onSelectAllAtsDlcsToggle={newValue =>
+          setVisibleAtsDlcs(new Set(newValue ? AtsReleasedDlcs : []))
+        }
+        onVisibleAtsDlcsToggle={(dlc: AtsSelectableDlc, newValue: boolean) => {
+          setVisibleAtsDlcs(prevState => {
+            const newState = new Set(prevState);
+            if (newValue) {
+              newState.add(dlc);
+            } else {
+              newState.delete(dlc);
             }
             return newState;
           });

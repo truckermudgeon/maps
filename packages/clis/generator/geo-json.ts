@@ -13,7 +13,7 @@ import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
 import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
 import type { AtsCountryId, AtsDlcGuard } from '@truckermudgeon/map/constants';
 import {
-  AtsBaseDlcs,
+  AtsBaseDlcGuards,
   AtsCountryIdToDlcGuard,
   AtsDlcGuards,
 } from '@truckermudgeon/map/constants';
@@ -683,7 +683,7 @@ function normalizeDlcGuards(
       continue;
     }
 
-    if (AtsBaseDlcs.has(dlcGuard)) {
+    if (AtsBaseDlcGuards.has(dlcGuard)) {
       // make "0" the dlcGuard value for "base map".
       roads.set(key, { ...road, dlcGuard: 0 });
       continue;
@@ -713,7 +713,7 @@ function normalizeDlcGuards(
       continue;
     }
 
-    if (AtsBaseDlcs.has(dlcGuard)) {
+    if (AtsBaseDlcGuards.has(dlcGuard)) {
       // make "0" the dlcGuard value for "base map".
       prefabs.set(key, { ...prefab, dlcGuard: 0 });
       continue;
@@ -739,7 +739,7 @@ function normalizeDlcGuards(
       continue;
     }
 
-    if (AtsBaseDlcs.has(dlcGuard)) {
+    if (AtsBaseDlcGuards.has(dlcGuard)) {
       // make "0" the dlcGuard value for "base map".
       mapAreas.set(key, { ...mapArea, dlcGuard: 0 });
       continue;
@@ -767,7 +767,7 @@ function normalizeDlcGuards(
         continue;
       }
 
-      if (AtsBaseDlcs.has(dlcGuard)) {
+      if (AtsBaseDlcGuards.has(dlcGuard)) {
         // make "0" the dlcGuard value for "base map".
         pois[i] = { ...poi, dlcGuard: 0 };
         continue;
@@ -791,7 +791,7 @@ function normalizeDlcGuards(
         continue;
       }
 
-      if (AtsBaseDlcs.has(dlcGuard)) {
+      if (AtsBaseDlcGuards.has(dlcGuard)) {
         // make "0" the dlcGuard value for "base map".
         pois[i] = { ...poi, dlcGuard: 0 };
         continue;

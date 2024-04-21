@@ -10,14 +10,29 @@ export enum AtsDlc {
   Idaho,
   Colorado,
   Wyoming,
-  Texas,
   Montana,
+  Texas,
   Oklahoma,
   Kansas,
   Nebraska,
 }
-
-export const AtsUnreleasedDlc: ReadonlySet<AtsDlc> = new Set([AtsDlc.Nebraska]);
+export type AtsSelectableDlc = Exclude<
+  AtsDlc,
+  AtsDlc.Nevada | AtsDlc.Arizona | AtsDlc.Nebraska
+>;
+export const AtsReleasedDlcs: ReadonlySet<AtsSelectableDlc> = new Set([
+  AtsDlc.NewMexico,
+  AtsDlc.Oregon,
+  AtsDlc.Washington,
+  AtsDlc.Utah,
+  AtsDlc.Idaho,
+  AtsDlc.Colorado,
+  AtsDlc.Wyoming,
+  AtsDlc.Montana,
+  AtsDlc.Texas,
+  AtsDlc.Oklahoma,
+  AtsDlc.Kansas,
+]);
 
 // from /def/country.sii
 export enum AtsCountryId {
@@ -138,7 +153,7 @@ export const AtsDlcGuards: Record<AtsDlcGuard, ReadonlySet<AtsDlc>> = {
   35: new Set([AtsDlc.Nebraska, AtsDlc.Wyoming]),
 } as const;
 
-export const AtsBaseDlcs: ReadonlySet<AtsDlcGuard> = new Set([1, 2]);
+export const AtsBaseDlcGuards: ReadonlySet<AtsDlcGuard> = new Set([1, 2]);
 
 export enum Ets2Dlc {
   GoingEast,
