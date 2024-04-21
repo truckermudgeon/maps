@@ -19,7 +19,7 @@ import {
   Tooltip,
 } from '@mui/joy';
 import type { AtsSelectableDlc } from '@truckermudgeon/map/constants';
-import { AtsDlcInfo, AtsSelectableDlcs } from '@truckermudgeon/map/constants';
+import { AtsDlcInfo } from '@truckermudgeon/map/constants';
 import { MapIcon } from '@truckermudgeon/ui';
 import type { ReactElement } from 'react';
 import { memo, useState } from 'react';
@@ -63,17 +63,17 @@ const atsDlcs = new Map<AtsSelectableDlc, string>(
   Object.entries(AtsDlcInfo).map(([k, v]) => [Number(k), v]),
 );
 
+export interface ListProps<T> {
+  selectedItems: Set<T>;
+  onSelectAllToggle: (newValue: boolean) => void;
+  onItemToggle: (item: T, newValue: boolean) => void;
+}
 export interface LegendProps {
-  // Icons
-  visibleIcons: Set<MapIcon>;
-  enableAutoHiding: boolean;
-  onAutoHidingToggle: (newValue: boolean) => void;
-  onSelectAllIconsToggle: (newValue: boolean) => void;
-  onVisibleIconsToggle: (icon: MapIcon, newValue: boolean) => void;
-  // ATS DLC
-  visibleAtsDlcs: Set<AtsSelectableDlc>;
-  onSelectAllAtsDlcsToggle: (newValue: boolean) => void;
-  onVisibleAtsDlcsToggle: (icon: AtsSelectableDlc, newValue: boolean) => void;
+  icons: ListProps<MapIcon> & {
+    enableAutoHiding: boolean;
+    onAutoHidingToggle: (newValue: boolean) => void;
+  };
+  atsDlcs: ListProps<AtsSelectableDlc>;
 }
 export const Legend = (props: LegendProps) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -143,8 +143,8 @@ export const Legend = (props: LegendProps) => {
               <TabPanel sx={{ p: 0 }} value={0}>
                 <CheckList
                   items={mapIcons}
-                  selectedItems={props.visibleIcons}
-                  onItemToggle={props.onVisibleIconsToggle}
+                  selectedItems={props.icons.selectedItems}
+                  onItemToggle={props.icons.onItemToggle}
                   icon={icon => (
                     <img
                       // icons have 3px of transparent padding around the actual content.
@@ -159,8 +159,8 @@ export const Legend = (props: LegendProps) => {
               <TabPanel sx={{ p: 0 }} value={1}>
                 <CheckList
                   items={atsDlcs}
-                  selectedItems={props.visibleAtsDlcs}
-                  onItemToggle={props.onVisibleAtsDlcsToggle}
+                  selectedItems={props.atsDlcs.selectedItems}
+                  onItemToggle={props.atsDlcs.onItemToggle}
                 />
               </TabPanel>
               <TabPanel sx={{ p: 0 }} value={2}>
@@ -171,18 +171,18 @@ export const Legend = (props: LegendProps) => {
           <Divider />
           {activeTab === 0 && (
             <IconFooter
-              enableAutoHiding={props.enableAutoHiding}
-              enableSelectAll={props.visibleIcons.size === mapIcons.size}
-              onAutoHidingToggle={props.onAutoHidingToggle}
-              onSelectAllToggle={props.onSelectAllIconsToggle}
+              enableAutoHiding={props.icons.enableAutoHiding}
+              enableSelectAll={props.icons.selectedItems.size === mapIcons.size}
+              onAutoHidingToggle={props.icons.onAutoHidingToggle}
+              onSelectAllToggle={props.icons.onSelectAllToggle}
             />
           )}
           {activeTab === 1 && (
             <DlcFooter
               enableSelectAll={
-                props.visibleAtsDlcs.size === AtsSelectableDlcs.size
+                props.atsDlcs.selectedItems.size === atsDlcs.size
               }
-              onSelectAllToggle={props.onSelectAllAtsDlcsToggle}
+              onSelectAllToggle={props.atsDlcs.onSelectAllToggle}
             />
           )}
         </Sheet>
