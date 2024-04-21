@@ -7,7 +7,6 @@ import type {
 import {
   AtsDlcGuards,
   AtsSelectableDlcs,
-  Ets2DlcGuards,
   Ets2SelectableDlcs,
   MapColor,
 } from '@truckermudgeon/map/constants';
@@ -352,6 +351,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             ['==', ['geometry-type'], 'Point'],
             ['==', ['get', 'type'], 'poi'],
             ['==', ['get', 'poiType'], 'company'],
+            dlcGuardFilter,
           ]}
           layout={iconLayout(enableIconAutoHide, 1, 1.25, 3.5)}
         />
@@ -446,6 +446,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             ['==', ['geometry-type'], 'Point'],
             ['==', ['get', 'type'], 'city'],
             ['>', ['get', 'scaleRank'], 6],
+            dlcGuardFilter,
           ]}
           layout={{
             ...baseTextLayout,
@@ -472,6 +473,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             ['==', ['get', 'type'], 'city'],
             ['<=', ['get', 'scaleRank'], 6],
             ['>', ['get', 'scaleRank'], 3],
+            dlcGuardFilter,
           ]}
           layout={{
             ...baseTextLayout,
@@ -497,6 +499,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             ['==', ['geometry-type'], 'Point'],
             ['==', ['get', 'type'], 'city'],
             ['<=', ['get', 'scaleRank'], 3],
+            dlcGuardFilter,
           ]}
           layout={{
             ...baseTextLayout,
@@ -768,18 +771,14 @@ function createDlcGuardFilter(
   game: 'ats' | 'ets2',
   selectedDlcs: ReadonlySet<unknown>,
 ): ExpressionSpecification {
+  if (game !== 'ats') {
+    return ['boolean', true];
+  }
+
   const guards: number[] = [];
-  if (game === 'ats') {
-    for (const [key, dlcs] of Object.entries(AtsDlcGuards)) {
-      if ([...dlcs].every(dlc => selectedDlcs.has(dlc))) {
-        guards.push(Number(key));
-      }
-    }
-  } else if (game === 'ets2') {
-    for (const [key, dlcs] of Object.entries(Ets2DlcGuards)) {
-      if ([...dlcs].every(dlc => selectedDlcs.has(dlc))) {
-        guards.push(Number(key));
-      }
+  for (const [key, dlcs] of Object.entries(AtsDlcGuards)) {
+    if ([...dlcs].every(dlc => selectedDlcs.has(dlc))) {
+      guards.push(Number(key));
     }
   }
 

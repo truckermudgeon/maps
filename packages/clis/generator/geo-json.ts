@@ -126,7 +126,10 @@ export function convertToGeoJson(
   } = tsMapData;
 
   logger.log('normalizing dlcGuard values...');
-  normalizeDlcGuards(roads, prefabs, mapAreas, pois, { map, nodes });
+  const dlcGuardedNodes = normalizeDlcGuards(roads, prefabs, mapAreas, pois, {
+    map,
+    nodes,
+  });
 
   const normalize = createNormalize(map);
   const normalizeCoordinates = createNormalizeCoordinates(map);
@@ -635,14 +638,31 @@ export function convertToGeoJson(
     }
   }
 
+  const dlcQuadTree = quadtree<{
+    x: number;
+    y: number;
+    dlcGuard: number;
+  }>()
+    .x(e => e.x)
+    .y(e => e.y);
+  if (dlcGuardedNodes) {
+    for (const node of dlcGuardedNodes.values()) {
+      dlcQuadTree.add({
+        x: node.x,
+        y: node.y,
+        dlcGuard: node.dlcGuard,
+      });
+    }
+  }
+
   const features = [
     ...debugCityAreaFeatures,
     ...mapAreaFeatures,
     ...prefabFeatures,
     ...processedRoadFeatures,
-    ...cityFeatures,
+    ...cityFeatures.map(c => withDlcGuard(c, dlcQuadTree)),
     ...countryFeatures,
-    ...poiFeatures,
+    ...poiFeatures.map(p => withDlcGuard(p, dlcQuadTree)),
     //...dividerFeatures,
     ...debugNodeFeatures,
   ];
@@ -656,6 +676,27 @@ export function convertToGeoJson(
   };
 }
 
+function withDlcGuard<T extends CityFeature | PoiFeature>(
+  feature: T,
+  dlcQuadTree: Quadtree<{ x: number; y: number; dlcGuard: number }> | undefined,
+): T {
+  if (dlcQuadTree == null) {
+    return feature;
+  }
+  if ('dlcGuard' in feature.properties && feature.properties.dlcGuard !== 0) {
+    return feature;
+  }
+
+  const [x, y] = feature.geometry.coordinates;
+  const entry = dlcQuadTree.find(x, y);
+  if (!entry) {
+    return feature;
+  }
+
+  (feature.properties as { dlcGuard: number }).dlcGuard = entry.dlcGuard;
+  return feature;
+}
+
 function normalizeDlcGuards(
   roads: Map<string, Road>,
   prefabs: Map<string, Prefab>,
@@ -665,13 +706,14 @@ function normalizeDlcGuards(
     map: 'usa' | 'europe';
     nodes: Map<string, Node>;
   },
-) {
+): Map<string, Node & { dlcGuard: number }> | undefined {
   const { map, nodes } = context;
   if (map === 'europe') {
     logger.error('ets2 dlc guard normalization is not yet supported.');
     return;
   }
 
+  const dlcGuardedNodes = new Map<string, Node & { dlcGuard: number }>();
   const unknownDlcGuards = new Set<number>();
 
   // returns a normalized dlc guard, or undefined if dlcGuard cannot / should
@@ -719,6 +761,11 @@ function normalizeDlcGuards(
       return;
     }
 
+    for (const nid of nodeUids) {
+      const nidString = nid.toString(16);
+      const node = assertExists(nodes.get(nidString));
+      dlcGuardedNodes.set(nidString, { ...node, dlcGuard: equivDlcGuard });
+    }
     return equivDlcGuard;
   };
 
@@ -762,6 +809,8 @@ function normalizeDlcGuards(
   }
 
   logger.warn('Unknown ATS dlc guards', unknownDlcGuards);
+
+  return dlcGuardedNodes;
 }
 
 function getCountryIds(nodeUid: bigint, nodes: Map<string, Node>): number[] {

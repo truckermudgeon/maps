@@ -135,7 +135,6 @@ export const Legend = (props: LegendProps) => {
             <TabList tabFlex={1} sx={{ borderRadius: 0 }}>
               <Tab>Icons</Tab>
               <Tab>ATS DLC</Tab>
-              <Tab>ETS2 DLC</Tab>
             </TabList>
           </Tabs>
           <DialogContent sx={{ overflowX: 'hidden' }}>
@@ -162,9 +161,6 @@ export const Legend = (props: LegendProps) => {
                   selectedItems={props.atsDlcs.selectedItems}
                   onItemToggle={props.atsDlcs.onItemToggle}
                 />
-              </TabPanel>
-              <TabPanel sx={{ p: 0 }} value={2}>
-                Coming Soon
               </TabPanel>
             </Tabs>
           </DialogContent>
