@@ -87,6 +87,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           'all',
           ['==', ['geometry-type'], 'Polygon'],
           ['==', ['get', 'type'], 'mapArea'],
+          dlcGuardFilter,
         ]}
         layout={{
           'fill-sort-key': ['get', 'zIndex'],
@@ -109,6 +110,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           'all',
           ['==', ['geometry-type'], 'Polygon'],
           ['==', ['get', 'type'], 'prefab'],
+          dlcGuardFilter,
         ]}
         layout={{
           'fill-sort-key': ['get', 'zIndex'],
@@ -128,6 +130,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           ['==', ['geometry-type'], 'LineString'],
           ['==', ['get', 'type'], 'road'],
           ['==', ['get', 'hidden'], true],
+          dlcGuardFilter,
         ]}
         paint={{
           'line-color': '#e9e9e8',
@@ -385,6 +388,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             ['==', ['get', 'type'], 'poi'],
             ['==', ['get', 'poiType'], 'road'],
             ['==', ['index-of', 'is', ['get', 'sprite']], 0],
+            dlcGuardFilter,
           ]}
           layout={iconLayout(enableIconAutoHide, 0.4, 0.75, 1.25)}
         />
@@ -401,6 +405,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             ['==', ['get', 'type'], 'poi'],
             ['==', ['get', 'poiType'], 'road'],
             ['==', ['index-of', 'us', ['get', 'sprite']], 0],
+            dlcGuardFilter,
           ]}
           layout={iconLayout(enableIconAutoHide, 0.4, 0.75, 1.25)}
         />
@@ -416,6 +421,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             ['==', ['geometry-type'], 'Point'],
             ['==', ['get', 'type'], 'poi'],
             ['==', ['get', 'poiType'], 'road'],
+            dlcGuardFilter,
             [
               '!',
               [
@@ -538,6 +544,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             ['==', ['geometry-type'], 'Point'],
             ['==', ['get', 'type'], 'poi'],
             createPoiFilter(visibleIcons),
+            dlcGuardFilter,
           ]}
           layout={iconLayout(enableIconAutoHide, 0.6, 1.25, 2.5, {
             vertical: 2,
