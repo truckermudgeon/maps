@@ -20,7 +20,7 @@ export type AtsSelectableDlc = Exclude<
   AtsDlc,
   AtsDlc.Nevada | AtsDlc.Arizona | AtsDlc.Nebraska
 >;
-export const AtsReleasedDlcs: ReadonlySet<AtsSelectableDlc> = new Set([
+export const AtsSelectableDlcs: ReadonlySet<AtsSelectableDlc> = new Set([
   AtsDlc.NewMexico,
   AtsDlc.Oregon,
   AtsDlc.Washington,
@@ -33,6 +33,19 @@ export const AtsReleasedDlcs: ReadonlySet<AtsSelectableDlc> = new Set([
   AtsDlc.Oklahoma,
   AtsDlc.Kansas,
 ]);
+export const AtsDlcInfo: Record<AtsSelectableDlc, string> = {
+  [AtsDlc.NewMexico]: 'New Mexico',
+  [AtsDlc.Oregon]: 'Oregon',
+  [AtsDlc.Washington]: 'Washington',
+  [AtsDlc.Utah]: 'Utah',
+  [AtsDlc.Idaho]: 'Idaho',
+  [AtsDlc.Colorado]: 'Colorado',
+  [AtsDlc.Wyoming]: 'Wyoming',
+  [AtsDlc.Montana]: 'Montana',
+  [AtsDlc.Texas]: 'Texas',
+  [AtsDlc.Oklahoma]: 'Oklahoma',
+  [AtsDlc.Kansas]: 'Kansas',
+};
 
 // from /def/country.sii
 export enum AtsCountryId {

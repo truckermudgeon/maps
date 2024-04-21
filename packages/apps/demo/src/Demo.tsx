@@ -1,5 +1,5 @@
 import type { AtsSelectableDlc } from '@truckermudgeon/map/constants';
-import { AtsReleasedDlcs } from '@truckermudgeon/map/constants';
+import { AtsSelectableDlcs } from '@truckermudgeon/map/constants';
 import {
   BaseMapStyle,
   GameMapStyle,
@@ -22,7 +22,7 @@ const Demo = () => {
   const [autoHide, setAutoHide] = useState(true);
   const [visibleIcons, setVisibleIcons] = useState(new Set(allIcons));
   const [visibleAtsDlcs, setVisibleAtsDlcs] = useState(
-    new Set(AtsReleasedDlcs),
+    new Set(AtsSelectableDlcs),
   );
 
   return (
@@ -85,7 +85,7 @@ const Demo = () => {
         }}
         visibleAtsDlcs={visibleAtsDlcs}
         onSelectAllAtsDlcsToggle={newValue =>
-          setVisibleAtsDlcs(new Set(newValue ? AtsReleasedDlcs : []))
+          setVisibleAtsDlcs(new Set(newValue ? AtsSelectableDlcs : []))
         }
         onVisibleAtsDlcsToggle={(dlc: AtsSelectableDlc, newValue: boolean) => {
           setVisibleAtsDlcs(prevState => {

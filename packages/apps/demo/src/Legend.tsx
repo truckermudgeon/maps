@@ -19,7 +19,7 @@ import {
   Tooltip,
 } from '@mui/joy';
 import type { AtsSelectableDlc } from '@truckermudgeon/map/constants';
-import { AtsDlc, AtsReleasedDlcs } from '@truckermudgeon/map/constants';
+import { AtsDlcInfo, AtsSelectableDlcs } from '@truckermudgeon/map/constants';
 import { MapIcon } from '@truckermudgeon/ui';
 import type { ReactElement } from 'react';
 import { memo, useState } from 'react';
@@ -59,21 +59,8 @@ const mapIcons = new Map<MapIcon, string>(
   Object.entries(mapIconInfo).map(([k, v]) => [Number(k), v.label]),
 );
 
-const atsDlcInfo: Record<AtsSelectableDlc, string> = {
-  [AtsDlc.NewMexico]: 'New Mexico',
-  [AtsDlc.Oregon]: 'Oregon',
-  [AtsDlc.Washington]: 'Washington',
-  [AtsDlc.Utah]: 'Utah',
-  [AtsDlc.Idaho]: 'Idaho',
-  [AtsDlc.Colorado]: 'Colorado',
-  [AtsDlc.Wyoming]: 'Wyoming',
-  [AtsDlc.Montana]: 'Montana',
-  [AtsDlc.Texas]: 'Texas',
-  [AtsDlc.Oklahoma]: 'Oklahoma',
-  [AtsDlc.Kansas]: 'Kansas',
-};
 const atsDlcs = new Map<AtsSelectableDlc, string>(
-  Object.entries(atsDlcInfo).map(([k, v]) => [Number(k), v]),
+  Object.entries(AtsDlcInfo).map(([k, v]) => [Number(k), v]),
 );
 
 export interface LegendProps {
@@ -145,7 +132,7 @@ export const Legend = (props: LegendProps) => {
           <DialogTitle>Map Options</DialogTitle>
           <ModalClose />
           <Tabs onChange={(_, value) => setActiveTab(Number(value))}>
-            <TabList tabFlex={1}>
+            <TabList tabFlex={1} sx={{ borderRadius: 0 }}>
               <Tab>Icons</Tab>
               <Tab>ATS DLC</Tab>
               <Tab>ETS2 DLC</Tab>
@@ -193,7 +180,7 @@ export const Legend = (props: LegendProps) => {
           {activeTab === 1 && (
             <DlcFooter
               enableSelectAll={
-                props.visibleAtsDlcs.size === AtsReleasedDlcs.size
+                props.visibleAtsDlcs.size === AtsSelectableDlcs.size
               }
               onSelectAllToggle={props.onSelectAllAtsDlcsToggle}
             />
