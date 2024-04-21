@@ -81,6 +81,7 @@ const Demo = () => {
         game={'ats'}
         enableIconAutoHide={autoHide}
         visibleIcons={visibleIcons}
+        dlcs={visibleAtsDlcs}
       />
       <GameMapStyle
         game={'ets2'}

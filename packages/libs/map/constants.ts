@@ -1,26 +1,25 @@
 import type { FacilityIcon } from './types';
 
 export enum AtsDlc {
-  Nevada,
   Arizona,
-  NewMexico,
-  Oregon,
-  Washington,
-  Utah,
-  Idaho,
   Colorado,
-  Wyoming,
-  Montana,
-  Texas,
-  Oklahoma,
+  Idaho,
   Kansas,
+  Montana,
   Nebraska,
+  Nevada,
+  NewMexico,
+  Oklahoma,
+  Oregon,
+  Texas,
+  Utah,
+  Washington,
+  Wyoming,
 }
-export type AtsSelectableDlc = Exclude<
-  AtsDlc,
-  AtsDlc.Nevada | AtsDlc.Arizona | AtsDlc.Nebraska
->;
+export type AtsSelectableDlc = Exclude<AtsDlc, AtsDlc.Nebraska>;
 export const AtsSelectableDlcs: ReadonlySet<AtsSelectableDlc> = new Set([
+  AtsDlc.Nevada,
+  AtsDlc.Arizona,
   AtsDlc.NewMexico,
   AtsDlc.Oregon,
   AtsDlc.Washington,
@@ -34,6 +33,8 @@ export const AtsSelectableDlcs: ReadonlySet<AtsSelectableDlc> = new Set([
   AtsDlc.Kansas,
 ]);
 export const AtsDlcInfo: Record<AtsSelectableDlc, string> = {
+  [AtsDlc.Nevada]: 'Nevada',
+  [AtsDlc.Arizona]: 'Arizona',
   [AtsDlc.NewMexico]: 'New Mexico',
   [AtsDlc.Oregon]: 'Oregon',
   [AtsDlc.Washington]: 'Washington',
@@ -109,8 +110,8 @@ export enum AtsCountryId {
 export const AtsCountryIdToDlcGuard: Record<AtsCountryId, AtsDlcGuard> = {
   // Base Map
   [AtsCountryId.California]: 0,
-  [AtsCountryId.Nevada]: 0,
-  [AtsCountryId.Arizona]: 0,
+  [AtsCountryId.Nevada]: 1,
+  [AtsCountryId.Arizona]: 2,
   // DLCs
   [AtsCountryId.Colorado]: 13,
   [AtsCountryId.Idaho]: 9,
@@ -128,9 +129,9 @@ export const AtsCountryIdToDlcGuard: Record<AtsCountryId, AtsDlcGuard> = {
 export type AtsDlcGuard = Range<0, 36>;
 
 export const AtsDlcGuards: Record<AtsDlcGuard, ReadonlySet<AtsDlc>> = {
-  0: new Set(), // Used by `maps` project as "Base Map" DLC.
-  1: new Set([AtsDlc.Nevada]), // N.B.: part of base map
-  2: new Set([AtsDlc.Arizona]), // N.B.: part of base map
+  0: new Set(),
+  1: new Set([AtsDlc.Nevada]),
+  2: new Set([AtsDlc.Arizona]),
   3: new Set([AtsDlc.NewMexico]),
   4: new Set([AtsDlc.Oregon]),
   5: new Set([AtsDlc.Washington]),
@@ -166,8 +167,6 @@ export const AtsDlcGuards: Record<AtsDlcGuard, ReadonlySet<AtsDlc>> = {
   35: new Set([AtsDlc.Nebraska, AtsDlc.Wyoming]),
 } as const;
 
-export const AtsBaseDlcGuards: ReadonlySet<AtsDlcGuard> = new Set([1, 2]);
-
 export enum Ets2Dlc {
   GoingEast,
   Scandinavia,
@@ -184,6 +183,11 @@ export enum Ets2Dlc {
   /** Feldbinder factory in Winsen, Germany. */
   Feldbinder,
 }
+export type Ets2SelectableDlc = Exclude<
+  Ets2Dlc,
+  Ets2Dlc.HeartOfRussia | Ets2Dlc.Krone | Ets2Dlc.Feldbinder
+>;
+export const Ets2SelectableDlcs: ReadonlySet<Ets2SelectableDlc> = new Set([]);
 
 export const Ets2DlcGuards: Record<number, ReadonlySet<Ets2Dlc>> = {
   0: new Set([]),

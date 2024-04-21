@@ -1,6 +1,16 @@
 import type { DataDrivenPropertyValueSpecification } from '@maplibre/maplibre-gl-style-spec';
 import { Preconditions } from '@truckermudgeon/base/precon';
-import { MapColor } from '@truckermudgeon/map/constants';
+import type {
+  AtsSelectableDlc,
+  Ets2SelectableDlc,
+} from '@truckermudgeon/map/constants';
+import {
+  AtsDlcGuards,
+  AtsSelectableDlcs,
+  Ets2DlcGuards,
+  Ets2SelectableDlcs,
+  MapColor,
+} from '@truckermudgeon/map/constants';
 import type {
   FacilityIcon,
   NonFacilityPoi,
@@ -40,19 +50,30 @@ export const allIcons: ReadonlySet<MapIcon> = new Set<MapIcon>(
   Array.from({ length: 17 }, (_, i) => i as MapIcon),
 );
 
-export interface GameMapStyleProps {
-  game: 'ats' | 'ets2';
+export type GameMapStyleProps = {
   /** Defaults to all MapIcons */
   visibleIcons?: ReadonlySet<MapIcon>;
   /** Defaults to true */
   enableIconAutoHide?: boolean;
-}
+} & (
+  | {
+      game: 'ats';
+      /** Defaults to all Selectable DLCs */
+      dlcs?: ReadonlySet<AtsSelectableDlc>;
+    }
+  | {
+      game: 'ets2';
+      /** Defaults to all Selectable DLCs */
+      dlcs?: ReadonlySet<Ets2SelectableDlc>;
+    }
+);
 
-export const GameMapStyle = ({
-  game,
-  visibleIcons = allIcons,
-  enableIconAutoHide = true,
-}: GameMapStyleProps) => {
+export const GameMapStyle = (props: GameMapStyleProps) => {
+  const { game, visibleIcons = allIcons, enableIconAutoHide = true } = props;
+  const dlcGuardFilter =
+    game === 'ats'
+      ? createDlcGuardFilter(game, props.dlcs ?? AtsSelectableDlcs)
+      : createDlcGuardFilter(game, props.dlcs ?? Ets2SelectableDlcs);
   addPmTilesProtocol();
   return (
     // N.B.: {ats,ets2}.pmtiles each have one layer named 'ats' or 'ets2'
@@ -124,6 +145,7 @@ export const GameMapStyle = ({
           ['==', ['get', 'type'], 'road'],
           ['!=', ['get', 'roadType'], 'train'],
           ['==', ['get', 'hidden'], false],
+          dlcGuardFilter,
         ]}
         layout={roadLineLayout}
         paint={{
@@ -152,6 +174,7 @@ export const GameMapStyle = ({
           ['==', ['get', 'type'], 'road'],
           ['!=', ['get', 'roadType'], 'train'],
           ['==', ['get', 'hidden'], false],
+          dlcGuardFilter,
         ]}
         layout={roadLineLayout}
         paint={{
@@ -514,7 +537,7 @@ export const GameMapStyle = ({
             'all',
             ['==', ['geometry-type'], 'Point'],
             ['==', ['get', 'type'], 'poi'],
-            poiIconFilter(visibleIcons),
+            createPoiFilter(visibleIcons),
           ]}
           layout={iconLayout(enableIconAutoHide, 0.6, 1.25, 2.5, {
             vertical: 2,
@@ -641,7 +664,7 @@ function hasPois(icons: ReadonlySet<MapIcon>): boolean {
   return mapIcons.some(icon => icons.has(icon));
 }
 
-function poiIconFilter(
+function createPoiFilter(
   visibleIcons: ReadonlySet<MapIcon>,
 ): ExpressionSpecification {
   Preconditions.checkArgument(hasPois(visibleIcons));
@@ -724,6 +747,36 @@ function poiIconFilter(
     facilityPredicate,
     roadFacilityPredicate,
   ];
+}
+
+function createDlcGuardFilter(
+  game: 'ats',
+  selectedDlcs: ReadonlySet<AtsSelectableDlc>,
+): ExpressionSpecification;
+function createDlcGuardFilter(
+  game: 'ets2',
+  selectedDlcs: ReadonlySet<Ets2SelectableDlc>,
+): ExpressionSpecification;
+function createDlcGuardFilter(
+  game: 'ats' | 'ets2',
+  selectedDlcs: ReadonlySet<unknown>,
+): ExpressionSpecification {
+  const guards: number[] = [];
+  if (game === 'ats') {
+    for (const [key, dlcs] of Object.entries(AtsDlcGuards)) {
+      if ([...dlcs].every(dlc => selectedDlcs.has(dlc))) {
+        guards.push(Number(key));
+      }
+    }
+  } else if (game === 'ets2') {
+    for (const [key, dlcs] of Object.entries(Ets2DlcGuards)) {
+      if ([...dlcs].every(dlc => selectedDlcs.has(dlc))) {
+        guards.push(Number(key));
+      }
+    }
+  }
+
+  return ['in', ['get', 'dlcGuard'], ['literal', guards]];
 }
 
 export const textVariableAnchor: ExpressionSpecification = [

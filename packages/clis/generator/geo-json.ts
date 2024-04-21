@@ -13,7 +13,6 @@ import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
 import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
 import type { AtsCountryId, AtsDlcGuard } from '@truckermudgeon/map/constants';
 import {
-  AtsBaseDlcGuards,
   AtsCountryIdToDlcGuard,
   AtsDlcGuards,
 } from '@truckermudgeon/map/constants';
@@ -673,158 +672,106 @@ function normalizeDlcGuards(
     return;
   }
 
-  const unknownCountryIds = new Set<number>();
   const unknownDlcGuards = new Set<number>();
 
-  for (const [key, road] of roads) {
-    const dlcGuard = road.dlcGuard as AtsDlcGuard;
-    if (AtsDlcGuards[dlcGuard] == null) {
+  // returns a normalized dlc guard, or undefined if dlcGuard cannot / should
+  // not be normalized.
+  const normalizeDlcGuard = (
+    dlcGuard: number,
+    nodeUids: readonly bigint[],
+  ): number | undefined => {
+    if (AtsDlcGuards[dlcGuard as AtsDlcGuard] == null) {
       unknownDlcGuards.add(dlcGuard);
-      continue;
+      return;
+    }
+    if (dlcGuard !== 0) {
+      return;
     }
 
-    if (AtsBaseDlcGuards.has(dlcGuard)) {
-      // make "0" the dlcGuard value for "base map".
-      roads.set(key, { ...road, dlcGuard: 0 });
-      continue;
-    } else if (dlcGuard !== 0) {
-      continue;
+    // An item with `dlcGuard: 0` does _not_ mean that the item belongs to the
+    // base-game map content. In order for DLC hiding to work closer to what's
+    // expected, infer a DLC Guard value based on the country IDs of the Nodes
+    // associated with `nodeUids`.
+
+    // Map of country ids to number of occurrences
+    const countryIdCounts = new Map<number, number>();
+
+    // count non-zero country ids for corresponding nodes
+    for (const cid of nodeUids.flatMap(nid => getCountryIds(nid, nodes))) {
+      const curCount = putIfAbsent(cid, 0, countryIdCounts);
+      countryIdCounts.set(cid, curCount + 1);
     }
 
-    const startCountryId = getCountryId(road.startNodeUid, nodes);
-    const endCountryId = getCountryId(road.endNodeUid, nodes);
-    if (startCountryId !== endCountryId) {
-      logger.warn('road country mismatch', startCountryId, endCountryId);
+    // find the most frequently ref'd country id
+    const mostReferencedEntries = [...countryIdCounts.entries()].sort(
+      ([, av], [, bv]) => bv - av,
+    );
+    if (mostReferencedEntries.length === 0) {
+      // no non-zero country IDs.
+      return;
     }
-    const countryId = startCountryId || endCountryId;
-    let newDlcGuard: number = AtsCountryIdToDlcGuard[countryId as AtsCountryId];
-    if (newDlcGuard == null) {
-      // What can be done in this case? Find the nearest node with a valid country id?
-      unknownCountryIds.add(countryId);
-      newDlcGuard = -1;
+
+    const countryId = mostReferencedEntries[0][0];
+    const equivDlcGuard = AtsCountryIdToDlcGuard[countryId as AtsCountryId];
+    if (equivDlcGuard == null) {
+      // no matching dlc guard for country id
+      logger.warn('unknown country id', countryId);
+      return;
     }
-    roads.set(key, { ...road, dlcGuard: newDlcGuard });
+
+    return equivDlcGuard;
+  };
+
+  for (const [key, road] of roads) {
+    const dlcGuard = normalizeDlcGuard(road.dlcGuard, [
+      road.startNodeUid,
+      road.endNodeUid,
+    ]);
+    if (dlcGuard != null) {
+      roads.set(key, { ...road, dlcGuard });
+    }
   }
 
   for (const [key, prefab] of prefabs) {
-    const dlcGuard = prefab.dlcGuard as AtsDlcGuard;
-    if (AtsDlcGuards[dlcGuard] == null) {
-      unknownDlcGuards.add(dlcGuard);
-      continue;
+    const dlcGuard = normalizeDlcGuard(prefab.dlcGuard, prefab.nodeUids);
+    if (dlcGuard != null) {
+      prefabs.set(key, { ...prefab, dlcGuard });
     }
-
-    if (AtsBaseDlcGuards.has(dlcGuard)) {
-      // make "0" the dlcGuard value for "base map".
-      prefabs.set(key, { ...prefab, dlcGuard: 0 });
-      continue;
-    } else if (dlcGuard !== 0) {
-      continue;
-    }
-
-    // Using the first node is probably insufficient.
-    const countryId = getCountryId(prefab.nodeUids[0], nodes);
-    let newDlcGuard: number = AtsCountryIdToDlcGuard[countryId as AtsCountryId];
-    if (newDlcGuard == null) {
-      // What can be done in this case? Find the nearest node with a valid country id?
-      unknownCountryIds.add(countryId);
-      newDlcGuard = -1;
-    }
-    prefabs.set(key, { ...prefab, dlcGuard: newDlcGuard });
   }
 
   for (const [key, mapArea] of mapAreas) {
-    const dlcGuard = mapArea.dlcGuard as AtsDlcGuard;
-    if (AtsDlcGuards[dlcGuard] == null) {
-      unknownDlcGuards.add(dlcGuard);
-      continue;
+    const dlcGuard = normalizeDlcGuard(mapArea.dlcGuard, mapArea.nodeUids);
+    if (dlcGuard != null) {
+      mapAreas.set(key, { ...mapArea, dlcGuard });
     }
-
-    if (AtsBaseDlcGuards.has(dlcGuard)) {
-      // make "0" the dlcGuard value for "base map".
-      mapAreas.set(key, { ...mapArea, dlcGuard: 0 });
-      continue;
-    } else if (dlcGuard !== 0) {
-      continue;
-    }
-
-    // Using the first node is probably insufficient.
-    const countryId = getCountryId(mapArea.nodeUids[0], nodes);
-    let newDlcGuard: number = AtsCountryIdToDlcGuard[countryId as AtsCountryId];
-    if (newDlcGuard == null) {
-      // What can be done in this case? Find the nearest node with a valid country id?
-      unknownCountryIds.add(countryId);
-      newDlcGuard = -1;
-    }
-    mapAreas.set(key, { ...mapArea, dlcGuard: newDlcGuard });
   }
 
   for (let i = 0; i < pois.length; i++) {
     const poi = pois[i];
     if (poi.type === 'landmark' || poi.type === 'road') {
-      const dlcGuard = poi.dlcGuard as AtsDlcGuard;
-      if (AtsDlcGuards[dlcGuard] == null) {
-        unknownDlcGuards.add(dlcGuard);
-        continue;
+      const dlcGuard = normalizeDlcGuard(poi.dlcGuard, [poi.nodeUid]);
+      if (dlcGuard != null) {
+        pois[i] = { ...poi, dlcGuard };
       }
-
-      if (AtsBaseDlcGuards.has(dlcGuard)) {
-        // make "0" the dlcGuard value for "base map".
-        pois[i] = { ...poi, dlcGuard: 0 };
-        continue;
-      } else if (dlcGuard !== 0) {
-        continue;
-      }
-
-      const countryId = getCountryId(poi.nodeUid, nodes);
-      let newDlcGuard: number =
-        AtsCountryIdToDlcGuard[countryId as AtsCountryId];
-      if (newDlcGuard == null) {
-        // What can be done in this case? Find the nearest node with a valid country id?
-        unknownCountryIds.add(countryId);
-        newDlcGuard = -1;
-      }
-      pois[i] = { ...poi, dlcGuard: newDlcGuard };
     } else if (poi.type === 'facility' && poi.icon === 'parking_ico') {
-      const dlcGuard = poi.dlcGuard as AtsDlcGuard;
-      if (AtsDlcGuards[dlcGuard] == null) {
-        unknownDlcGuards.add(dlcGuard);
-        continue;
+      const dlcGuard = normalizeDlcGuard(poi.dlcGuard, poi.itemNodeUids);
+      if (dlcGuard != null) {
+        pois[i] = { ...poi, dlcGuard };
       }
-
-      if (AtsBaseDlcGuards.has(dlcGuard)) {
-        // make "0" the dlcGuard value for "base map".
-        pois[i] = { ...poi, dlcGuard: 0 };
-        continue;
-      } else if (dlcGuard !== 0) {
-        continue;
-      }
-
-      // Using the first node is probably insufficient.
-      const countryId = getCountryId(poi.itemNodeUids[0], nodes);
-      let newDlcGuard: number =
-        AtsCountryIdToDlcGuard[countryId as AtsCountryId];
-      if (newDlcGuard == null) {
-        // What can be done in this case? Find the nearest node with a valid country id?
-        unknownCountryIds.add(countryId);
-        newDlcGuard = -1;
-      }
-      pois[i] = { ...poi, dlcGuard: newDlcGuard };
     }
   }
 
   logger.warn('Unknown ATS dlc guards', unknownDlcGuards);
-  logger.warn('Unknown Country IDs', unknownCountryIds);
 }
 
-function getCountryId(nodeUid: bigint, nodes: Map<string, Node>) {
+function getCountryIds(nodeUid: bigint, nodes: Map<string, Node>): number[] {
   const node = assertExists(nodes.get(nodeUid.toString(16)));
-
   const { forwardCountryId, backwardCountryId } = node;
   if (forwardCountryId !== backwardCountryId) {
     logger.warn('country mismatch', forwardCountryId, backwardCountryId);
   }
-  // Note: 0 isn't a valid country id, so fallback to a non-zero value if possible.
-  return forwardCountryId || backwardCountryId;
+  // Filter out 0, which isn't a valid country id.
+  return [forwardCountryId, backwardCountryId].filter(id => id !== 0);
 }
 
 export function convertToFootprintsGeoJson({
