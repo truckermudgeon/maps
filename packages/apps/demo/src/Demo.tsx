@@ -117,7 +117,7 @@ const Demo = () => {
 };
 
 function toStateCodes(atsDlcs: Set<AtsSelectableDlc>) {
-  return new Set<StateCode>([...atsDlcs].map(toStateCode));
+  return new Set<StateCode>([...atsDlcs].map(toStateCode).concat(StateCode.CA));
 }
 
 function toStateCode(atsDlc: AtsSelectableDlc): StateCode {
