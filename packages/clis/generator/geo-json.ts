@@ -133,7 +133,7 @@ export function convertToGeoJson(
   } = tsMapData;
 
   logger.log('normalizing dlcGuard values...');
-  const dlcGuardedNodes = normalizeDlcGuards(roads, prefabs, mapAreas, pois, {
+  const dlcQuadTree = normalizeDlcGuards(roads, prefabs, mapAreas, pois, {
     map,
     nodes,
   });
@@ -645,19 +645,6 @@ export function convertToGeoJson(
     }
   }
 
-  const dlcQuadTree: DlcGuardQuadTree = quadtree<QtDlcGuardEntry>()
-    .x(e => e.x)
-    .y(e => e.y);
-  if (dlcGuardedNodes) {
-    for (const node of dlcGuardedNodes.values()) {
-      dlcQuadTree.add({
-        x: node.x,
-        y: node.y,
-        dlcGuard: node.dlcGuard,
-      });
-    }
-  }
-
   const features = [
     ...debugCityAreaFeatures,
     ...mapAreaFeatures,
@@ -709,14 +696,16 @@ function normalizeDlcGuards(
     map: 'usa' | 'europe';
     nodes: Map<string, Node>;
   },
-): Map<string, Node & { dlcGuard: number }> | undefined {
+): DlcGuardQuadTree | undefined {
   const { map, nodes } = context;
   if (map === 'europe') {
     logger.error('ets2 dlc guard normalization is not yet supported.');
     return;
   }
 
-  const dlcGuardedNodes = new Map<string, Node & { dlcGuard: number }>();
+  const dlcQuadTree: DlcGuardQuadTree = quadtree<QtDlcGuardEntry>()
+    .x(e => e.x)
+    .y(e => e.y);
   const unknownDlcGuards = new Set<number>();
 
   // returns a normalized dlc guard, or undefined if dlcGuard cannot / should
@@ -725,6 +714,7 @@ function normalizeDlcGuards(
     dlcGuard: number,
     nodeUids: readonly bigint[],
   ): number | undefined => {
+    Preconditions.checkArgument(nodeUids.length > 0);
     if (AtsDlcGuards[dlcGuard as AtsDlcGuard] == null) {
       unknownDlcGuards.add(dlcGuard);
       return;
@@ -752,8 +742,11 @@ function normalizeDlcGuards(
       ([, av], [, bv]) => bv - av,
     );
     if (mostReferencedEntries.length === 0) {
-      // no non-zero country IDs.
-      return;
+      // no non-zero country IDs. Fallback to the dlc guard associated with the
+      // closest node within 100m.
+      const node = assertExists(nodes.get(nodeUids[0].toString(16)));
+      const closestNode = dlcQuadTree.find(node.x, node.y, 100);
+      return closestNode?.dlcGuard;
     }
 
     const countryId = mostReferencedEntries[0][0];
@@ -767,11 +760,17 @@ function normalizeDlcGuards(
     for (const nid of nodeUids) {
       const nidString = nid.toString(16);
       const node = assertExists(nodes.get(nidString));
-      dlcGuardedNodes.set(nidString, { ...node, dlcGuard: equivDlcGuard });
+      dlcQuadTree.add({
+        x: node.x,
+        y: node.y,
+        dlcGuard: equivDlcGuard,
+      });
     }
     return equivDlcGuard;
   };
 
+  // Roads must be processed first, so that the QuadTree can be populated with
+  // accurate-ish dlc guard values for use as fallbacks by other Items.
   for (const [key, road] of roads) {
     const dlcGuard = normalizeDlcGuard(road.dlcGuard, [
       road.startNodeUid,
@@ -812,8 +811,7 @@ function normalizeDlcGuards(
   }
 
   logger.warn('Unknown ATS dlc guards', unknownDlcGuards);
-
-  return dlcGuardedNodes;
+  return dlcQuadTree;
 }
 
 function getCountryIds(nodeUid: bigint, nodes: Map<string, Node>): number[] {
