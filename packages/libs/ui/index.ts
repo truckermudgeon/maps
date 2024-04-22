@@ -8,7 +8,11 @@ export {
   baseTextPaint,
   textVariableAnchor,
 } from './GameMapStyle';
-export { SceneryTownSource, sceneryTownsUrl } from './SceneryTownSource';
+export {
+  SceneryTownSource,
+  StateCode,
+  sceneryTownsUrl,
+} from './SceneryTownSource';
 
 export const defaultMapStyle: StyleSpecification = {
   version: 8,

@@ -1,6 +1,6 @@
 import type { FacilityIcon } from './types';
 
-enum AtsDlc {
+export enum AtsDlc {
   Arizona,
   Colorado,
   Idaho,
