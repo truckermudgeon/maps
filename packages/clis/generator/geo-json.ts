@@ -73,6 +73,13 @@ interface QtRoadEntry {
 }
 type RoadQuadTree = Quadtree<QtRoadEntry>;
 
+interface QtDlcGuardEntry {
+  x: number;
+  y: number;
+  dlcGuard: number;
+}
+type DlcGuardQuadTree = Quadtree<QtDlcGuardEntry>;
+
 /**
  * Maps ETS2 {@link Country} `code` values to ISO 3166-1 alpha-2 codes.
  * If an entry isn't listed here, then `Country::code` is assumed to
@@ -638,11 +645,7 @@ export function convertToGeoJson(
     }
   }
 
-  const dlcQuadTree = quadtree<{
-    x: number;
-    y: number;
-    dlcGuard: number;
-  }>()
+  const dlcQuadTree: DlcGuardQuadTree = quadtree<QtDlcGuardEntry>()
     .x(e => e.x)
     .y(e => e.y);
   if (dlcGuardedNodes) {
