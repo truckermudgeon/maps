@@ -1,3 +1,4 @@
+import type { StateCode } from '@truckermudgeon/ui';
 import React, { useState } from 'react';
 import { useMap } from 'react-map-gl/maplibre';
 import type { GameOption } from './MapSelect';
@@ -5,7 +6,10 @@ import { MapSelect } from './MapSelect';
 import type { CityOption } from './SearchBar';
 import { SearchBar } from './SearchBar';
 
-export const MapSelectAndSearch = () => {
+interface MapSelectAndSearchProps {
+  visibleStates: Set<StateCode>;
+}
+export const MapSelectAndSearch = (props: MapSelectAndSearchProps) => {
   const { current: map } = useMap();
   const initialMap: GameOption =
     localStorage.getItem('tm-map') === 'europe'
@@ -81,7 +85,11 @@ export const MapSelectAndSearch = () => {
   return (
     <>
       <MapSelect map={gameMap.value} onSelect={onMapSelect} />
-      <SearchBar map={gameMap.value} onSelect={onSearchBarSelect} />
+      <SearchBar
+        map={gameMap.value}
+        onSelect={onSearchBarSelect}
+        visibleStates={props.visibleStates}
+      />
     </>
   );
 };

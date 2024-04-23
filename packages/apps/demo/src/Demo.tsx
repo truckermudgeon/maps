@@ -47,6 +47,7 @@ const Demo = () => {
   const [visibleAtsDlcs, setVisibleAtsDlcs] = useState(
     new Set(AtsSelectableDlcs),
   );
+  const visibleStates = toStateCodes(visibleAtsDlcs);
 
   const iconsListProps = createListProps(
     visibleIcons,
@@ -94,7 +95,7 @@ const Demo = () => {
       {visibleIcons.has(MapIcon.CityNames) && (
         <SceneryTownSource
           enableAutoHide={autoHide}
-          enabledStates={toStateCodes(visibleAtsDlcs)}
+          enabledStates={visibleStates}
         />
       )}
       <NavigationControl visualizePitch={true} />
@@ -103,7 +104,7 @@ const Demo = () => {
         compact={true}
         customAttribution="&copy; Trucker Mudgeon. scenery town data by <a href='https://github.com/nautofon/ats-towns'>nautofon</a>."
       />
-      <MapSelectAndSearch />
+      <MapSelectAndSearch visibleStates={visibleStates} />
       <Legend
         icons={{
           ...iconsListProps,

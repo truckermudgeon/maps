@@ -6,13 +6,12 @@ import {
   Typography,
 } from '@mui/joy';
 import type { AutocompleteRenderGroupParams } from '@mui/joy/Autocomplete/AutocompleteProps';
-import { assert, assertExists } from '@truckermudgeon/base/assert';
-import { putIfAbsent } from '@truckermudgeon/base/map';
+import { assertExists } from '@truckermudgeon/base/assert';
 import type {
   ScopedCityFeature,
   ScopedCountryFeature,
 } from '@truckermudgeon/map/types';
-import { sceneryTownsUrl } from '@truckermudgeon/ui';
+import { sceneryTownsUrl, type StateCode } from '@truckermudgeon/ui';
 import type { GeoJSON } from 'geojson';
 import { useEffect, useState } from 'react';
 
@@ -21,16 +20,11 @@ export interface CityOption {
   // long name (not post code). used to help filter
   // selection list by cities that match a state.
   state: string;
+  // post code
+  stateCode: string;
   map: 'usa' | 'europe';
   // lon-lat
   value: [number, number];
-}
-
-interface GroupedCityOption {
-  // state long name (not post code)
-  label: string;
-  map: 'usa' | 'europe';
-  options: CityOption[];
 }
 
 type CityAndCountryFC = GeoJSON.FeatureCollection<
@@ -44,31 +38,41 @@ type CityFC = GeoJSON.FeatureCollection<
   { state: string; name: string }
 >;
 
-interface SearchBarProps {
-  map: 'usa' | 'europe';
+type SearchBarProps = {
   onSelect: (option: CityOption) => void;
-}
+} & (
+  | {
+      map: 'usa';
+      visibleStates: Set<StateCode>;
+    }
+  | {
+      map: 'europe';
+    }
+);
 
-export const SearchBar = ({ map, onSelect }: SearchBarProps) => {
-  const [citiesByState, setCitiesByState] = useState<GroupedCityOption[]>([]);
+export const SearchBar = (props: SearchBarProps) => {
+  const { map, onSelect } = props;
+  const [sortedCities, setSortedCities] = useState<CityOption[]>([]);
   useEffect(() => {
     Promise.all([
       fetch('cities.geojson').then(r => r.json() as Promise<CityAndCountryFC>),
       fetch(sceneryTownsUrl).then(r => r.json() as Promise<CityFC>),
     ]).then(
       ([citiesAndCountries, towns]) => {
-        setCitiesByState(createGroupedCityOptions(citiesAndCountries, towns));
+        setSortedCities(createSortedCityOptions(citiesAndCountries, towns));
       },
       () => console.error('could not load cities/towns geojson.'),
     );
   }, []);
 
-  const options = citiesByState
-    .filter(group => group.map === map)
-    .reduce<CityOption[]>((acc, group) => {
-      acc.push(...group.options);
-      return acc;
-    }, []);
+  const options = sortedCities.filter(city => {
+    const mapMatches = city.map === map;
+    if (map === 'europe') {
+      // TODO add country filtering for europe
+      return mapMatches;
+    }
+    return mapMatches && props.visibleStates.has(city.stateCode as StateCode);
+  });
 
   const filterOptions = createFilterOptions<CityOption>({
     // stringify the state so that users can search for all cities in a state.
@@ -112,28 +116,26 @@ function formatGroupLabel(params: AutocompleteRenderGroupParams) {
   );
 }
 
-function createGroupedCityOptions(
+/** Sorts cities by state/country, then by city name. */
+function createSortedCityOptions(
   citiesAndCountries: CityAndCountryFC,
   towns: CityFC,
-): GroupedCityOption[] {
-  const citiesByCountryCode = new Map<string, ScopedCityFeature[]>();
-  const countries: ScopedCountryFeature['properties'][] = [];
+): CityOption[] {
+  const cities: ScopedCityFeature[] = [];
+  const countryCodeToName = new Map<string, string>();
   for (const cityOrCountry of citiesAndCountries.features) {
     if (cityOrCountry.properties.type === 'city') {
-      const cities = putIfAbsent(
-        cityOrCountry.properties.countryCode,
-        [],
-        citiesByCountryCode,
-      );
       cities.push(cityOrCountry as ScopedCityFeature);
     } else if (cityOrCountry.properties.type === 'country') {
-      countries.push(cityOrCountry.properties);
+      countryCodeToName.set(
+        cityOrCountry.properties.code,
+        cityOrCountry.properties.name,
+      );
     } else {
       throw new Error();
     }
   }
   for (const town of towns.features) {
-    const cities = putIfAbsent(town.properties.state, [], citiesByCountryCode);
     cities.push({
       type: 'Feature',
       geometry: town.geometry,
@@ -146,33 +148,17 @@ function createGroupedCityOptions(
     });
   }
 
-  const sortedCountries = countries.sort((a, b) =>
-    a.name.localeCompare(b.name),
-  );
-  return sortedCountries
-    .filter(country => {
-      // Some countries may be present in GeoJSON, but are never referenced by any
-      // cities in the GeoJSON, for whatever reason (e.g., the Winterland cities).
-      // Filter them out so no empty Groups are shown.
-      return citiesByCountryCode.has(country.code);
-    })
-    .map(country => {
-      const sortedCities = assertExists(citiesByCountryCode.get(country.code))
-        .sort(({ properties: a }, { properties: b }) =>
-          a.name.localeCompare(b.name),
-        )
-        .map(cf => ({
-          map: country.map,
-          state: country.name,
-          label: cf.properties.name,
-          value: cf.geometry.coordinates as [number, number],
-        }));
-      // sanity check
-      assert(sortedCities.every(city => city.map === country.map));
-      return {
-        map: country.map,
-        label: country.name,
-        options: sortedCities,
-      };
-    });
+  return cities
+    .map(({ properties, geometry }) => ({
+      map: properties.map,
+      state: assertExists(countryCodeToName.get(properties.countryCode)),
+      stateCode: properties.countryCode,
+      label: properties.name,
+      value: geometry.coordinates as [number, number],
+    }))
+    .sort((a, b) =>
+      a.state !== b.state
+        ? a.state.localeCompare(b.state)
+        : a.label.localeCompare(b.label),
+    );
 }
