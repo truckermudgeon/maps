@@ -68,6 +68,29 @@ export interface ListProps<T> {
   onSelectAllToggle: (newValue: boolean) => void;
   onItemToggle: (item: T, newValue: boolean) => void;
 }
+export function createListProps<T>(
+  selectedItems: Set<T>,
+  setSelectedItems: (value: React.SetStateAction<Set<T>>) => void,
+  allItems: ReadonlySet<T>,
+) {
+  return {
+    selectedItems,
+    onSelectAllToggle: (all: boolean) =>
+      setSelectedItems(new Set(all ? allItems : [])),
+    onItemToggle: (item: T, newValue: boolean) => {
+      setSelectedItems((prevState: Set<T>) => {
+        const newState = new Set(prevState);
+        if (newValue) {
+          newState.add(item);
+        } else {
+          newState.delete(item);
+        }
+        return newState;
+      });
+    },
+  };
+}
+
 export interface LegendProps {
   icons: ListProps<MapIcon> & {
     enableAutoHiding: boolean;

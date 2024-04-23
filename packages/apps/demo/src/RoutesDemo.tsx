@@ -3,6 +3,12 @@ import type { AutocompleteRenderGroupParams } from '@mui/joy/Autocomplete/Autoco
 import { assertExists } from '@truckermudgeon/base/assert';
 import { getExtent } from '@truckermudgeon/base/geom';
 import { putIfAbsent } from '@truckermudgeon/base/map';
+import type { AtsDlcGuard } from '@truckermudgeon/map/constants';
+import {
+  AtsDlcGuards,
+  AtsSelectableDlcs,
+  type AtsSelectableDlc,
+} from '@truckermudgeon/map/constants';
 import type { Context, Mode, PartialNode } from '@truckermudgeon/map/routing';
 import { findRoute } from '@truckermudgeon/map/routing';
 import type {
@@ -16,6 +22,7 @@ import {
   BaseMapStyle,
   GameMapStyle,
   SceneryTownSource,
+  allIcons,
   defaultMapStyle,
 } from '@truckermudgeon/ui';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -30,8 +37,29 @@ import MapGl, {
   Source,
   useMap,
 } from 'react-map-gl/maplibre';
+import { Legend, createListProps } from './Legend';
+import { toStateCodes } from './state-codes';
 
 const RoutesDemo = () => {
+  const [autoHide, setAutoHide] = useState(true);
+  const [visibleIcons, setVisibleIcons] = useState(new Set(allIcons));
+  const [visibleAtsDlcs, setVisibleAtsDlcs] = useState(
+    new Set(AtsSelectableDlcs),
+  );
+  const visibleStates = toStateCodes(visibleAtsDlcs);
+
+  const iconsListProps = createListProps(
+    visibleIcons,
+    setVisibleIcons,
+    allIcons,
+  );
+
+  const atsDlcsListProps = createListProps(
+    visibleAtsDlcs,
+    setVisibleAtsDlcs,
+    AtsSelectableDlcs,
+  );
+
   return (
     <MapGl
       style={{ width: '100vw', height: '100vh' }} // ensure map fills page
@@ -50,8 +78,16 @@ const RoutesDemo = () => {
       }}
     >
       <BaseMapStyle />
-      <GameMapStyle game={'ats'} />
-      <SceneryTownSource enableAutoHide={true} />
+      <GameMapStyle
+        game={'ats'}
+        enableIconAutoHide={autoHide}
+        visibleIcons={visibleIcons}
+        dlcs={visibleAtsDlcs}
+      />
+      <SceneryTownSource
+        enableAutoHide={autoHide}
+        enabledStates={visibleStates}
+      />
       <Source
         id={'route1'}
         type={'geojson'}
@@ -85,7 +121,15 @@ const RoutesDemo = () => {
         compact={true}
         customAttribution="&copy; Trucker Mudgeon. scenery town data by <a href='https://github.com/nautofon/ats-towns'>nautofon</a>."
       />
-      <RouteControl />
+      <RouteControl dlcs={visibleAtsDlcs} />
+      <Legend
+        icons={{
+          ...iconsListProps,
+          enableAutoHiding: autoHide,
+          onAutoHidingToggle: setAutoHide,
+        }}
+        atsDlcs={atsDlcsListProps}
+      />
     </MapGl>
   );
 };
@@ -116,9 +160,21 @@ interface GroupedCompanyOption {
   options: CompanyOption[];
 }
 
-const RouteControl = () => {
-  const { current: map } = useMap();
+function getDlcGuards(
+  selectedDlcs: ReadonlySet<AtsSelectableDlc>,
+): Set<AtsDlcGuard> {
+  const guards = new Set<AtsSelectableDlc>();
+  for (const [key, dlcs] of Object.entries(AtsDlcGuards)) {
+    if ([...dlcs].every(dlc => selectedDlcs.has(dlc as AtsSelectableDlc))) {
+      guards.add(Number(key));
+    }
+  }
+  return guards;
+}
 
+const RouteControl = (props: { dlcs: ReadonlySet<AtsSelectableDlc> }) => {
+  const { current: map } = useMap();
+  const enabledDlcGuards = getDlcGuards(props.dlcs);
   const [demoData, setDemoData] = useState<DemoRoutesData | undefined>(
     undefined,
   );
