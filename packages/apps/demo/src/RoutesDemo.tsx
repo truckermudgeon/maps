@@ -349,6 +349,7 @@ function toNeighbor(demoNeighbor: DemoNeighbor): Neighbor {
     distance: demoNeighbor.l,
     isOneLaneRoad: demoNeighbor.o,
     direction: demoNeighbor.d === 'f' ? 'forward' : 'backward',
+    dlcGuard: demoNeighbor.g,
   };
 }
 

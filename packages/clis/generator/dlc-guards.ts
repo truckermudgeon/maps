@@ -24,7 +24,7 @@ interface QtDlcGuardEntry {
   dlcGuard: number;
 }
 
-type DlcGuardQuadTree = Quadtree<QtDlcGuardEntry>;
+export type DlcGuardQuadTree = Quadtree<QtDlcGuardEntry>;
 
 export function normalizeDlcGuards(
   roads: Map<string, Road>,

@@ -1,13 +1,18 @@
 import { assertExists } from '@truckermudgeon/base/assert';
 import { distance } from '@truckermudgeon/base/geom';
 import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
-import type { Neighbor, Neighbors, Node } from '@truckermudgeon/map/types';
+import type {
+  Neighbors,
+  Node,
+  Neighbor as _Neighbor,
+} from '@truckermudgeon/map/types';
 import type { PriorityQueueInstance } from 'priorityqueue';
 import PriorityQueue from 'priorityqueue';
 import type { PriorityQueueOption } from 'priorityqueue/lib/PriorityQueue';
 
 export type Direction = 'forward' | 'backward';
 export type Mode = 'shortest' | 'smallRoads';
+type Neighbor = Omit<_Neighbor, 'dlcGuard'>;
 export interface Route {
   route: Neighbor[];
   distance: number;

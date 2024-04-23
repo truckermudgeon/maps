@@ -551,6 +551,8 @@ export interface Neighbor {
    * Not the direction of this Neighbor's edge.
    */
   readonly direction: 'forward' | 'backward';
+  /** The dlcGuard associated with this Neighbor's node. */
+  readonly dlcGuard: number;
 }
 
 /**
@@ -575,6 +577,8 @@ export interface DemoNeighbor {
   o?: true;
   /** direction */
   d: 'f' | 'b';
+  /** dlcGuard */
+  g: number;
 }
 
 export interface DemoNeighbors {
