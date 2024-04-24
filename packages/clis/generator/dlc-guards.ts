@@ -26,6 +26,15 @@ interface QtDlcGuardEntry {
 
 export type DlcGuardQuadTree = Quadtree<QtDlcGuardEntry>;
 
+/**
+ * Replaces the items in the given collections with copies of those items that
+ * have best-effort normalized `dlcGuard` values.
+ *
+ * An item with a `dlcGuard` of 0 does _not_ mean that the item belongs to the
+ * base-game map content. In order for DLC hiding to work as if that were the
+ * case, 0-values are normalized based on the country IDs of the Nodes
+ * associated with the item.
+ */
 export function normalizeDlcGuards(
   roads: Map<string, Road>,
   prefabs: Map<string, Prefab>,
@@ -70,11 +79,6 @@ export function normalizeDlcGuards(
       }
       return;
     }
-
-    // An item with `dlcGuard: 0` does _not_ mean that the item belongs to the
-    // base-game map content. In order for DLC hiding to work closer to what's
-    // expected, infer a DLC Guard value based on the country IDs of the Nodes
-    // associated with `nodeUids`.
 
     // Map of country ids to number of occurrences
     const countryIdCounts = new Map<number, number>();

@@ -292,6 +292,9 @@ const RouteControl = (props: { dlcs: ReadonlySet<AtsSelectableDlc> }) => {
   if (demoData) {
     for (const [, neighbors] of demoData.demoGraph) {
       for (const neighbor of [...(neighbors.b ?? []), ...(neighbors.f ?? [])]) {
+        // Note: for some unknown reason, neighbors representing the same node
+        // may have different dlcGuard values set. When such a neighbor is
+        // encountered, prefer the non-zero dlcGuard value.
         const currGuard = dlcGuards.get(neighbor.n) ?? 0;
         dlcGuards.set(neighbor.n, currGuard || neighbor.g);
       }
