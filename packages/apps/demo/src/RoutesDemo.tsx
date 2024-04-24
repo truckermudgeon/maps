@@ -2,7 +2,6 @@ import { Autocomplete, List, ListDivider, Typography } from '@mui/joy';
 import type { AutocompleteRenderGroupParams } from '@mui/joy/Autocomplete/AutocompleteProps';
 import { assertExists } from '@truckermudgeon/base/assert';
 import { getExtent } from '@truckermudgeon/base/geom';
-import { putIfAbsent } from '@truckermudgeon/base/map';
 import type { AtsDlcGuard } from '@truckermudgeon/map/constants';
 import {
   AtsSelectableDlcs,
@@ -149,15 +148,10 @@ export default RoutesDemo;
 export interface CompanyOption {
   // company token
   label: string;
+  // city token
   city: string;
   // node uid
   value: string;
-}
-
-interface GroupedCompanyOption {
-  // city token
-  label: string;
-  options: CompanyOption[];
 }
 
 const RouteControl = (props: { dlcs: ReadonlySet<AtsSelectableDlc> }) => {
@@ -169,26 +163,14 @@ const RouteControl = (props: { dlcs: ReadonlySet<AtsSelectableDlc> }) => {
   const [context, setContext] = useState<
     Omit<Context, 'enabledDlcGuards'> | undefined
   >(undefined);
-  const [startCompaniesByCity, setStartCompaniesByCity] = useState<
-    GroupedCompanyOption[]
-  >([]);
-  const [endCompaniesByCity, setEndCompaniesByCity] = useState<
-    GroupedCompanyOption[]
-  >([]);
+  const [startCompanies, setStartCompanies] = useState<CompanyOption[]>([]);
+  const [endCompanies, setEndCompanies] = useState<CompanyOption[]>([]);
   useEffect(() => {
     fetch('usa-graph-demo.json')
       .then(r => r.json() as Promise<DemoRoutesData>)
       .then(
         data => {
-          const companiesByCityToken = new Map<string, CompanyOption[]>();
-          for (const company of data.demoCompanies) {
-            putIfAbsent(company.c, [], companiesByCityToken).push(
-              toCompanyOption(company),
-            );
-          }
-          setStartCompaniesByCity(
-            toGroupedCompanyOptions(companiesByCityToken),
-          );
+          setStartCompanies(data.demoCompanies.map(toCompanyOption));
           setContext(toContext(data));
           setDemoData(data);
         },
@@ -211,15 +193,11 @@ const RouteControl = (props: { dlcs: ReadonlySet<AtsSelectableDlc> }) => {
           demoData.demoCompanyDefs.find(d => d.t === matchingCompany!.t),
         );
         const destTokens = new Set(matchingDef.d);
-        const companiesByCityToken = new Map<string, CompanyOption[]>();
-        for (const company of demoData.demoCompanies) {
-          if (destTokens.has(company.t)) {
-            putIfAbsent(company.c, [], companiesByCityToken).push(
-              toCompanyOption(company),
-            );
-          }
-        }
-        setEndCompaniesByCity(toGroupedCompanyOptions(companiesByCityToken));
+        setEndCompanies(
+          demoData.demoCompanies
+            .filter(c => destTokens.has(c.t))
+            .map(toCompanyOption),
+        );
       }
 
       if (map == null || context == null) {
@@ -320,30 +298,24 @@ const RouteControl = (props: { dlcs: ReadonlySet<AtsSelectableDlc> }) => {
     }
   }
 
-  const startOptions = startCompaniesByCity
-    .reduce<CompanyOption[]>((acc, group) => {
-      acc.push(...group.options);
-      return acc;
-    }, [])
-    .filter(company => {
-      if (context == null) {
-        return true;
-      }
-      const dlcGuard = assertExists(dlcGuards.get(company.value));
-      return enabledDlcGuards.has(dlcGuard as AtsDlcGuard);
-    });
-  const endOptions = endCompaniesByCity
-    .reduce<CompanyOption[]>((acc, group) => {
-      acc.push(...group.options);
-      return acc;
-    }, [])
-    .filter(company => {
-      if (context == null) {
-        return true;
-      }
-      const dlcGuard = assertExists(dlcGuards.get(company.value));
-      return enabledDlcGuards.has(dlcGuard as AtsDlcGuard);
-    });
+  const filterByDlcs = (company: CompanyOption) => {
+    if (context == null) {
+      return true;
+    }
+    const dlcGuard = assertExists(dlcGuards.get(company.value));
+    return enabledDlcGuards.has(dlcGuard as AtsDlcGuard);
+  };
+  const sortByCityThenLabel = (a: CompanyOption, b: CompanyOption) =>
+    a.city !== b.city
+      ? a.city.localeCompare(b.city)
+      : a.label.localeCompare(b.label);
+
+  const startOptions = startCompanies
+    .filter(filterByDlcs)
+    .sort(sortByCityThenLabel);
+  const endOptions = endCompanies
+    .filter(filterByDlcs)
+    .sort(sortByCityThenLabel);
 
   return (
     <div
@@ -432,17 +404,6 @@ function toCompanyOption(demoCompany: DemoCompany): CompanyOption {
     city: demoCompany.c,
     value: demoCompany.n,
   };
-}
-
-function toGroupedCompanyOptions(
-  companiesByCityToken: Map<string, CompanyOption[]>,
-): GroupedCompanyOption[] {
-  return [...companiesByCityToken.entries()]
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([cityToken, companies]) => ({
-      label: cityToken,
-      options: companies,
-    }));
 }
 
 function fakeFind(
