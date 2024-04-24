@@ -51,6 +51,7 @@ import lineOffset from '@turf/line-offset';
 import type { Quadtree } from 'd3-quadtree';
 import { quadtree } from 'd3-quadtree';
 import type { FeatureCollection, GeoJSON, Point } from 'geojson';
+import { normalizeDlcGuards } from './dlc-guards';
 import { logger } from './logger';
 import type { MappedData } from './mapped-data';
 
@@ -120,6 +121,12 @@ export function convertToGeoJson(
     prefabDescriptions,
   } = tsMapData;
 
+  logger.log('normalizing dlcGuard values...');
+  const dlcQuadTree = normalizeDlcGuards(roads, prefabs, mapAreas, pois, {
+    map,
+    nodes,
+  });
+
   const normalize = createNormalize(map);
   const normalizeCoordinates = createNormalizeCoordinates(map);
 
@@ -146,6 +153,7 @@ export function convertToGeoJson(
     areaToFeature(a, nodes),
   );
 
+  // TODO ferry lines shown are dependent on DLCs present.
   logger.log('creating ferry/train lines...');
   const uniqFerries: Ferry[] = [];
   const pairs = new Set<string>();
@@ -631,9 +639,9 @@ export function convertToGeoJson(
     ...mapAreaFeatures,
     ...prefabFeatures,
     ...processedRoadFeatures,
-    ...cityFeatures,
+    ...cityFeatures.map(c => withDlcGuard(c, dlcQuadTree)),
     ...countryFeatures,
-    ...poiFeatures,
+    ...poiFeatures.map(p => withDlcGuard(p, dlcQuadTree)),
     //...dividerFeatures,
     ...debugNodeFeatures,
   ];
@@ -645,6 +653,27 @@ export function convertToGeoJson(
       ...normalizedFerryFeatures,
     ],
   };
+}
+
+function withDlcGuard<T extends CityFeature | PoiFeature>(
+  feature: T,
+  dlcQuadTree: Quadtree<{ x: number; y: number; dlcGuard: number }> | undefined,
+): T {
+  if (dlcQuadTree == null) {
+    return feature;
+  }
+  if ('dlcGuard' in feature.properties && feature.properties.dlcGuard !== 0) {
+    return feature;
+  }
+
+  const [x, y] = feature.geometry.coordinates;
+  const entry = dlcQuadTree.find(x, y);
+  if (!entry) {
+    return feature;
+  }
+
+  (feature.properties as { dlcGuard: number }).dlcGuard = entry.dlcGuard;
+  return feature;
 }
 
 export function convertToFootprintsGeoJson({
@@ -916,6 +945,7 @@ function areaToFeature(
     id: area.uid.toString(),
     properties: {
       type: 'mapArea',
+      dlcGuard: area.dlcGuard,
       zIndex: area.drawOver ? 1 : 0,
       color: area.color,
     },
@@ -1081,6 +1111,7 @@ function poiToFeature(poi: Poi): PoiFeature {
       poiType: poi.type,
       // TODO labels should be present for all `Poi` of type `LabeledPoi`
       poiName: poi.type === 'company' ? poi.label : poi.icon,
+      dlcGuard: 'dlcGuard' in poi ? poi.dlcGuard : undefined,
     },
     geometry: {
       type: 'Point',
@@ -1186,6 +1217,7 @@ function prefabToFeatures(
         id: prefab.uid + 'poly' + i,
         properties: {
           type: 'prefab',
+          dlcGuard: prefab.dlcGuard,
           zIndex: polygon.zIndex,
           color: polygon.color,
         },
@@ -1271,6 +1303,7 @@ function prefabToFeatures(
         id: prefab.uid + 'road' + i,
         properties: {
           type: 'road',
+          dlcGuard: prefab.dlcGuard,
           prefab: prefab.token,
           roadType: nearestRoadType,
           offset: road.offset,
@@ -1309,6 +1342,7 @@ function roadToFeature(
   );
   const properties = {
     ...roadLookToProperties(roadLook, !!road.hidden),
+    dlcGuard: road.dlcGuard,
     startNodeUid: road.startNodeUid.toString(16),
     endNodeUid: road.endNodeUid.toString(16),
   };
@@ -1456,7 +1490,14 @@ function roadLookToProperties(
   };
 }
 
-function arePropsConnectable(a: RoadLookProperties, b: RoadLookProperties) {
+function arePropsConnectable(
+  a: RoadLookProperties & { dlcGuard: number },
+  b: RoadLookProperties & { dlcGuard: number },
+) {
+  if (a.dlcGuard !== b.dlcGuard) {
+    return false;
+  }
+
   // we don't care about hidden roads; they can be joined all the time since they're
   // currently rendered the same, regardless of roadType.
   if (a.hidden && b.hidden) {

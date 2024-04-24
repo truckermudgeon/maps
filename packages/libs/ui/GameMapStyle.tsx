@@ -1,6 +1,15 @@
 import type { DataDrivenPropertyValueSpecification } from '@maplibre/maplibre-gl-style-spec';
 import { Preconditions } from '@truckermudgeon/base/precon';
-import { MapColor } from '@truckermudgeon/map/constants';
+import type {
+  AtsSelectableDlc,
+  Ets2SelectableDlc,
+} from '@truckermudgeon/map/constants';
+import {
+  AtsSelectableDlcs,
+  Ets2SelectableDlcs,
+  MapColor,
+  toAtsDlcGuards,
+} from '@truckermudgeon/map/constants';
 import type {
   FacilityIcon,
   NonFacilityPoi,
@@ -40,19 +49,30 @@ export const allIcons: ReadonlySet<MapIcon> = new Set<MapIcon>(
   Array.from({ length: 17 }, (_, i) => i as MapIcon),
 );
 
-export interface GameMapStyleProps {
-  game: 'ats' | 'ets2';
+export type GameMapStyleProps = {
   /** Defaults to all MapIcons */
   visibleIcons?: ReadonlySet<MapIcon>;
   /** Defaults to true */
   enableIconAutoHide?: boolean;
-}
+} & (
+  | {
+      game: 'ats';
+      /** Defaults to all Selectable DLCs */
+      dlcs?: ReadonlySet<AtsSelectableDlc>;
+    }
+  | {
+      game: 'ets2';
+      /** Defaults to all Selectable DLCs */
+      dlcs?: ReadonlySet<Ets2SelectableDlc>;
+    }
+);
 
-export const GameMapStyle = ({
-  game,
-  visibleIcons = allIcons,
-  enableIconAutoHide = true,
-}: GameMapStyleProps) => {
+export const GameMapStyle = (props: GameMapStyleProps) => {
+  const { game, visibleIcons = allIcons, enableIconAutoHide = true } = props;
+  const dlcGuardFilter =
+    game === 'ats'
+      ? createDlcGuardFilter(game, props.dlcs ?? AtsSelectableDlcs)
+      : createDlcGuardFilter(game, props.dlcs ?? Ets2SelectableDlcs);
   addPmTilesProtocol();
   return (
     // N.B.: {ats,ets2}.pmtiles each have one layer named 'ats' or 'ets2'
@@ -66,6 +86,7 @@ export const GameMapStyle = ({
           'all',
           ['==', ['geometry-type'], 'Polygon'],
           ['==', ['get', 'type'], 'mapArea'],
+          dlcGuardFilter,
         ]}
         layout={{
           'fill-sort-key': ['get', 'zIndex'],
@@ -88,6 +109,7 @@ export const GameMapStyle = ({
           'all',
           ['==', ['geometry-type'], 'Polygon'],
           ['==', ['get', 'type'], 'prefab'],
+          dlcGuardFilter,
         ]}
         layout={{
           'fill-sort-key': ['get', 'zIndex'],
@@ -107,6 +129,7 @@ export const GameMapStyle = ({
           ['==', ['geometry-type'], 'LineString'],
           ['==', ['get', 'type'], 'road'],
           ['==', ['get', 'hidden'], true],
+          dlcGuardFilter,
         ]}
         paint={{
           'line-color': '#e9e9e8',
@@ -124,6 +147,7 @@ export const GameMapStyle = ({
           ['==', ['get', 'type'], 'road'],
           ['!=', ['get', 'roadType'], 'train'],
           ['==', ['get', 'hidden'], false],
+          dlcGuardFilter,
         ]}
         layout={roadLineLayout}
         paint={{
@@ -152,6 +176,7 @@ export const GameMapStyle = ({
           ['==', ['get', 'type'], 'road'],
           ['!=', ['get', 'roadType'], 'train'],
           ['==', ['get', 'hidden'], false],
+          dlcGuardFilter,
         ]}
         layout={roadLineLayout}
         paint={{
@@ -326,6 +351,7 @@ export const GameMapStyle = ({
             ['==', ['geometry-type'], 'Point'],
             ['==', ['get', 'type'], 'poi'],
             ['==', ['get', 'poiType'], 'company'],
+            dlcGuardFilter,
           ]}
           layout={iconLayout(enableIconAutoHide, 1, 1.25, 3.5)}
         />
@@ -362,6 +388,7 @@ export const GameMapStyle = ({
             ['==', ['get', 'type'], 'poi'],
             ['==', ['get', 'poiType'], 'road'],
             ['==', ['index-of', 'is', ['get', 'sprite']], 0],
+            dlcGuardFilter,
           ]}
           layout={iconLayout(enableIconAutoHide, 0.4, 0.75, 1.25)}
         />
@@ -378,6 +405,7 @@ export const GameMapStyle = ({
             ['==', ['get', 'type'], 'poi'],
             ['==', ['get', 'poiType'], 'road'],
             ['==', ['index-of', 'us', ['get', 'sprite']], 0],
+            dlcGuardFilter,
           ]}
           layout={iconLayout(enableIconAutoHide, 0.4, 0.75, 1.25)}
         />
@@ -393,6 +421,7 @@ export const GameMapStyle = ({
             ['==', ['geometry-type'], 'Point'],
             ['==', ['get', 'type'], 'poi'],
             ['==', ['get', 'poiType'], 'road'],
+            dlcGuardFilter,
             [
               '!',
               [
@@ -417,6 +446,7 @@ export const GameMapStyle = ({
             ['==', ['geometry-type'], 'Point'],
             ['==', ['get', 'type'], 'city'],
             ['>', ['get', 'scaleRank'], 6],
+            dlcGuardFilter,
           ]}
           layout={{
             ...baseTextLayout,
@@ -443,6 +473,7 @@ export const GameMapStyle = ({
             ['==', ['get', 'type'], 'city'],
             ['<=', ['get', 'scaleRank'], 6],
             ['>', ['get', 'scaleRank'], 3],
+            dlcGuardFilter,
           ]}
           layout={{
             ...baseTextLayout,
@@ -468,6 +499,7 @@ export const GameMapStyle = ({
             ['==', ['geometry-type'], 'Point'],
             ['==', ['get', 'type'], 'city'],
             ['<=', ['get', 'scaleRank'], 3],
+            dlcGuardFilter,
           ]}
           layout={{
             ...baseTextLayout,
@@ -514,7 +546,8 @@ export const GameMapStyle = ({
             'all',
             ['==', ['geometry-type'], 'Point'],
             ['==', ['get', 'type'], 'poi'],
-            poiIconFilter(visibleIcons),
+            createPoiFilter(visibleIcons),
+            dlcGuardFilter,
           ]}
           layout={iconLayout(enableIconAutoHide, 0.6, 1.25, 2.5, {
             vertical: 2,
@@ -641,7 +674,7 @@ function hasPois(icons: ReadonlySet<MapIcon>): boolean {
   return mapIcons.some(icon => icons.has(icon));
 }
 
-function poiIconFilter(
+function createPoiFilter(
   visibleIcons: ReadonlySet<MapIcon>,
 ): ExpressionSpecification {
   Preconditions.checkArgument(hasPois(visibleIcons));
@@ -724,6 +757,28 @@ function poiIconFilter(
     facilityPredicate,
     roadFacilityPredicate,
   ];
+}
+
+function createDlcGuardFilter(
+  game: 'ats',
+  selectedDlcs: ReadonlySet<AtsSelectableDlc>,
+): ExpressionSpecification;
+function createDlcGuardFilter(
+  game: 'ets2',
+  selectedDlcs: ReadonlySet<Ets2SelectableDlc>,
+): ExpressionSpecification;
+function createDlcGuardFilter(
+  game: 'ats' | 'ets2',
+  selectedDlcs: ReadonlySet<unknown>,
+): ExpressionSpecification {
+  if (game !== 'ats') {
+    return ['boolean', true];
+  }
+
+  const dlcGuards = toAtsDlcGuards(
+    selectedDlcs as ReadonlySet<AtsSelectableDlc>,
+  );
+  return ['in', ['get', 'dlcGuard'], ['literal', [...dlcGuards]]];
 }
 
 export const textVariableAnchor: ExpressionSpecification = [

@@ -17,6 +17,7 @@ export type PartialNode = Pick<Node, 'x' | 'y'>;
 export interface Context {
   nodeLUT: Map<string, PartialNode>;
   graph: Map<string, Neighbors>;
+  enabledDlcGuards: Set<number>;
 }
 
 export function findRoute(
@@ -44,6 +45,7 @@ export function findRoute(
     nodeId: startNodeUid,
     distance: 0,
     direction,
+    dlcGuard: -1, // this value shouldn't be read.
   };
   openSet.push(startAsNeighbor);
   const cameFrom = new Map<Neighbor, Neighbor>();
@@ -88,6 +90,9 @@ export function findRoute(
     const neighborsInDirection =
       current.direction === 'forward' ? neighbors.forward : neighbors.backward;
     for (const neighbor of neighborsInDirection) {
+      if (!context.enabledDlcGuards.has(neighbor.dlcGuard)) {
+        continue;
+      }
       const tentativeScore =
         (gScore.get(current) ?? Infinity) + d(current, neighbor);
       if (tentativeScore < (gScore.get(neighbor) ?? Infinity)) {

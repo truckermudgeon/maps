@@ -149,7 +149,6 @@ const SimpleItemStruct = {
   },
   [ItemType.Road]: {
     flags1: r.uint8,
-    // TODO define dlc guard enum
     dlcGuard: r.uint8,
     flags2: r.uint16le,
 
@@ -664,6 +663,8 @@ function toBaseItem<T extends SectorItemKey>(
 function toRoad(rawItem: SectorItem<ItemType.Road>): WithoutSectorXY<Road> {
   return {
     ...toBaseItem(rawItem),
+    dlcGuard: rawItem.dlcGuard,
+    //                          ┌─ bit 25 (0-based)
     hidden: (rawItem.flags & 0x02_00_00_00) !== 0 ? true : undefined,
     roadLookToken: rawItem.roadLook,
     startNodeUid: rawItem.startNodeUid,
@@ -677,7 +678,9 @@ function toPrefab(
 ): WithoutSectorXY<Prefab> {
   return {
     ...toBaseItem(rawItem),
+    dlcGuard: (rawItem.flags & 0x00_00_ff_00) >> 8,
     token: rawItem.model,
+    //                             ┌─ bit 17 (0-based)
     hidden: (rawItem.flags & 0x00_02_00_00) !== 0 ? true : undefined,
     nodeUids: rawItem.nodeUids,
     originNodeIndex: rawItem.originIndex,
@@ -689,6 +692,7 @@ function toMapArea(
 ): WithoutSectorXY<MapArea> {
   return {
     ...toBaseItem(rawItem),
+    dlcGuard: (rawItem.flags & 0x00_00_ff_00) >> 8,
     drawOver: (rawItem.flags & 0x00_00_00_01) !== 0 ? true : undefined,
     nodeUids: rawItem.nodeUids,
     color: MapColorUtils.from(rawItem.colorIndex),
@@ -712,6 +716,7 @@ function toMapOverlay(
 ): WithoutSectorXY<MapOverlay> {
   return {
     ...toBaseItem(rawItem),
+    dlcGuard: (rawItem.flags & 0x00_00_ff_00) >> 8,
     overlayType: MapOverlayTypeUtils.from(rawItem.flags & 0x0f),
     token: rawItem.name,
     nodeUid: rawItem.nodeUid,
@@ -759,6 +764,7 @@ function toTrigger(
 ): WithoutSectorXY<Trigger> {
   return {
     ...toBaseItem(rawItem),
+    dlcGuard: (rawItem.flags & 0x00_00_ff_00) >> 8,
     actionTokens: rawItem.actions.map(a => a.action),
     nodeUids: rawItem.nodeUids,
   };
@@ -830,5 +836,7 @@ function toNode(rawNode: SectorNode): WithoutSectorXY<Node> {
     rotation,
     forwardItemUid: rawNode.forwardItemUid,
     backwardItemUid: rawNode.backwardItemUid,
+    forwardCountryId: rawNode.forwardCountryId,
+    backwardCountryId: rawNode.backwardCountryId,
   };
 }

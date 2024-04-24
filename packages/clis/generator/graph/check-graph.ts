@@ -1,3 +1,7 @@
+import {
+  AtsSelectableDlcs,
+  toAtsDlcGuards,
+} from '@truckermudgeon/map/constants';
 import { findRoute } from '@truckermudgeon/map/routing';
 import type { CompanyItem, Neighbors } from '@truckermudgeon/map/types';
 import * as cliProgress from 'cli-progress';
@@ -36,6 +40,7 @@ export function checkGraph(
   const routeContext = {
     graph,
     nodeLUT: nodes,
+    enabledDlcGuards: toAtsDlcGuards(AtsSelectableDlcs),
   };
   let unrouteableCount = 0;
   for (const company of allCompanies) {

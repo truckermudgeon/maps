@@ -2,7 +2,12 @@ import { Autocomplete, List, ListDivider, Typography } from '@mui/joy';
 import type { AutocompleteRenderGroupParams } from '@mui/joy/Autocomplete/AutocompleteProps';
 import { assertExists } from '@truckermudgeon/base/assert';
 import { getExtent } from '@truckermudgeon/base/geom';
-import { putIfAbsent } from '@truckermudgeon/base/map';
+import type { AtsDlcGuard } from '@truckermudgeon/map/constants';
+import {
+  AtsSelectableDlcs,
+  toAtsDlcGuards,
+  type AtsSelectableDlc,
+} from '@truckermudgeon/map/constants';
 import type { Context, Mode, PartialNode } from '@truckermudgeon/map/routing';
 import { findRoute } from '@truckermudgeon/map/routing';
 import type {
@@ -16,6 +21,7 @@ import {
   BaseMapStyle,
   GameMapStyle,
   SceneryTownSource,
+  allIcons,
   defaultMapStyle,
 } from '@truckermudgeon/ui';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -30,8 +36,29 @@ import MapGl, {
   Source,
   useMap,
 } from 'react-map-gl/maplibre';
+import { Legend, createListProps } from './Legend';
+import { toStateCodes } from './state-codes';
 
 const RoutesDemo = () => {
+  const [autoHide, setAutoHide] = useState(true);
+  const [visibleIcons, setVisibleIcons] = useState(new Set(allIcons));
+  const [visibleAtsDlcs, setVisibleAtsDlcs] = useState(
+    new Set(AtsSelectableDlcs),
+  );
+  const visibleStates = toStateCodes(visibleAtsDlcs);
+
+  const iconsListProps = createListProps(
+    visibleIcons,
+    setVisibleIcons,
+    allIcons,
+  );
+
+  const atsDlcsListProps = createListProps(
+    visibleAtsDlcs,
+    setVisibleAtsDlcs,
+    AtsSelectableDlcs,
+  );
+
   return (
     <MapGl
       style={{ width: '100vw', height: '100vh' }} // ensure map fills page
@@ -50,8 +77,16 @@ const RoutesDemo = () => {
       }}
     >
       <BaseMapStyle />
-      <GameMapStyle game={'ats'} />
-      <SceneryTownSource enableAutoHide={true} />
+      <GameMapStyle
+        game={'ats'}
+        enableIconAutoHide={autoHide}
+        visibleIcons={visibleIcons}
+        dlcs={visibleAtsDlcs}
+      />
+      <SceneryTownSource
+        enableAutoHide={autoHide}
+        enabledStates={visibleStates}
+      />
       <Source
         id={'route1'}
         type={'geojson'}
@@ -85,7 +120,15 @@ const RoutesDemo = () => {
         compact={true}
         customAttribution="&copy; Trucker Mudgeon. scenery town data by <a href='https://github.com/nautofon/ats-towns'>nautofon</a>."
       />
-      <RouteControl />
+      <RouteControl dlcs={visibleAtsDlcs} />
+      <Legend
+        icons={{
+          ...iconsListProps,
+          enableAutoHiding: autoHide,
+          onAutoHidingToggle: setAutoHide,
+        }}
+        atsDlcs={atsDlcsListProps}
+      />
     </MapGl>
   );
 };
@@ -105,44 +148,29 @@ export default RoutesDemo;
 export interface CompanyOption {
   // company token
   label: string;
+  // city token
   city: string;
-  // uid
+  // node uid
   value: string;
 }
 
-interface GroupedCompanyOption {
-  // city token
-  label: string;
-  options: CompanyOption[];
-}
-
-const RouteControl = () => {
+const RouteControl = (props: { dlcs: ReadonlySet<AtsSelectableDlc> }) => {
   const { current: map } = useMap();
-
+  const enabledDlcGuards = toAtsDlcGuards(props.dlcs);
   const [demoData, setDemoData] = useState<DemoRoutesData | undefined>(
     undefined,
   );
-  const [context, setContext] = useState<Context | undefined>(undefined);
-  const [startCompaniesByCity, setStartCompaniesByCity] = useState<
-    GroupedCompanyOption[]
-  >([]);
-  const [endCompaniesByCity, setEndCompaniesByCity] = useState<
-    GroupedCompanyOption[]
-  >([]);
+  const [context, setContext] = useState<
+    Omit<Context, 'enabledDlcGuards'> | undefined
+  >(undefined);
+  const [startCompanies, setStartCompanies] = useState<CompanyOption[]>([]);
+  const [endCompanies, setEndCompanies] = useState<CompanyOption[]>([]);
   useEffect(() => {
     fetch('usa-graph-demo.json')
       .then(r => r.json() as Promise<DemoRoutesData>)
       .then(
         data => {
-          const companiesByCityToken = new Map<string, CompanyOption[]>();
-          for (const company of data.demoCompanies) {
-            putIfAbsent(company.c, [], companiesByCityToken).push(
-              toCompanyOption(company),
-            );
-          }
-          setStartCompaniesByCity(
-            toGroupedCompanyOptions(companiesByCityToken),
-          );
+          setStartCompanies(data.demoCompanies.map(toCompanyOption));
           setContext(toContext(data));
           setDemoData(data);
         },
@@ -165,15 +193,11 @@ const RouteControl = () => {
           demoData.demoCompanyDefs.find(d => d.t === matchingCompany!.t),
         );
         const destTokens = new Set(matchingDef.d);
-        const companiesByCityToken = new Map<string, CompanyOption[]>();
-        for (const company of demoData.demoCompanies) {
-          if (destTokens.has(company.t)) {
-            putIfAbsent(company.c, [], companiesByCityToken).push(
-              toCompanyOption(company),
-            );
-          }
-        }
-        setEndCompaniesByCity(toGroupedCompanyOptions(companiesByCityToken));
+        setEndCompanies(
+          demoData.demoCompanies
+            .filter(c => destTokens.has(c.t))
+            .map(toCompanyOption),
+        );
       }
 
       if (map == null || context == null) {
@@ -210,9 +234,12 @@ const RouteControl = () => {
       if (map == null || context == null) {
         return;
       }
-      fetchRoute(assertExists(start), option.value, map, context);
+      fetchRoute(assertExists(start), option.value, map, {
+        ...context,
+        enabledDlcGuards,
+      });
     },
-    [map, start, context],
+    [map, start, context, props.dlcs],
   );
   const fetchRoute = (
     startNodeUid: string,
@@ -225,15 +252,19 @@ const RouteControl = () => {
       fakeFind(startNodeUid, endNodeUid, 'smallRoads', context),
     ]).then(
       maybeLineStrings => {
+        const routeSource = assertExists(
+          map.getSource('route1') as GeoJSONSource | undefined,
+        );
         if (maybeLineStrings.some(s => s == null)) {
-          // TODO clear route; show error
+          alert('Cannot calculate a route 🙁');
+          routeSource.setData({
+            type: 'FeatureCollection',
+            features: [],
+          } as GeoJSON.FeatureCollection);
           return;
         }
         const lineStrings =
           maybeLineStrings as GeoJSON.Feature<GeoJSON.LineString>[];
-        const routeSource = assertExists(
-          map.getSource('route1') as GeoJSONSource | undefined,
-        );
         routeSource.setData({
           type: 'FeatureCollection',
           features: lineStrings,
@@ -257,20 +288,37 @@ const RouteControl = () => {
     );
   };
 
-  const startOptions = startCompaniesByCity.reduce<CompanyOption[]>(
-    (acc, group) => {
-      acc.push(...group.options);
-      return acc;
-    },
-    [],
-  );
-  const endOptions = endCompaniesByCity.reduce<CompanyOption[]>(
-    (acc, group) => {
-      acc.push(...group.options);
-      return acc;
-    },
-    [],
-  );
+  const dlcGuards = new Map<string, number>();
+  if (demoData) {
+    for (const [, neighbors] of demoData.demoGraph) {
+      for (const neighbor of [...(neighbors.b ?? []), ...(neighbors.f ?? [])]) {
+        // Note: for some unknown reason, neighbors representing the same node
+        // may have different dlcGuard values set. When such a neighbor is
+        // encountered, prefer the non-zero dlcGuard value.
+        const currGuard = dlcGuards.get(neighbor.n) ?? 0;
+        dlcGuards.set(neighbor.n, currGuard || neighbor.g);
+      }
+    }
+  }
+
+  const filterByDlcs = (company: CompanyOption) => {
+    if (context == null) {
+      return true;
+    }
+    const dlcGuard = assertExists(dlcGuards.get(company.value));
+    return enabledDlcGuards.has(dlcGuard as AtsDlcGuard);
+  };
+  const sortByCityThenLabel = (a: CompanyOption, b: CompanyOption) =>
+    a.city !== b.city
+      ? a.city.localeCompare(b.city)
+      : a.label.localeCompare(b.label);
+
+  const startOptions = startCompanies
+    .filter(filterByDlcs)
+    .sort(sortByCityThenLabel);
+  const endOptions = endCompanies
+    .filter(filterByDlcs)
+    .sort(sortByCityThenLabel);
 
   return (
     <div
@@ -324,7 +372,7 @@ function formatGroupLabel(params: AutocompleteRenderGroupParams) {
   );
 }
 
-function toContext(data: DemoRoutesData): Context {
+function toContext(data: DemoRoutesData): Omit<Context, 'enabledDlcGuards'> {
   const graph = new Map<string, Neighbors>();
   const nodeLUT = new Map<string, PartialNode>();
   for (const [id, dns] of data.demoGraph) {
@@ -349,6 +397,7 @@ function toNeighbor(demoNeighbor: DemoNeighbor): Neighbor {
     distance: demoNeighbor.l,
     isOneLaneRoad: demoNeighbor.o,
     direction: demoNeighbor.d === 'f' ? 'forward' : 'backward',
+    dlcGuard: demoNeighbor.g,
   };
 }
 
@@ -358,17 +407,6 @@ function toCompanyOption(demoCompany: DemoCompany): CompanyOption {
     city: demoCompany.c,
     value: demoCompany.n,
   };
-}
-
-function toGroupedCompanyOptions(
-  companiesByCityToken: Map<string, CompanyOption[]>,
-): GroupedCompanyOption[] {
-  return [...companiesByCityToken.entries()]
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([cityToken, companies]) => ({
-      label: cityToken,
-      options: companies,
-    }));
 }
 
 function fakeFind(

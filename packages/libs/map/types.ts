@@ -19,6 +19,8 @@ export type Node = Readonly<{
   backwardItemUid: bigint;
   sectorX: number;
   sectorY: number;
+  forwardCountryId: number;
+  backwardCountryId: number;
 }>;
 
 export type City = Readonly<{
@@ -94,10 +96,18 @@ export type NonFacilityPoi =
   | 'train';
 
 type LabeledPoi = BasePoi &
-  Readonly<{
-    type: NonFacilityPoi;
-    label: string;
-  }>;
+  Readonly<
+    | {
+        type: Exclude<NonFacilityPoi, 'landmark'>;
+        label: string;
+      }
+    | {
+        type: 'landmark';
+        label: string;
+        dlcGuard: number;
+        nodeUid: bigint;
+      }
+  >;
 
 export type FacilityIcon =
   | 'parking_ico'
@@ -113,18 +123,21 @@ type UnlabeledPoi = BasePoi &
     | {
         // label can be derived from icon token
         type: 'road';
+        dlcGuard: number;
+        nodeUid: bigint;
+      }
+    | {
+        type: 'facility';
+        icon: Exclude<FacilityIcon, 'parking_ico'>;
+        prefabUid: bigint;
+        prefabPath: string;
       }
     | {
         type: 'facility';
         icon: 'parking_ico';
-        fromItem: bigint;
-        fromItemType: string;
-      }
-    | {
-        type: 'facility';
-        icon: FacilityIcon;
-        prefabUid: bigint;
-        prefabPath: string;
+        fromItemType: 'trigger' | 'mapOverlay' | 'prefab';
+        itemNodeUids: readonly bigint[];
+        dlcGuard: number;
       }
   >;
 
@@ -142,6 +155,7 @@ export type BaseItem = Readonly<{
 export type Road = BaseItem &
   Readonly<{
     type: ItemType.Road;
+    dlcGuard: number;
     hidden?: true;
     roadLookToken: string;
     startNodeUid: bigint;
@@ -153,6 +167,7 @@ export type Road = BaseItem &
 export type Prefab = BaseItem &
   Readonly<{
     type: ItemType.Prefab;
+    dlcGuard: number;
     hidden?: true;
     token: string;
     nodeUids: readonly bigint[];
@@ -162,6 +177,7 @@ export type Prefab = BaseItem &
 export type MapArea = BaseItem &
   Readonly<{
     type: ItemType.MapArea;
+    dlcGuard: number;
     drawOver?: true;
     nodeUids: readonly bigint[];
     color: MapColor;
@@ -179,6 +195,7 @@ export type CityArea = BaseItem &
 export type MapOverlay = BaseItem &
   Readonly<{
     type: ItemType.MapOverlay;
+    dlcGuard: number;
     overlayType: MapOverlayType;
     token: string;
     nodeUid: bigint;
@@ -231,6 +248,7 @@ export type Cutscene = BaseItem &
 export type Trigger = BaseItem &
   Readonly<{
     type: ItemType.Trigger;
+    dlcGuard: number;
     actionTokens: readonly string[];
     nodeUids: readonly bigint[];
   }>;
@@ -386,6 +404,7 @@ export type DebugFeature = GeoJSON.Feature<
 export type RoadFeature = GeoJSON.Feature<
   GeoJSON.LineString,
   RoadLookProperties & {
+    dlcGuard: number;
     // an undefined startNodeUid is expected from roads converted from prefabs;
     // signifies that a prefab road isn't connected to a prefab entry/exit node.
     startNodeUid: string | undefined;
@@ -454,12 +473,14 @@ export interface FerryProperties {
 
 export interface PrefabProperties {
   type: 'prefab';
+  dlcGuard: number;
   zIndex: number;
   color: MapColor;
 }
 
 export interface MapAreaProperties {
   type: 'mapArea';
+  dlcGuard: number;
   zIndex: number;
   color: MapColor;
 }
@@ -491,6 +512,7 @@ export interface PoiProperties {
   sprite: string;
   poiType: string; // Overlay, Viewpoint, Company, etc.
   poiName?: string; // Company name, if poiType is Company
+  dlcGuard?: number; // For dlc-guarded POIs, like road icons
 }
 
 export type ScopedCityFeature = GeoJSON.Feature<
@@ -529,6 +551,8 @@ export interface Neighbor {
    * Not the direction of this Neighbor's edge.
    */
   readonly direction: 'forward' | 'backward';
+  /** The dlcGuard associated with this Neighbor's node. */
+  readonly dlcGuard: number;
 }
 
 /**
@@ -553,6 +577,8 @@ export interface DemoNeighbor {
   o?: true;
   /** direction */
   d: 'f' | 'b';
+  /** dlcGuard */
+  g: number;
 }
 
 export interface DemoNeighbors {

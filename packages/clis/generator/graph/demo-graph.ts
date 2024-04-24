@@ -115,5 +115,6 @@ function toDemoNeighbor(
     l: Math.round(neighbor.distance),
     o: neighbor.isOneLaneRoad,
     d: neighbor.direction[0] as 'f' | 'b',
+    g: neighbor.dlcGuard,
   };
 }

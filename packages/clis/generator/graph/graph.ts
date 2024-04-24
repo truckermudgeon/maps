@@ -10,6 +10,7 @@ import type {
   Node,
   Prefab,
 } from '@truckermudgeon/map/types';
+import { normalizeDlcGuards } from '../dlc-guards';
 import { logger } from '../logger';
 import type { MappedData } from '../mapped-data';
 
@@ -24,11 +25,20 @@ type Context = Pick<
 > & {
   prefabConnections: Map<string, Map<number, number[]>>;
   companiesByPrefabItemId: Map<string, CompanyItem>;
+  getDlcGuard: (node: Node) => number;
 };
 
 export function generateGraph(tsMapData: MappedData) {
   const { nodes, roads, prefabs, companies, prefabDescriptions, roadLooks } =
     tsMapData;
+  const dlcGuardQuadTree = assertExists(
+    normalizeDlcGuards(roads, prefabs, tsMapData.mapAreas, tsMapData.pois, {
+      map: 'usa',
+      nodes,
+    }),
+  );
+  const getDlcGuard = (node: Node): number =>
+    dlcGuardQuadTree.find(node.x, node.y)?.dlcGuard ?? -1;
 
   const allCompanies = [...companies.values()];
   const companiesByPrefabItemId = new Map(
@@ -119,6 +129,7 @@ export function generateGraph(tsMapData: MappedData) {
     ),
     companies,
     companiesByPrefabItemId,
+    getDlcGuard,
   };
 
   logger.log('building graph...');
@@ -241,11 +252,13 @@ export function generateGraph(tsMapData: MappedData) {
           nodeId: closest.uid.toString(16),
           distance: dist,
           direction: 'forward',
+          dlcGuard: getDlcGuard(closest),
         },
         {
           nodeId: closest.uid.toString(16),
           distance: dist,
           direction: 'backward',
+          dlcGuard: getDlcGuard(closest),
         },
       ],
       backward: [],
@@ -257,11 +270,13 @@ export function generateGraph(tsMapData: MappedData) {
         nodeId: companyNode.uid.toString(16),
         distance: dist,
         direction: 'forward',
+        dlcGuard: getDlcGuard(companyNode),
       },
       {
         nodeId: companyNode.uid.toString(16),
         distance: dist,
         direction: 'backward',
+        dlcGuard: getDlcGuard(companyNode),
       },
     );
     neighbors.backward.push(
@@ -269,11 +284,13 @@ export function generateGraph(tsMapData: MappedData) {
         nodeId: companyNode.uid.toString(16),
         distance: dist,
         direction: 'forward',
+        dlcGuard: getDlcGuard(companyNode),
       },
       {
         nodeId: companyNode.uid.toString(16),
         distance: dist,
         direction: 'backward',
+        dlcGuard: getDlcGuard(companyNode),
       },
     );
   }
@@ -290,6 +307,7 @@ export function generateGraph(tsMapData: MappedData) {
     nodeId: '3301e888b6855e83',
     distance: 32,
     direction: 'forward',
+    dlcGuard: 13, // The DLC Guard value for Colorado, which is where Lamar is.
   });
 
   logger.info(
@@ -342,6 +360,7 @@ function getNeighborsInDirection(
       distance: dist,
       direction: dir,
       isOneLaneRoad: options.isOneLaneRoad,
+      dlcGuard: context.getDlcGuard(nextNode),
     };
   };
 

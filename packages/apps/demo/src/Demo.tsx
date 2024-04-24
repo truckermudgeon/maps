@@ -1,3 +1,4 @@
+import { AtsSelectableDlcs } from '@truckermudgeon/map/constants';
 import {
   allIcons,
   BaseMapStyle,
@@ -13,12 +14,29 @@ import MapGl, {
   FullscreenControl,
   NavigationControl,
 } from 'react-map-gl/maplibre';
-import { Legend } from './Legend';
+import { createListProps, Legend } from './Legend';
 import { MapSelectAndSearch } from './MapSelectAndSearch';
+import { toStateCodes } from './state-codes';
 
 const Demo = () => {
   const [autoHide, setAutoHide] = useState(true);
   const [visibleIcons, setVisibleIcons] = useState(new Set(allIcons));
+  const [visibleAtsDlcs, setVisibleAtsDlcs] = useState(
+    new Set(AtsSelectableDlcs),
+  );
+  const visibleStates = toStateCodes(visibleAtsDlcs);
+
+  const iconsListProps = createListProps(
+    visibleIcons,
+    setVisibleIcons,
+    allIcons,
+  );
+
+  const atsDlcsListProps = createListProps(
+    visibleAtsDlcs,
+    setVisibleAtsDlcs,
+    AtsSelectableDlcs,
+  );
 
   return (
     <MapGl
@@ -44,6 +62,7 @@ const Demo = () => {
         game={'ats'}
         enableIconAutoHide={autoHide}
         visibleIcons={visibleIcons}
+        dlcs={visibleAtsDlcs}
       />
       <GameMapStyle
         game={'ets2'}
@@ -51,7 +70,10 @@ const Demo = () => {
         visibleIcons={visibleIcons}
       />
       {visibleIcons.has(MapIcon.CityNames) && (
-        <SceneryTownSource enableAutoHide={autoHide} />
+        <SceneryTownSource
+          enableAutoHide={autoHide}
+          enabledStates={visibleStates}
+        />
       )}
       <NavigationControl visualizePitch={true} />
       <FullscreenControl />
@@ -59,25 +81,14 @@ const Demo = () => {
         compact={true}
         customAttribution="&copy; Trucker Mudgeon. scenery town data by <a href='https://github.com/nautofon/ats-towns'>nautofon</a>."
       />
-      <MapSelectAndSearch />
+      <MapSelectAndSearch visibleStates={visibleStates} />
       <Legend
-        enableAutoHiding={autoHide}
-        visibleIcons={visibleIcons}
-        onAutoHidingToggle={newValue => setAutoHide(newValue)}
-        onSelectAllToggle={newValue =>
-          setVisibleIcons(new Set(newValue ? allIcons : []))
-        }
-        onVisibleIconsToggle={(icon: MapIcon, newValue: boolean) => {
-          setVisibleIcons(prevState => {
-            const newState = new Set(prevState);
-            if (newValue) {
-              newState.add(icon);
-            } else {
-              newState.delete(icon);
-            }
-            return newState;
-          });
+        icons={{
+          ...iconsListProps,
+          enableAutoHiding: autoHide,
+          onAutoHidingToggle: setAutoHide,
         }}
+        atsDlcs={atsDlcsListProps}
       />
     </MapGl>
   );
