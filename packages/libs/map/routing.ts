@@ -1,18 +1,13 @@
 import { assertExists } from '@truckermudgeon/base/assert';
 import { distance } from '@truckermudgeon/base/geom';
 import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
-import type {
-  Neighbors,
-  Node,
-  Neighbor as _Neighbor,
-} from '@truckermudgeon/map/types';
+import type { Neighbor, Neighbors, Node } from '@truckermudgeon/map/types';
 import type { PriorityQueueInstance } from 'priorityqueue';
 import PriorityQueue from 'priorityqueue';
 import type { PriorityQueueOption } from 'priorityqueue/lib/PriorityQueue';
 
 export type Direction = 'forward' | 'backward';
 export type Mode = 'shortest' | 'smallRoads';
-type Neighbor = Omit<_Neighbor, 'dlcGuard'>;
 export interface Route {
   route: Neighbor[];
   distance: number;
@@ -22,6 +17,7 @@ export type PartialNode = Pick<Node, 'x' | 'y'>;
 export interface Context {
   nodeLUT: Map<string, PartialNode>;
   graph: Map<string, Neighbors>;
+  enabledDlcGuards: Set<number>;
 }
 
 export function findRoute(
@@ -49,6 +45,7 @@ export function findRoute(
     nodeId: startNodeUid,
     distance: 0,
     direction,
+    dlcGuard: -1, // this value shouldn't be read.
   };
   openSet.push(startAsNeighbor);
   const cameFrom = new Map<Neighbor, Neighbor>();
@@ -93,6 +90,9 @@ export function findRoute(
     const neighborsInDirection =
       current.direction === 'forward' ? neighbors.forward : neighbors.backward;
     for (const neighbor of neighborsInDirection) {
+      if (!context.enabledDlcGuards.has(neighbor.dlcGuard)) {
+        continue;
+      }
       const tentativeScore =
         (gScore.get(current) ?? Infinity) + d(current, neighbor);
       if (tentativeScore < (gScore.get(neighbor) ?? Infinity)) {

@@ -5,8 +5,8 @@ import { getExtent } from '@truckermudgeon/base/geom';
 import { putIfAbsent } from '@truckermudgeon/base/map';
 import type { AtsDlcGuard } from '@truckermudgeon/map/constants';
 import {
-  AtsDlcGuards,
   AtsSelectableDlcs,
+  toAtsDlcGuards,
   type AtsSelectableDlc,
 } from '@truckermudgeon/map/constants';
 import type { Context, Mode, PartialNode } from '@truckermudgeon/map/routing';
@@ -150,7 +150,7 @@ export interface CompanyOption {
   // company token
   label: string;
   city: string;
-  // uid
+  // node uid
   value: string;
 }
 
@@ -160,25 +160,15 @@ interface GroupedCompanyOption {
   options: CompanyOption[];
 }
 
-function getDlcGuards(
-  selectedDlcs: ReadonlySet<AtsSelectableDlc>,
-): Set<AtsDlcGuard> {
-  const guards = new Set<AtsSelectableDlc>();
-  for (const [key, dlcs] of Object.entries(AtsDlcGuards)) {
-    if ([...dlcs].every(dlc => selectedDlcs.has(dlc as AtsSelectableDlc))) {
-      guards.add(Number(key));
-    }
-  }
-  return guards;
-}
-
 const RouteControl = (props: { dlcs: ReadonlySet<AtsSelectableDlc> }) => {
   const { current: map } = useMap();
-  const enabledDlcGuards = getDlcGuards(props.dlcs);
+  const enabledDlcGuards = toAtsDlcGuards(props.dlcs);
   const [demoData, setDemoData] = useState<DemoRoutesData | undefined>(
     undefined,
   );
-  const [context, setContext] = useState<Context | undefined>(undefined);
+  const [context, setContext] = useState<
+    Omit<Context, 'enabledDlcGuards'> | undefined
+  >(undefined);
   const [startCompaniesByCity, setStartCompaniesByCity] = useState<
     GroupedCompanyOption[]
   >([]);
@@ -266,9 +256,12 @@ const RouteControl = (props: { dlcs: ReadonlySet<AtsSelectableDlc> }) => {
       if (map == null || context == null) {
         return;
       }
-      fetchRoute(assertExists(start), option.value, map, context);
+      fetchRoute(assertExists(start), option.value, map, {
+        ...context,
+        enabledDlcGuards,
+      });
     },
-    [map, start, context],
+    [map, start, context, props.dlcs],
   );
   const fetchRoute = (
     startNodeUid: string,
@@ -281,15 +274,19 @@ const RouteControl = (props: { dlcs: ReadonlySet<AtsSelectableDlc> }) => {
       fakeFind(startNodeUid, endNodeUid, 'smallRoads', context),
     ]).then(
       maybeLineStrings => {
+        const routeSource = assertExists(
+          map.getSource('route1') as GeoJSONSource | undefined,
+        );
         if (maybeLineStrings.some(s => s == null)) {
-          // TODO clear route; show error
+          alert('Cannot calculate a route 🙁');
+          routeSource.setData({
+            type: 'FeatureCollection',
+            features: [],
+          } as GeoJSON.FeatureCollection);
           return;
         }
         const lineStrings =
           maybeLineStrings as GeoJSON.Feature<GeoJSON.LineString>[];
-        const routeSource = assertExists(
-          map.getSource('route1') as GeoJSONSource | undefined,
-        );
         routeSource.setData({
           type: 'FeatureCollection',
           features: lineStrings,
@@ -313,20 +310,40 @@ const RouteControl = (props: { dlcs: ReadonlySet<AtsSelectableDlc> }) => {
     );
   };
 
-  const startOptions = startCompaniesByCity.reduce<CompanyOption[]>(
-    (acc, group) => {
+  const dlcGuards = new Map<string, number>();
+  if (demoData) {
+    for (const [, neighbors] of demoData.demoGraph) {
+      for (const neighbor of [...(neighbors.b ?? []), ...(neighbors.f ?? [])]) {
+        const currGuard = dlcGuards.get(neighbor.n) ?? 0;
+        dlcGuards.set(neighbor.n, currGuard || neighbor.g);
+      }
+    }
+  }
+
+  const startOptions = startCompaniesByCity
+    .reduce<CompanyOption[]>((acc, group) => {
       acc.push(...group.options);
       return acc;
-    },
-    [],
-  );
-  const endOptions = endCompaniesByCity.reduce<CompanyOption[]>(
-    (acc, group) => {
+    }, [])
+    .filter(company => {
+      if (context == null) {
+        return true;
+      }
+      const dlcGuard = assertExists(dlcGuards.get(company.value));
+      return enabledDlcGuards.has(dlcGuard as AtsDlcGuard);
+    });
+  const endOptions = endCompaniesByCity
+    .reduce<CompanyOption[]>((acc, group) => {
       acc.push(...group.options);
       return acc;
-    },
-    [],
-  );
+    }, [])
+    .filter(company => {
+      if (context == null) {
+        return true;
+      }
+      const dlcGuard = assertExists(dlcGuards.get(company.value));
+      return enabledDlcGuards.has(dlcGuard as AtsDlcGuard);
+    });
 
   return (
     <div
@@ -380,7 +397,7 @@ function formatGroupLabel(params: AutocompleteRenderGroupParams) {
   );
 }
 
-function toContext(data: DemoRoutesData): Context {
+function toContext(data: DemoRoutesData): Omit<Context, 'enabledDlcGuards'> {
   const graph = new Map<string, Neighbors>();
   const nodeLUT = new Map<string, PartialNode>();
   for (const [id, dns] of data.demoGraph) {

@@ -167,6 +167,18 @@ export const AtsDlcGuards: Record<AtsDlcGuard, ReadonlySet<AtsDlc>> = {
   35: new Set([AtsDlc.Nebraska, AtsDlc.Wyoming]),
 } as const;
 
+export function toAtsDlcGuards(
+  selectedDlcs: ReadonlySet<AtsSelectableDlc>,
+): Set<AtsDlcGuard> {
+  const guards = new Set<AtsSelectableDlc>();
+  for (const [key, dlcs] of Object.entries(AtsDlcGuards)) {
+    if ([...dlcs].every(dlc => selectedDlcs.has(dlc as AtsSelectableDlc))) {
+      guards.add(Number(key));
+    }
+  }
+  return guards;
+}
+
 enum Ets2Dlc {
   GoingEast,
   Scandinavia,

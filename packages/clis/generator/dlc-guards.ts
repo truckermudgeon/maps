@@ -59,6 +59,15 @@ export function normalizeDlcGuards(
       return;
     }
     if (dlcGuard !== 0) {
+      for (const nid of nodeUids) {
+        const nidString = nid.toString(16);
+        const node = assertExists(nodes.get(nidString));
+        dlcQuadTree.add({
+          x: node.x,
+          y: node.y,
+          dlcGuard,
+        });
+      }
       return;
     }
 
@@ -82,9 +91,9 @@ export function normalizeDlcGuards(
     );
     if (mostReferencedEntries.length === 0) {
       // no non-zero country IDs. Fallback to the dlc guard associated with the
-      // closest node within 100m.
+      // closest node.
       const node = assertExists(nodes.get(nodeUids[0].toString(16)));
-      const closestNode = dlcQuadTree.find(node.x, node.y, 100);
+      const closestNode = dlcQuadTree.find(node.x, node.y);
       return closestNode?.dlcGuard;
     }
 

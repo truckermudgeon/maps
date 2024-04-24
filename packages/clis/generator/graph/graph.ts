@@ -38,7 +38,7 @@ export function generateGraph(tsMapData: MappedData) {
     }),
   );
   const getDlcGuard = (node: Node): number =>
-    dlcGuardQuadTree.find(node.x, node.y, 100)?.dlcGuard ?? 0;
+    dlcGuardQuadTree.find(node.x, node.y)?.dlcGuard ?? -1;
 
   const allCompanies = [...companies.values()];
   const companiesByPrefabItemId = new Map(

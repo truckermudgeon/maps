@@ -5,10 +5,10 @@ import type {
   Ets2SelectableDlc,
 } from '@truckermudgeon/map/constants';
 import {
-  AtsDlcGuards,
   AtsSelectableDlcs,
   Ets2SelectableDlcs,
   MapColor,
+  toAtsDlcGuards,
 } from '@truckermudgeon/map/constants';
 import type {
   FacilityIcon,
@@ -775,14 +775,10 @@ function createDlcGuardFilter(
     return ['boolean', true];
   }
 
-  const guards: number[] = [];
-  for (const [key, dlcs] of Object.entries(AtsDlcGuards)) {
-    if ([...dlcs].every(dlc => selectedDlcs.has(dlc))) {
-      guards.push(Number(key));
-    }
-  }
-
-  return ['in', ['get', 'dlcGuard'], ['literal', guards]];
+  const dlcGuards = toAtsDlcGuards(
+    selectedDlcs as ReadonlySet<AtsSelectableDlc>,
+  );
+  return ['in', ['get', 'dlcGuard'], ['literal', [...dlcGuards]]];
 }
 
 export const textVariableAnchor: ExpressionSpecification = [
