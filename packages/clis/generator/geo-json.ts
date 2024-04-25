@@ -662,7 +662,11 @@ function withDlcGuard<T extends CityFeature | PoiFeature>(
   if (dlcQuadTree == null) {
     return feature;
   }
-  if ('dlcGuard' in feature.properties && feature.properties.dlcGuard !== 0) {
+  if (
+    'dlcGuard' in feature.properties &&
+    feature.properties.dlcGuard != null &&
+    feature.properties.dlcGuard !== 0
+  ) {
     return feature;
   }
 
