@@ -12,13 +12,26 @@ import { useState } from 'react';
 import MapGl, {
   AttributionControl,
   FullscreenControl,
+  Marker,
   NavigationControl,
 } from 'react-map-gl/maplibre';
+import { useSearchParams } from 'react-router-dom';
+import './Demo.css';
 import { createListProps, Legend } from './Legend';
 import { MapSelectAndSearch } from './MapSelectAndSearch';
+import { ShareControl } from './ShareControl';
 import { toStateCodes } from './state-codes';
 
 const Demo = () => {
+  const [searchParams] = useSearchParams();
+  const markerPos =
+    searchParams.has('mlat') && searchParams.has('mlon')
+      ? {
+          lat: Number(searchParams.get('mlat')),
+          lon: Number(searchParams.get('mlon')),
+        }
+      : undefined;
+
   const [autoHide, setAutoHide] = useState(true);
   const [visibleIcons, setVisibleIcons] = useState(new Set(allIcons));
   const [visibleAtsDlcs, setVisibleAtsDlcs] = useState(
@@ -57,6 +70,9 @@ const Demo = () => {
         zoom: 9,
       }}
     >
+      {markerPos && (
+        <Marker longitude={markerPos.lon} latitude={markerPos.lat} />
+      )}
       <BaseMapStyle />
       <GameMapStyle
         game={'ats'}
@@ -77,6 +93,7 @@ const Demo = () => {
       )}
       <NavigationControl visualizePitch={true} />
       <FullscreenControl />
+      <ShareControl />
       <AttributionControl
         compact={true}
         customAttribution="&copy; Trucker Mudgeon. scenery town data by <a href='https://github.com/nautofon/ats-towns'>nautofon</a>."
