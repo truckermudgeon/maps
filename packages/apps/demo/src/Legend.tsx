@@ -103,21 +103,20 @@ export const Legend = (props: LegendProps) => {
   const [activeTab, setActiveTab] = useState<number>(0);
   return (
     <>
-      <Tooltip title={'Map Options'}>
-        <IconButton
-          variant={'outlined'}
-          sx={{
-            backgroundColor: 'background.body',
-            position: 'absolute',
-            left: 0,
-            bottom: 0,
-            m: 2,
-          }}
-          onClick={() => setIsOpen(true)}
-        >
-          <ListAlt />
-        </IconButton>
-      </Tooltip>
+      <IconButton
+        title={'Map Options'}
+        variant={'outlined'}
+        sx={{
+          backgroundColor: 'background.body',
+          position: 'absolute',
+          left: 0,
+          bottom: 0,
+          m: 2,
+        }}
+        onClick={() => setIsOpen(true)}
+      >
+        <ListAlt />
+      </IconButton>
       <Drawer
         open={isOpen}
         onClose={() => setIsOpen(false)}
@@ -131,7 +130,6 @@ export const Legend = (props: LegendProps) => {
           },
           content: {
             sx: {
-              pointerEvents: 'auto',
               bgcolor: 'transparent',
               p: 2,
               boxShadow: 'none',
@@ -143,6 +141,7 @@ export const Legend = (props: LegendProps) => {
         <Sheet
           variant={'outlined'}
           sx={{
+            pointerEvents: 'auto',
             borderRadius: 'md',
             p: 2,
             display: 'flex',
