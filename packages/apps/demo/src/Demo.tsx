@@ -22,14 +22,16 @@ import { MapSelectAndSearch } from './MapSelectAndSearch';
 import { ShareControl } from './ShareControl';
 import { toStateCodes } from './state-codes';
 
+const inRange = (n: number, [min, max]: [number, number]) =>
+  !isNaN(n) && min <= n && n <= max;
+
 const Demo = () => {
   const [searchParams] = useSearchParams();
+  const lat = Number(searchParams.get('mlat'));
+  const lon = Number(searchParams.get('mlon'));
   const markerPos =
-    searchParams.has('mlat') && searchParams.has('mlon')
-      ? {
-          lat: Number(searchParams.get('mlat')),
-          lon: Number(searchParams.get('mlon')),
-        }
+    inRange(lat, [-90, 90]) && inRange(lon, [-180, 180])
+      ? { lat, lon }
       : undefined;
 
   const [autoHide, setAutoHide] = useState(true);
