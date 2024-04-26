@@ -13,6 +13,8 @@ import {
   Typography,
 } from '@mui/joy';
 import { assertExists } from '@truckermudgeon/base/assert';
+import type { LngLatLike } from 'maplibre-gl';
+import { Marker as MapLibreGLMarker } from 'maplibre-gl';
 import { useEffect, useRef, useState } from 'react';
 import { useControl, useMap } from 'react-map-gl/maplibre';
 
@@ -22,7 +24,6 @@ const toDecimals = (n: number, decimals: number) => {
 };
 
 export const ShareControl = () => {
-  const inputRef = useRef<HTMLInputElement>(null);
   const ref = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState<boolean>(false);
   const [includeMarker, setIncludeMarker] = useState<boolean>(false);
@@ -36,41 +37,64 @@ export const ShareControl = () => {
 
   useEffect(() => {
     const map = mapRef.current;
-    const input = inputRef.current;
-    if (!map || !input || !open) {
+    if (!map || !open) {
       return;
     }
 
     const updateUrl = () => {
       const center = map.getCenter();
+      const bearing = map.getBearing();
+      const pitch = map.getPitch();
+      const bnp = bearing || pitch ? [bearing, pitch] : [];
       const zoom = map.getZoom();
-      const query = includeMarker
+
+      const query = marker
         ? '?' +
           new URLSearchParams({
-            mlat: String(toDecimals(center.lat, 2)),
-            mlon: String(toDecimals(center.lng, 2)),
+            mlat: String(toDecimals(marker.getLngLat().lat, 2)),
+            mlon: String(toDecimals(marker.getLngLat().lng, 2)),
           }).toString()
         : '';
       const hash =
         '#' +
-        [
-          toDecimals(zoom, 2),
-          toDecimals(center.lat, 2),
-          toDecimals(center.lng, 2),
-        ].join('/');
+        [zoom, center.lat, center.lng, ...bnp]
+          .map(n => toDecimals(n, 2))
+          .join('/');
       setShareUrl(window.location.origin + query + hash);
     };
+
+    let marker: MapLibreGLMarker | undefined;
+    let syncMarkerToMap: ((lngLatLike: LngLatLike) => void) | undefined;
+    if (includeMarker) {
+      marker = new MapLibreGLMarker();
+      marker.setLngLat(map.getCenter()).setDraggable(true).addTo(map.getMap());
+
+      let shouldSyncMarkerToMap = true;
+      syncMarkerToMap = () =>
+        shouldSyncMarkerToMap && marker!.setLngLat(map.getCenter());
+      marker.on('dragend', () => {
+        shouldSyncMarkerToMap = false;
+        map.easeTo({ center: marker?.getLngLat() });
+        void map.once('moveend', () => (shouldSyncMarkerToMap = true));
+      });
+    }
 
     updateUrl();
 
     map.on('moveend', updateUrl);
-    return () => void map.off('moveend', updateUrl);
-  }, [mapRef, inputRef, open, includeMarker]);
+    syncMarkerToMap && map.on('move', syncMarkerToMap);
+
+    return () => {
+      map.off('moveend', updateUrl);
+      syncMarkerToMap && map.off('move', syncMarkerToMap);
+      marker?.remove();
+    };
+  }, [mapRef, open, includeMarker]);
 
   return (
     <div ref={ref}>
       <div className={'maplibregl-ctrl maplibregl-ctrl-group'}>
-        <IconButton title={'Share'} onClick={() => setOpen(true)}>
+        <IconButton title={'Share'} onClick={() => setOpen(!open)}>
           <IosShare />
         </IconButton>
       </div>
@@ -91,6 +115,8 @@ export const ShareControl = () => {
               bgcolor: 'transparent',
               p: 1,
               boxShadow: 'none',
+              // make sure regular map controls are still visible
+              right: open ? 48 : 0,
             },
           },
         }}
@@ -104,7 +130,6 @@ export const ShareControl = () => {
             display: 'flex',
             flexDirection: 'column',
             gap: 2,
-            minHeight: 200,
             overflow: 'auto',
           }}
         >
@@ -123,13 +148,16 @@ export const ShareControl = () => {
             <Input
               readOnly
               sx={{ '--Input-decoratorChildHeight': '36px' }}
-              slotProps={{ input: { ref: inputRef } }}
               onFocus={e => e.target.select()}
               value={shareUrl}
               endDecorator={
                 <Button
                   sx={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
-                  onClick={() => console.log('copy')}
+                  onClick={() =>
+                    void navigator.clipboard
+                      .writeText(shareUrl)
+                      .catch(() => alert('Could not copy to clipboard 🙁'))
+                  }
                 >
                   Copy
                 </Button>
