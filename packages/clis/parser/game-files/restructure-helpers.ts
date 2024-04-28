@@ -26,6 +26,25 @@ class Uint64 implements Base<bigint> {
   }
 }
 
+export class MappedNumber<T extends Base<number>, U> implements Base<U> {
+  constructor(
+    private readonly type: T,
+    private readonly tx: (n: number) => U,
+  ) {}
+
+  fromBuffer(): U {
+    throw new Error('Method not implemented.');
+  }
+
+  decode(stream: r.DecodeStream): U {
+    return this.tx(this.type.decode(stream));
+  }
+
+  size() {
+    return this.type.size(0);
+  }
+}
+
 export const uint64le = new Uint64();
 
 class Token implements Base<string> {

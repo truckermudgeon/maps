@@ -82,7 +82,13 @@ export function parseMapFiles(
   mapData: MapData;
   icons: Map<string, Buffer>;
 } {
-  const requiredFiles = new Set(['base.scs', 'def.scs', 'locale.scs']);
+  const requiredFiles = new Set([
+    'base.scs',
+    'base_map.scs',
+    'base_share.scs',
+    'def.scs',
+    'locale.scs',
+  ]);
   const archives = scsFilePaths
     .filter(p => {
       const fn = path.basename(p);
@@ -816,19 +822,19 @@ function parseIconMatFiles(entries: Entries) {
 
   const pngs = new Map<string, Buffer>();
   for (const [key, tobjPath] of tobjPaths) {
-    const f = entries.files.get(tobjPath);
-    if (!f) {
+    const tobj = entries.files.get(tobjPath);
+    if (!tobj) {
       logger.warn('could not find', tobjPath);
       continue;
     }
-    // parse .tobj file for the path to a .dds file.
+    // try to parse .tobj file for the path to a .dds file.
     // .tobj files have a 48-byte header followed by a file path.
-    const ddsPath = f.read().toString('utf8', 48).replaceAll(/^\//g, '');
-    const dds = entries.files.get(ddsPath);
-    if (!dds) {
-      logger.warn('could not find', ddsPath);
-      continue;
-    }
+    const ddsPath = tobj.read().toString('utf8', 48).replaceAll(/^\//g, '');
+    // if the .dds file path is invalid / unknown, then assume that:
+    // - the .tobj file is a .tobj file from a HashFs v2 archive
+    // - the concrete instance of the FileEntry for the .tobj file is an
+    //   ScsArchiveTobjFile, whose .read() returns .dds file contents.
+    const dds = entries.files.get(ddsPath) ?? tobj;
     pngs.set(key, parseDds(dds.read()));
   }
   return pngs;

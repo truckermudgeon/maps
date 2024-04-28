@@ -5,7 +5,7 @@ import * as r from 'restructure';
 import { logger } from '../logger';
 
 // https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dx-graphics-dds-pguide
-const DdsHeader = new r.Struct({
+export const DdsHeader = new r.Struct({
   size: r.uint32le,
   flags: r.uint32le,
   height: r.uint32le,
