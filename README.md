@@ -119,7 +119,7 @@ npm start --workspace=packages/apps/prefabs
 
 ## License
 
-TruckSim Maps is licensed under GPL v2.
+TruckSim Maps is licensed under GPL v3.
 
 ## Credits
 
