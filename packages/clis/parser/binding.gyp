@@ -18,16 +18,16 @@
       "cflags!": [ "-fno-exceptions" ],
       "cflags_cc!": [ "-fno-exceptions" ],
       "sources": [
-          "./gdeflate/src/lib/deflate_decompress.c",
-          "./gdeflate/src/lib/utils.c",
-          "./gdeflate/src/lib/arm/cpu_features.c",
-          "./gdeflate/src/lib/x86/cpu_features.c",
-          "./gdeflate/src/lib/gdeflate_decompress.c",
+          "./gdeflate/libdeflate/lib/deflate_decompress.c",
+          "./gdeflate/libdeflate/lib/utils.c",
+          "./gdeflate/libdeflate/lib/arm/cpu_features.c",
+          "./gdeflate/libdeflate/lib/x86/cpu_features.c",
+          "./gdeflate/libdeflate/lib/gdeflate_decompress.c",
           "./gdeflate/gdeflate.cc"
       ],
       "include_dirs": [
         "<!@(node -p \"require('node-addon-api').include\")",
-        "./gdeflate/src",
+        "./gdeflate/libdeflate",
       ],
       "defines": [ 'NAPI_DISABLE_CPP_EXCEPTIONS' ],
     }

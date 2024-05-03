@@ -1,5 +1,5 @@
 #include <napi.h>
-#include "./src/libdeflate.h"
+#include "libdeflate.h"
 
 template<>
 struct std::default_delete<libdeflate_gdeflate_decompressor> {
