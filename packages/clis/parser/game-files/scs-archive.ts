@@ -11,7 +11,7 @@ const { city64 } = require('bindings')('cityhash') as {
   city64: (s: string) => bigint;
 };
 
-const ScsArchiveHeader = new r.Struct({
+const FileHeader = new r.Struct({
   magic: new r.String(4),
   version: r.int16le,
   salt: r.int16le,
@@ -20,7 +20,7 @@ const ScsArchiveHeader = new r.Struct({
   entriesOffset: r.int32le,
 });
 
-const ScsArchiveEntryHeader = new r.Struct({
+const EntryHeader = new r.Struct({
   hash: uint64le,
   // offset within the archive file at which the file for this entry's data starts.
   offset: uint64le,
@@ -48,9 +48,9 @@ export class ScsArchive {
   constructor(readonly path: string) {
     this.fd = fs.openSync(path, 'r');
 
-    const buffer = Buffer.alloc(ScsArchiveHeader.size());
+    const buffer = Buffer.alloc(FileHeader.size());
     fs.readSync(this.fd, buffer, { length: buffer.length });
-    this.header = ScsArchiveHeader.fromBuffer(buffer);
+    this.header = FileHeader.fromBuffer(buffer);
   }
 
   dispose() {
@@ -71,21 +71,19 @@ export class ScsArchive {
       return this.entries;
     }
 
-    const buffer = Buffer.alloc(
-      ScsArchiveEntryHeader.size() * this.header.numEntries,
-    );
-    fs.readSync(this.fd, buffer, {
-      length: buffer.length,
-      position: this.header.entriesOffset,
-    });
-    const headers = new r.Array(
-      ScsArchiveEntryHeader,
+    const entryHeaders = new r.Array(
+      EntryHeader,
       this.header.numEntries,
-    ).fromBuffer(buffer);
+    ).fromBuffer(
+      this.readData({
+        offset: this.header.entriesOffset,
+        size: EntryHeader.size() * this.header.numEntries,
+      }),
+    );
 
     const directories: DirectoryEntry[] = [];
     const files: FileEntry[] = [];
-    for (const header of headers) {
+    for (const header of entryHeaders) {
       const entry = createEntry(this.fd, {
         hash: header.hash,
         offset: header.offset,
@@ -104,6 +102,21 @@ export class ScsArchive {
       files: createStore(files),
     };
     return this.entries;
+  }
+
+  private readData({
+    offset, //
+    size, //
+  }: {
+    offset: number;
+    size: number;
+  }): Buffer {
+    const buffer = Buffer.alloc(size);
+    fs.readSync(this.fd, buffer, {
+      length: buffer.length,
+      position: offset,
+    });
+    return buffer;
   }
 }
 

@@ -1,3 +1,4 @@
+import { assert } from '@truckermudgeon/base/assert';
 import { decompressDXT5 } from 'dxtn';
 import { PNG } from 'pngjs';
 import * as r from 'restructure';
@@ -12,7 +13,7 @@ const DdsHeader = new r.Struct({
   pitchOrLinearSize: r.uint32le,
   depth: r.uint32le,
   mipMapCount: r.uint32le,
-  reserved1: new r.Array(r.uint32le, 11),
+  reserved1: new r.Reserved(r.uint32le, 11),
   ddsPixelFormat: new r.Struct({
     size: r.uint32le,
     flags: r.uint32le,
@@ -27,8 +28,9 @@ const DdsHeader = new r.Struct({
   caps2: r.uint32le,
   caps3: r.uint32le,
   caps4: r.uint32le,
-  reserved2: r.uint32le,
+  reserved2: new r.Reserved(r.uint32le, 1),
 });
+assert(DdsHeader.size() === 124);
 
 export function parseDds(buffer: Buffer): Buffer {
   const magic = buffer.toString('utf8', 0, 4);
