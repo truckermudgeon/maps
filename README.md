@@ -22,7 +22,7 @@ A demo app built with these tools and components can be found at https://trucker
 # clone the repo into a local directory
 mdkir maps
 cd maps
-git clone git@github.com:truckermudgeon/maps.git .
+git clone --recurse-submodules git@github.com:truckermudgeon/maps.git .
 
 # install maps projects
 npm install
@@ -128,6 +128,11 @@ Parts of the `parser` and `generator` projects are based on:
 - [TsMap](https://github.com/dariowouters/ts-map/)
 - [TruckLib](https://github.com/sk-zk/TruckLib/)
 - [SCS Blender Tools](https://github.com/SCSSoftware/BlenderTools)
-- [CityHash](https://github.com/google/cityhash)
+- [ConverterPIX](https://github.com/mwl4/ConverterPIX/)
 
-The `generator` project makes use of data from [Natural Earth](https://www.naturalearthdata.com/).
+The `parser` project includes code from:
+
+- [CityHash](https://github.com/google/cityhash)
+- Nvidia's [libdeflate fork](https://github.com/NVIDIA/libdeflate)
+
+The `generator` project includes data from [Natural Earth](https://www.naturalearthdata.com/).
