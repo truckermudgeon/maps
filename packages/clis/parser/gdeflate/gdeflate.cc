@@ -12,13 +12,12 @@ Napi::Value GDeflate(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 
   if (info.Length() != 2) {
-    Napi::TypeError::New(env, "Wrong number of arguments")
-        .ThrowAsJavaScriptException();
+    Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
     return env.Null();
   }
   if (!info[0].IsArrayBuffer() || !info[1].IsArrayBuffer()) {
     Napi::TypeError::New(env, "Arguments must be array buffers").ThrowAsJavaScriptException();
-    return Napi::Value::From(env, -1);
+    return env.Null();
   }
 
   Napi::ArrayBuffer inputBuffer = info[0].As<Napi::ArrayBuffer>();

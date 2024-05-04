@@ -53,7 +53,7 @@ declare module 'restructure' {
     size(): number;
   }
 
-  export class Enum<T extends readonly unknown[]> extends Base<
+  export class Enum<T extends readonly string[]> extends Base<
     T[number] | number
   > {
     constructor(type: Base<number>, options: T);

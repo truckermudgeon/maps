@@ -203,7 +203,7 @@ export class ScsArchive {
   ): Map<number, MetadataEntry> {
     const metadataMap = new Map<number, MetadataEntry>();
 
-    const metadataBuffer = this.readData({
+    const metadataTable = this.readData({
       offset: this.header.metadataTableOffset,
       compressedSize: this.header.metadataTableCompressedSize,
       uncompressedSize: this.header.metadataTableSize,
@@ -211,37 +211,45 @@ export class ScsArchive {
     const skippedMetaTypes = new Set();
     for (const header of entryHeaders) {
       for (let i = 0; i < header.metadataCount; i++) {
-        const startOffset = 4 * (header.metadataIndex + i);
-        const slice = metadataBuffer.subarray(
-          startOffset,
-          startOffset + MetadataEntryHeader.size(),
+        const metadataHeaderByteOffset = 4 * (header.metadataIndex + i);
+        const metadataHeader = MetadataEntryHeader.fromBuffer(
+          metadataTable.subarray(
+            metadataHeaderByteOffset,
+            metadataHeaderByteOffset + MetadataEntryHeader.size(),
+          ),
         );
-        const h = MetadataEntryHeader.fromBuffer(slice);
-        const type = h.type as MetadataType;
+        const type = metadataHeader.type as MetadataType;
         switch (type) {
           case MetadataType.IMG:
           case MetadataType.SAMPLE:
           case MetadataType.PLAIN:
           case MetadataType.DIRECTORY:
           case MetadataType.MIP_TAIL: {
-            const descriptor =
-              type === MetadataType.IMG
-                ? ImageMeta
-                : type === MetadataType.SAMPLE
-                  ? SampleMeta
-                  : PlainMeta;
-            const meta = {
-              ...descriptor.fromBuffer(metadataBuffer.subarray(4 * h.index)),
-              version: h.type,
-            };
-            metadataMap.set(header.metadataIndex + i, meta);
+            let descriptor;
+            if (type === MetadataType.IMG) {
+              descriptor = ImageMeta;
+            } else if (type === MetadataType.SAMPLE) {
+              descriptor = SampleMeta;
+            } else {
+              descriptor = PlainMeta;
+            }
+            const metadataEntryByteOffset = 4 * metadataHeader.index;
+            metadataMap.set(header.metadataIndex + i, {
+              version: metadataHeader.type,
+              ...descriptor.fromBuffer(
+                metadataTable.subarray(
+                  metadataEntryByteOffset,
+                  metadataEntryByteOffset + descriptor.size(),
+                ),
+              ),
+            });
             break;
           }
           case MetadataType.MIP_0:
           case MetadataType.MIP_1:
           case MetadataType.MIP_PROXY:
           case MetadataType.INLINE_DIRECTORY:
-            skippedMetaTypes.add(h.type);
+            skippedMetaTypes.add(metadataHeader.type);
             break;
         }
       }
