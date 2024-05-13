@@ -90,6 +90,14 @@ class SiiParser extends CstParser {
     });
     this.CONSUME(RParen);
   });
+  readonly numberAuxTuple = this.RULE('numberAuxTuple', () => {
+    this.CONSUME(LCurly);
+    this.AT_LEAST_ONE_SEP({
+      SEP: Comma,
+      DEF: () => this.CONSUME(NumberLiteral),
+    });
+    this.CONSUME(RCurly);
+  });
   readonly objectPropertyValue = this.RULE('objectPropertyValue', () => {
     this.OR([
       { ALT: () => this.CONSUME(StringLiteral) },
@@ -97,6 +105,7 @@ class SiiParser extends CstParser {
       { ALT: () => this.CONSUME(HexLiteral) },
       { ALT: () => this.CONSUME(Property) },
       { ALT: () => this.SUBRULE(this.numberTuple) },
+      { ALT: () => this.SUBRULE(this.numberAuxTuple) },
     ]);
   });
   readonly objectProperty = this.RULE('objectProperty', () => {

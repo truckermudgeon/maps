@@ -33,6 +33,18 @@ export type NumberTupleCstChildren = {
   RParen: IToken[];
 };
 
+export interface NumberAuxTupleCstNode extends CstNode {
+  name: 'numberAuxTuple';
+  children: NumberAuxTupleCstChildren;
+}
+
+export type NumberAuxTupleCstChildren = {
+  LCurly: IToken[];
+  NumberLiteral: IToken[];
+  Comma?: IToken[];
+  RCurly: IToken[];
+};
+
 export interface ObjectPropertyValueCstNode extends CstNode {
   name: 'objectPropertyValue';
   children: ObjectPropertyValueCstChildren;
@@ -44,6 +56,7 @@ export type ObjectPropertyValueCstChildren = {
   HexLiteral?: IToken[];
   Property?: IToken[];
   numberTuple?: NumberTupleCstNode[];
+  numberAuxTuple?: NumberAuxTupleCstNode[];
 };
 
 export interface ObjectPropertyCstNode extends CstNode {
@@ -115,6 +128,8 @@ export interface SiiVisitor<IN, OUT> extends ICstVisitor<IN, OUT> {
   ): OUT;
 
   numberTuple(children: NumberTupleCstChildren, param?: IN): OUT;
+
+  numberAuxTuple(children: NumberAuxTupleCstChildren, param?: IN): OUT;
 
   objectPropertyValue(
     children: ObjectPropertyValueCstChildren,

@@ -747,6 +747,7 @@ function parseIconMatFiles(entries: Entries) {
 
   const endsWithMat = /\.mat$/g;
   const tobjPaths = new Map<string, string>();
+  const sdfAuxData = new Map<string, number[][]>();
   const readTobjPathsFromMatFiles = (
     dir: string,
     filenameFilter: (filename: string) => boolean = f => f.endsWith('.mat'),
@@ -758,20 +759,21 @@ function parseIconMatFiles(entries: Entries) {
       if (!filenameFilter(f)) {
         continue;
       }
+      const key = f.replaceAll(replaceAll, '');
       const json = convertSiiToJson(`${dir}/${f}`, entries, IconMatSchema);
       if (Object.keys(json).length === 0) {
         continue;
       }
       if (json.effect) {
-        tobjPaths.set(
-          f.replaceAll(replaceAll, ''),
-          `${dir}/${json.effect['ui.rfx'].texture.texture.source}`,
+        const rfx = assertExists(
+          json.effect['ui.rfx'] ?? json.effect['ui.sdf.rfx'],
         );
+        tobjPaths.set(key, `${dir}/${rfx.texture.texture.source}`);
+        if (json.effect['ui.sdf.rfx']) {
+          sdfAuxData.set(key, json.effect['ui.sdf.rfx'].aux);
+        }
       } else if (json.material) {
-        tobjPaths.set(
-          f.replaceAll(replaceAll, ''),
-          `${dir}/${json.material.ui.texture}`,
-        );
+        tobjPaths.set(key, `${dir}/${json.material.ui.texture}`);
       } else {
         logger.warn(`unknown format for ${dir}/${f}`);
       }

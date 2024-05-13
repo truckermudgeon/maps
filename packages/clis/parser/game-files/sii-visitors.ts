@@ -42,7 +42,8 @@ class JsonConverterVisitor extends getSiiVisitorClass<
     const obj = root[childKey] as Record<string, unknown>;
     if (children.object) {
       this.visit(children.object, obj);
-    } else if (children.objectProperty) {
+    }
+    if (children.objectProperty) {
       for (const { children: p } of children.objectProperty) {
         const propKey = snakeToCamel(p.Property[0].image);
         // Note: this doesn't validate fixed-length array declarations, e.g.:
@@ -82,6 +83,10 @@ class JsonConverterVisitor extends getSiiVisitorClass<
       json.value = children.Property[0].image;
     } else if (children.numberTuple) {
       json.value = children.numberTuple[0].children.NumberLiteral.map(l =>
+        stringToNumber(l.image),
+      );
+    } else if (children.numberAuxTuple) {
+      json.value = children.numberAuxTuple[0].children.NumberLiteral.map(l =>
         stringToNumber(l.image),
       );
     } else {

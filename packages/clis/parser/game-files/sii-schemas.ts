@@ -34,6 +34,18 @@ const NumberTripleSchema: JSONSchemaType<[number, number, number]> = {
   minItems: 3,
   maxItems: 3,
 };
+const NumberQuadrupleSchema: JSONSchemaType<[number, number, number, number]> =
+  {
+    type: 'array',
+    items: [
+      { type: 'number' },
+      { type: 'number' },
+      { type: 'number' },
+      { type: 'number' },
+    ],
+    minItems: 4,
+    maxItems: 4,
+  };
 const StringArraySchema: JSONSchemaType<string[]> = {
   type: 'array',
   items: { type: 'string' },
@@ -46,7 +58,13 @@ const LocaleTokenSchema: JSONSchemaType<string> = {
 
 /** Only one of `effect` or `material` are expected to be present. */
 export interface IconMat {
-  effect?: { 'ui.rfx': { texture: { texture: { source: string } } } };
+  effect?: {
+    'ui.rfx'?: { texture: { texture: { source: string } } };
+    'ui.sdf.rfx'?: {
+      texture: { texture: { source: string } };
+      aux: [number, number, number, number][]; // will always have 5 quads
+    };
+  };
   material?: { ui: { texture: string } };
 }
 export const IconMatSchema: JSONSchemaType<IconMat> = {
@@ -58,6 +76,7 @@ export const IconMatSchema: JSONSchemaType<IconMat> = {
       properties: {
         'ui.rfx': {
           type: 'object',
+          nullable: true,
           properties: {
             texture: {
               type: 'object',
@@ -73,8 +92,32 @@ export const IconMatSchema: JSONSchemaType<IconMat> = {
           },
           required: ['texture'],
         },
+        'ui.sdf.rfx': {
+          type: 'object',
+          nullable: true,
+          properties: {
+            texture: {
+              type: 'object',
+              properties: {
+                texture: {
+                  type: 'object',
+                  properties: { source: { type: 'string' } },
+                  required: ['source'],
+                },
+              },
+              required: ['texture'],
+            },
+            aux: {
+              type: 'array',
+              items: NumberQuadrupleSchema,
+              minItems: 5,
+              maxItems: 5,
+            },
+          },
+          required: ['texture', 'aux'],
+        },
       },
-      required: ['ui.rfx'],
+      required: [],
     },
     material: {
       type: 'object',
