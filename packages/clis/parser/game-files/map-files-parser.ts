@@ -765,11 +765,11 @@ function parseIconMatFiles(entries: Entries) {
       if (!filenameFilter(f)) {
         continue;
       }
-      const key = f.replaceAll(replaceAll, '');
       const json = convertSiiToJson(`${dir}/${f}`, entries, IconMatSchema);
       if (Object.keys(json).length === 0) {
         continue;
       }
+      const key = f.replaceAll(replaceAll, '');
       if (json.effect) {
         const rfx = assertExists(
           json.effect['ui.rfx'] ?? json.effect['ui.sdf.rfx'],
@@ -831,7 +831,7 @@ function parseIconMatFiles(entries: Entries) {
     // .dds pixel data. Assume that the concrete instance of the FileEntry for
     // the .tobj file is an ScsArchiveTobjFile, whose .read() returns a complete
     // header-ful .dds file.
-    pngs.set(key, parseDds(tobj.read()));
+    pngs.set(key, parseDds(tobj.read(), sdfAuxData.get(key)));
   }
   return pngs;
 }

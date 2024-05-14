@@ -464,20 +464,29 @@ class ScsArchiveTobjFile extends ScsArchiveFile {
       const firstMipmapBytes =
         ((this.imageMetadata.width * this.imageMetadata.height) / 4) * 16;
       ddsBytes = super.read().subarray(0, firstMipmapBytes);
-    } else if (imageFormat === 91) {
-      // B8G8R8A8_UNORM_SRGB
-      ddsBytes = Buffer.alloc(
-        4 * this.imageMetadata.width * this.imageMetadata.height,
-      );
+    } else if (imageFormat === 91 || imageFormat === 88) {
+      // 91: B8G8R8A8_UNORM_SRGB
+      // 88: B8G8R8X8_UNORM
+
+      // fudge widths/heights. seems to fix problem with ETS2's sr_e763 icon.
+      const width = closestPowerOf2(this.imageMetadata.width);
+      const height = closestPowerOf2(this.imageMetadata.height);
+
+      ddsBytes = Buffer.alloc(4 * width * height);
       const rawData = super.read();
       // Is there a nicer way to figure out pitch?
       const factor = Math.ceil(rawData.length / ddsBytes.length);
-      for (let i = 0; i < this.imageMetadata.height; i++) {
+      for (let i = 0; i < height; i++) {
+        if (i * 4 * width * factor > rawData.length) {
+          // some image data seems to be incomplete, or pitch is
+          // incorrect. abort copying of image data instead of erroring out.
+          break;
+        }
         rawData.copy(
           ddsBytes,
-          i * 4 * this.imageMetadata.width,
-          i * 4 * this.imageMetadata.width * factor,
-          (i + 1) * 4 * this.imageMetadata.width * factor,
+          i * 4 * width,
+          i * 4 * width * factor,
+          (i + 1) * 4 * width * factor,
         );
       }
     } else {
@@ -499,7 +508,10 @@ class ScsArchiveTobjFile extends ScsArchiveFile {
           size: 32,
           flags: 0,
           // this looks like the only field of import.
-          fourCc: imageFormat === 91 ? '\x00\x00\x00\x00' : 'DXT5',
+          fourCc:
+            imageFormat === 91 || imageFormat === 88
+              ? '\x00\x00\x00\x00'
+              : 'DXT5',
           rgbBitCount: 0,
           rBitMask: 0,
           gBitMask: 0,
@@ -526,6 +538,11 @@ class ScsArchiveTobjFile extends ScsArchiveFile {
 
     return ddsFile;
   }
+}
+
+function closestPowerOf2(n: number): number {
+  const lg = Math.floor(Math.log2(n));
+  return Math.pow(2, lg);
 }
 
 class ScsArchiveDirectory extends ScsArchiveEntry implements DirectoryEntry {
