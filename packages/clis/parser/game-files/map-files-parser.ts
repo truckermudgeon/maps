@@ -296,6 +296,14 @@ function convertSiiToJson<T>(
     sii = buffer.toString();
   }
 
+  // HACK localization.sui files just contain unwrapped properties, e.g.:
+  //   key[]: foo
+  //   val[]: bar
+  // Hardcode a wrapper so parsing still works.
+  if (siiPath.includes('localization.sui')) {
+    sii = `localizationDb : .localization {${sii}}`;
+  }
+
   const res = parseSii(sii);
   if (!res.ok) {
     logger.error('error parsing', siiPath);
@@ -720,7 +728,11 @@ function parseLocaleFiles(entries: Entries): Map<string, Map<string, string>> {
       l10nStrings,
     );
     for (const f of localeSubdir.files) {
-      if (f !== 'local.sii' && f !== 'local.override.sii') {
+      if (
+        f !== 'local.sii' &&
+        f !== 'local.override.sii' &&
+        f !== 'localization.sui'
+      ) {
         continue;
       }
       const json = convertSiiToJson(
@@ -734,14 +746,12 @@ function parseLocaleFiles(entries: Entries): Map<string, Map<string, string>> {
       }
       const { key, val } = l10n;
       assert(key.length === val.length);
-      if (numKeys === 0) {
-        // assumes all locales have the same number of entries.
-        numKeys = key.length;
-      }
       for (let i = 0; i < key.length; i++) {
         localeMap.set(key[i], val[i]);
       }
     }
+    // assumes all locales have the same number of entries.
+    numKeys = localeMap.size;
   }
 
   logger.info(l10nStrings.size, 'locales,', numKeys, 'strings each');
