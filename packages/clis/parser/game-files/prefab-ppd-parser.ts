@@ -106,6 +106,8 @@ const Prefab = new r.Struct({
         pos: float3,
         rot: float4,
         type: r.uint32le,
+        // new in v24. maybe related to new loading mechanic in Nebraska?
+        unknown: new r.Reserved(r.uint32le),
       }),
       'numSpawnPoints',
     ),
@@ -276,7 +278,7 @@ const roadOffsetToOffset = {
 
 export function parsePrefabPpd(buffer: Buffer): PrefabDescription {
   const version = buffer.readUint32LE();
-  if (version !== 23) {
+  if (version !== 24) {
     logger.error('unknown .ppd file version', version);
     throw new Error();
   }
