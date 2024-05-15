@@ -827,15 +827,11 @@ function parseIconMatFiles(entries: Entries) {
       logger.warn('could not find', tobjPath);
       continue;
     }
-    // try to parse .tobj file for the path to a .dds file.
-    // .tobj files have a 48-byte header followed by a file path.
-    const ddsPath = tobj.read().toString('utf8', 48).replaceAll(/^\//g, '');
-    // if the .dds file path is invalid / unknown, then assume that:
-    // - the .tobj file is a .tobj file from a HashFs v2 archive
-    // - the concrete instance of the FileEntry for the .tobj file is an
-    //   ScsArchiveTobjFile, whose .read() returns .dds file contents.
-    const dds = entries.files.get(ddsPath) ?? tobj;
-    pngs.set(key, parseDds(dds.read()));
+    // A .tobj file in a HashFs v2 archive is actually a file with header-less
+    // .dds pixel data. Assume that the concrete instance of the FileEntry for
+    // the .tobj file is an ScsArchiveTobjFile, whose .read() returns a complete
+    // header-ful .dds file.
+    pngs.set(key, parseDds(tobj.read()));
   }
   return pngs;
 }
@@ -1098,7 +1094,6 @@ function postProcess(
             }
             break;
           case MapOverlayType.Parking:
-            console.log(item);
             pois.push({
               ...pos,
               type: 'facility',
