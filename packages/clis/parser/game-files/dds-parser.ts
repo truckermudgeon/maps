@@ -72,7 +72,7 @@ export function parseDds(
           const smoothed =
             smoothstep(0.5 - smoothness, 0.5 + smoothness, dist / 255) * 255;
           const gammaCorrected = clamp(Math.pow(c, 1 / 2.2), 0, 1);
-          return clamp(smoothed * gammaCorrected, 0, 255);
+          return smoothed * gammaCorrected;
         });
       };
       for (let i = 0; i < data.length; i += 4) {
