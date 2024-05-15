@@ -106,6 +106,8 @@ const Prefab = new r.Struct({
         pos: float3,
         rot: float4,
         type: r.uint32le,
+        // new in v24. maybe related to new loading mechanic in Nebraska?
+        unknown: new r.Reserved(r.uint32le),
       }),
       'numSpawnPoints',
     ),
