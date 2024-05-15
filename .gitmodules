@@ -1,0 +1,3 @@
+[submodule "packages/clis/parser/gdeflate/libdeflate"]
+	path = packages/clis/parser/gdeflate/libdeflate
+	url = https://github.com/NVIDIA/libdeflate/

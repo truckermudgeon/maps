@@ -84,7 +84,7 @@ declare module 'restructure' {
     size(): number;
   }
 
-  export class Reserved extends Base<T> {
+  export class Reserved extends Base<never> {
     constructor(t: Base<T>, length: number = 1);
     fromBuffer(buffer: Buffer): never;
     decode(stream: r.DecodeStream): never;
@@ -99,11 +99,13 @@ declare module 'restructure' {
   }
 
   export type StructType<T extends Record<string, unknown>> = {
-    [K in keyof T]: T[K] extends Base<infer U>
-      ? U
-      : T[K] extends () => infer V
-        ? V
-        : T[K];
+    [K in keyof T]: T[K] extends Base<never>
+      ? undefined
+      : T[K] extends Base<infer U>
+        ? U
+        : T[K] extends () => infer V
+          ? V
+          : T[K];
   };
 
   export type StructFields<T extends Record<string, unknown>> = {
@@ -119,6 +121,7 @@ declare module 'restructure' {
 
     constructor(fields: StructFields<T>);
     fromBuffer(buffer: Buffer): StructType<T>;
+    toBuffer(struct: StructType<T>): Uint8Array;
     decode(stream: r.DecodeStream): StructType<T>;
     size(): number;
   }
@@ -145,6 +148,7 @@ declare module 'restructure' {
   export { StringT as String };
   export const uint8: NumberT;
   export const uint16le: NumberT;
+  export const uint24le: NumberT;
   export const uint32le: NumberT;
   export const int8: NumberT;
   export const int16le: NumberT;
