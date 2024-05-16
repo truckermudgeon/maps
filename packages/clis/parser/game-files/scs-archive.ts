@@ -1,5 +1,5 @@
 import { assert, assertExists } from '@truckermudgeon/base/assert';
-import { Preconditions } from '@truckermudgeon/base/precon';
+import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
 import fs from 'fs';
 import { createRequire } from 'module';
 import type { BaseOf } from 'restructure';
@@ -251,6 +251,8 @@ export class ScsArchive {
           case MetadataType.INLINE_DIRECTORY:
             skippedMetaTypes.add(metadataHeader.type);
             break;
+          default:
+            throw new UnreachableError(type);
         }
       }
     }
@@ -349,7 +351,8 @@ function createTobjEntry(
   const imageMeta = assertExists(
     metas.find(m => m.version === MetadataType.IMG),
   ) as BaseOf<typeof ImageMeta>;
-  assertExists(metas.find(m => m.version === MetadataType.IMG)) as BaseOf<
+  // SampleMeta isn't used by `parser`, but check for it anyway Just In Case™
+  assertExists(metas.find(m => m.version === MetadataType.SAMPLE)) as BaseOf<
     typeof SampleMeta
   >;
   const plainMeta = assertExists(
