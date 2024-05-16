@@ -16,7 +16,7 @@ export enum AtsDlc {
   Washington,
   Wyoming,
 }
-export type AtsSelectableDlc = Exclude<AtsDlc, AtsDlc.Nebraska>;
+export type AtsSelectableDlc = AtsDlc;
 export const AtsSelectableDlcs: ReadonlySet<AtsSelectableDlc> = new Set([
   AtsDlc.Nevada,
   AtsDlc.Arizona,
@@ -31,6 +31,7 @@ export const AtsSelectableDlcs: ReadonlySet<AtsSelectableDlc> = new Set([
   AtsDlc.Texas,
   AtsDlc.Oklahoma,
   AtsDlc.Kansas,
+  AtsDlc.Nebraska,
 ]);
 export const AtsDlcInfo: Record<AtsSelectableDlc, string> = {
   [AtsDlc.Nevada]: 'Nevada',
@@ -46,6 +47,7 @@ export const AtsDlcInfo: Record<AtsSelectableDlc, string> = {
   [AtsDlc.Texas]: 'Texas',
   [AtsDlc.Oklahoma]: 'Oklahoma',
   [AtsDlc.Kansas]: 'Kansas',
+  [AtsDlc.Nebraska]: 'Nebraska',
 };
 
 // from /def/country.sii
@@ -56,6 +58,7 @@ export enum AtsCountryId {
   Arizona = 3,
   Colorado = 7,
   Idaho = 13,
+  Nebraska = 18,
   NewMexico = 31,
   Oregon = 37,
   Texas = 43,
@@ -88,7 +91,6 @@ export enum AtsCountryId {
   Minnesota = 24,
   Mississippi = 25,
   Missouri = 26,
-  Nebraska = 28,
   NewHampshire = 29,
   NewJersey = 30,
   NewYork = 32,
@@ -124,6 +126,7 @@ export const AtsCountryIdToDlcGuard: Record<AtsCountryId, AtsDlcGuard> = {
   [AtsCountryId.Montana]: 22,
   [AtsCountryId.Oklahoma]: 25,
   [AtsCountryId.Wyoming]: 16,
+  [AtsCountryId.Nebraska]: 32,
 };
 
 export type AtsDlcGuard = Range<0, 36>;
@@ -172,7 +175,7 @@ export function toAtsDlcGuards(
 ): Set<AtsDlcGuard> {
   const guards = new Set<AtsSelectableDlc>();
   for (const [key, dlcs] of Object.entries(AtsDlcGuards)) {
-    if ([...dlcs].every(dlc => selectedDlcs.has(dlc as AtsSelectableDlc))) {
+    if ([...dlcs].every(dlc => selectedDlcs.has(dlc))) {
       guards.add(Number(key));
     }
   }
