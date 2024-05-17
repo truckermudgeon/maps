@@ -94,7 +94,14 @@ export const ShareControl = () => {
   return (
     <div ref={ref}>
       <div className={'maplibregl-ctrl maplibregl-ctrl-group'}>
-        <IconButton title={'Share'} onClick={() => setOpen(!open)}>
+        <IconButton
+          sx={{
+            minWidth: 0,
+            minHeight: 0,
+          }}
+          title={'Share'}
+          onClick={() => setOpen(!open)}
+        >
           <IosShare />
         </IconButton>
       </div>
