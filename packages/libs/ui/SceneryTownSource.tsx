@@ -5,7 +5,7 @@ import {
   textVariableAnchor,
 } from './GameMapStyle';
 
-export const sceneryTownsUrl = `https://raw.githubusercontent.com/nautofon/ats-towns/kansas/all-towns.geojson`;
+export const sceneryTownsUrl = `https://raw.githubusercontent.com/nautofon/ats-towns/nebraska/all-towns.geojson`;
 
 export const enum StateCode {
   AZ = 'AZ',
