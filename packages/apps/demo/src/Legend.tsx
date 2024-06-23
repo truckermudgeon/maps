@@ -18,11 +18,13 @@ import {
   Tabs,
   Tooltip,
 } from '@mui/joy';
+import { assertExists } from '@truckermudgeon/base/assert';
 import type { AtsSelectableDlc } from '@truckermudgeon/map/constants';
 import { AtsDlcInfo } from '@truckermudgeon/map/constants';
 import { MapIcon } from '@truckermudgeon/ui';
 import type { ReactElement } from 'react';
-import { memo, useState } from 'react';
+import { memo, useRef, useState } from 'react';
+import { useControl } from 'react-map-gl/maplibre';
 
 const mapIconInfo: Record<MapIcon, { label: string; iconName: string }> = {
   [MapIcon.FuelStation]: { iconName: 'gas_ico', label: 'Fuel station' },
@@ -99,19 +101,26 @@ export interface LegendProps {
   atsDlcs: ListProps<AtsSelectableDlc>;
 }
 export const Legend = (props: LegendProps) => {
+  const ref = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<number>(0);
+
+  useControl(
+    () => ({
+      onAdd: () => assertExists(ref.current),
+      onRemove: () => assertExists(ref.current).remove(),
+    }),
+    { position: 'bottom-left' },
+  );
+
   return (
-    <>
+    <div ref={ref} className={'maplibregl-ctrl maplibregl-ctrl-group'}>
       <IconButton
         title={'Map Options'}
         variant={'outlined'}
         sx={{
-          backgroundColor: 'background.body',
-          position: 'absolute',
-          left: 0,
-          bottom: 0,
-          m: 2,
+          minWidth: 0,
+          minHeight: 0,
         }}
         onClick={() => setIsOpen(true)}
       >
@@ -131,7 +140,7 @@ export const Legend = (props: LegendProps) => {
           content: {
             sx: {
               bgcolor: 'transparent',
-              p: 2,
+              p: 1,
               boxShadow: 'none',
               justifyContent: 'end',
             },
@@ -205,7 +214,7 @@ export const Legend = (props: LegendProps) => {
           )}
         </Sheet>
       </Drawer>
-    </>
+    </div>
   );
 };
 

@@ -23,25 +23,18 @@ interface MapSelectProps {
 
 export const MapSelect = ({ map, onSelect }: MapSelectProps) => {
   return (
-    <div
-      style={{
-        width: 90,
-        margin: 10,
-        display: 'inline-block',
-      }}
+    <Select
+      sx={{ paddingBlock: 0, minWidth: 'fit-content' }}
+      value={map}
+      onChange={(_, v) =>
+        onSelect(assertExists(options.find(o => o.value === v)))
+      }
     >
-      <Select
-        value={map}
-        onChange={(_, v) =>
-          onSelect(assertExists(options.find(o => o.value === v)))
-        }
-      >
-        {options.map(o => (
-          <Option key={o.value} value={o.value}>
-            {o.label}
-          </Option>
-        ))}
-      </Select>
-    </div>
+      {options.map(o => (
+        <Option key={o.value} value={o.value}>
+          {o.label}
+        </Option>
+      ))}
+    </Select>
   );
 };

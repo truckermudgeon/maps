@@ -55,7 +55,7 @@ const Demo = () => {
 
   return (
     <MapGl
-      style={{ width: '100vw', height: '100vh' }} // ensure map fills page
+      style={{ width: '100svw', height: '100svh' }} // ensure map fills page
       hash={true}
       minZoom={4}
       maxZoom={15}
@@ -98,6 +98,9 @@ const Demo = () => {
       <ShareControl />
       <AttributionControl
         compact={true}
+        style={{
+          marginLeft: 54,
+        }}
         customAttribution="&copy; Trucker Mudgeon. scenery town data by <a href='https://github.com/nautofon/ats-towns'>nautofon</a>."
       />
       <MapSelectAndSearch visibleStates={visibleStates} />

@@ -1,6 +1,8 @@
+import { Stack } from '@mui/joy';
+import { assertExists } from '@truckermudgeon/base/assert';
 import type { StateCode } from '@truckermudgeon/ui';
-import React, { useState } from 'react';
-import { useMap } from 'react-map-gl/maplibre';
+import React, { useRef, useState } from 'react';
+import { useControl, useMap } from 'react-map-gl/maplibre';
 import type { GameOption } from './MapSelect';
 import { MapSelect } from './MapSelect';
 import type { CityOption } from './SearchBar';
@@ -10,6 +12,15 @@ interface MapSelectAndSearchProps {
   visibleStates: Set<StateCode>;
 }
 export const MapSelectAndSearch = (props: MapSelectAndSearchProps) => {
+  const ref = useRef<HTMLDivElement>(null);
+  useControl(
+    () => ({
+      onAdd: () => assertExists(ref.current),
+      onRemove: () => assertExists(ref.current).remove(),
+    }),
+    { position: 'top-left' },
+  );
+
   const { current: map } = useMap();
   const initialMap: GameOption =
     localStorage.getItem('tm-map') === 'europe'
@@ -83,13 +94,19 @@ export const MapSelectAndSearch = (props: MapSelectAndSearchProps) => {
   );
 
   return (
-    <>
-      <MapSelect map={gameMap.value} onSelect={onMapSelect} />
-      <SearchBar
-        map={gameMap.value}
-        onSelect={onSearchBarSelect}
-        visibleStates={props.visibleStates}
-      />
-    </>
+    <div
+      ref={ref}
+      className={'maplibregl-ctrl'}
+      style={{ width: 'calc(100svw - 64px)' }}
+    >
+      <Stack direction={'row'} gap={1}>
+        <MapSelect map={gameMap.value} onSelect={onMapSelect} />
+        <SearchBar
+          map={gameMap.value}
+          onSelect={onSearchBarSelect}
+          visibleStates={props.visibleStates}
+        />
+      </Stack>
+    </div>
   );
 };

@@ -80,27 +80,18 @@ export const SearchBar = (props: SearchBarProps) => {
   });
 
   return (
-    <div
-      style={{
-        width: 250,
-        margin: 10,
-        marginLeft: 0,
-        display: 'inline-block',
-      }}
-    >
-      <Autocomplete
-        // Hacky way to clear the current selection when `map` prop changes.
-        key={map}
-        onChange={(_, v) => v && onSelect(v)}
-        placeholder={'Fly to...'}
-        options={options}
-        filterOptions={filterOptions}
-        groupBy={option => option.state}
-        blurOnSelect
-        autoComplete
-        renderGroup={formatGroupLabel}
-      />
-    </div>
+    <Autocomplete
+      // Hacky way to clear the current selection when `map` prop changes.
+      key={map}
+      onChange={(_, v) => v && onSelect(v)}
+      placeholder={'Fly to...'}
+      options={options}
+      filterOptions={filterOptions}
+      groupBy={option => option.state}
+      blurOnSelect
+      autoComplete
+      renderGroup={formatGroupLabel}
+    />
   );
 };
 
