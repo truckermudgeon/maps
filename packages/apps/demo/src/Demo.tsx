@@ -94,7 +94,7 @@ const Demo = () => {
         />
       )}
       <NavigationControl visualizePitch={true} />
-      <FullscreenControl />
+      <FullscreenControl containerId={'fsElem'} />
       <ShareControl />
       <AttributionControl
         compact={true}
