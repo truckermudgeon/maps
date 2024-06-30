@@ -120,6 +120,7 @@ export const Legend = (props: LegendProps) => {
         sx={{
           minWidth: 0,
           minHeight: 0,
+          borderRadius: 0,
         }}
         onClick={() => setIsOpen(true)}
       >

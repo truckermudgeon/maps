@@ -98,6 +98,7 @@ export const ShareControl = () => {
           sx={{
             minWidth: 0,
             minHeight: 0,
+            borderRadius: 0,
           }}
           title={'Share'}
           onClick={() => setOpen(!open)}
