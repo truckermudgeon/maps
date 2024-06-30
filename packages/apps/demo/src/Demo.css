@@ -1,11 +1,28 @@
 /* Tweaks to MapLibre styling to make it more similar to Joy UI */
 
+.maplibregl-ctrl-group {
+  background: none;
+  border-radius: 6px;
+}
+
 .maplibregl-ctrl-group:not(:empty) {
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
 }
 
 .maplibregl-ctrl-group button {
+  background-color: var(--joy-palette-background-surface);
   width: 34px;
   height: 34px;
   display: flex;
+}
+
+.maplibregl-ctrl button:not(:disabled):hover {
+  background-color: var(
+    --variant-plainHoverBg,
+    var(
+      --joy-palette-neutral-plainHoverBg,
+      var(--joy-palette-neutral-100, #f0f4f8)
+    )
+  ) !important;
 }
