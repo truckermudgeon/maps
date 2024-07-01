@@ -1,9 +1,6 @@
 import { Layer, Source } from 'react-map-gl/maplibre';
-import {
-  baseTextLayout,
-  baseTextPaint,
-  textVariableAnchor,
-} from './GameMapStyle';
+import { baseTextLayout, textVariableAnchor } from './GameMapStyle';
+import { modeColors } from './colors';
 
 export const sceneryTownsUrl = `https://raw.githubusercontent.com/nautofon/ats-towns/nebraska/all-towns.geojson`;
 
@@ -48,9 +45,15 @@ const allStates: ReadonlySet<StateCode> = new Set(
 interface SceneryTownSourceProps {
   enableAutoHide?: boolean; // defaults to true
   enabledStates?: Set<StateCode>; // defaults to full set
+  mode?: 'dark' | 'light'; // defaults to 'light'
 }
 export const SceneryTownSource = (props: SceneryTownSourceProps) => {
-  const { enableAutoHide = true, enabledStates = allStates } = props;
+  const {
+    enableAutoHide = true,
+    enabledStates = allStates,
+    mode = 'light',
+  } = props;
+  const colors = modeColors[mode];
   return (
     <Source id={`scenery-towns`} type={'geojson'} data={sceneryTownsUrl}>
       <Layer
@@ -65,7 +68,7 @@ export const SceneryTownSource = (props: SceneryTownSourceProps) => {
           'text-variable-anchor': textVariableAnchor,
           'text-size': 10.5,
         }}
-        paint={baseTextPaint}
+        paint={colors.baseTextPaint}
       />
     </Source>
   );

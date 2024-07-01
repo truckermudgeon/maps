@@ -5,7 +5,6 @@ export {
   MapIcon,
   allIcons,
   baseTextLayout,
-  baseTextPaint,
   textVariableAnchor,
 } from './GameMapStyle';
 export {
