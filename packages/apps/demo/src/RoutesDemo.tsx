@@ -1,4 +1,10 @@
-import { Autocomplete, List, ListDivider, Typography } from '@mui/joy';
+import {
+  Autocomplete,
+  List,
+  ListDivider,
+  Typography,
+  useColorScheme,
+} from '@mui/joy';
 import type { AutocompleteRenderGroupParams } from '@mui/joy/Autocomplete/AutocompleteProps';
 import { assertExists } from '@truckermudgeon/base/assert';
 import { getExtent } from '@truckermudgeon/base/geom';
@@ -40,6 +46,8 @@ import { Legend, createListProps } from './Legend';
 import { toStateCodes } from './state-codes';
 
 const RoutesDemo = () => {
+  const { mode: _maybeMode, systemMode } = useColorScheme();
+  const mode = _maybeMode === 'system' ? systemMode : _maybeMode;
   const [autoHide, setAutoHide] = useState(true);
   const [visibleIcons, setVisibleIcons] = useState(new Set(allIcons));
   const [visibleAtsDlcs, setVisibleAtsDlcs] = useState(
@@ -76,14 +84,16 @@ const RoutesDemo = () => {
         zoom: 9,
       }}
     >
-      <BaseMapStyle />
+      <BaseMapStyle mode={mode} />
       <GameMapStyle
         game={'ats'}
+        mode={mode}
         enableIconAutoHide={autoHide}
         visibleIcons={visibleIcons}
         dlcs={visibleAtsDlcs}
       />
       <SceneryTownSource
+        mode={mode}
         enableAutoHide={autoHide}
         enabledStates={visibleStates}
       />

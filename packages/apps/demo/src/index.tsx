@@ -1,4 +1,4 @@
-import { CssBaseline, CssVarsProvider } from '@mui/joy';
+import { CssBaseline, CssVarsProvider, extendTheme } from '@mui/joy';
 import * as React from 'react';
 import { createRoot } from 'react-dom/client';
 import {
@@ -18,11 +18,23 @@ const router = createBrowserRouter(
   ]),
 );
 
+const theme = extendTheme({
+  components: {
+    JoyIconButton: {
+      styleOverrides: {
+        root: {
+          backgroundColor: 'var(--joy-palette-background-surface)',
+        },
+      },
+    },
+  },
+});
+
 const container = document.getElementById('root')!;
 const root = createRoot(container);
 root.render(
   <React.StrictMode>
-    <CssVarsProvider>
+    <CssVarsProvider defaultMode={'dark'} theme={theme}>
       <CssBaseline />
       <RouterProvider router={router} />
     </CssVarsProvider>

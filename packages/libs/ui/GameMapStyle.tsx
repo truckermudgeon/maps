@@ -22,6 +22,7 @@ import type {
   SymbolLayerSpecification,
 } from 'maplibre-gl';
 import { Layer, Source } from 'react-map-gl/maplibre';
+import { modeColors } from './colors';
 import { addPmTilesProtocol } from './pmtiles';
 
 export const enum MapIcon {
@@ -54,6 +55,8 @@ export type GameMapStyleProps = {
   visibleIcons?: ReadonlySet<MapIcon>;
   /** Defaults to true */
   enableIconAutoHide?: boolean;
+  /** Defaults to 'light' */
+  mode?: 'dark' | 'light';
 } & (
   | {
       game: 'ats';
@@ -68,11 +71,17 @@ export type GameMapStyleProps = {
 );
 
 export const GameMapStyle = (props: GameMapStyleProps) => {
-  const { game, visibleIcons = allIcons, enableIconAutoHide = true } = props;
+  const {
+    game,
+    visibleIcons = allIcons,
+    enableIconAutoHide = true,
+    mode = 'light',
+  } = props;
   const dlcGuardFilter =
     game === 'ats'
       ? createDlcGuardFilter(game, props.dlcs ?? AtsSelectableDlcs)
       : createDlcGuardFilter(game, props.dlcs ?? Ets2SelectableDlcs);
+  const colors = modeColors[mode];
   addPmTilesProtocol();
   return (
     // N.B.: {ats,ets2}.pmtiles each have one layer named 'ats' or 'ets2'
@@ -458,7 +467,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             'icon-allow-overlap': !enableIconAutoHide,
             'icon-size': 0.6,
           }}
-          paint={baseTextPaint}
+          paint={colors.baseTextPaint}
         />
       )}
       {visibleIcons.has(MapIcon.CityNames) && (
@@ -485,7 +494,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             'icon-allow-overlap': !enableIconAutoHide,
             'icon-size': 0.6,
           }}
-          paint={baseTextPaint}
+          paint={colors.baseTextPaint}
         />
       )}
       {visibleIcons.has(MapIcon.CityNames) && (
@@ -511,7 +520,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             'icon-allow-overlap': !enableIconAutoHide,
             'icon-size': 0.8,
           }}
-          paint={baseTextPaint}
+          paint={colors.baseTextPaint}
         />
       )}
       {game === 'ets2' && visibleIcons.has(MapIcon.CityNames) && (
@@ -533,7 +542,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             'text-variable-anchor': textVariableAnchor,
             'text-size': 14,
           }}
-          paint={baseTextPaint}
+          paint={colors.baseTextPaint}
         />
       )}
       {hasPois(visibleIcons) && (
@@ -793,12 +802,6 @@ export const baseTextLayout: SymbolLayerSpecification['layout'] = {
   'text-radial-offset': 0.5,
   'text-justify': 'auto',
   'text-font': ['Klokantech Noto Sans Regular'],
-};
-
-export const baseTextPaint: SymbolLayerSpecification['paint'] = {
-  'text-color': 'hsl(42, 10%, 14%)',
-  'text-halo-width': 2,
-  'text-halo-color': 'hsl(42, 10%, 100%)',
 };
 
 const roadLineLayout: LineLayerSpecification['layout'] = {

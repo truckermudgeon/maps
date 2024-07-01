@@ -117,10 +117,10 @@ export const Legend = (props: LegendProps) => {
     <div ref={ref} className={'maplibregl-ctrl maplibregl-ctrl-group'}>
       <IconButton
         title={'Map Options'}
-        variant={'outlined'}
         sx={{
           minWidth: 0,
           minHeight: 0,
+          borderRadius: 0,
         }}
         onClick={() => setIsOpen(true)}
       >
