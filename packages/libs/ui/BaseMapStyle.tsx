@@ -9,7 +9,7 @@ export const BaseMapStyle = () => {
       <Layer
         id={'background'}
         type={'background'}
-        paint={{ 'background-color': '#9cc0facc' }}
+        paint={{ 'background-color': '#b2cdfb' }}
       />
       <Source id={'world'} type={'vector'} url={'pmtiles:///world.pmtiles'}>
         <Layer
@@ -40,7 +40,7 @@ export const BaseMapStyle = () => {
           source-layer={'lakes'}
           type={'fill'}
           paint={{
-            'fill-color': '#9cc0facc',
+            'fill-color': '#b2cdfb',
           }}
         />
       </Source>
