@@ -43,6 +43,7 @@ import MapGl, {
   useMap,
 } from 'react-map-gl/maplibre';
 import { Legend, createListProps } from './Legend';
+import { ModeControl } from './ModeControl';
 import { toStateCodes } from './state-codes';
 
 const RoutesDemo = () => {
@@ -126,6 +127,7 @@ const RoutesDemo = () => {
       </Source>
       <NavigationControl visualizePitch={true} />
       <FullscreenControl />
+      <ModeControl />
       <AttributionControl
         compact={true}
         customAttribution="&copy; Trucker Mudgeon. scenery town data by <a href='https://github.com/nautofon/ats-towns'>nautofon</a>."

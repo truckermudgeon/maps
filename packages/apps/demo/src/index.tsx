@@ -34,7 +34,11 @@ const container = document.getElementById('root')!;
 const root = createRoot(container);
 root.render(
   <React.StrictMode>
-    <CssVarsProvider defaultMode={'dark'} theme={theme}>
+    <CssVarsProvider
+      defaultMode={'system'}
+      modeStorageKey={'tm-mode'}
+      theme={theme}
+    >
       <CssBaseline />
       <RouterProvider router={router} />
     </CssVarsProvider>
