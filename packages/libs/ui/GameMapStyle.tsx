@@ -22,6 +22,7 @@ import type {
   SymbolLayerSpecification,
 } from 'maplibre-gl';
 import { Layer, Source } from 'react-map-gl/maplibre';
+import type { Mode } from './colors';
 import { modeColors } from './colors';
 import { addPmTilesProtocol } from './pmtiles';
 
@@ -56,7 +57,7 @@ export type GameMapStyleProps = {
   /** Defaults to true */
   enableIconAutoHide?: boolean;
   /** Defaults to 'light' */
-  mode?: 'dark' | 'light';
+  mode?: Mode;
 } & (
   | {
       game: 'ats';
@@ -101,12 +102,12 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           'fill-sort-key': ['get', 'zIndex'],
         }}
         paint={{
-          'fill-color': mapAreaColor,
+          'fill-color': mapAreaColor(mode),
           'fill-outline-color': [
             'case',
             ['==', ['get', 'color'], MapColor.Road],
-            '#999a',
-            mapAreaColor,
+            colors.mapAreaOutline,
+            mapAreaColor(mode),
           ],
         }}
       />
@@ -124,10 +125,10 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           'fill-sort-key': ['get', 'zIndex'],
         }}
         paint={{
-          'fill-color': mapAreaColor,
+          'fill-color': mapAreaColor(mode),
         }}
       />
-      <FootprintsSource game={game} />
+      <FootprintsSource game={game} mode={mode} color={colors.footprint} />
       <Layer
         id={game + 'hidden-roads'}
         source-layer={game}
@@ -141,7 +142,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           dlcGuardFilter,
         ]}
         paint={{
-          'line-color': '#e9e9e8',
+          'line-color': colors.hiddenRoad,
           'line-width': 1,
           'line-opacity': 0.7,
         }}
@@ -160,7 +161,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
         ]}
         layout={roadLineLayout}
         paint={{
-          'line-color': roadCaseColor,
+          'line-color': roadCaseColor(mode),
           'line-gap-width': roadLineWidth,
           'line-width': [
             'interpolate',
@@ -191,7 +192,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
         paint={{
           // set opacity to 0.5 to see line string start/end points.
           //'line-opacity': 0.5,
-          'line-color': roadColor,
+          'line-color': roadColor(mode),
           'line-width': roadLineWidth,
         }}
       />
@@ -205,7 +206,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           ['==', ['get', 'type'], 'ferry'],
         ]}
         paint={{
-          'line-color': '#6c90ff88',
+          'line-color': colors.ferryLine,
           'line-width': 1,
           'line-opacity': 0.8,
           'line-dasharray': [2, 2],
@@ -231,7 +232,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           ],
         ]}
         paint={{
-          'line-color': '#aaa',
+          'line-color': colors.trainLine,
           'line-width': 2,
           'line-opacity': 0.8,
           'line-offset': [
@@ -265,7 +266,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           ],
         ]}
         paint={{
-          'line-color': '#aaa',
+          'line-color': colors.trainLine,
           'line-width': 2,
           'line-opacity': 0.8,
           'line-offset': [
@@ -299,7 +300,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           ],
         ]}
         paint={{
-          'line-color': '#aaa',
+          'line-color': colors.trainLine,
           'line-width': 10,
           'line-opacity': 0.8,
           'line-dasharray': [0.1, 1],
@@ -323,8 +324,8 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
         }}
         paint={{
           'text-halo-width': 2,
-          'text-halo-color': '#eefc',
-          'text-color': '#6c80ff',
+          'text-halo-color': colors.ferryHalo,
+          'text-color': colors.ferryLabel,
         }}
       />
       <Layer
@@ -345,8 +346,8 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
         }}
         paint={{
           'text-halo-width': 2,
-          'text-halo-color': '#eefc',
-          'text-color': '#555c',
+          'text-halo-color': colors.trainHalo,
+          'text-color': colors.trainLabel,
         }}
       />
       {visibleIcons.has(MapIcon.Company) && (
@@ -568,7 +569,15 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
   );
 };
 
-const FootprintsSource = ({ game }: { game: 'ats' | 'ets2' }) => (
+const FootprintsSource = ({
+  game,
+  color,
+  mode,
+}: {
+  game: 'ats' | 'ets2';
+  color: string;
+  mode: Mode;
+}) => (
   <Source
     id={game + 'footprints'}
     type={'vector'}
@@ -584,7 +593,7 @@ const FootprintsSource = ({ game }: { game: 'ats' | 'ets2' }) => (
         ['==', ['get', 'type'], 'footprint'],
       ]}
       paint={{
-        'fill-color': '#e9e9e8',
+        'fill-color': color,
         'fill-opacity': ['step', ['zoom'], 1, 9, 0.8],
       }}
     />
@@ -599,7 +608,7 @@ const FootprintsSource = ({ game }: { game: 'ats' | 'ets2' }) => (
         ['==', ['get', 'type'], 'footprint'],
       ]}
       paint={{
-        'fill-extrusion-color': '#e9e9e8',
+        'fill-extrusion-color': color,
         'fill-extrusion-height': [
           'interpolate',
           ['exponential', 1.5],
@@ -609,7 +618,7 @@ const FootprintsSource = ({ game }: { game: 'ats' | 'ets2' }) => (
           13,
           ['*', 20, ['get', 'height']],
         ],
-        'fill-extrusion-opacity': 0.33,
+        'fill-extrusion-opacity': mode === 'light' ? 0.33 : 0.67,
       }}
     />
   </Source>
@@ -824,21 +833,41 @@ const roadLineWidth: DataDrivenPropertyValueSpecification<number> = [
 ];
 
 // Road types to [line, case] colors
-const roadColors: Record<RoadType, [string, string]> = {
-  freeway: ['#fde293', '#f8c248'],
-  divided: ['#ffffff', '#dddddd'],
-  no_vehicles: ['#aaaaaa', '#888888'],
-  local: ['#f1f3f4', '#dddddd'],
-  train: ['#ff0000', '#f8c248'],
-  tram: ['#00ff00', '#f8c248'],
-  unknown: ['#f0f', '#f0f'],
+type RoadColors = Record<RoadType, [string, string]>;
+const roadColors: { [k in Mode]: RoadColors } = {
+  light: {
+    freeway: ['#fde293', '#f8c248'],
+    divided: ['#ffffff', '#dddddd'],
+    no_vehicles: ['#aaaaaa', '#888888'],
+    local: ['#f1f3f4', '#dddddd'],
+    train: ['#ff0000', '#f8c248'],
+    tram: ['#00ff00', '#f8c248'],
+    unknown: ['#f0f', '#f0f'],
+  },
+  dark: {
+    freeway: ['#95813e', '#372f21'],
+    divided: ['#3c4043', '#4c5043'],
+    no_vehicles: ['#606166', '#888888'],
+    local: ['#606166', '#333'],
+    train: ['#ff0000', '#f8c248'],
+    tram: ['#00ff00', '#f8c248'],
+    unknown: ['#f0f', '#f0f'],
+  },
 };
 
-const mapColors: Record<MapColor, string> = {
-  [0]: '#eaeced', // road
-  [1]: '#e6cc9f', // light
-  [2]: '#d8a54e', // dark
-  [3]: '#b1ca9b', // green
+const mapColors: { [k in Mode]: Record<MapColor, string> } = {
+  light: {
+    [0]: 'hsl(200, 8%, 92%)', // road
+    [1]: 'hsl(38, 59%, 76%)', // light
+    [2]: 'hsl(38, 64%, 58%)', // dark
+    [3]: 'hsl(92, 31%, 70%)', // green
+  },
+  dark: {
+    [0]: 'hsl(200, 2%, 36%)', // road
+    [1]: 'hsl(38, 25%, 35%)', // light
+    [2]: 'hsl(38, 25%, 25%)', // dark
+    [3]: 'hsl(143, 20%, 25%)', // green
+  },
 };
 
 // The dynamically-generated ExpressionSpecifications below require an array
@@ -848,28 +877,27 @@ const mapColors: Record<MapColor, string> = {
 type Array4<T> = [T, T, T, T];
 type Array7<T> = [T, T, T, T, T, T, T];
 
-const roadColor: ExpressionSpecification = [
+const roadColor = (mode: 'light' | 'dark'): ExpressionSpecification => [
   'match',
   ['get', 'roadType'],
-  ...(Object.entries(roadColors).flatMap(([roadType, [primaryColor]]) => [
+  ...(Object.entries(roadColors[mode]).flatMap(([roadType, [primaryColor]]) => [
     roadType,
     primaryColor,
   ]) as Array7<string>),
   '#f0f', //fallback
 ];
-const roadCaseColor: ExpressionSpecification = [
+const roadCaseColor = (mode: 'light' | 'dark'): ExpressionSpecification => [
   'match',
   ['get', 'roadType'],
-  ...(Object.entries(roadColors).flatMap(([roadType, [_, casingColor]]) => [
-    roadType,
-    casingColor,
-  ]) as Array7<string>),
+  ...(Object.entries(roadColors[mode]).flatMap(
+    ([roadType, [_, casingColor]]) => [roadType, casingColor],
+  ) as Array7<string>),
   '#b0b', // fallback
 ];
-const mapAreaColor: ExpressionSpecification = [
+const mapAreaColor = (mode: 'light' | 'dark'): ExpressionSpecification => [
   'match',
   ['get', 'color'],
-  ...(Object.entries(mapColors).flatMap(([colorEnum, color]) => [
+  ...(Object.entries(mapColors[mode]).flatMap(([colorEnum, color]) => [
     Number(colorEnum),
     color,
   ]) as Array4<string>),

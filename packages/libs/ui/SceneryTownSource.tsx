@@ -1,5 +1,6 @@
 import { Layer, Source } from 'react-map-gl/maplibre';
 import { baseTextLayout, textVariableAnchor } from './GameMapStyle';
+import type { Mode } from './colors';
 import { modeColors } from './colors';
 
 export const sceneryTownsUrl = `https://raw.githubusercontent.com/nautofon/ats-towns/nebraska/all-towns.geojson`;
@@ -45,7 +46,7 @@ const allStates: ReadonlySet<StateCode> = new Set(
 interface SceneryTownSourceProps {
   enableAutoHide?: boolean; // defaults to true
   enabledStates?: Set<StateCode>; // defaults to full set
-  mode?: 'dark' | 'light'; // defaults to 'light'
+  mode?: Mode; // defaults to 'light'
 }
 export const SceneryTownSource = (props: SceneryTownSourceProps) => {
   const {

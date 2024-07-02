@@ -1,5 +1,26 @@
 /* Tweaks to MapLibre styling to make it more similar to Joy UI */
 
+html[data-joy-color-scheme='dark'] .maplibregl-ctrl-attrib.maplibregl-compact {
+  background-color: #000;
+}
+
+html[data-joy-color-scheme='dark']
+  .maplibregl-ctrl-attrib.maplibregl-compact-show
+  .maplibregl-ctrl-attrib-button {
+  background-color: #444;
+}
+
+html[data-joy-color-scheme='dark']
+  .maplibregl-ctrl-attrib.maplibregl-compact-show
+  a {
+  color: #eee;
+}
+
+html[data-joy-color-scheme='dark'] .maplibregl-ctrl-attrib-button {
+  background-color: #333;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='white' fill-rule='evenodd' viewBox='0 0 20 20'%3E%3Cpath d='M4 10a6 6 0 1 0 12 0 6 6 0 1 0-12 0m5-3a1 1 0 1 0 2 0 1 1 0 1 0-2 0m0 3a1 1 0 1 1 2 0v3a1 1 0 1 1-2 0'/%3E%3C/svg%3E");
+}
+
 .maplibregl-ctrl-group {
   background: none;
   border-radius: 6px;
@@ -8,6 +29,14 @@
 .maplibregl-ctrl-group:not(:empty) {
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+}
+
+html[data-joy-color-scheme='dark'] .maplibregl-ctrl-group:not(:empty) {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+html[data-joy-color-scheme='dark'] .maplibregl-ctrl-group button + button {
+  border-top-color: rgba(255, 255, 255, 0.15);
 }
 
 .maplibregl-ctrl-group button {

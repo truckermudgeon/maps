@@ -1,9 +1,10 @@
 import { Layer, Source } from 'react-map-gl/maplibre';
+import type { Mode } from './colors';
 import { modeColors } from './colors';
 import { addPmTilesProtocol } from './pmtiles';
 
 interface BaseMapStyleProps {
-  mode?: 'dark' | 'light';
+  mode?: Mode;
 }
 
 export const BaseMapStyle = (props: BaseMapStyleProps) => {
