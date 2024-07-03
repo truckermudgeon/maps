@@ -1,27 +1,35 @@
 import { Layer, Source } from 'react-map-gl/maplibre';
+import type { Mode } from './colors';
+import { modeColors } from './colors';
 import { addPmTilesProtocol } from './pmtiles';
 
-export const BaseMapStyle = () => {
+interface BaseMapStyleProps {
+  mode?: Mode;
+}
+
+export const BaseMapStyle = (props: BaseMapStyleProps) => {
   addPmTilesProtocol();
+  const { mode = 'light' } = props;
+  const colors = modeColors[mode];
 
   return (
     <>
       <Layer
         id={'background'}
         type={'background'}
-        paint={{ 'background-color': '#9cc0facc' }}
+        paint={{ 'background-color': colors.water }}
       />
       <Source id={'world'} type={'vector'} url={'pmtiles:///world.pmtiles'}>
         <Layer
           source-layer={'land'}
           type={'fill'}
-          paint={{ 'fill-color': '#f8f8f8' }}
+          paint={{ 'fill-color': colors.land }}
         />
         <Layer
           source-layer={'states'}
           type={'line'}
           paint={{
-            'line-color': '#aaa',
+            'line-color': colors.stateBorder,
             'line-width': 1,
             'line-opacity': 1,
             'line-dasharray': [2, 2],
@@ -31,7 +39,7 @@ export const BaseMapStyle = () => {
           source-layer={'countries'}
           type={'line'}
           paint={{
-            'line-color': '#ccc',
+            'line-color': colors.countryBorder,
             'line-width': 1,
             'line-opacity': 1,
           }}
@@ -40,7 +48,7 @@ export const BaseMapStyle = () => {
           source-layer={'lakes'}
           type={'fill'}
           paint={{
-            'fill-color': '#9cc0facc',
+            'fill-color': colors.water,
           }}
         />
       </Source>

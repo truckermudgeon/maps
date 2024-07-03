@@ -1,3 +1,4 @@
+import { useColorScheme } from '@mui/joy';
 import { AtsSelectableDlcs } from '@truckermudgeon/map/constants';
 import {
   allIcons,
@@ -19,6 +20,7 @@ import { useSearchParams } from 'react-router-dom';
 import './Demo.css';
 import { createListProps, Legend } from './Legend';
 import { MapSelectAndSearch } from './MapSelectAndSearch';
+import { ModeControl } from './ModeControl';
 import { ShareControl } from './ShareControl';
 import { toStateCodes } from './state-codes';
 
@@ -26,6 +28,9 @@ const inRange = (n: number, [min, max]: [number, number]) =>
   !isNaN(n) && min <= n && n <= max;
 
 const Demo = () => {
+  const { mode: _maybeMode, systemMode } = useColorScheme();
+  const mode = _maybeMode === 'system' ? systemMode : _maybeMode;
+
   const [searchParams] = useSearchParams();
   const lat = Number(searchParams.get('mlat'));
   const lon = Number(searchParams.get('mlon'));
@@ -75,27 +80,31 @@ const Demo = () => {
       {markerPos && (
         <Marker longitude={markerPos.lon} latitude={markerPos.lat} />
       )}
-      <BaseMapStyle />
+      <BaseMapStyle mode={mode} />
       <GameMapStyle
         game={'ats'}
+        mode={mode}
         enableIconAutoHide={autoHide}
         visibleIcons={visibleIcons}
         dlcs={visibleAtsDlcs}
       />
       <GameMapStyle
         game={'ets2'}
+        mode={mode}
         enableIconAutoHide={autoHide}
         visibleIcons={visibleIcons}
       />
       {visibleIcons.has(MapIcon.CityNames) && (
         <SceneryTownSource
+          mode={mode}
           enableAutoHide={autoHide}
           enabledStates={visibleStates}
         />
       )}
       <NavigationControl visualizePitch={true} />
-      <FullscreenControl />
+      <FullscreenControl containerId={'fsElem'} />
       <ShareControl />
+      <ModeControl />
       <AttributionControl
         compact={true}
         style={{

@@ -98,7 +98,12 @@ export const SearchBar = (props: SearchBarProps) => {
 function formatGroupLabel(params: AutocompleteRenderGroupParams) {
   return (
     <>
-      <Typography m={1} level={'body-xs'} textTransform={'uppercase'}>
+      <Typography
+        m={1}
+        level={'body-xs'}
+        textTransform={'uppercase'}
+        fontWeight={'lg'}
+      >
         {params.group}
       </Typography>
       <List>{params.children}</List>
