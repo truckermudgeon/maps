@@ -2,12 +2,13 @@ import { Layer, Source } from 'react-map-gl/maplibre';
 import { addPmTilesProtocol } from './pmtiles';
 
 interface ContoursStyleProps {
+  game: 'ats' | 'ets2';
   showContours: boolean;
 }
 export const ContoursStyle = (props: ContoursStyleProps) => {
   addPmTilesProtocol();
   return (
-    <Source type={'vector'} url={'pmtiles:///contours.pmtiles'}>
+    <Source type={'vector'} url={`pmtiles:///${props.game}-contours.pmtiles`}>
       <Layer
         source-layer={'contours'}
         type={'fill'}

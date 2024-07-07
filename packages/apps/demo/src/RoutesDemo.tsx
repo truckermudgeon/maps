@@ -89,7 +89,7 @@ const RoutesDemo = () => {
       }}
     >
       <BaseMapStyle mode={mode}>
-        <ContoursStyle showContours={showContours} />
+        <ContoursStyle game={'ats'} showContours={showContours} />
       </BaseMapStyle>
       <GameMapStyle
         game={'ats'}

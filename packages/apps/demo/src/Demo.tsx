@@ -84,7 +84,8 @@ const Demo = () => {
         <Marker longitude={markerPos.lon} latitude={markerPos.lat} />
       )}
       <BaseMapStyle mode={mode}>
-        <ContoursStyle showContours={showContours} />
+        <ContoursStyle game={'ats'} showContours={showContours} />
+        <ContoursStyle game={'ets2'} showContours={showContours} />
       </BaseMapStyle>
       <GameMapStyle
         game={'ats'}
