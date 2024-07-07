@@ -1,5 +1,6 @@
 import { ListAlt } from '@mui/icons-material';
 import {
+  Card,
   Checkbox,
   checkboxClasses,
   DialogContent,
@@ -17,6 +18,7 @@ import {
   TabPanel,
   Tabs,
   Tooltip,
+  Typography,
 } from '@mui/joy';
 import { assertExists } from '@truckermudgeon/base/assert';
 import type { AtsSelectableDlc } from '@truckermudgeon/map/constants';
@@ -98,6 +100,10 @@ export interface LegendProps {
     enableAutoHiding: boolean;
     onAutoHidingToggle: (newValue: boolean) => void;
   };
+  advanced: {
+    showContours: boolean;
+    onContoursToggle: (newValue: boolean) => void;
+  };
   atsDlcs: ListProps<AtsSelectableDlc>;
 }
 export const Legend = (props: LegendProps) => {
@@ -166,6 +172,7 @@ export const Legend = (props: LegendProps) => {
             <TabList tabFlex={1} sx={{ borderRadius: 0 }}>
               <Tab>Icons</Tab>
               <Tab>ATS DLC</Tab>
+              <Tab>Advanced</Tab>
             </TabList>
           </Tabs>
           <DialogContent sx={{ overflowX: 'hidden' }}>
@@ -191,6 +198,12 @@ export const Legend = (props: LegendProps) => {
                   items={atsDlcs}
                   selectedItems={props.atsDlcs.selectedItems}
                   onItemToggle={props.atsDlcs.onItemToggle}
+                />
+              </TabPanel>
+              <TabPanel sx={{ p: 0 }} value={2}>
+                <AdvancedOptions
+                  showContours={props.advanced.showContours}
+                  onContoursToggle={props.advanced.onContoursToggle}
                 />
               </TabPanel>
             </Tabs>
@@ -301,3 +314,29 @@ const DlcFooter = memo((props: DlcFooterProps) => (
     />
   </Stack>
 ));
+
+interface AdvancedOptionsProps {
+  showContours: boolean;
+  onContoursToggle: (newValue: boolean) => void;
+}
+const AdvancedOptions = (props: AdvancedOptionsProps) => (
+  <Stack mx={2}>
+    <Typography mb={2} level={'title-lg'}>
+      Experimental Features
+    </Typography>
+    <Card>
+      <Checkbox
+        sx={{
+          flexDirection: 'row-reverse',
+        }}
+        label={'Show elevation data'}
+        checked={props.showContours}
+        onChange={e => props.onContoursToggle(e.target.checked)}
+      />
+      <Typography level={'body-xs'} color={'warning'}>
+        Note: elevation data for points further away from roads is estimated and
+        likely inaccurate.
+      </Typography>
+    </Card>
+  </Stack>
+);

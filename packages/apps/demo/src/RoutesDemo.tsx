@@ -25,6 +25,7 @@ import type {
 } from '@truckermudgeon/map/types';
 import {
   BaseMapStyle,
+  ContoursStyle,
   GameMapStyle,
   SceneryTownSource,
   allIcons,
@@ -68,6 +69,8 @@ const RoutesDemo = () => {
     AtsSelectableDlcs,
   );
 
+  const [showContours, setShowContours] = useState(false);
+
   return (
     <MapGl
       style={{ width: '100vw', height: '100vh' }} // ensure map fills page
@@ -85,7 +88,9 @@ const RoutesDemo = () => {
         zoom: 9,
       }}
     >
-      <BaseMapStyle mode={mode} />
+      <BaseMapStyle mode={mode}>
+        <ContoursStyle showContours={showContours} />
+      </BaseMapStyle>
       <GameMapStyle
         game={'ats'}
         mode={mode}
@@ -138,6 +143,10 @@ const RoutesDemo = () => {
           ...iconsListProps,
           enableAutoHiding: autoHide,
           onAutoHidingToggle: setAutoHide,
+        }}
+        advanced={{
+          showContours,
+          onContoursToggle: setShowContours,
         }}
         atsDlcs={atsDlcsListProps}
       />

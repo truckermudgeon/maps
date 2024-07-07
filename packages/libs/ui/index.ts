@@ -1,5 +1,6 @@
 import type { StyleSpecification } from 'maplibre-gl';
 export { BaseMapStyle } from './BaseMapStyle';
+export { ContoursStyle } from './Contours';
 export {
   GameMapStyle,
   MapIcon,

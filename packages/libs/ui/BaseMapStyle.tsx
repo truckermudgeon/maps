@@ -1,15 +1,16 @@
+import type { PropsWithChildren } from 'react';
 import { Layer, Source } from 'react-map-gl/maplibre';
 import type { Mode } from './colors';
 import { modeColors } from './colors';
 import { addPmTilesProtocol } from './pmtiles';
 
-interface BaseMapStyleProps {
+interface BaseMapStyleProps extends PropsWithChildren {
   mode?: Mode;
 }
 
 export const BaseMapStyle = (props: BaseMapStyleProps) => {
   addPmTilesProtocol();
-  const { mode = 'light' } = props;
+  const { mode = 'light', children } = props;
   const colors = modeColors[mode];
 
   return (
@@ -25,6 +26,7 @@ export const BaseMapStyle = (props: BaseMapStyleProps) => {
           type={'fill'}
           paint={{ 'fill-color': colors.land }}
         />
+        {children}
         <Layer
           source-layer={'states'}
           type={'line'}
