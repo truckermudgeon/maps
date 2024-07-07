@@ -3,6 +3,7 @@ import { AtsSelectableDlcs } from '@truckermudgeon/map/constants';
 import {
   allIcons,
   BaseMapStyle,
+  ContoursStyle,
   defaultMapStyle,
   GameMapStyle,
   MapIcon,
@@ -58,6 +59,8 @@ const Demo = () => {
     AtsSelectableDlcs,
   );
 
+  const [showContours, setShowContours] = useState(false);
+
   return (
     <MapGl
       style={{ width: '100svw', height: '100svh' }} // ensure map fills page
@@ -80,7 +83,10 @@ const Demo = () => {
       {markerPos && (
         <Marker longitude={markerPos.lon} latitude={markerPos.lat} />
       )}
-      <BaseMapStyle mode={mode} />
+      <BaseMapStyle mode={mode}>
+        <ContoursStyle game={'ats'} showContours={showContours} />
+        <ContoursStyle game={'ets2'} showContours={showContours} />
+      </BaseMapStyle>
       <GameMapStyle
         game={'ats'}
         mode={mode}
@@ -118,6 +124,10 @@ const Demo = () => {
           ...iconsListProps,
           enableAutoHiding: autoHide,
           onAutoHidingToggle: setAutoHide,
+        }}
+        advanced={{
+          showContours,
+          onContoursToggle: setShowContours,
         }}
         atsDlcs={atsDlcsListProps}
       />
