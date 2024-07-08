@@ -41,6 +41,7 @@ const MapDataKeys: Record<keyof MapData, void> = {
   modelDescriptions: undefined,
   models: undefined,
   nodes: undefined,
+  elevation: undefined,
   pois: undefined,
   prefabDescriptions: undefined,
   prefabs: undefined,
@@ -50,15 +51,16 @@ const MapDataKeys: Record<keyof MapData, void> = {
 const mapJsonFiles = Object.freeze(Object.keys(MapDataKeys));
 
 // Transforms MapData (a type containing all array properties) into a type with
-// all Map<string, ...> properties, _except_ for `pois` (which is left alone as
-// an array).
+// all Map<string, ...> properties, _except_ for `pois` and `elevation` (which
+// are left alone as arrays).
 export type MappedData = Omit<
   {
     [K in keyof MapData]: Map<string, MapData[K][0]>;
   },
-  'pois'
+  'pois' | 'elevation'
 > & {
   pois: MapData['pois'];
+  elevation: MapData['elevation'];
 };
 
 export type FocusOptions = { radiusMeters: number } & (
@@ -125,6 +127,12 @@ export function readMapData(
           distance([i.x, i.y], focusCoords) <=
           focusOptions!.radiusMeters + padding
       : () => true;
+  const focusXYArray =
+    focusCoords != null
+      ? (i: [number, number, number], padding = 0) =>
+          distance([i[0], i[1]], focusCoords) <=
+          focusOptions!.radiusMeters + padding
+      : () => true;
   const focusXYPlus = (padding: number) => (pos: { x: number; y: number }) =>
     focusXY(pos, padding);
 
@@ -163,6 +171,10 @@ export function readMapData(
     focusXYPlus(200),
   );
   const pois = readArrayFile<Poi>(toJsonFilePath('pois.json'), focusXY);
+  const elevation = readArrayFile<[number, number, number]>(
+    toJsonFilePath('elevation.json'),
+    focusXYArray,
+  );
   const roadLooks = readArrayFile<WithToken<RoadLook>>(
     toJsonFilePath('roadLooks.json'),
   );
@@ -211,6 +223,7 @@ export function readMapData(
     prefabDescriptions: mapify(prefabDescriptions, p => p.token),
     modelDescriptions: mapify(modelDescriptions, p => p.token),
     pois,
+    elevation,
   };
   for (const k of Object.keys(mapped)) {
     const mapOrArray = mapped[k as keyof typeof mapped];

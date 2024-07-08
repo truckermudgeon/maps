@@ -209,6 +209,7 @@ function parseDefFiles(entries: Entries) {
   const prefabs = new Map<string, PrefabDescription>();
   const roadLooks = new Map<string, RoadLook>();
   const models = new Map<string, ModelDescription>();
+  const vegetation = new Set<string>();
   for (const f of defWorld.files) {
     if (!/^(prefab|road_look|model)\./.test(f) || !f.endsWith('.sii')) {
       continue;
@@ -219,7 +220,12 @@ function parseDefFiles(entries: Entries) {
       processPrefabJson(json, entries).forEach((v, k) => prefabs.set(k, v));
     } else if (f.startsWith('model')) {
       const json = convertSiiToJson(`def/world/${f}`, entries, ModelSiiSchema);
-      processModelJson(json, entries).forEach((v, k) => models.set(k, v));
+      const { buildings, vegetation: _vegetation } = processModelJson(
+        json,
+        entries,
+      );
+      buildings.forEach((v, k) => models.set(k, v));
+      _vegetation.forEach(v => vegetation.add(v));
     } else if (f.startsWith('road_look.')) {
       const json = convertSiiToJson(
         `def/world/${f}`,
@@ -234,6 +240,7 @@ function parseDefFiles(entries: Entries) {
   logger.info('parsed', prefabs.size, 'prefab defs');
   logger.info('parsed', roadLooks.size, 'road looks');
   logger.info('parsed', models.size, 'building models');
+  logger.info('parsed', vegetation.size, 'vegetation models');
 
   const defPhotoAlbum = Preconditions.checkExists(
     entries.directories.get('def/photo_album'),
@@ -265,6 +272,7 @@ function parseDefFiles(entries: Entries) {
     prefabs,
     roadLooks,
     models,
+    vegetation,
     viewpoints,
   };
 }
@@ -547,12 +555,23 @@ function processPrefabJson(
 function processModelJson(
   obj: ModelSii,
   entries: Entries,
-): Map<string, ModelDescription & { path: string }> {
+): {
+  buildings: Map<string, ModelDescription & { path: string }>;
+  vegetation: Set<string>;
+} {
   const modelDef = obj.modelDef;
   if (!modelDef) {
-    return new Map();
+    return {
+      buildings: new Map(),
+      vegetation: new Set(),
+    };
   }
 
+  const vegetation = new Set<string>(
+    Object.entries(modelDef)
+      .filter(([, o]) => o.vegetationModel != null)
+      .map(([key]) => key.split('.')[1]),
+  );
   const modelTuples = Object.entries(modelDef).map(
     ([key, o]) =>
       [key.split('.')[1], o.modelDesc?.substring(1)] as [
@@ -560,7 +579,7 @@ function processModelJson(
         string | undefined,
       ],
   );
-  const models = new Map<string, ModelDescription & { path: string }>();
+  const buildings = new Map<string, ModelDescription & { path: string }>();
   for (const [token, path] of modelTuples) {
     if (path == null) {
       continue;
@@ -583,9 +602,9 @@ function processModelJson(
       continue;
     }
     const pmg = parseModelPmg(pmgFile.read());
-    models.set(token, { path, ...pmg });
+    buildings.set(token, { path, ...pmg });
   }
-  return models;
+  return { buildings, vegetation };
 }
 
 function processRoadLookJson(obj: RoadLookSii): Map<string, RoadLook> {
@@ -852,27 +871,36 @@ function postProcess(
   icons: ReturnType<typeof parseIconMatFiles>,
   l10n: Map<string, string>,
 ): { map: string; mapData: MapData; icons: Map<string, Buffer> } {
-  // aggregate sectors data so we can do almost all post-processing in aggregate.
-  const sectorData = {
-    nodes: [] as Node[],
-    items: [] as Item[],
-  };
-  for (const s of sectors.values()) {
-    sectorData.nodes.push(...s.nodes);
-    sectorData.items.push(...s.items);
-  }
-
-  logger.log('building node LUT...');
-  // N.B.: build this Map manually and not by using the ctor with a
-  // `sectorData.nodes.map` call, because the latter leads to OOM when parsing
-  // a large (e.g., 7.5M) number of nodes.
+  logger.log('building node and item LUTs...');
+  let sumSectorNodes = 0;
+  let sumSectorItems = 0;
   const nodesByUid = new Map<bigint, Node>();
-  for (const n of sectorData.nodes) {
-    nodesByUid.set(n.uid, n);
+  const itemsByUid = new Map<bigint, Item>();
+  for (const s of sectors.values()) {
+    sumSectorNodes += s.nodes.length;
+    for (const n of s.nodes) {
+      nodesByUid.set(n.uid, n);
+    }
+    sumSectorItems += s.items.length;
+    for (const i of s.items) {
+      itemsByUid.set(i.uid, i);
+    }
   }
-  logger.success('built', sectorData.nodes.length, 'node LUT entries');
+  logger.success(
+    'built',
+    nodesByUid.size,
+    'node LUT entries',
+    `(removed ${sumSectorNodes - nodesByUid.size} dupes)`,
+  );
+  logger.success(
+    'built',
+    itemsByUid.size,
+    'item LUT entries',
+    `(removed ${sumSectorItems - itemsByUid.size} dupes)`,
+  );
 
   const referencedNodeUids = new Set<bigint>();
+  const elevationNodeUids = new Set<bigint>();
   const cityAreas = new Map<string, CityArea[]>();
   const prefabs: Prefab[] = [];
   const models: Model[] = [];
@@ -890,7 +918,7 @@ function postProcess(
 
   logger.log("checking items' references...");
   const start = Date.now();
-  for (const item of sectorData.items) {
+  for (const item of itemsByUid.values()) {
     switch (item.type) {
       case ItemType.City:
         putIfAbsent(item.token, [], cityAreas).push(item);
@@ -906,18 +934,26 @@ function postProcess(
         checkReference(item.endNodeUid, nodesByUid, 'endNodeUid', item);
         referencedNodeUids.add(item.startNodeUid);
         referencedNodeUids.add(item.endNodeUid);
+        elevationNodeUids.add(item.startNodeUid);
+        elevationNodeUids.add(item.endNodeUid);
         break;
       case ItemType.Prefab:
         checkReference(item.token, defData.prefabs, 'prefab token', item);
         checkReference(item.nodeUids, nodesByUid, 'nodeUids', item);
-        item.nodeUids.forEach(uid => referencedNodeUids.add(uid));
+        item.nodeUids.forEach(uid => {
+          referencedNodeUids.add(uid);
+          elevationNodeUids.add(uid);
+        });
         prefabs.push(item);
         prefabsByUid.set(item.uid, item);
         poifulItems.push(item);
         break;
       case ItemType.MapArea:
         checkReference(item.nodeUids, nodesByUid, 'nodeUids', item);
-        item.nodeUids.forEach(uid => referencedNodeUids.add(uid));
+        item.nodeUids.forEach(uid => {
+          referencedNodeUids.add(uid);
+          elevationNodeUids.add(uid);
+        });
         mapAreas.push(item);
         break;
       case ItemType.MapOverlay:
@@ -956,6 +992,9 @@ function postProcess(
         // sector parsing returns _all_ models, but
         // def parsing only cares about the ones it thinks are buildings.
         if (!defData.models.has(item.token)) {
+          if (defData.vegetation.has(item.token)) {
+            elevationNodeUids.add(item.nodeUid);
+          }
           break;
         }
         checkReference(item.nodeUid, nodesByUid, 'startNodeUid', item);
@@ -965,8 +1004,10 @@ function postProcess(
       case ItemType.Terrain:
       case ItemType.Building:
       case ItemType.Curve:
-        // Terrains, Buildings, and Curves aren't returned in parsed output.
-        // They're only used to flag Roads as possibly being divided.
+        // N.B.: Terrains, Buildings, and Curves are only used for their
+        // elevations and aren't returned in their parsed forms.
+        elevationNodeUids.add(item.startNodeUid);
+        elevationNodeUids.add(item.endNodeUid);
         break;
       default:
         throw new UnreachableError(item);
@@ -974,7 +1015,7 @@ function postProcess(
   }
   logger.success(
     'checked',
-    sectorData.items.length,
+    itemsByUid.size,
     'items in',
     (Date.now() - start) / 1000,
     'seconds',
@@ -1397,10 +1438,24 @@ function postProcess(
     'roads possibly split by terrains, buildings, or curves',
   );
 
+  logger.info(elevationNodeUids.size, 'elevation nodes');
+  const referencedNodes: Node[] = [];
+  for (const uid of referencedNodeUids) {
+    referencedNodes.push(assertExists(nodesByUid.get(uid)));
+  }
+  const elevationNodes: Node[] = [];
+  for (const uid of elevationNodeUids) {
+    elevationNodes.push(assertExists(nodesByUid.get(uid)));
+  }
+
   return {
     map,
     mapData: {
-      nodes: sectorData.nodes.filter(n => referencedNodeUids.has(n.uid)),
+      nodes: referencedNodes,
+      elevation: elevationNodes.map(
+        ({ x, y, z }) =>
+          [x, y, z].map(i => Math.round(i)) as [number, number, number],
+      ),
       roads,
       ferries,
       prefabs,
