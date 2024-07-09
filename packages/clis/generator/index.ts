@@ -1,6 +1,8 @@
 #!/usr/bin/env -S npx tsx
 
 import { assertExists } from '@truckermudgeon/base/assert';
+import type { Position } from '@truckermudgeon/base/geom';
+import { Preconditions } from '@truckermudgeon/base/precon';
 import {
   fromAtsCoordsToWgs84,
   fromEts2CoordsToWgs84,
@@ -268,6 +270,19 @@ function citiesCommandBuilder(yargs: yargs.Argv) {
     .parse();
 }
 
+function ets2VillagesCommandBuilder(yargs: yargs.Argv) {
+  return yargs
+    .option('outputDir', {
+      alias: 'o',
+      describe: 'Path to dir ets2-villages.geojson should be written to',
+      type: 'string',
+      coerce: untildify,
+      demandOption: true,
+    })
+    .check(maybeEnsureOutputDir)
+    .parse();
+}
+
 // eslint-disable-next-line @typescript-eslint/require-await
 async function main() {
   yargs(hideBin(process.argv))
@@ -282,6 +297,12 @@ async function main() {
       'Generates cities.geojson from map-parser JSON files',
       citiesCommandBuilder,
       handleCitiesCommand,
+    )
+    .command(
+      'ets2-villages',
+      "Generates ets2-villages.geojson from krmarci's CSV file",
+      ets2VillagesCommandBuilder,
+      handleEts2VillagesCommand,
     )
     .command(
       'footprints',
@@ -632,6 +653,123 @@ function handleCitiesCommand(args: ReturnType<typeof citiesCommandBuilder>) {
     cityAndCountryFeatures.filter(f => f.properties.type === 'country').length,
     'states/countries',
   );
+  logger.success('done.');
+}
+
+function handleEts2VillagesCommand(
+  args: ReturnType<typeof ets2VillagesCommandBuilder>,
+) {
+  logger.log('creating ets2-villages.geojson...');
+
+  const normalize = (gameCoords: Position) => {
+    Preconditions.checkArgument(
+      gameCoords.every(c => !isNaN(c) && isFinite(c)),
+    );
+    return fromEts2CoordsToWgs84(gameCoords).map(
+      coord => Math.round(coord * 10_000) / 10_000,
+    );
+  };
+
+  const popPlacesGeoJson = JSON.parse(
+    fs.readFileSync(
+      path.join(
+        __dirname,
+        'resources',
+        // from https://github.com/nvkelso/natural-earth-vector
+        'ne_10m_populated_places_simple.geojson',
+      ),
+      'utf-8',
+    ),
+  ) as unknown as GeoJSON.FeatureCollection<
+    GeoJSON.Point,
+    Record<string, string>
+  >;
+
+  const validCountryCodes = popPlacesGeoJson.features.reduce(
+    (acc, { properties: city }) => {
+      const isoA2 = city['sov0name'] === 'Kosovo' ? 'XK' : city['iso_a2'];
+      acc.add(assertExists(isoA2));
+      return acc;
+    },
+    new Set<string>(),
+  );
+
+  const villagesCsvLines = fs
+    .readFileSync(
+      path.join(__dirname, 'resources', 'villages-in-ets2.csv'),
+      'utf-8',
+    )
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line !== '');
+
+  // sanity check
+  // name;countryCode;xCoord;yCoord;zCoord;notes
+  const headers = villagesCsvLines[0].split(';');
+  if (
+    headers[0] !== 'name' ||
+    headers[1] !== 'countryCode' ||
+    headers[2] !== 'xCoord' ||
+    headers[4] !== 'zCoord' ||
+    headers[5] !== 'notes'
+  ) {
+    throw new Error('unexpected headers in villages CSV file');
+  }
+
+  let ignoreCount = 0;
+  const points: GeoJSON.FeatureCollection<
+    GeoJSON.Point,
+    { state: string; name: string }
+  > = {
+    type: 'FeatureCollection',
+    features: [],
+  };
+  for (const line of villagesCsvLines.slice(1)) {
+    const [name, countryCode, x, _, y, notes] = line
+      .split(';')
+      .map(col => col.trim());
+    if (!validCountryCodes.has(countryCode)) {
+      logger.warn(
+        'ignoring',
+        name,
+        'because of unknown country code',
+        countryCode,
+      );
+      ignoreCount++;
+      continue;
+    }
+    switch (notes) {
+      case 'HoR':
+        // skipping heart of russia villages until DLC is released
+        ignoreCount++;
+        continue;
+      case 'inaccessible':
+      case '':
+        // safe to ignore
+        break;
+      default:
+        logger.warn('ignoring note:', notes);
+        break;
+    }
+    points.features.push({
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: normalize([parseFloat(x), parseFloat(y)]),
+      },
+      properties: {
+        state: countryCode,
+        name,
+      },
+    });
+  }
+
+  fs.writeFileSync(
+    path.join(args.outputDir, 'ets2-villages.geojson'),
+    JSON.stringify(points, null, 2),
+  );
+  logger.info(points.features.length, 'villages written');
+  logger.info(ignoreCount, 'villages ignored');
   logger.success('done.');
 }
 
