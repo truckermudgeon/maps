@@ -11,7 +11,11 @@ import type {
   ScopedCityFeature,
   ScopedCountryFeature,
 } from '@truckermudgeon/map/types';
-import { sceneryTownsUrl, type StateCode } from '@truckermudgeon/ui';
+import {
+  atsSceneryTownsUrl,
+  ets2SceneryTownsUrl,
+  type StateCode,
+} from '@truckermudgeon/ui';
 import type { GeoJSON } from 'geojson';
 import { useEffect, useState } from 'react';
 
@@ -56,10 +60,17 @@ export const SearchBar = (props: SearchBarProps) => {
   useEffect(() => {
     Promise.all([
       fetch('cities.geojson').then(r => r.json() as Promise<CityAndCountryFC>),
-      fetch(sceneryTownsUrl).then(r => r.json() as Promise<CityFC>),
+      fetch(atsSceneryTownsUrl).then(r => r.json() as Promise<CityFC>),
+      fetch(ets2SceneryTownsUrl).then(r => r.json() as Promise<CityFC>),
     ]).then(
-      ([citiesAndCountries, towns]) => {
-        setSortedCities(createSortedCityOptions(citiesAndCountries, towns));
+      ([citiesAndCountries, atsTowns /*etsTowns*/]) => {
+        setSortedCities(
+          //createSortedCityOptions(citiesAndCountries, atsTowns, etsTowns),
+          createSortedCityOptions(citiesAndCountries, atsTowns, {
+            type: 'FeatureCollection',
+            features: [],
+          }),
+        );
       },
       () => console.error('could not load cities/towns geojson.'),
     );
@@ -115,7 +126,8 @@ function formatGroupLabel(params: AutocompleteRenderGroupParams) {
 /** Sorts cities by state/country, then by city name. */
 function createSortedCityOptions(
   citiesAndCountries: CityAndCountryFC,
-  towns: CityFC,
+  atsTowns: CityFC,
+  etsTowns: CityFC,
 ): CityOption[] {
   const cities: ScopedCityFeature[] = [];
   const countryCodeToName = new Map<string, string>();
@@ -131,13 +143,25 @@ function createSortedCityOptions(
       throw new Error();
     }
   }
-  for (const town of towns.features) {
+  for (const town of atsTowns.features) {
     cities.push({
       type: 'Feature',
       geometry: town.geometry,
       properties: {
         type: 'city',
         map: 'usa',
+        countryCode: town.properties.state,
+        name: town.properties.name,
+      },
+    });
+  }
+  for (const town of etsTowns.features) {
+    cities.push({
+      type: 'Feature',
+      geometry: town.geometry,
+      properties: {
+        type: 'city',
+        map: 'europe',
         countryCode: town.properties.state,
         name: town.properties.name,
       },
