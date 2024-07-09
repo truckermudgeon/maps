@@ -63,13 +63,9 @@ export const SearchBar = (props: SearchBarProps) => {
       fetch(atsSceneryTownsUrl).then(r => r.json() as Promise<CityFC>),
       fetch(ets2SceneryTownsUrl).then(r => r.json() as Promise<CityFC>),
     ]).then(
-      ([citiesAndCountries, atsTowns /*etsTowns*/]) => {
+      ([citiesAndCountries, atsTowns, etsTowns]) => {
         setSortedCities(
-          //createSortedCityOptions(citiesAndCountries, atsTowns, etsTowns),
-          createSortedCityOptions(citiesAndCountries, atsTowns, {
-            type: 'FeatureCollection',
-            features: [],
-          }),
+          createSortedCityOptions(citiesAndCountries, atsTowns, etsTowns),
         );
       },
       () => console.error('could not load cities/towns geojson.'),

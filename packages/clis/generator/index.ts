@@ -27,7 +27,12 @@ import * as process from 'process';
 import url from 'url';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-import { convertToFootprintsGeoJson, convertToGeoJson } from './geo-json';
+import {
+  convertToFootprintsGeoJson,
+  convertToGeoJson,
+  createIsoA2Map,
+  getCitiesByCountryIsoA2,
+} from './geo-json';
 import { checkGraph } from './graph/check-graph';
 import { toDemoGraph } from './graph/demo-graph';
 import { generateGraph } from './graph/graph';
@@ -461,20 +466,7 @@ function handleMapCommand(args: ReturnType<typeof mapCommandBuilder>) {
   });
 
   logger.log('converting parsed map data to GeoJSON...');
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const popPlacesGeoJson = JSON.parse(
-    fs.readFileSync(
-      path.join(
-        __dirname,
-        'resources',
-        // from https://github.com/nvkelso/natural-earth-vector
-        'ne_10m_populated_places_simple.geojson',
-      ),
-      'utf-8',
-    ),
-  );
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-  const geoJson = convertToGeoJson(args.map, tsMapData, popPlacesGeoJson, {
+  const geoJson = convertToGeoJson(args.map, tsMapData, {
     includeDebug: args.includeDebug,
     skipCoalescing: args.skipCoalescing,
   });
@@ -612,8 +604,19 @@ function handleCitiesCommand(args: ReturnType<typeof citiesCommandBuilder>) {
   const toJsonPath = (map: 'usa' | 'europe', suffix: string) =>
     path.join(args.inputDir, `${map}-${suffix}.json`);
 
-  const cityAndCountryFeatures = args.map.flatMap(map => {
-    const countries = readArrayFile<Country>(toJsonPath(map, 'countries'));
+  const countryIsoA2 = createIsoA2Map();
+  const cityAndCountryFeatures = [args.map].flat().flatMap(map => {
+    const countries = readArrayFile<Country>(toJsonPath(map, 'countries')).map(
+      c => {
+        if (map === 'europe') {
+          return {
+            ...c,
+            code: countryIsoA2.get(c.code),
+          };
+        }
+        return c;
+      },
+    );
     const countriesByToken = new Map(countries.map(c => [c.token, c]));
     const cities = readArrayFile<City>(toJsonPath(map, 'cities'));
     return [
@@ -670,30 +673,7 @@ function handleEts2VillagesCommand(
     );
   };
 
-  const popPlacesGeoJson = JSON.parse(
-    fs.readFileSync(
-      path.join(
-        __dirname,
-        'resources',
-        // from https://github.com/nvkelso/natural-earth-vector
-        'ne_10m_populated_places_simple.geojson',
-      ),
-      'utf-8',
-    ),
-  ) as unknown as GeoJSON.FeatureCollection<
-    GeoJSON.Point,
-    Record<string, string>
-  >;
-
-  const validCountryCodes = popPlacesGeoJson.features.reduce(
-    (acc, { properties: city }) => {
-      const isoA2 = city['sov0name'] === 'Kosovo' ? 'XK' : city['iso_a2'];
-      acc.add(assertExists(isoA2));
-      return acc;
-    },
-    new Set<string>(),
-  );
-
+  const validCountryCodes = new Set(getCitiesByCountryIsoA2().keys());
   const villagesCsvLines = fs
     .readFileSync(
       path.join(__dirname, 'resources', 'villages-in-ets2.csv'),
