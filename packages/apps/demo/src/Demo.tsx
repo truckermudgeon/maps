@@ -124,7 +124,7 @@ const Demo = () => {
         style={{
           marginLeft: 54,
         }}
-        customAttribution="&copy; Trucker Mudgeon. scenery town data by <a href='https://github.com/nautofon/ats-towns'>nautofon</a> and <a href='https://forum.scssoft.com/viewtopic.php?p=1946956&sid=d1b9d46ac43e51ec4ea58a89c0c0f0cf#p1946956'>krmarci</a>."
+        customAttribution="&copy; Trucker Mudgeon. scenery town data by <a href='https://github.com/nautofon/ats-towns'>nautofon</a> and <a href='https://forum.scssoft.com/viewtopic.php?p=1946956#p1946956'>krmarci</a>."
       />
       <MapSelectAndSearch visibleStates={visibleStates} />
       <Legend
