@@ -437,6 +437,11 @@ export type FootprintFeature = GeoJSON.Feature<
   FootprintProperties
 >;
 
+export type ContourFeature = GeoJSON.Feature<
+  GeoJSON.MultiPolygon,
+  { elevation: number }
+>;
+
 export type AtsMapGeoJsonFeature =
   | MapAreaFeature
   | PrefabFeature
@@ -446,6 +451,7 @@ export type AtsMapGeoJsonFeature =
   | CountryFeature
   | PoiFeature
   | FootprintFeature
+  | ContourFeature
   | DebugFeature;
 
 export type RoadType =

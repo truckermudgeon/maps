@@ -24,6 +24,7 @@ import type {
   AtsMapGeoJsonFeature,
   City,
   CityFeature,
+  ContourFeature,
   Country,
   CountryFeature,
   DebugFeature,
@@ -48,8 +49,10 @@ import type {
 } from '@truckermudgeon/map/types';
 import * as turf from '@turf/helpers';
 import lineOffset from '@turf/line-offset';
+import * as cliProgress from 'cli-progress';
 import type { Quadtree } from 'd3-quadtree';
 import { quadtree } from 'd3-quadtree';
+import { tricontour } from 'd3-tricontour';
 import fs from 'fs';
 import type { GeoJSON } from 'geojson';
 import path from 'path';
@@ -731,6 +734,71 @@ export function convertToFootprintsGeoJson({
   };
 }
 
+export function convertToContoursGeoJson({
+  map,
+  points,
+}: {
+  map: 'usa' | 'europe';
+  points: [number, number, number][];
+}) {
+  const normalizeCoordinates = createNormalizeCoordinates(map, 4);
+  let min = Infinity;
+  let max = -Infinity;
+  for (const p of points) {
+    if (p[2] < min) {
+      min = p[2];
+    }
+    if (p[2] > max) {
+      max = p[2];
+    }
+  }
+  const levels = max - min + 1;
+
+  logger.start(
+    'calculating',
+    levels,
+    'contour levels',
+    `(${min} min, ${max} max)`,
+  );
+  const tric = tricontour();
+
+  const start = Date.now();
+  const bar = new cliProgress.SingleBar(
+    {
+      format: `[{bar}] | {value} of {total}`,
+      stopOnComplete: true,
+      clearOnComplete: true,
+    },
+    cliProgress.Presets.rect,
+  );
+  bar.start(levels, 0);
+
+  const features: ContourFeature[] = [];
+  tric.thresholds(Array.from({ length: levels }, (_, i) => i + min));
+  for (const c of tric.contours(points)) {
+    const { value, type, coordinates } = c;
+    features.push(
+      normalizeCoordinates({
+        type: 'Feature',
+        properties: { elevation: value },
+        geometry: { type, coordinates },
+      }),
+    );
+    bar.increment();
+  }
+  logger.success(
+    levels,
+    'contours calculated in',
+    (Date.now() - start) / 1000,
+    'seconds',
+  );
+
+  return {
+    type: 'FeatureCollection',
+    features,
+  } as const;
+}
+
 /**
  * Joins adjacent `roadFeature`s together if their ends are close to each other,
  * and if their properties are compatible.
@@ -898,19 +966,28 @@ export function coalesceRoadFeatures(
   return coalescedFeatures;
 }
 
-function createNormalize(map: 'usa' | 'europe') {
+function createNormalize(map: 'usa' | 'europe', decimalPoints?: number) {
   const tx = map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
-  return (gameCoords: number[]): Position => {
-    Preconditions.checkArgument(gameCoords.length === 2);
-    return tx(gameCoords as Position);
+  return (p: number[]): Position => {
+    Preconditions.checkArgument(p.length === 2);
+    const pp = tx(p as Position);
+    if (decimalPoints == null) {
+      return pp;
+    }
+
+    const factor = Math.pow(10, decimalPoints);
+    return pp.map(v => Math.round(v * factor) / factor) as Position;
   };
 }
 
 /**
  * Mutates coordinates in `feature` by normalizing them with `normalizer`.
  */
-function createNormalizeCoordinates(map: 'usa' | 'europe') {
-  const normalize = createNormalize(map);
+function createNormalizeCoordinates(
+  map: 'usa' | 'europe',
+  decimalPoints?: number,
+) {
+  const normalize = createNormalize(map, decimalPoints);
   return <T extends AtsMapGeoJsonFeature>(feature: T): T => {
     switch (feature.geometry.type) {
       case 'LineString':
@@ -920,6 +997,11 @@ function createNormalizeCoordinates(map: 'usa' | 'europe') {
       case 'Polygon':
         feature.geometry.coordinates = feature.geometry.coordinates.map(p =>
           p.map(normalize),
+        );
+        break;
+      case 'MultiPolygon':
+        feature.geometry.coordinates = feature.geometry.coordinates.map(p =>
+          p.map(pp => pp.map(ppp => normalize(ppp))),
         );
         break;
       case 'Point':
