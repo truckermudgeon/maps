@@ -1,9 +1,11 @@
+import type { ExpressionSpecification } from 'maplibre-gl';
 import { Layer, Source } from 'react-map-gl/maplibre';
 import { baseTextLayout, textVariableAnchor } from './GameMapStyle';
 import type { Mode } from './colors';
 import { modeColors } from './colors';
 
-export const sceneryTownsUrl = `https://raw.githubusercontent.com/nautofon/ats-towns/nebraska/all-towns.geojson`;
+export const atsSceneryTownsUrl = `https://raw.githubusercontent.com/nautofon/ats-towns/nebraska/all-towns.geojson`;
+export const ets2SceneryTownsUrl = `/ets2-villages.geojson`;
 
 export const enum StateCode {
   AZ = 'AZ',
@@ -43,25 +45,37 @@ const allStates: ReadonlySet<StateCode> = new Set(
   Object.keys(states) as StateCode[],
 );
 
-interface SceneryTownSourceProps {
+type SceneryTownSourceProps = (
+  | {
+      game: 'ats';
+      enabledStates?: Set<StateCode>; // defaults to full set
+    }
+  | {
+      game: 'ets2';
+    }
+) & {
   enableAutoHide?: boolean; // defaults to true
-  enabledStates?: Set<StateCode>; // defaults to full set
   mode?: Mode; // defaults to 'light'
-}
+};
 export const SceneryTownSource = (props: SceneryTownSourceProps) => {
-  const {
-    enableAutoHide = true,
-    enabledStates = allStates,
-    mode = 'light',
-  } = props;
+  const { game, enableAutoHide = true, mode = 'light' } = props;
+  const dataUrl = game === 'ats' ? atsSceneryTownsUrl : ets2SceneryTownsUrl;
+  const filter: ExpressionSpecification =
+    game === 'ats'
+      ? [
+          'in',
+          ['get', 'state'],
+          ['literal', [...(props.enabledStates ?? allStates)]],
+        ]
+      : ['boolean', true];
   const colors = modeColors[mode];
   return (
-    <Source id={`scenery-towns`} type={'geojson'} data={sceneryTownsUrl}>
+    <Source id={`${game}-scenery-towns`} type={'geojson'} data={dataUrl}>
       <Layer
-        id={`scenery-towns`}
+        id={`${game}-scenery-towns`}
         type={'symbol'}
         minzoom={enableAutoHide ? 7 : 0}
-        filter={['in', ['get', 'state'], ['literal', [...enabledStates]]]}
+        filter={filter}
         layout={{
           ...baseTextLayout,
           'text-field': '{name}',

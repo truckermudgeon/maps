@@ -1,6 +1,8 @@
 #!/usr/bin/env -S npx tsx
 
 import { assertExists } from '@truckermudgeon/base/assert';
+import type { Position } from '@truckermudgeon/base/geom';
+import { Preconditions } from '@truckermudgeon/base/precon';
 import {
   fromAtsCoordsToWgs84,
   fromEts2CoordsToWgs84,
@@ -25,7 +27,12 @@ import * as process from 'process';
 import url from 'url';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-import { convertToFootprintsGeoJson, convertToGeoJson } from './geo-json';
+import {
+  convertToFootprintsGeoJson,
+  convertToGeoJson,
+  createIsoA2Map,
+  getCitiesByCountryIsoA2,
+} from './geo-json';
 import { checkGraph } from './graph/check-graph';
 import { toDemoGraph } from './graph/demo-graph';
 import { generateGraph } from './graph/graph';
@@ -268,6 +275,19 @@ function citiesCommandBuilder(yargs: yargs.Argv) {
     .parse();
 }
 
+function ets2VillagesCommandBuilder(yargs: yargs.Argv) {
+  return yargs
+    .option('outputDir', {
+      alias: 'o',
+      describe: 'Path to dir ets2-villages.geojson should be written to',
+      type: 'string',
+      coerce: untildify,
+      demandOption: true,
+    })
+    .check(maybeEnsureOutputDir)
+    .parse();
+}
+
 // eslint-disable-next-line @typescript-eslint/require-await
 async function main() {
   yargs(hideBin(process.argv))
@@ -282,6 +302,12 @@ async function main() {
       'Generates cities.geojson from map-parser JSON files',
       citiesCommandBuilder,
       handleCitiesCommand,
+    )
+    .command(
+      'ets2-villages',
+      "Generates ets2-villages.geojson from krmarci's CSV file",
+      ets2VillagesCommandBuilder,
+      handleEts2VillagesCommand,
     )
     .command(
       'footprints',
@@ -440,20 +466,7 @@ function handleMapCommand(args: ReturnType<typeof mapCommandBuilder>) {
   });
 
   logger.log('converting parsed map data to GeoJSON...');
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const popPlacesGeoJson = JSON.parse(
-    fs.readFileSync(
-      path.join(
-        __dirname,
-        'resources',
-        // from https://github.com/nvkelso/natural-earth-vector
-        'ne_10m_populated_places_simple.geojson',
-      ),
-      'utf-8',
-    ),
-  );
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-  const geoJson = convertToGeoJson(args.map, tsMapData, popPlacesGeoJson, {
+  const geoJson = convertToGeoJson(args.map, tsMapData, {
     includeDebug: args.includeDebug,
     skipCoalescing: args.skipCoalescing,
   });
@@ -591,8 +604,19 @@ function handleCitiesCommand(args: ReturnType<typeof citiesCommandBuilder>) {
   const toJsonPath = (map: 'usa' | 'europe', suffix: string) =>
     path.join(args.inputDir, `${map}-${suffix}.json`);
 
-  const cityAndCountryFeatures = args.map.flatMap(map => {
-    const countries = readArrayFile<Country>(toJsonPath(map, 'countries'));
+  const countryIsoA2 = createIsoA2Map();
+  const cityAndCountryFeatures = [args.map].flat().flatMap(map => {
+    const countries = readArrayFile<Country>(toJsonPath(map, 'countries')).map(
+      c => {
+        if (map === 'europe') {
+          return {
+            ...c,
+            code: countryIsoA2.get(c.code),
+          };
+        }
+        return c;
+      },
+    );
     const countriesByToken = new Map(countries.map(c => [c.token, c]));
     const cities = readArrayFile<City>(toJsonPath(map, 'cities'));
     return [
@@ -632,6 +656,100 @@ function handleCitiesCommand(args: ReturnType<typeof citiesCommandBuilder>) {
     cityAndCountryFeatures.filter(f => f.properties.type === 'country').length,
     'states/countries',
   );
+  logger.success('done.');
+}
+
+function handleEts2VillagesCommand(
+  args: ReturnType<typeof ets2VillagesCommandBuilder>,
+) {
+  logger.log('creating ets2-villages.geojson...');
+
+  const normalize = (gameCoords: Position) => {
+    Preconditions.checkArgument(
+      gameCoords.every(c => !isNaN(c) && isFinite(c)),
+    );
+    return fromEts2CoordsToWgs84(gameCoords).map(
+      coord => Math.round(coord * 10_000) / 10_000,
+    );
+  };
+
+  const validCountryCodes = new Set(getCitiesByCountryIsoA2().keys());
+  const villagesCsvLines = fs
+    .readFileSync(
+      path.join(__dirname, 'resources', 'villages-in-ets2.csv'),
+      'utf-8',
+    )
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line !== '');
+
+  // sanity check
+  // name;countryCode;xCoord;yCoord;zCoord;notes
+  const headers = villagesCsvLines[0].split(';');
+  if (
+    headers[0] !== 'name' ||
+    headers[1] !== 'countryCode' ||
+    headers[2] !== 'xCoord' ||
+    headers[4] !== 'zCoord' ||
+    headers[5] !== 'notes'
+  ) {
+    throw new Error('unexpected headers in villages CSV file');
+  }
+
+  let ignoreCount = 0;
+  const points: GeoJSON.FeatureCollection<
+    GeoJSON.Point,
+    { state: string; name: string }
+  > = {
+    type: 'FeatureCollection',
+    features: [],
+  };
+  for (const line of villagesCsvLines.slice(1)) {
+    const [name, countryCode, x, _, y, notes] = line
+      .split(';')
+      .map(col => col.trim());
+    if (!validCountryCodes.has(countryCode)) {
+      logger.warn(
+        'ignoring',
+        name,
+        'because of unknown country code',
+        countryCode,
+      );
+      ignoreCount++;
+      continue;
+    }
+    switch (notes) {
+      case 'HoR':
+        // skipping heart of russia villages until DLC is released
+        ignoreCount++;
+        continue;
+      case 'inaccessible':
+      case '':
+        // safe to ignore
+        break;
+      default:
+        logger.warn('ignoring note:', notes);
+        break;
+    }
+    points.features.push({
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: normalize([parseFloat(x), parseFloat(y)]),
+      },
+      properties: {
+        state: countryCode,
+        name,
+      },
+    });
+  }
+
+  fs.writeFileSync(
+    path.join(args.outputDir, 'ets2-villages.geojson'),
+    JSON.stringify(points, null, 2),
+  );
+  logger.info(points.features.length, 'villages written');
+  logger.info(ignoreCount, 'villages ignored');
   logger.success('done.');
 }
 

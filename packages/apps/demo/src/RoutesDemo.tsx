@@ -99,6 +99,7 @@ const RoutesDemo = () => {
         dlcs={visibleAtsDlcs}
       />
       <SceneryTownSource
+        game={'ats'}
         mode={mode}
         enableAutoHide={autoHide}
         enabledStates={visibleStates}

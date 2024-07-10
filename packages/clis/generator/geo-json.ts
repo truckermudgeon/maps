@@ -50,10 +50,16 @@ import * as turf from '@turf/helpers';
 import lineOffset from '@turf/line-offset';
 import type { Quadtree } from 'd3-quadtree';
 import { quadtree } from 'd3-quadtree';
-import type { FeatureCollection, GeoJSON, Point } from 'geojson';
+import fs from 'fs';
+import type { GeoJSON } from 'geojson';
+import path from 'path';
+import url from 'url';
 import { normalizeDlcGuards } from './dlc-guards';
 import { logger } from './logger';
 import type { MappedData } from './mapped-data';
+
+const __filename = url.fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export type AtsGeoJson = GeoJSON.FeatureCollection<
   AtsMapGeoJsonFeature['geometry'],
@@ -101,7 +107,6 @@ const ets2IsoA2 = new Map([
 export function convertToGeoJson(
   map: 'usa' | 'europe',
   tsMapData: MappedData,
-  populatedPlaces: FeatureCollection<Point, Record<string, string>>,
   options: {
     includeDebug: boolean;
     skipCoalescing: boolean;
@@ -526,13 +531,7 @@ export function convertToGeoJson(
 
   logger.log('creating cities...');
 
-  const citiesByCountryIsoA2 = new Map<string, Record<string, string>[]>();
-  for (const { properties: city } of populatedPlaces.features) {
-    const isoA2 = city['sov0name'] === 'Kosovo' ? 'XK' : city['iso_a2'];
-    const cities = putIfAbsent(isoA2, [], citiesByCountryIsoA2);
-    cities.push(city);
-  }
-
+  const citiesByCountryIsoA2 = getCitiesByCountryIsoA2();
   let rankedCities: CityWithScaleRank[];
   if (map === 'usa') {
     rankedCities = [...cities.values()].map(c => {
@@ -1549,4 +1548,58 @@ function arePropsConnectable(
   }
 
   return false;
+}
+
+export interface PopulatedPlacesProperties {
+  name: string;
+  namealt: string;
+  adm1name: string;
+  sov0name: string;
+  iso_a2: string;
+  scalerank: number;
+  featurecla: string;
+}
+export function getCitiesByCountryIsoA2(): Map<
+  string,
+  PopulatedPlacesProperties[]
+> {
+  const populatedPlaces = JSON.parse(
+    fs.readFileSync(
+      path.join(
+        __dirname,
+        'resources',
+        // from https://github.com/nvkelso/natural-earth-vector
+        'ne_10m_populated_places_simple.geojson',
+      ),
+      'utf-8',
+    ),
+  ) as unknown as GeoJSON.FeatureCollection<
+    GeoJSON.Point,
+    PopulatedPlacesProperties
+  >;
+  const citiesByCountryIsoA2 = new Map<string, PopulatedPlacesProperties[]>();
+  for (const { properties: city } of populatedPlaces.features) {
+    const isoA2 = city.sov0name === 'Kosovo' ? 'XK' : city.iso_a2;
+    const cities = putIfAbsent(isoA2, [], citiesByCountryIsoA2);
+    if (!/^[A-Z][A-Z]$/.test(isoA2)) {
+      // logger.warn(city.sov0name, 'has invalid iso a2 code');
+    }
+    cities.push(city);
+  }
+  return citiesByCountryIsoA2;
+}
+
+export function createIsoA2Map(): {
+  get: (gameCountryCode: string) => string;
+} {
+  const isoA2s = new Set(getCitiesByCountryIsoA2().keys());
+  return {
+    get: (gameCountryCode: string) => {
+      if (isoA2s.has(gameCountryCode)) {
+        return gameCountryCode;
+      }
+      Preconditions.checkArgument(ets2IsoA2.has(gameCountryCode));
+      return ets2IsoA2.get(gameCountryCode)!;
+    },
+  };
 }

@@ -11,7 +11,8 @@ export {
 export {
   SceneryTownSource,
   StateCode,
-  sceneryTownsUrl,
+  atsSceneryTownsUrl,
+  ets2SceneryTownsUrl,
 } from './SceneryTownSource';
 
 export const defaultMapStyle: StyleSpecification = {

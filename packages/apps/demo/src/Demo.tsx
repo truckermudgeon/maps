@@ -102,9 +102,17 @@ const Demo = () => {
       />
       {visibleIcons.has(MapIcon.CityNames) && (
         <SceneryTownSource
+          game={'ats'}
           mode={mode}
           enableAutoHide={autoHide}
           enabledStates={visibleStates}
+        />
+      )}
+      {visibleIcons.has(MapIcon.CityNames) && (
+        <SceneryTownSource
+          game={'ets2'}
+          mode={mode}
+          enableAutoHide={autoHide}
         />
       )}
       <NavigationControl visualizePitch={true} />
@@ -116,7 +124,7 @@ const Demo = () => {
         style={{
           marginLeft: 54,
         }}
-        customAttribution="&copy; Trucker Mudgeon. scenery town data by <a href='https://github.com/nautofon/ats-towns'>nautofon</a>."
+        customAttribution="&copy; Trucker Mudgeon. scenery town data by <a href='https://github.com/nautofon/ats-towns'>nautofon</a> and <a href='https://forum.scssoft.com/viewtopic.php?p=1946956#p1946956'>krmarci</a>."
       />
       <MapSelectAndSearch visibleStates={visibleStates} />
       <Legend
