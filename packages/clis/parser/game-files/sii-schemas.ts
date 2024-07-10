@@ -433,7 +433,7 @@ export const PrefabSiiSchema: JSONSchemaType<PrefabSii> = {
 };
 
 export interface ModelSii {
-  modelDef?: Record<string, { modelDesc?: string }>;
+  modelDef?: Record<string, { modelDesc?: string; vegetationModel?: string }>;
 }
 export const ModelSiiSchema: JSONSchemaType<ModelSii> = {
   type: 'object',
@@ -446,6 +446,7 @@ export const ModelSiiSchema: JSONSchemaType<ModelSii> = {
           type: 'object',
           properties: {
             modelDesc: { type: 'string', nullable: true },
+            vegetationModel: { type: 'string', nullable: true },
           },
         },
       },

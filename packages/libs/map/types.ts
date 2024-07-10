@@ -14,6 +14,7 @@ export type Node = Readonly<{
   uid: bigint;
   x: number;
   y: number;
+  z: number;
   rotation: number;
   forwardItemUid: bigint;
   backwardItemUid: bigint;
@@ -378,6 +379,7 @@ export type WithToken<T> = T & { token: string };
 
 export interface MapData {
   nodes: Node[];
+  elevation: [number, number, number][];
   roads: Road[];
   ferries: Ferry[];
   prefabs: Prefab[];
