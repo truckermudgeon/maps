@@ -440,9 +440,9 @@ function handleContoursCommand(
 
     let geoJsonPath: string | undefined;
     const gamePrefix = map === 'usa' ? 'ats' : 'ets2';
-    const filename = `${gamePrefix}-contours.geojson`;
+    const geojsonFilename = `${gamePrefix}-contours.geojson`;
     if (args.type.includes('geojson')) {
-      geoJsonPath = path.join(args.outputDir, filename);
+      geoJsonPath = path.join(args.outputDir, geojsonFilename);
       logger.log('writing', geoJsonPath + '...');
       writeGeojsonFile(geoJsonPath, geoJson);
     }
@@ -452,23 +452,18 @@ function handleContoursCommand(
 
     let cleanupGeoJson = false;
     if (geoJsonPath == null) {
-      geoJsonPath = path.join(os.tmpdir(), filename);
+      geoJsonPath = path.join(os.tmpdir(), geojsonFilename);
       logger.log('writing temporary GeoJSON file...');
       writeGeojsonFile(geoJsonPath, geoJson);
       cleanupGeoJson = true;
     }
 
+    const pmtilesFilename = `${gamePrefix}-contours.pmtiles`;
     const minAttributes = ['elevation'];
     // write to tmp dir, in case webpack-dev-server is watching (we don't
     // want crazy reloads while the file is being written to)
-    const tmpPmTilesPath = path.join(
-      os.tmpdir(),
-      `${gamePrefix}-contours.pmtiles`,
-    );
-    const tmpPmTilesLog = path.join(
-      os.tmpdir(),
-      `${gamePrefix}-contours.pmtiles.log`,
-    );
+    const tmpPmTilesPath = path.join(os.tmpdir(), pmtilesFilename);
+    const tmpPmTilesLog = path.join(os.tmpdir(), `${pmtilesFilename}.log`);
     const cmd =
       // min-zoom 4, max-zoom 9.
       `tippecanoe -Z4 -z9 ` +
@@ -496,10 +491,7 @@ function handleContoursCommand(
       '\n',
     );
 
-    const pmTilesPath = path.join(
-      args.outputDir,
-      `${gamePrefix}-contours.pmtiles`,
-    );
+    const pmTilesPath = path.join(args.outputDir, pmtilesFilename);
     fs.renameSync(tmpPmTilesPath, pmTilesPath);
     fs.rmSync(tmpPmTilesLog);
     if (cleanupGeoJson) {
