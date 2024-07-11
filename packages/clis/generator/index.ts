@@ -429,8 +429,7 @@ function handleContoursCommand(
   const toJsonPath = (map: 'usa' | 'europe', suffix: string) =>
     path.join(args.inputDir, `${map}-${suffix}.json`);
 
-  for (const map of args.map) {
-    logger.log('calculating', map, 'contours');
+  for (const map of [args.map].flat()) {
     const points = readArrayFile<[number, number, number]>(
       toJsonPath(map, 'elevation'),
     );
@@ -453,8 +452,7 @@ function handleContoursCommand(
 
     let cleanupGeoJson = false;
     if (geoJsonPath == null) {
-      //geoJsonPath = path.join(os.tmpdir(), filename);
-      geoJsonPath = path.join(args.outputDir, filename);
+      geoJsonPath = path.join(os.tmpdir(), filename);
       logger.log('writing temporary GeoJSON file...');
       writeGeojsonFile(geoJsonPath, geoJson);
       cleanupGeoJson = true;
@@ -464,15 +462,13 @@ function handleContoursCommand(
     // write to tmp dir, in case webpack-dev-server is watching (we don't
     // want crazy reloads while the file is being written to)
     const tmpPmTilesPath = path.join(
-      args.outputDir,
+      os.tmpdir(),
       `${gamePrefix}-contours.pmtiles`,
     );
     const tmpPmTilesLog = path.join(
-      args.outputDir,
+      os.tmpdir(),
       `${gamePrefix}-contours.pmtiles.log`,
     );
-    //const tmpPmTilesPath = path.join(os.tmpdir(), `${gamePrefix}-contours.pmtiles`);
-    //const tmpPmTilesLog = path.join(os.tmpdir(), `${gamePrefix}-contours.pmtiles.log`);
     const cmd =
       // min-zoom 4, max-zoom 9.
       `tippecanoe -Z4 -z9 ` +
@@ -500,7 +496,10 @@ function handleContoursCommand(
       '\n',
     );
 
-    const pmTilesPath = path.join(args.outputDir, filename);
+    const pmTilesPath = path.join(
+      args.outputDir,
+      `${gamePrefix}-contours.pmtiles`,
+    );
     fs.renameSync(tmpPmTilesPath, pmTilesPath);
     fs.rmSync(tmpPmTilesLog);
     if (cleanupGeoJson) {
@@ -597,7 +596,6 @@ function handleMapCommand(args: ReturnType<typeof mapCommandBuilder>) {
     };
   }
 
-  console.log(args.map);
   const tsMapData = readMapData(args.inputDir, args.map, {
     includeHidden: args.includeHidden,
     focus: focusOptions,

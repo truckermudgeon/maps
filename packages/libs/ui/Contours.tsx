@@ -13,31 +13,31 @@ export const ContoursStyle = (props: ContoursStyleProps) => {
         source-layer={'contours'}
         type={'fill'}
         layout={{
-          'fill-sort-key': ['get', 'index'],
+          'fill-sort-key': ['get', 'elevation'],
           visibility: props.showContours ? 'visible' : 'none',
         }}
         paint={{
           'fill-color': [
             'interpolate',
             ['linear'],
-            ['get', 'index'],
-            1,
+            ['get', 'elevation'],
+            -200,
             '#77c571',
-            200,
+            0,
             '#77c571',
-            300,
+            100,
             '#afd35f',
-            350,
+            150,
             '#ece75b',
-            400,
+            200,
             '#decb4c',
-            450,
+            250,
             '#d2b446',
-            500,
+            300,
             '#bf9c4a',
-            600,
+            400,
             '#ba8839',
-            700,
+            500,
             '#ac792d',
           ],
         }}

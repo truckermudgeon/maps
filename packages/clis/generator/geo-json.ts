@@ -756,6 +756,7 @@ export function convertToContoursGeoJson({
 
   logger.start(
     'calculating',
+    map,
     levels,
     'contour levels',
     `(${min} min, ${max} max)`,
@@ -786,6 +787,7 @@ export function convertToContoursGeoJson({
     );
     bar.increment();
   }
+
   logger.success(
     levels,
     'contours calculated in',
