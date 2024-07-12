@@ -71,6 +71,9 @@ npx generator footprints -m usa -m europe -i dirWithParserOutput -o dirToWriteFi
 
 # generate spritesheet files
 npx generator spritesheet -i dirWithParserOutput -o dirToWriteFilesTo
+
+# generate ATS and ETS2 contours (aka elevations) pmtiles files
+npx generator contours -m usa -m europe -i dirWithParserOutput -o dirToWriteFilesTo
 ```
 
 > [!IMPORTANT]
