@@ -56,6 +56,7 @@ import { tricontour } from 'd3-tricontour';
 import fs from 'fs';
 import type { GeoJSON } from 'geojson';
 import path from 'path';
+import polygonclipping from 'polygon-clipping';
 import url from 'url';
 import { normalizeDlcGuards } from './dlc-guards';
 import { logger } from './logger';
@@ -754,10 +755,38 @@ export function convertToContoursGeoJson({
   }
   const levels = max - min + 1;
 
+  logger.log('calculating sector mask...');
+  const sectors = new Set<string>();
+  const boxes: [number, number][][][] = [];
+  for (const p of points) {
+    const sx = Math.floor(p[0] / 4000);
+    const sy = Math.floor(p[1] / 4000);
+    const key = `${sx}/${sy}`;
+    if (sectors.has(key)) {
+      continue;
+    }
+    sectors.add(key);
+
+    const minx = sx * 4000;
+    const miny = sy * 4000;
+    const maxx = minx + 4000;
+    const maxy = miny + 4000;
+    boxes.push([
+      [
+        [minx, miny],
+        [maxx, miny],
+        [maxx, maxy],
+        [minx, maxy],
+        [minx, miny],
+      ],
+    ]);
+  }
+  const sectorUnion = polygonclipping.union(boxes[0], ...boxes.slice(1));
+
   logger.start(
     'calculating',
-    map,
     levels,
+    map,
     'contour levels',
     `(${min} min, ${max} max)`,
   );
@@ -778,11 +807,15 @@ export function convertToContoursGeoJson({
   tric.thresholds(Array.from({ length: levels }, (_, i) => i + min));
   for (const c of tric.contours(points)) {
     const { value, type, coordinates } = c;
+    const intersection = polygonclipping.intersection(
+      sectorUnion,
+      coordinates as Position[][][],
+    );
     features.push(
       normalizeCoordinates({
         type: 'Feature',
         properties: { elevation: value },
-        geometry: { type, coordinates },
+        geometry: { type, coordinates: intersection },
       }),
     );
     bar.increment();
@@ -790,7 +823,7 @@ export function convertToContoursGeoJson({
 
   logger.success(
     levels,
-    'contours calculated in',
+    'contours calculated and masked in',
     (Date.now() - start) / 1000,
     'seconds',
   );
