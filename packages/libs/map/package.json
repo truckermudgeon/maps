@@ -2,7 +2,7 @@
   "private": true,
   "name": "@truckermudgeon/map",
   "version": "0.0.0",
-  "license": "GPL-2.0-only",
+  "license": "GPL-3.0-or-later",
   "type": "module",
   "sideEffects": false,
   "exports": {

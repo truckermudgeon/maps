@@ -2,7 +2,7 @@
   "name": "maps",
   "version": "0.0.0",
   "private": true,
-  "license": "GPL-2.0-only",
+  "license": "GPL-3.0-or-later",
   "workspaces": [
     "packages/apis/*",
     "packages/apps/*",
