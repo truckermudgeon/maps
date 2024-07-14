@@ -27,6 +27,7 @@
     "jimp": "^0.22.12",
     "polygon-clipping": "^0.15.7",
     "spritesmith": "^3.4.1",
+    "tinypool": "^1.0.0",
     "tsx": "^4.7.0",
     "yargs": "^17.7.2"
   }
