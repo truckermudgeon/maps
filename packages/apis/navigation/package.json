@@ -15,7 +15,7 @@
     "@truckermudgeon/api": "0.0.0",
     "@truckermudgeon/base": "0.0.0",
     "@truckermudgeon/map": "0.0.0",
-    "@turf/bearing": "^6.5.0",
+    "@turf/bearing": "^7.0.0",
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "socket.io": "^4.7.4",
