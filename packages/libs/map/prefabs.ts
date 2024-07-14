@@ -561,10 +561,11 @@ export function toRoadStringsAndPolygons(prefab: PrefabDescription): {
     if (visitedPoints.has(point)) {
       continue;
     }
-    visitedPoints.add(point);
-    const polygon = new Set<PolygonMapPoint>([point]);
+    const polygon = new Set<PolygonMapPoint>();
     let nextPoint = point;
     do {
+      polygon.add(nextPoint);
+      visitedPoints.add(nextPoint);
       const [a, b] = nextPoint.neighbors.map(
         i => prefab.mapPoints[i],
       ) as PolygonMapPoint[];
@@ -572,14 +573,8 @@ export function toRoadStringsAndPolygons(prefab: PrefabDescription): {
         nextPoint = a;
       } else if (!polygon.has(b)) {
         nextPoint = b;
-      } else {
-        assert(polygon.has(nextPoint));
-        break;
       }
-      polygon.add(nextPoint);
-      visitedPoints.add(nextPoint);
-      // eslint-disable-next-line no-constant-condition
-    } while (true);
+    } while (!polygon.has(nextPoint));
     const [firstPoint] = polygon;
     polygons.push({
       points: [...polygon].map(toPosition),

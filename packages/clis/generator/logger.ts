@@ -14,11 +14,9 @@ export const logger = createConsola({
     {
       log: log => {
         if (log.level === LogLevels.warn) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-          return _logger.log(colors.yellow('⚠'), ...log.args);
+          return _logger.log(colors.yellow('⚠'), ...(log.args as unknown[]));
         } else if (log.level === LogLevels.error) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-          return _logger.log(colors.red('✖'), ...log.args);
+          return _logger.log(colors.red('✖'), ...(log.args as unknown[]));
         }
         _logger.log(log);
       },

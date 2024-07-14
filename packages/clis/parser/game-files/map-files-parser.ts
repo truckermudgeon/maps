@@ -206,7 +206,7 @@ function parseDefFiles(entries: Entries) {
   const defWorld = Preconditions.checkExists(
     entries.directories.get('def/world'),
   );
-  const prefabs = new Map<string, PrefabDescription>();
+  const prefabs = new Map<string, PrefabDescription & { path: string }>();
   const roadLooks = new Map<string, RoadLook>();
   const models = new Map<string, ModelDescription>();
   const vegetation = new Set<string>();
@@ -1030,7 +1030,7 @@ function postProcess(
         const prefabDescription = assertExists(defData.prefabs.get(item.token));
         const prefabMeta = {
           prefabUid: item.uid,
-          prefabPath: (prefabDescription as unknown as { path: string }).path,
+          prefabPath: prefabDescription.path,
           sectorX: item.sectorX,
           sectorY: item.sectorY,
         };
@@ -1318,7 +1318,7 @@ function postProcess(
     nameLocalized: undefined,
     name: o.nameLocalized
       ? // If it weren't for Winterland, we could assert that o.nameLocalized guarantees an entry in the l10n table.
-        l10n.get(o.nameLocalized.replaceAll('@', '')) ?? o.name
+        (l10n.get(o.nameLocalized.replaceAll('@', '')) ?? o.name)
       : o.name,
   });
 
