@@ -1,12 +1,24 @@
 import { Stack } from '@mui/joy';
 import { assertExists } from '@truckermudgeon/base/assert';
+import { toRadians } from '@truckermudgeon/base/geom';
 import type { StateCode } from '@truckermudgeon/ui';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useControl, useMap } from 'react-map-gl/maplibre';
 import type { GameOption } from './MapSelect';
-import { MapSelect } from './MapSelect';
+import { MapSelect, europeGameOption, usaGameOption } from './MapSelect';
 import type { CityOption } from './SearchBar';
 import { SearchBar } from './SearchBar';
+
+export const mapCenters = {
+  usa: {
+    longitude: -108,
+    latitude: 39,
+  },
+  europe: {
+    longitude: 12,
+    latitude: 51,
+  },
+};
 
 interface MapSelectAndSearchProps {
   visibleStates: Set<StateCode>;
@@ -24,14 +36,8 @@ export const MapSelectAndSearch = (props: MapSelectAndSearchProps) => {
   const { current: map } = useMap();
   const initialMap: GameOption =
     localStorage.getItem('tm-map') === 'europe'
-      ? {
-          label: 'ETS2',
-          value: 'europe',
-        }
-      : {
-          label: 'ATS',
-          value: 'usa',
-        };
+      ? europeGameOption
+      : usaGameOption;
   const [gameMap, setGameMap] = useState<GameOption>(initialMap);
   const onMapSelect = React.useCallback(
     (option: GameOption) => {
@@ -44,22 +50,34 @@ export const MapSelectAndSearch = (props: MapSelectAndSearchProps) => {
         return;
       }
 
-      if (option.value === 'europe') {
-        map.flyTo({
-          curve: 1,
-          zoom: 9,
-          center: [8, 50],
-        });
-      } else {
-        map.flyTo({
-          curve: 1,
-          zoom: 9,
-          center: [-108, 40],
-        });
-      }
+      const { longitude, latitude } = mapCenters[option.value];
+      map.easeTo({
+        zoom: 4,
+        center: [longitude, latitude],
+      });
     },
     [map],
   );
+
+  useEffect(() => {
+    if (!map) {
+      return;
+    }
+    const setClosestMap = () => {
+      const lng = map.getCenter().lng;
+      const dUsa = delta(lng, mapCenters.usa.longitude);
+      const dEurope = delta(lng, mapCenters.europe.longitude);
+      if (dUsa < dEurope && gameMap.value !== 'usa') {
+        setGameMap(usaGameOption);
+        localStorage.setItem('tm-map', 'usa');
+      } else if (dEurope < dUsa && gameMap.value !== 'europe') {
+        setGameMap(europeGameOption);
+        localStorage.setItem('tm-map', 'europe');
+      }
+    };
+    map.on('moveend', setClosestMap);
+    return () => void map.off('moveend', setClosestMap);
+  }, [map, gameMap, setGameMap]);
 
   const onSearchBarSelect = React.useCallback(
     (option: CityOption) => {
@@ -110,3 +128,9 @@ export const MapSelectAndSearch = (props: MapSelectAndSearchProps) => {
     </div>
   );
 };
+
+function delta(lngA: number, lngB: number) {
+  const a = toRadians(lngA) / 2;
+  const b = toRadians(lngB) / 2;
+  return Math.abs(Math.sin(a) - Math.sin(b));
+}

@@ -20,7 +20,7 @@ import MapGl, {
 import { useSearchParams } from 'react-router-dom';
 import './Demo.css';
 import { createListProps, Legend } from './Legend';
-import { MapSelectAndSearch } from './MapSelectAndSearch';
+import { mapCenters, MapSelectAndSearch } from './MapSelectAndSearch';
 import { ModeControl } from './ModeControl';
 import { ShareControl } from './ShareControl';
 import { toStateCodes } from './state-codes';
@@ -31,6 +31,8 @@ const inRange = (n: number, [min, max]: [number, number]) =>
 const Demo = () => {
   const { mode: _maybeMode, systemMode } = useColorScheme();
   const mode = _maybeMode === 'system' ? systemMode : _maybeMode;
+  const { longitude, latitude } =
+    mapCenters[ensureValidMapValue(localStorage.getItem('tm-map'))];
 
   const [searchParams] = useSearchParams();
   const lat = Number(searchParams.get('mlat'));
@@ -67,17 +69,11 @@ const Demo = () => {
       hash={true}
       minZoom={4}
       maxZoom={15}
-      //        maxBounds={[
-      //          // TODO calculate this based on pmtiles file header
-      //          [-132, 24], // southwest corner (lon, lat)
-      //          [-87, 51], // northeast corner (lon, lat)
-      //        ]}
       mapStyle={defaultMapStyle}
-      // start off in vegas
       initialViewState={{
-        longitude: -115,
-        latitude: 36,
-        zoom: 9,
+        longitude,
+        latitude,
+        zoom: 4,
       }}
     >
       {markerPos && (
@@ -142,5 +138,11 @@ const Demo = () => {
     </MapGl>
   );
 };
+
+function ensureValidMapValue(
+  maybeMap: string | null | undefined,
+): 'usa' | 'europe' {
+  return maybeMap === 'europe' ? maybeMap : 'usa';
+}
 
 export default Demo;

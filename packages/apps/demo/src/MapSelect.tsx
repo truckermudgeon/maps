@@ -11,10 +11,9 @@ export type GameOption =
       value: 'europe';
     };
 
-const options: GameOption[] = [
-  { label: 'ATS', value: 'usa' },
-  { label: 'ETS2', value: 'europe' },
-];
+export const usaGameOption: GameOption = { label: 'ATS', value: 'usa' };
+export const europeGameOption: GameOption = { label: 'ETS2', value: 'europe' };
+const options = [usaGameOption, europeGameOption];
 
 interface MapSelectProps {
   map: 'usa' | 'europe';
