@@ -375,6 +375,7 @@ async function main() {
       'graph',
       'Generates {usa,europe}-graph.json from map-parser JSON files',
       graphCommandBuilder,
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       handleGraphCommand,
     )
     .demandCommand()
@@ -535,7 +536,9 @@ async function handleSpritesheetCommand(
   logger.success('done.');
 }
 
-function handleGraphCommand(args: ReturnType<typeof graphCommandBuilder>) {
+async function handleGraphCommand(
+  args: ReturnType<typeof graphCommandBuilder>,
+) {
   // TODO read only the files necessary
   const tsMapData = readMapData(args.inputDir, args.map, {
     includeHidden: false,
@@ -543,7 +546,7 @@ function handleGraphCommand(args: ReturnType<typeof graphCommandBuilder>) {
 
   const graph = generateGraph(tsMapData);
   if (args.check) {
-    checkGraph(graph, tsMapData);
+    await checkGraph(graph, tsMapData);
   }
 
   if (!args.dryRun) {

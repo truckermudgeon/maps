@@ -2,13 +2,27 @@ import {
   AtsSelectableDlcs,
   toAtsDlcGuards,
 } from '@truckermudgeon/map/constants';
-import { findRoute } from '@truckermudgeon/map/routing';
+import { fromAtsCoordsToWgs84 } from '@truckermudgeon/map/projections';
+import type { Route } from '@truckermudgeon/map/routing';
 import type { CompanyItem, Neighbors } from '@truckermudgeon/map/types';
 import * as cliProgress from 'cli-progress';
+import Tinypool from 'tinypool';
 import { logger } from '../logger';
 import type { MappedData } from '../mapped-data';
 
-export function checkGraph(
+interface CompanySummary {
+  company: string;
+  nodeUid: bigint;
+  latLng: string;
+}
+
+interface Unrouteable {
+  numIters: number;
+  start: CompanySummary;
+  end: CompanySummary;
+}
+
+export async function checkGraph(
   graph: Map<string, Neighbors>,
   tsMapData: MappedData,
 ) {
@@ -37,32 +51,47 @@ export function checkGraph(
   );
   bar.start(allCompanies.length * 2, 0);
 
-  const routeContext = {
-    graph,
-    nodeLUT: nodes,
-    enabledDlcGuards: toAtsDlcGuards(AtsSelectableDlcs),
-  };
-  let unrouteableCount = 0;
+  const pool = new Tinypool({
+    filename: new URL('./find-route-worker-wrapper.js', import.meta.url).href,
+    workerData: {
+      routeContext: {
+        graph,
+        nodeLUT: nodes,
+        enabledDlcGuards: toAtsDlcGuards(AtsSelectableDlcs),
+      },
+    },
+  });
+  const promises: Promise<unknown>[] = [];
+  const unrouteable: Unrouteable[] = [];
   for (const company of allCompanies) {
     const pairings = [
       [originCompany, company],
       [company, originCompany],
     ];
     for (const [start, end] of pairings) {
-      bar.increment({ start: toString(start), end: toString(end) });
-      const route = findRoute(
-        start.nodeUid.toString(16),
-        end.nodeUid.toString(16),
-        'forward',
-        'shortest',
-        routeContext,
+      promises.push(
+        pool
+          .run({
+            startNodeUid: start.nodeUid.toString(16),
+            endNodeUid: end.nodeUid.toString(16),
+          })
+          .then((route: Route) => {
+            if (!route.success) {
+              unrouteable.push({
+                numIters: route.numIters,
+                start: toSummary(start),
+                end: toSummary(end),
+              });
+            }
+          })
+          .finally(() => {
+            bar.increment({ start: toString(start), end: toString(end) });
+          }),
       );
-      if (!route) {
-        unrouteableCount++;
-        logger.warn('no route from', toString(start), 'to', toString(end));
-      }
     }
   }
+  await Promise.all(promises);
+  await pool.destroy();
 
   const endTime = Date.now();
   logger.info(
@@ -70,7 +99,16 @@ export function checkGraph(
     'routes checked in',
     `${((endTime - startTime) / 1000).toFixed(1)}s`,
   );
-  logger.info(unrouteableCount, 'unrouteable trips');
+  logger.warn(unrouteable.length, 'unrouteable trips\n', unrouteable);
+}
+
+function toSummary(c: CompanyItem): CompanySummary {
+  const [lng, lat] = fromAtsCoordsToWgs84([c.x, c.y]).map(v => v.toFixed(3));
+  return {
+    company: toString(c),
+    nodeUid: c.nodeUid,
+    latLng: `/${lat}/${lng}`,
+  };
 }
 
 function toString(company: CompanyItem) {

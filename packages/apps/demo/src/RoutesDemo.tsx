@@ -439,7 +439,7 @@ function fakeFind(
 ): Promise<GeoJSON.Feature | undefined> {
   return new Promise(resolve => {
     const route = findRoute(startNodeUid, endNodeUid, 'forward', mode, context);
-    if (!route) {
+    if (!route.success) {
       resolve(undefined);
       return;
     }
