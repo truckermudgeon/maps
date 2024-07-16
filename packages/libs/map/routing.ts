@@ -8,10 +8,20 @@ import type { PriorityQueueOption } from 'priorityqueue/lib/PriorityQueue';
 
 export type Direction = 'forward' | 'backward';
 export type Mode = 'shortest' | 'smallRoads';
-export interface Route {
-  route: Neighbor[];
-  distance: number;
-}
+export type Route = {
+  key: string;
+  mode: Mode;
+} & (
+  | {
+      success: true;
+      route: Neighbor[];
+      distance: number;
+    }
+  | {
+      success: false;
+      numIters: number;
+    }
+);
 
 export type PartialNode = Pick<Node, 'x' | 'y'>;
 export interface Context {
@@ -26,7 +36,8 @@ export function findRoute(
   direction: Direction,
   mode: Mode,
   context: Context,
-) {
+): Route {
+  const key = `${startNodeUid}-${endNodeUid}-${direction}-${mode}`;
   // console.log('finding route', startNodeUid, 'direction', endNodeUid);
   const { nodeLUT, graph } = context;
 
@@ -73,7 +84,12 @@ export function findRoute(
     numIters++;
     const current = openSet.pop();
     if (current.nodeId === endNodeUid) {
-      return reconstructPath(cameFrom, current);
+      return {
+        success: true,
+        key,
+        mode,
+        ...reconstructPath(cameFrom, current),
+      };
     }
 
     const neighbors = graph.get(current.nodeId);
@@ -108,21 +124,18 @@ export function findRoute(
       }
     }
   }
-
-  console.warn(
-    `no ${direction} route found from`,
-    start,
-    'and',
-    goal,
-    `(${numIters} iterations)`,
-  );
-  return undefined;
+  return {
+    success: false,
+    key,
+    mode,
+    numIters,
+  };
 }
 
 function reconstructPath(
   cameFrom: Map<Neighbor, Neighbor>,
   current: Neighbor,
-): Route {
+): { route: Neighbor[]; distance: number } {
   let distance = 0;
   const path: Neighbor[] = [current];
   while (cameFrom.has(current)) {
