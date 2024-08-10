@@ -1024,6 +1024,16 @@ function postProcess(
   logger.log('scanning', poifulItems.length, 'items for points of interest...');
   const pois: Poi[] = [];
   const companies: CompanyItem[] = [];
+  const noPoiCompanies: {
+    token: string;
+    itemUid: bigint;
+    nodeUid: bigint;
+  }[] = [];
+  const fallbackPoiCompanies: {
+    token: string;
+    itemUid: bigint;
+    nodeUid: bigint;
+  }[] = [];
   for (const item of poifulItems) {
     switch (item.type) {
       case ItemType.Prefab: {
@@ -1186,9 +1196,11 @@ function postProcess(
           break;
         }
         if (!icons.has(item.token)) {
-          logger.warn(
-            `unknown company overlay token "${item.token}". skipping.`,
-          );
+          noPoiCompanies.push({
+            token: item.token,
+            itemUid: item.uid,
+            nodeUid: item.nodeUid,
+          });
           break;
         }
 
@@ -1211,11 +1223,11 @@ function postProcess(
           );
           ({ sectorX, sectorY } = item);
         } else {
-          logger.warn(
-            'no company spawn position for company',
-            item.token,
-            `0x${item.uid.toString(16)}; falling back to node position`,
-          );
+          fallbackPoiCompanies.push({
+            token: item.token,
+            itemUid: item.uid,
+            nodeUid: item.nodeUid,
+          });
           ({ x, y, sectorX, sectorY } = assertExists(
             nodesByUid.get(item.nodeUid),
           ));
@@ -1294,6 +1306,21 @@ function postProcess(
       default:
         throw new UnreachableError(item);
     }
+  }
+
+  if (noPoiCompanies.length) {
+    logger.warn(
+      noPoiCompanies.length,
+      'companies with unknown tokens skipped\n',
+      noPoiCompanies.sort((a, b) => a.token.localeCompare(b.token)),
+    );
+  }
+  if (fallbackPoiCompanies.length) {
+    logger.warn(
+      fallbackPoiCompanies.length,
+      'companies with no company spawn points (used node position as fallback)\n',
+      fallbackPoiCompanies.sort((a, b) => a.token.localeCompare(b.token)),
+    );
   }
 
   // Augment partial city info from defs with position info from sectors
