@@ -91,6 +91,10 @@ const SimpleItemStruct = {
     padding: new r.Reserved(r.floatle, 1),
     flags: r.uint32le,
     viewDistance: r.uint8,
+    // uncomment this to get console output of the above item headers.
+    // useful for finding node UIDs of items that may have changed between
+    // game versions.
+    //debugStruct,
   },
   [ItemType.Terrain]: {
     startNodeUid: uint64le,
@@ -258,6 +262,8 @@ const SimpleItemStruct = {
     width: r.floatle,
     height: r.floatle,
     fogMaskPresetId: r.int32le,
+    // new in v901.
+    unknown: new r.Reserved(r.uint8, 16),
     nodeUid: uint64le,
   },
   [ItemType.City]: {
