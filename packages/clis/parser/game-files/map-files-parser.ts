@@ -1024,6 +1024,16 @@ function postProcess(
   logger.log('scanning', poifulItems.length, 'items for points of interest...');
   const pois: Poi[] = [];
   const companies: CompanyItem[] = [];
+  const noPoiCompanies: {
+    token: string;
+    itemUid: bigint;
+    nodeUid: bigint;
+  }[] = [];
+  const fallbackPoiCompanies: {
+    token: string;
+    itemUid: bigint;
+    nodeUid: bigint;
+  }[] = [];
   for (const item of poifulItems) {
     switch (item.type) {
       case ItemType.Prefab: {
@@ -1185,49 +1195,59 @@ function postProcess(
           );
           break;
         }
+        if (!icons.has(item.token)) {
+          noPoiCompanies.push({
+            token: item.token,
+            itemUid: item.uid,
+            nodeUid: item.nodeUid,
+          });
+          break;
+        }
+
         const prefabDescription = assertExists(
           defData.prefabs.get(prefabItem.token),
         );
         const companySpawnPos = prefabDescription.spawnPoints.find(
           p => p.type === SpawnPointType.CompanyPos,
         );
+        let x: number;
+        let y: number;
+        let sectorX: number;
+        let sectorY: number;
         if (companySpawnPos) {
-          const [x, y] = toMapPosition(
+          [x, y] = toMapPosition(
             [companySpawnPos.x, companySpawnPos.y],
             prefabItem,
             prefabDescription,
             nodesByUid,
           );
-          const { sectorX, sectorY } = item;
-          const pos = { x, y, sectorX, sectorY };
-          if (!icons.has(item.token)) {
-            logger.warn(
-              `unknown company overlay token "${item.token}". skipping.`,
-            );
-          } else {
-            const companyName = defData.companies.get(item.token)?.name;
-            if (companyName == null) {
-              logger.warn('unknown company name for token', item.token);
-            }
-            pois.push({
-              ...pos,
-              type: 'company',
-              icon: item.token,
-              label: companyName ?? item.token,
-            });
-            companies.push({
-              ...item,
-              x,
-              y,
-            });
-          }
+          ({ sectorX, sectorY } = item);
         } else {
-          logger.warn(
-            'no company spawn position for company',
-            item.token,
-            `0x${item.uid.toString(16)}`,
-          );
+          fallbackPoiCompanies.push({
+            token: item.token,
+            itemUid: item.uid,
+            nodeUid: item.nodeUid,
+          });
+          ({ x, y, sectorX, sectorY } = assertExists(
+            nodesByUid.get(item.nodeUid),
+          ));
         }
+        const companyName = defData.companies.get(item.token)?.name;
+        if (companyName == null) {
+          logger.warn('unknown company name for token', item.token);
+        }
+        const pos = { x, y, sectorX, sectorY };
+        pois.push({
+          ...pos,
+          type: 'company',
+          icon: item.token,
+          label: companyName ?? item.token,
+        });
+        companies.push({
+          ...item,
+          x,
+          y,
+        });
         break;
       }
       case ItemType.Ferry: {
@@ -1286,6 +1306,21 @@ function postProcess(
       default:
         throw new UnreachableError(item);
     }
+  }
+
+  if (noPoiCompanies.length) {
+    logger.warn(
+      noPoiCompanies.length,
+      'companies with unknown tokens skipped\n',
+      noPoiCompanies.sort((a, b) => a.token.localeCompare(b.token)),
+    );
+  }
+  if (fallbackPoiCompanies.length) {
+    logger.warn(
+      fallbackPoiCompanies.length,
+      'companies with no company spawn points (used node position as fallback)\n',
+      fallbackPoiCompanies.sort((a, b) => a.token.localeCompare(b.token)),
+    );
   }
 
   // Augment partial city info from defs with position info from sectors
