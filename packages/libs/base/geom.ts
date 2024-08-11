@@ -120,6 +120,9 @@ export function toSplinePoints(
   return res;
 }
 
+/**
+ * Returns the extent of `items`, in `[minX, minY, maxX, maxY]` form.
+ */
 export function getExtent(
   items: Iterable<{ x: number; y: number } | [number, number]>,
 ): Extent {

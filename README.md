@@ -112,8 +112,10 @@ npm start --workspace=packages/apps/demo
 #
 # 1. run the `parser` command listed above to generate
 #      usa-prefabDescriptions.json
+#      usa-prefabs.json
+#      usa-nodes.json
 #
-# 2. copy usa-prefabDescriptions.json to
+# 2. copy those generated files to
 #      packages/apps/prefabs/public
 #
 # Then run the following to start the web server:

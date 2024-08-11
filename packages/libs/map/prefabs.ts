@@ -593,7 +593,6 @@ export function toRoadStringsAndPolygons(prefab: PrefabDescription): {
     roadStrings: maybeParallelRoadStrings.map(r => ({
       ...r,
       points: r.coordinates,
-      coordinates: undefined,
     })),
     polygons: polygons.sort((a, b) => a.zIndex - b.zIndex),
     isVJunction:

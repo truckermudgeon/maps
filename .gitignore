@@ -11,7 +11,11 @@ sprites*.*
 usa-graph-demo.json
 
 # generated files for the prefabs app
+usa-nodes.json
+usa-prefabs.json
 usa-prefabDescriptions.json
+europe-nodes.json
+europe-prefabs.json
 europe-prefabDescriptions.json
 
 .DS_Store

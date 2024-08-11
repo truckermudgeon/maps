@@ -1,0 +1,205 @@
+import { getExtent, toSplinePoints } from '@truckermudgeon/base/geom';
+import { toRoadStringsAndPolygons } from '@truckermudgeon/map/prefabs';
+import type { PrefabDescription } from '@truckermudgeon/map/types';
+
+const mapColors = {
+  [0]: '#eaeced', // road
+  [1]: '#e6cc9f', // light
+  [2]: '#d8a54e', // dark
+  [3]: '#b1ca9b', // green
+};
+
+export const Preview = ({ prefab }: { prefab: PrefabDescription }) => {
+  const [minX, minY, maxX, maxY] = getExtent(
+    (prefab.mapPoints as { x: number; y: number }[])
+      .concat(prefab.nodes)
+      .concat(prefab.navCurves.flatMap(nc => [nc.start, nc.end])),
+  );
+  const { polygons, roadStrings } = toRoadStringsAndPolygons(prefab);
+  const width = Math.max(5, maxX - minX);
+  const height = Math.max(5, maxY - minY);
+  const xPadding = 10;
+  const yPadding = 10;
+  const roadStringColors = ['red', 'green', 'blue', 'gray', 'cyan', 'purple'];
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox={`${minX - xPadding} ${minY - yPadding} ${width + xPadding * 2} ${
+        height + yPadding * 2
+      }`}
+      style={{
+        border: '1px solid',
+        strokeLinecap: 'round',
+        width: '100%',
+        height: '100%',
+      }}
+    >
+      <defs>
+        <marker
+          id="rsTriangle"
+          viewBox="0 0 5 5"
+          refX="1"
+          refY="2.5"
+          markerUnits="strokeWidth"
+          markerWidth="1"
+          markerHeight="1"
+          orient="auto"
+        >
+          <path d="M 0 0 L 5 2.5 L 0 5 z" fill="#000" />
+        </marker>
+        <marker
+          id="triangle"
+          viewBox="0 0 5 5"
+          refX="1"
+          refY="2.5"
+          markerUnits="strokeWidth"
+          markerWidth="5"
+          markerHeight="5"
+          orient="auto"
+        >
+          <path d="M 0 0 L 5 2.5 L 0 5 z" fill="#f44" />
+        </marker>
+        <marker
+          id="triangleBlue"
+          viewBox="0 0 5 5"
+          refX="1"
+          refY="2.5"
+          markerUnits="strokeWidth"
+          markerWidth="5"
+          markerHeight="5"
+          orient="auto"
+        >
+          <path d="M 0 0 L 5 2.5 L 0 5 z" fill="#00f" />
+        </marker>
+      </defs>
+      {polygons
+        .filter(poly => poly.zIndex < 10)
+        .map((poly, i) => {
+          const points = poly.points.map(pos => pos.join(',')).join(' ');
+          return (
+            <polygon
+              key={i}
+              opacity={0.9}
+              points={points}
+              fill={mapColors[poly.color]}
+            />
+          );
+        })}
+      {roadStrings.map(({ points, offset, lanesLeft, lanesRight }, pi) => (
+        <polyline
+          key={`rs${pi}-${pi}`}
+          stroke={roadStringColors[pi % roadStringColors.length]}
+          strokeWidth={(offset && lanesLeft === lanesRight ? 4 : 1) * 4}
+          opacity={0.2}
+          points={points.map(pos => pos.join(',')).join(' ')}
+          fill="none"
+          strokeLinecap="butt"
+          markerEnd="url(#rsTriangle)"
+        />
+      ))}
+      {polygons
+        .filter(poly => poly.zIndex >= 10)
+        .map((poly, i) => {
+          const points = poly.points.map(pos => pos.join(',')).join(' ');
+          return (
+            <polygon
+              key={i}
+              opacity={0.9}
+              points={points}
+              fill={mapColors[poly.color]}
+            />
+          );
+        })}
+      {prefab.nodes.map((n, i) => (
+        <circle
+          key={`n${i}`}
+          cx={n.x}
+          cy={n.y}
+          r={2}
+          fill={i === 0 ? '#0f0' : '#f00'}
+        />
+      ))}
+      {prefab.mapPoints.map((p, pi) => (
+        <circle key={`m${pi}`} cx={p.x} cy={p.y} r={0.5} fill="blue" />
+      ))}
+      <line
+        stroke="gray"
+        strokeDasharray={'1 1'}
+        strokeWidth={0.2}
+        x1={minX - 2 * xPadding}
+        y1={0}
+        x2={maxX + 2 * xPadding}
+        y2={0}
+      />
+      <line
+        stroke="gray"
+        strokeDasharray={'1 1'}
+        strokeWidth={0.2}
+        x1={0}
+        y1={minY - 2 * yPadding}
+        x2={0}
+        y2={maxY + 2 * yPadding}
+      />
+      {prefab.navNodes.flatMap((nn, i) =>
+        nn.connections.flatMap((conn, j) => {
+          return conn.curveIndices.map(curveIdx => {
+            const curve = prefab.navCurves[curveIdx];
+            const points = toSplinePoints(
+              {
+                position: [curve.start.x, curve.start.y],
+                rotation: curve.start.rotation,
+              },
+              {
+                position: [curve.end.x, curve.end.y],
+                rotation: curve.end.rotation,
+              },
+            );
+
+            return (
+              <polyline
+                key={`nn-${i}-${j}-${curveIdx}`}
+                stroke={nn.type === 'physical' ? 'red' : 'green'}
+                strokeWidth={0.4}
+                opacity={0.5}
+                points={points.map(pos => pos.join(',')).join(' ')}
+                fill="none"
+                markerEnd="url(#triangle)"
+              />
+            );
+          });
+        }),
+      )}
+      {prefab.navCurves
+        .filter((_, i) => {
+          const nnCis = prefab.navNodes.flatMap(nn =>
+            nn.connections.flatMap(conn => conn.curveIndices),
+          );
+          return !nnCis.includes(i);
+        })
+        .flatMap((curve, i) => {
+          const points = toSplinePoints(
+            {
+              position: [curve.start.x, curve.start.y],
+              rotation: curve.start.rotation,
+            },
+            {
+              position: [curve.end.x, curve.end.y],
+              rotation: curve.end.rotation,
+            },
+          );
+
+          return (
+            <polyline
+              key={`nc-${i}`}
+              stroke="blue"
+              strokeWidth={0.4}
+              opacity={0.5}
+              points={points.map(pos => pos.join(',')).join(' ')}
+              fill="none"
+              markerEnd="url(#triangleBlue)"
+            />
+          );
+        })}
+    </svg>
+  );
+};
