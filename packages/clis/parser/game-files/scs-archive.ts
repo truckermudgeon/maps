@@ -462,18 +462,18 @@ class ScsArchiveTobjFile extends ScsArchiveFile {
     const imageFormat = imageMeta.format;
 
     let ddsBytes: Buffer;
+    let { width, height } = this.imageMetadata;
     if (imageFormat === 78) {
       // BC3_UNORM_SRGB
-      const firstMipmapBytes =
-        ((this.imageMetadata.width * this.imageMetadata.height) / 4) * 16;
+      const firstMipmapBytes = width * height;
       ddsBytes = super.read().subarray(0, firstMipmapBytes);
     } else if (imageFormat === 91 || imageFormat === 88) {
       // 91: B8G8R8A8_UNORM_SRGB
       // 88: B8G8R8X8_UNORM
 
       // fudge widths/heights. seems to fix problem with ETS2's sr_e763 icon.
-      const width = closestPowerOf2(this.imageMetadata.width);
-      const height = closestPowerOf2(this.imageMetadata.height);
+      width = closestPowerOf2(this.imageMetadata.width);
+      height = closestPowerOf2(this.imageMetadata.height);
 
       ddsBytes = Buffer.alloc(4 * width * height);
       const rawData = super.read();
@@ -501,8 +501,8 @@ class ScsArchiveTobjFile extends ScsArchiveFile {
       DdsHeader.toBuffer({
         size: DdsHeader.size(),
         flags: 0,
-        height: this.imageMetadata.height,
-        width: this.imageMetadata.width,
+        height,
+        width,
         pitchOrLinearSize: ddsBytes.length,
         depth: 0,
         mipMapCount: imageMeta.mipmapCount,

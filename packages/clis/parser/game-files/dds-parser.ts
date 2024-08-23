@@ -95,12 +95,7 @@ export function parseDds(
 
     png.data = data;
   } else if (header.ddsPixelFormat.fourCc === 'DXT5') {
-    png.data = decompressDXT5(
-      header.width,
-      header.height,
-      // not sure why i have to do this. extra/dummy/misread data?
-      data.slice(0, header.pitchOrLinearSize),
-    ) as Buffer;
+    png.data = decompressDXT5(header.width, header.height, data) as Buffer;
   } else {
     logger.error('unsupported pixel format', header.ddsPixelFormat.fourCc);
     throw new Error();
