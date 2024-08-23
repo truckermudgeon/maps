@@ -7,7 +7,8 @@
   "gypfile": true,
   "bin": "./index.ts",
   "scripts": {
-    "build": "node-gyp configure && node-gyp build"
+    "build": "node-gyp configure && node-gyp build",
+    "postinstall": "ln -sf ../../packages/clis/parser/index.ts ../../../node_modules/.bin/parser"
   },
   "devDependencies": {
     "@types/cli-progress": "^3.11.5",
