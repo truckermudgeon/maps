@@ -611,7 +611,7 @@ export function parseSector(buffer: Buffer) {
             return undefined;
         }
       })
-      .filter((i): i is NonNullable<typeof i> => i != null),
+      .filter(i => i != null),
     nodes: sector.nodes.map(toNode),
   };
   const moreItems: typeof simples.items = [];

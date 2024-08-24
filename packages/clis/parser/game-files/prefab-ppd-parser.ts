@@ -390,7 +390,7 @@ export function parsePrefabPpd(buffer: Buffer): PrefabDescription {
           };
         }
       })
-      .filter((p): p is MapPoint => p != null),
+      .filter(p => p != null),
     triggerPoints: rawPrefab.triggerPoints.map(rp => {
       const { action, pos } = rp;
       return {

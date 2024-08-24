@@ -28,7 +28,7 @@ export class CombinedEntries implements Entries {
       get: key => {
         const entries = this.archives
           .map(a => a.parseEntries().directories.get(key))
-          .filter((e): e is NonNullable<DirectoryEntry> => e != null);
+          .filter(e => e != null);
         return entries.length ? new CompositeDirectory(entries) : undefined;
       },
     };
@@ -39,7 +39,7 @@ export class CombinedEntries implements Entries {
       get: key => {
         const entries = this.archives
           .map(a => a.parseEntries().files.get(key))
-          .filter((e): e is NonNullable<FileEntry> => e != null);
+          .filter(e => e != null);
         if (entries.length > 1) {
           logger.debug(
             `multiple files found for ${key}; using most recent one.`,

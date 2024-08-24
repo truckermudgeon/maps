@@ -1433,11 +1433,7 @@ function postProcess(
       }
     }
 
-    dividers.push(
-      ...sectorDividers.filter(
-        (d): d is Building | Curve => d.type !== ItemType.Terrain,
-      ),
-    );
+    dividers.push(...sectorDividers.filter(d => d.type !== ItemType.Terrain));
     for (const d of dividers) {
       referencedNodeUids.add(d.startNodeUid);
       referencedNodeUids.add(d.endNodeUid);

@@ -1123,7 +1123,7 @@ function ferryToNormalizedFeature(
     })
     .map(({ ferry, country }) => {
       const isoA2 = country
-        ? ets2IsoA2.get(country.code) ?? country.code
+        ? (ets2IsoA2.get(country.code) ?? country.code)
         : undefined;
       return isoA2 ? `${ferry.name}, ${isoA2}` : ferry.name;
     })
@@ -1361,7 +1361,7 @@ function prefabToFeatures(
           roadQuadTree.find(...roadStart, 2),
           roadQuadTree.find(...roadEnd, 2),
         ]
-          .filter((e): e is QtRoadEntry => e != null)
+          .filter(e => e != null)
           .sort(
             (a, b) =>
               Math.min(distance(a, roadStart), distance(a, roadEnd)) -
