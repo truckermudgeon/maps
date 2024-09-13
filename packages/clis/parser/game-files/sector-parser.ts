@@ -565,7 +565,7 @@ const versionWarnings = new Set<number>();
 
 export function parseSector(buffer: Buffer) {
   const version = buffer.readUint32LE();
-  if (version !== 900) {
+  if (version !== 901) {
     if (!versionWarnings.has(version)) {
       logger.warn('unknown .base file version', version);
       logger.warn('errors may come up, and parse results may be inaccurate.');
