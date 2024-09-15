@@ -66,7 +66,7 @@ npx generator map -m europe -i dirWithParserOutput -o dirToWriteFilesTo
 # generate combined ATS and ETS2 cities.geojson file
 npx generator cities -m usa -m europe -i dirWithParserOutput -o dirToWriteFilesTo
 
-# generate combined ATS and ETS2 footprints.geojson file
+# generate ATS and ETS2 footprints pmtiles files
 npx generator footprints -m usa -m europe -i dirWithParserOutput -o dirToWriteFilesTo
 
 # generate spritesheet files

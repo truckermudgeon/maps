@@ -31,6 +31,7 @@ import type {
   Ferry,
   FerryFeature,
   FootprintFeature,
+  FootprintProperties,
   MapArea,
   MapAreaFeature,
   Model,
@@ -695,7 +696,7 @@ export function convertToFootprintsGeoJson({
   modelDescriptions: (ModelDescription & {
     token: string;
   })[];
-}) {
+}): GeoJSON.FeatureCollection<GeoJSON.Polygon, FootprintProperties> {
   const nodesByUid = new Map(nodes.map(n => [n.uid, n]));
   const modelDescs = new Map(modelDescriptions.map(m => [m.token, m]));
   const normalizeCoordinates = createNormalizeCoordinates(map);
