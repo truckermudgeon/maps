@@ -8,6 +8,7 @@ export const atsSceneryTownsUrl = `https://raw.githubusercontent.com/nautofon/at
 export const ets2SceneryTownsUrl = `/ets2-villages.geojson`;
 
 export const enum StateCode {
+  AR = 'AR',
   AZ = 'AZ',
   CA = 'CA',
   CO = 'CO',
@@ -25,6 +26,7 @@ export const enum StateCode {
   WY = 'WY',
 }
 const states: Record<StateCode, void> = {
+  [StateCode.AR]: undefined,
   [StateCode.AZ]: undefined,
   [StateCode.CA]: undefined,
   [StateCode.CO]: undefined,

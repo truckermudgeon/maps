@@ -2,6 +2,7 @@ import type { FacilityIcon } from './types';
 
 export enum AtsDlc {
   Arizona,
+  Arkansas,
   Colorado,
   Idaho,
   Kansas,
@@ -32,6 +33,7 @@ export const AtsSelectableDlcs: ReadonlySet<AtsSelectableDlc> = new Set([
   AtsDlc.Oklahoma,
   AtsDlc.Kansas,
   AtsDlc.Nebraska,
+  AtsDlc.Arkansas,
 ]);
 export const AtsDlcInfo: Record<AtsSelectableDlc, string> = {
   [AtsDlc.Nevada]: 'Nevada',
@@ -48,9 +50,11 @@ export const AtsDlcInfo: Record<AtsSelectableDlc, string> = {
   [AtsDlc.Oklahoma]: 'Oklahoma',
   [AtsDlc.Kansas]: 'Kansas',
   [AtsDlc.Nebraska]: 'Nebraska',
+  [AtsDlc.Arkansas]: 'Arkansas',
 };
 
 // from /def/country.sii
+// values are based on country_id values in <state>.sui files.
 export enum AtsCountryId {
   // Released
   California = 1,
@@ -59,6 +63,7 @@ export enum AtsCountryId {
   Colorado = 7,
   Idaho = 13,
   Nebraska = 18,
+  Arkansas = 19,
   NewMexico = 31,
   Oregon = 37,
   Texas = 43,
@@ -73,7 +78,6 @@ export enum AtsCountryId {
   // Unreleased
   Alabama = 4,
   Alaska = 5,
-  Arkansas = 6,
   Connecticut = 8,
   Delaware = 9,
   Florida = 10,
@@ -109,6 +113,8 @@ export enum AtsCountryId {
   */
 }
 
+// values are based on matching singleton sets in `AtsDlcGuards` map, e.g.:
+// Colorado is 13 because `AtsDlcGuards[13]` is the singleton set of Colorado.
 export const AtsCountryIdToDlcGuard: Record<AtsCountryId, AtsDlcGuard> = {
   // Base Map
   [AtsCountryId.California]: 0,
@@ -127,10 +133,12 @@ export const AtsCountryIdToDlcGuard: Record<AtsCountryId, AtsDlcGuard> = {
   [AtsCountryId.Oklahoma]: 25,
   [AtsCountryId.Wyoming]: 16,
   [AtsCountryId.Nebraska]: 32,
+  [AtsCountryId.Arkansas]: 19,
 };
 
-export type AtsDlcGuard = Range<0, 36>;
+export type AtsDlcGuard = Range<0, 39>;
 
+// key/vals based on dlc guards dropdown in map editor UI
 export const AtsDlcGuards: Record<AtsDlcGuard, ReadonlySet<AtsDlc>> = {
   0: new Set(),
   1: new Set([AtsDlc.Nevada]),
@@ -168,6 +176,9 @@ export const AtsDlcGuards: Record<AtsDlcGuard, ReadonlySet<AtsDlc>> = {
   33: new Set([AtsDlc.Nebraska, AtsDlc.Colorado]),
   34: new Set([AtsDlc.Nebraska, AtsDlc.Kansas]),
   35: new Set([AtsDlc.Nebraska, AtsDlc.Wyoming]),
+  36: new Set([AtsDlc.Arkansas]),
+  37: new Set([AtsDlc.Arkansas, AtsDlc.Oklahoma]),
+  38: new Set([AtsDlc.Arkansas, AtsDlc.Texas]),
 } as const;
 
 export function toAtsDlcGuards(

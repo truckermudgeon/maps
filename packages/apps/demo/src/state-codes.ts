@@ -11,6 +11,8 @@ function toStateCode(atsDlc: AtsSelectableDlc): StateCode {
   switch (atsDlc) {
     case AtsDlc.Arizona:
       return StateCode.AZ;
+    case AtsDlc.Arkansas:
+      return StateCode.AR;
     case AtsDlc.Colorado:
       return StateCode.CO;
     case AtsDlc.Idaho:
