@@ -4,7 +4,7 @@ import { baseTextLayout, textVariableAnchor } from './GameMapStyle';
 import type { Mode } from './colors';
 import { modeColors } from './colors';
 
-export const atsSceneryTownsUrl = `https://raw.githubusercontent.com/nautofon/ats-towns/nebraska/all-towns.geojson`;
+export const atsSceneryTownsUrl = `https://raw.githubusercontent.com/nautofon/ats-towns/arkansas/all-towns.geojson`;
 export const ets2SceneryTownsUrl = `/ets2-villages.geojson`;
 
 export const enum StateCode {
