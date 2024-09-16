@@ -133,7 +133,7 @@ export const AtsCountryIdToDlcGuard: Record<AtsCountryId, AtsDlcGuard> = {
   [AtsCountryId.Oklahoma]: 25,
   [AtsCountryId.Wyoming]: 16,
   [AtsCountryId.Nebraska]: 32,
-  [AtsCountryId.Arkansas]: 19,
+  [AtsCountryId.Arkansas]: 36,
 };
 
 export type AtsDlcGuard = Range<0, 39>;
