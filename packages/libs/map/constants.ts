@@ -1,3 +1,4 @@
+import { assert } from '@truckermudgeon/base/assert';
 import type { FacilityIcon } from './types';
 
 export enum AtsDlc {
@@ -73,45 +74,52 @@ export enum AtsCountryId {
   Montana = 27,
   Oklahoma = 36,
   Wyoming = 50,
-
-  /*
-  // Unreleased
-  Alabama = 4,
-  Alaska = 5,
-  Connecticut = 8,
-  Delaware = 9,
-  Florida = 10,
-  Georgia = 11,
-  Hawaii = 12,
-  Illinois = 14,
-  Indiana = 15,
-  Iowa = 16,
-  Kentucky = 18,
-  Louisiana = 19,
-  Maine = 20,
-  Maryland = 21,
-  Massachusetts = 22,
-  Michigan = 23,
-  Minnesota = 24,
-  Mississippi = 25,
-  Missouri = 26,
-  NewHampshire = 29,
-  NewJersey = 30,
-  NewYork = 32,
-  NorthCarolina = 33,
-  NorthDakota = 34,
-  Ohio = 35,
-  Pennsylvania = 38,
-  RhodeIsland = 39,
-  SouthCarolina = 40,
-  SouthDakota = 41,
-  Tennessee = 42,
-  Vermont = 45,
-  Virginia = 46,
-  WestVirginia = 48,
-  Wisconsin = 49,
-  */
 }
+
+export type AtsDlcGuard = Range<0, 39>;
+
+// key/vals based on dlc guards dropdown in map editor UI
+export const AtsDlcGuards: Record<AtsDlcGuard, ReadonlySet<AtsDlc>> = {
+  0: new Set(),
+  1: new Set([AtsDlc.Nevada]),
+  2: new Set([AtsDlc.Arizona]),
+  3: new Set([AtsDlc.NewMexico]),
+  4: new Set([AtsDlc.Oregon]),
+  5: new Set([AtsDlc.Washington]),
+  6: new Set([AtsDlc.Washington, AtsDlc.Oregon]),
+  7: new Set([AtsDlc.Utah]),
+  8: new Set([AtsDlc.Utah, AtsDlc.NewMexico]),
+  9: new Set([AtsDlc.Idaho]),
+  10: new Set([AtsDlc.Idaho, AtsDlc.Oregon]),
+  11: new Set([AtsDlc.Idaho, AtsDlc.Utah]),
+  12: new Set([AtsDlc.Idaho, AtsDlc.Washington]),
+  13: new Set([AtsDlc.Colorado]),
+  14: new Set([AtsDlc.Colorado, AtsDlc.NewMexico]),
+  15: new Set([AtsDlc.Colorado, AtsDlc.Utah]),
+  16: new Set([AtsDlc.Wyoming]),
+  17: new Set([AtsDlc.Wyoming, AtsDlc.Colorado]),
+  18: new Set([AtsDlc.Wyoming, AtsDlc.Idaho]),
+  19: new Set([AtsDlc.Wyoming, AtsDlc.Utah]),
+  20: new Set([AtsDlc.Texas]),
+  21: new Set([AtsDlc.Texas, AtsDlc.NewMexico]),
+  22: new Set([AtsDlc.Montana]),
+  23: new Set([AtsDlc.Montana, AtsDlc.Idaho]),
+  24: new Set([AtsDlc.Montana, AtsDlc.Wyoming]),
+  25: new Set([AtsDlc.Oklahoma]),
+  26: new Set([AtsDlc.Oklahoma, AtsDlc.Colorado]),
+  27: new Set([AtsDlc.Oklahoma, AtsDlc.NewMexico]),
+  28: new Set([AtsDlc.Oklahoma, AtsDlc.Texas]),
+  29: new Set([AtsDlc.Kansas]),
+  30: new Set([AtsDlc.Kansas, AtsDlc.Colorado]),
+  31: new Set([AtsDlc.Kansas, AtsDlc.Oklahoma]),
+  32: new Set([AtsDlc.Nebraska]),
+  33: new Set([AtsDlc.Nebraska, AtsDlc.Colorado]),
+  34: new Set([AtsDlc.Nebraska, AtsDlc.Kansas]),
+  35: new Set([AtsDlc.Nebraska, AtsDlc.Wyoming]),
+  36: new Set([AtsDlc.Arkansas]),
+  37: new Set([AtsDlc.Arkansas, AtsDlc.Oklahoma]),
+  38: new Set([AtsDlc.Arkansas, AtsDlc.Texas]),
+} as const;
 
 // values are based on matching singleton sets in `AtsDlcGuards` map, e.g.:
 // Colorado is 13 because `AtsDlcGuards[13]` is the singleton set of Colorado.
@@ -136,50 +144,14 @@ export const AtsCountryIdToDlcGuard: Record<AtsCountryId, AtsDlcGuard> = {
   [AtsCountryId.Arkansas]: 36,
 };
 
-export type AtsDlcGuard = Range<0, 39>;
-
-// key/vals based on dlc guards dropdown in map editor UI
-export const AtsDlcGuards: Record<AtsDlcGuard, ReadonlySet<AtsDlc>> = {
-  0: new Set(),
-  1: new Set([AtsDlc.Nevada]),
-  2: new Set([AtsDlc.Arizona]),
-  3: new Set([AtsDlc.NewMexico]),
-  4: new Set([AtsDlc.Oregon]),
-  5: new Set([AtsDlc.Washington]),
-  6: new Set([AtsDlc.Oregon, AtsDlc.Washington]),
-  7: new Set([AtsDlc.Utah]),
-  8: new Set([AtsDlc.NewMexico, AtsDlc.Utah]),
-  9: new Set([AtsDlc.Idaho]),
-  10: new Set([AtsDlc.Idaho, AtsDlc.Oregon]),
-  11: new Set([AtsDlc.Idaho, AtsDlc.Utah]),
-  12: new Set([AtsDlc.Idaho, AtsDlc.Washington]),
-  13: new Set([AtsDlc.Colorado]),
-  14: new Set([AtsDlc.Colorado, AtsDlc.NewMexico]),
-  15: new Set([AtsDlc.Colorado, AtsDlc.Utah]),
-  16: new Set([AtsDlc.Wyoming]),
-  17: new Set([AtsDlc.Colorado, AtsDlc.Wyoming]),
-  18: new Set([AtsDlc.Idaho, AtsDlc.Wyoming]),
-  19: new Set([AtsDlc.Utah, AtsDlc.Wyoming]),
-  20: new Set([AtsDlc.Texas]),
-  21: new Set([AtsDlc.NewMexico, AtsDlc.Texas]),
-  22: new Set([AtsDlc.Montana]),
-  23: new Set([AtsDlc.Idaho, AtsDlc.Montana]),
-  24: new Set([AtsDlc.Montana, AtsDlc.Wyoming]),
-  25: new Set([AtsDlc.Oklahoma]),
-  26: new Set([AtsDlc.Oklahoma, AtsDlc.Colorado]),
-  27: new Set([AtsDlc.Oklahoma, AtsDlc.NewMexico]),
-  28: new Set([AtsDlc.Oklahoma, AtsDlc.Texas]),
-  29: new Set([AtsDlc.Kansas]),
-  30: new Set([AtsDlc.Kansas, AtsDlc.Colorado]),
-  31: new Set([AtsDlc.Kansas, AtsDlc.Oklahoma]),
-  32: new Set([AtsDlc.Nebraska]),
-  33: new Set([AtsDlc.Nebraska, AtsDlc.Colorado]),
-  34: new Set([AtsDlc.Nebraska, AtsDlc.Kansas]),
-  35: new Set([AtsDlc.Nebraska, AtsDlc.Wyoming]),
-  36: new Set([AtsDlc.Arkansas]),
-  37: new Set([AtsDlc.Arkansas, AtsDlc.Oklahoma]),
-  38: new Set([AtsDlc.Arkansas, AtsDlc.Texas]),
-} as const;
+// sanity check to ensure values in record above refer to singleton sets.
+for (const dlcGuard of Object.values(AtsCountryIdToDlcGuard)) {
+  if (dlcGuard === 0) {
+    // special case: California isn't a DLC. Its associated set is empty.
+    continue;
+  }
+  assert(AtsDlcGuards[dlcGuard].size === 1);
+}
 
 export function toAtsDlcGuards(
   selectedDlcs: ReadonlySet<AtsSelectableDlc>,
@@ -216,12 +188,12 @@ export type Ets2SelectableDlc = Exclude<
 export const Ets2SelectableDlcs: ReadonlySet<Ets2SelectableDlc> = new Set([]);
 
 export const Ets2DlcGuards: Record<number, ReadonlySet<Ets2Dlc>> = {
-  0: new Set([]),
+  0: new Set(),
   1: new Set([Ets2Dlc.GoingEast]),
   2: new Set([Ets2Dlc.Scandinavia]),
   3: new Set([Ets2Dlc.ViveLaFrance]),
   4: new Set([Ets2Dlc.Italia]),
-  5: new Set([Ets2Dlc.ViveLaFrance, Ets2Dlc.Italia]),
+  5: new Set([Ets2Dlc.Italia, Ets2Dlc.ViveLaFrance]),
   6: new Set([Ets2Dlc.BeyondTheBalticSea]),
   7: new Set([Ets2Dlc.BeyondTheBalticSea, Ets2Dlc.GoingEast]),
   8: new Set([Ets2Dlc.BeyondTheBalticSea, Ets2Dlc.Scandinavia]),
@@ -230,7 +202,7 @@ export const Ets2DlcGuards: Record<number, ReadonlySet<Ets2Dlc>> = {
   11: new Set([Ets2Dlc.Iberia]),
   12: new Set([Ets2Dlc.Iberia, Ets2Dlc.ViveLaFrance]),
   13: new Set([Ets2Dlc.HeartOfRussia]),
-  14: new Set([Ets2Dlc.BeyondTheBalticSea, Ets2Dlc.HeartOfRussia]),
+  14: new Set([Ets2Dlc.HeartOfRussia, Ets2Dlc.BeyondTheBalticSea]),
   15: new Set([Ets2Dlc.Krone]),
   16: new Set([Ets2Dlc.WestBalkans]),
   17: new Set([Ets2Dlc.WestBalkans, Ets2Dlc.GoingEast]),
