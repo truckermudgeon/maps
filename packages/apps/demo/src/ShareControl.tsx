@@ -82,11 +82,15 @@ export const ShareControl = () => {
     updateUrl();
 
     map.on('moveend', updateUrl);
-    syncMarkerToMap && map.on('move', syncMarkerToMap);
+    if (syncMarkerToMap) {
+      map.on('move', syncMarkerToMap);
+    }
 
     return () => {
       map.off('moveend', updateUrl);
-      syncMarkerToMap && map.off('move', syncMarkerToMap);
+      if (syncMarkerToMap) {
+        map.off('move', syncMarkerToMap);
+      }
       marker?.remove();
     };
   }, [mapRef, open, includeMarker]);

@@ -142,7 +142,9 @@ function parseDefFiles(entries: Entries) {
   ) => {
     const t = convertSiiToJson(path, entries, schema);
     const u = p(t, entries);
-    u && m.set(u.token, u);
+    if (u) {
+      m.set(u.token, u);
+    }
   };
 
   for (const f of def.files) {
@@ -589,8 +591,8 @@ function processModelJson(
       continue;
     }
     const isProbablyBuildingModel =
-      path.match(/^model2?\/building\//) ??
-      path.match(/^model2?\/panorama\/.*building/);
+      /^model2?\/building\//.exec(path) ??
+      /^model2?\/panorama\/.*building/.exec(path);
     if (!isProbablyBuildingModel) {
       continue;
     }
@@ -700,7 +702,7 @@ function parseSectorFiles(entries: Entries) {
       throw new Error(`unexpected sector key "${sectorKey}"`);
     }
     const [, sectorX, sectorY] = Array.from(
-      assertExists(sectorKey.match(sectorRegex)),
+      assertExists(sectorRegex.exec(sectorKey)),
       parseFloat,
     );
     if (isNaN(sectorX) || isNaN(sectorY)) {

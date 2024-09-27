@@ -13,7 +13,7 @@
   "devDependencies": {
     "@types/cli-progress": "^3.11.5",
     "@types/jest": "^29.5.11",
-    "@types/node": "^20.10.6",
+    "@types/node": "^22.7.4",
     "@types/pngjs": "^6.0.4",
     "@types/yargs": "^16.0.9",
     "typescript": "^5.4.2"

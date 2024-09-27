@@ -231,7 +231,7 @@ export function generateGraph(tsMapData: MappedData) {
     ];
     const closest = nodesInSector
       .sort((a, b) => distance(a, companyNode) - distance(b, companyNode))
-      .filter(n => n.uid !== companyNode.uid)[0];
+      .find(n => n.uid !== companyNode.uid);
     if (!closest) {
       logger.error('no eligible nodes for', company.token, company.cityToken);
       throw new Error();

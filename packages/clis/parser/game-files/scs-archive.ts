@@ -256,8 +256,9 @@ export class ScsArchive {
         }
       }
     }
-    skippedMetaTypes.size &&
+    if (skippedMetaTypes.size) {
       logger.warn('skipped metadata types', skippedMetaTypes);
+    }
 
     return metadataMap;
   }

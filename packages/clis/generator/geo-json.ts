@@ -847,10 +847,12 @@ export function coalesceRoadFeatures(
   const heads = new Map<string, RoadFeature[]>();
   const tails = new Map<string, RoadFeature[]>();
   for (const f of roadFeatures) {
-    f.properties.startNodeUid &&
+    if (f.properties.startNodeUid) {
       putIfAbsent(f.properties.startNodeUid, [], heads).push(f);
-    f.properties.endNodeUid &&
+    }
+    if (f.properties.endNodeUid) {
       putIfAbsent(f.properties.endNodeUid, [], tails).push(f);
+    }
   }
 
   // Some adjacent roads share the same startNode, or the same endNode. They
@@ -1328,7 +1330,7 @@ function prefabToFeatures(
       // distance threshold is here because roadStrings may be a result of parallelification, and parallel roads may
       // be far away from a prefab's entry/exit nodes.
       // TODO store data in RoadStrings that can be used to better determine entry/exit nodes.
-      .filter(n => distance(n, point) < 10)[0];
+      .find(n => distance(n, point) < 10);
 
   return [
     ...polygons.map<PrefabFeature>((polygon, i) => {
@@ -1396,10 +1398,10 @@ function prefabToFeatures(
               (a, b) => distance(a, mid) - distance(b, mid),
             )[0];
           } else {
-            nearestRoad = nearestRoads.filter(
+            nearestRoad = nearestRoads.find(
               entry =>
                 distance(entry, roadStart) < 1 || distance(entry, roadEnd) < 1,
-            )[0];
+            );
           }
           if (nearestRoad && roadLookMap.has(nearestRoad.roadLookToken)) {
             nearestRoadType = getRoadType(

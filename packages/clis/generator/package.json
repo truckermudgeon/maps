@@ -9,7 +9,7 @@
     "@types/cli-progress": "^3.11.5",
     "@types/d3-quadtree": "^3.0.6",
     "@types/jest": "^29.5.11",
-    "@types/node": "^20.10.6",
+    "@types/node": "^22.7.4",
     "@types/proj4": "^2.5.5",
     "@types/spritesmith": "^3.4.5",
     "@types/yargs": "^16.0.9",
