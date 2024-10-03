@@ -22,7 +22,7 @@ A demo app built with these tools and components can be found at https://trucker
 # clone the repo into a local directory
 mdkir maps
 cd maps
-git clone --recurse-submodules git@github.com:truckermudgeon/maps.git .
+git clone --recurse-submodules https://github.com/truckermudgeon/maps.git .
 
 # install maps projects
 npm install
