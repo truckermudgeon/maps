@@ -167,9 +167,12 @@ export interface AchievementsSii {
   achievementFerryData: Record<
     string,
     {
-      endpointA: string;
-      endpointB: string;
       achievementName: string;
+      // ATS
+      endpointA?: string;
+      endpointB?: string;
+      // ETS2
+      ferryType?: 'train' | 'ferry';
     }
   >;
   achievementEachDeliveryPoint: Record<
@@ -338,11 +341,16 @@ export const AchievementsSiiSchema: JSONSchemaType<AchievementsSii> = {
         '^\\.achievement\\.[0-9a-z_]{1,12}': {
           type: 'object',
           properties: {
-            endpointA: TokenStringSchema,
-            endpointB: TokenStringSchema,
+            endpointA: { ...TokenStringSchema, nullable: true },
+            endpointB: { ...TokenStringSchema, nullable: true },
+            ferryType: {
+              type: 'string',
+              enum: ['ferry', 'train'],
+              nullable: true,
+            },
             achievementName: { type: 'string' },
           },
-          required: ['endpointA', 'endpointB', 'achievementName'],
+          required: ['achievementName'],
         },
       },
       required: [],

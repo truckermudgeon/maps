@@ -808,8 +808,8 @@ function processAchievementsJson(
   for (const a of Object.values(obj.achievementFerryData)) {
     achievements.set(a.achievementName, {
       type: 'ferryData',
-      endpointA: a.endpointA,
-      endpointB: a.endpointB,
+      endpointA: a.endpointA ?? 'TODO',
+      endpointB: a.endpointB ?? 'TODO',
     });
   }
 
