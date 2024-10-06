@@ -20,7 +20,7 @@ interface MapSelectProps {
   onSelect: (option: GameOption) => void;
 }
 
-export const MapSelect = ({ map, onSelect }: MapSelectProps) => {
+export const SearchSelect = ({ map, onSelect }: MapSelectProps) => {
   return (
     <Select
       sx={{ paddingBlock: 0, minWidth: 'fit-content' }}

@@ -20,8 +20,8 @@ import MapGl, {
 import { useSearchParams } from 'react-router-dom';
 import './Demo.css';
 import { createListProps, Legend } from './Legend';
-import { mapCenters, MapSelectAndSearch } from './MapSelectAndSearch';
 import { ModeControl } from './ModeControl';
+import { mapCenters, OmniBar } from './OmniBar';
 import { ShareControl } from './ShareControl';
 import { toStateCodes } from './state-codes';
 
@@ -122,7 +122,7 @@ const Demo = () => {
         }}
         customAttribution="&copy; Trucker Mudgeon. scenery town data by <a href='https://github.com/nautofon/ats-towns'>nautofon</a> and <a href='https://forum.scssoft.com/viewtopic.php?p=1946956#p1946956'>krmarci</a>."
       />
-      <MapSelectAndSearch visibleStates={visibleStates} />
+      <OmniBar visibleStates={visibleStates} />
       <Legend
         icons={{
           ...iconsListProps,
