@@ -122,7 +122,10 @@ const Demo = () => {
         }}
         customAttribution="&copy; Trucker Mudgeon. scenery town data by <a href='https://github.com/nautofon/ats-towns'>nautofon</a> and <a href='https://forum.scssoft.com/viewtopic.php?p=1946956#p1946956'>krmarci</a>."
       />
-      <OmniBar visibleStates={visibleStates} />
+      <OmniBar
+        visibleStates={visibleStates}
+        visibleStateDlcs={visibleAtsDlcs}
+      />
       <Legend
         icons={{
           ...iconsListProps,
