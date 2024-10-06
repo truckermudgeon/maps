@@ -359,11 +359,6 @@ function convertSiiToJson<T>(
   }
 
   const json = jsonConverter.convert(res.cst);
-  if (schema == null) {
-    console.log(JSON.stringify(json, null, 2));
-    throw new Error();
-  }
-
   const validate = ajv.compile(schema);
   if (validate(json)) {
     return json;
