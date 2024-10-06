@@ -18,6 +18,7 @@ import type {
   Prefab,
   Road,
   Terrain,
+  TrajectoryItem,
   Trigger,
 } from '@truckermudgeon/map/types';
 import type { BaseOf } from 'restructure';
@@ -410,8 +411,6 @@ const SimpleItemStruct = {
     vegetationSpheres,
     quadInfo,
   },
-  // useful for routing?
-  // https://modding.scssoft.com/wiki/New_Editor_Features_info_-_old_%2B_1.47
   [ItemType.TrajectoryItem]: {
     nodeUids: new r.Array(uint64le, r.uint32le),
     flags2: uint64le,
@@ -613,6 +612,8 @@ export function parseSector(buffer: Buffer) {
             return toBuilding(ri);
           case ItemType.Curve:
             return toCurve(ri);
+          case ItemType.TrajectoryItem:
+            return toTrajectoryItem(ri);
           default:
             return undefined;
         }
@@ -758,9 +759,11 @@ function toCutscene(
 ): WithoutSectorXY<Cutscene> {
   return {
     ...toBaseItem(rawItem),
+    dlcGuard: (rawItem.flags & 0x00_00_ff_00) >> 8,
     flags: rawItem.flags,
     tags: rawItem.tags,
     nodeUid: rawItem.nodeUid,
+    actionStringParams: rawItem.actions.flatMap(action => action.stringParams),
     // TODO search actions.stringParams "ui_value" for @@ localization string name
   };
 }
@@ -768,10 +771,13 @@ function toCutscene(
 function toTrigger(
   rawItem: SectorItem<ItemType.Trigger>,
 ): WithoutSectorXY<Trigger> {
+  const actionsMap = new Map(
+    rawItem.actions.map(a => [a.action, a.override ? a.override.params : []]),
+  );
   return {
     ...toBaseItem(rawItem),
     dlcGuard: (rawItem.flags & 0x00_00_ff_00) >> 8,
-    actionTokens: rawItem.actions.map(a => a.action),
+    actions: [...actionsMap.entries()],
     nodeUids: rawItem.nodeUids,
   };
 }
@@ -806,6 +812,20 @@ function toCurve(
     numBuildings: rawItem.heightOffsets.length,
     startNodeUid: rawItem.startNodeUid,
     endNodeUid: rawItem.endNodeUid,
+  };
+}
+
+function toTrajectoryItem(
+  rawItem: SectorItem<ItemType.TrajectoryItem>,
+): WithoutSectorXY<TrajectoryItem> | undefined {
+  if (!rawItem.checkpoints.some(c => c.checkpoint === 'offer_point')) {
+    return;
+  }
+
+  return {
+    ...toBaseItem(rawItem),
+    nodeUids: rawItem.nodeUids,
+    checkpoints: rawItem.checkpoints,
   };
 }
 

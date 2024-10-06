@@ -15,12 +15,14 @@ ajv.addKeyword({
   errors: true,
 });
 
-// The schemas and interfaces defined in this class are the bare minimum in order for map-files-parser.ts to work.
-// They're incomplete and don't reflect the actual schema of a given .sii file.
+// The schemas and interfaces defined in this class are the bare minimum in
+// order for map-files-parser.ts to work. They're incomplete and don't reflect
+// the actual schema of a given .sii or .mat file.
 
-// Using ajv to declare + validate schemas is probably overkill.
-// It may be enough to just declare types and cast parsed JSON to those types, instead of
-// actually validating them against an incomplete schema.
+// Using ajv to declare + validate schemas is kinda overkill, but the approach:
+// - catches a lot of incorrect assumptions earlier in the parser dev process
+// - can reveal important changes to files that need to be taken into account,
+//   like the changes in icon .mat files to support SDF files.
 
 const NumberTupleSchema: JSONSchemaType<[number, number]> = {
   type: 'array',
@@ -54,6 +56,326 @@ const StringArraySchema: JSONSchemaType<string[]> = {
 const LocaleTokenSchema: JSONSchemaType<string> = {
   type: 'string',
   pattern: '^@@.+@@$',
+};
+const TokenStringSchema: JSONSchemaType<string> = {
+  type: 'string',
+  pattern: '^[0-9a-z_]{1,12}$',
+};
+
+export interface RouteSii {
+  routeData: Record<
+    string,
+    {
+      fromCity: string;
+      toCity: string;
+    }
+  >;
+}
+export const RouteSiiSchema: JSONSchemaType<RouteSii> = {
+  type: 'object',
+  properties: {
+    routeData: {
+      type: 'object',
+      patternProperties: {
+        '^\\.route_data\\.[a-z][a-z]{1,12}': {
+          type: 'object',
+          properties: {
+            fromCity: { type: 'string' },
+            toCity: { type: 'string' },
+          },
+          required: ['fromCity', 'toCity'],
+        },
+      },
+      required: [],
+      minProperties: 1,
+    },
+  },
+  required: ['routeData'],
+};
+
+export interface AchievementsSii {
+  achievementVisitCityData: Record<
+    string,
+    {
+      cities: string[];
+      achievementName: string;
+    }
+  >;
+  achievementDelivery: Record<
+    string,
+    {
+      // e.g., `.ca_country.condition` and `.unload_diff.condition`.
+      // first token should:
+      // - be a known achievement id
+      // - exist in either:
+      //   - achievementDeliveryCompany
+      //     - in which case, mark the city + company name
+      //   - achievementDeliveryAny (e.g., unload_diff)
+      //     - in which case, don't mark a location because it's too much work
+      condition: string;
+      target: number;
+      achievementName: string;
+    }
+  >;
+  achievementDeliveryCompany: Record<
+    string,
+    {
+      companyName: string;
+      // if either `cityName` or `countryName` is present, then the other is
+      // absent. note that they can both be absent.
+      cityName?: string;
+      countryName?: string;
+    }
+  >;
+  //  achievementDeliveryPointCountry: Record<
+  //    string,
+  //    {
+  //      role: string;
+  //      countryName: string;
+  //    }
+  //  >;
+  achievementEachCompanyData: Record<
+    string,
+    {
+      // only one of `targets` or `sources` are expected to be present
+      targets?: string[];
+      sources?: string[];
+      achievementName: string;
+    }
+  >;
+  achievementTriggerData: Record<
+    string,
+    {
+      triggerParam: string;
+      target: number;
+      achievementName: string;
+    }
+  >;
+  achievementOversizeRoutesData: Record<
+    string,
+    {
+      achievementName: string;
+    }
+  >;
+  achievementDeliverCargoData: Record<
+    string,
+    {
+      targets: string[];
+      achievementName: string;
+    }
+  >;
+  achievementFerryData: Record<
+    string,
+    {
+      endpointA: string;
+      endpointB: string;
+      achievementName: string;
+    }
+  >;
+  achievementEachDeliveryPoint: Record<
+    string,
+    {
+      // grab second tokens of strings in both arrays; the resulting set is a
+      // set of city tokens that can be marked, e.g.:
+      //
+      //    sources: [ ".bw_pris_bije.bijelo_polje" ],
+      //    targets: [ ".bw_pris_bije.pristina" ]
+      //
+      // and:
+      //
+      //    sources: [
+      //      ".id_snake_riv.kennewick.lewiston.source",
+      //      ".id_snake_riv.boise.twin_falls.source",
+      //      ".id_snake_riv.twin_falls.pocatello.source",
+      //      ".id_snake_riv.pocatello.idaho_falls.source"
+      //    ],
+      //    targets: [
+      //      ".id_snake_riv.kennewick.lewiston.target",
+      //      ".id_snake_riv.boise.twin_falls.target",
+      //      ".id_snake_riv.twin_falls.pocatello.target",
+      //      ".id_snake_riv.pocatello.idaho_falls.target"
+      //    ]
+
+      sources: string[];
+      targets: string[];
+      achievementName: string;
+    }
+  >;
+}
+export const AchievementsSiiSchema: JSONSchemaType<AchievementsSii> = {
+  type: 'object',
+  properties: {
+    achievementVisitCityData: {
+      type: 'object',
+      patternProperties: {
+        '^\\.achievement\\.[a-z][a-z]_visit_cit': {
+          type: 'object',
+          properties: {
+            cities: StringArraySchema,
+            achievementName: { type: 'string' },
+          },
+          required: ['cities', 'achievementName'],
+        },
+      },
+      required: [],
+      minProperties: 1,
+    },
+    achievementDelivery: {
+      type: 'object',
+      patternProperties: {
+        '^\\.achievement\\.[0-9a-z_]{1,12}': {
+          type: 'object',
+          properties: {
+            condition: {
+              type: 'string',
+              pattern: '^\\.[0-9a-z_]{1,12}\\.condition$',
+            },
+            target: { type: 'integer' },
+            achievementName: { type: 'string' },
+          },
+          required: ['condition', 'achievementName'],
+        },
+      },
+      required: [],
+      minProperties: 1,
+    },
+    achievementDeliveryCompany: {
+      type: 'object',
+      patternProperties: {
+        '^\\.achievement\\.[0-9a-z_]{1,12}': {
+          type: 'object',
+          properties: {
+            companyName: TokenStringSchema,
+            cityName: { ...TokenStringSchema, nullable: true },
+            countryName: { ...TokenStringSchema, nullable: true },
+          },
+          required: ['companyName'],
+        },
+      },
+      required: [],
+      minProperties: 1,
+    },
+    //    achievementDeliveryPointCountry: {
+    //      type: 'object',
+    //      patternProperties: {
+    //        '^\\.achievement\\.[0-9a-z_]{1,12}': {
+    //          type: 'object',
+    //          properties: {
+    //            role: { type: 'string' },
+    //            countryName: TokenStringSchema,
+    //          },
+    //          required: ['role', 'countryName'],
+    //        },
+    //      },
+    //      required: [],
+    //      minProperties: 1,
+    //    },
+    achievementEachCompanyData: {
+      type: 'object',
+      patternProperties: {
+        '^\\.achievement\\.[0-9a-z_]{1,12}': {
+          type: 'object',
+          properties: {
+            targets: { ...StringArraySchema, nullable: true },
+            sources: { ...StringArraySchema, nullable: true },
+            achievementName: { type: 'string' },
+          },
+          required: ['achievementName'],
+        },
+      },
+      required: [],
+      minProperties: 1,
+    },
+    achievementTriggerData: {
+      type: 'object',
+      patternProperties: {
+        '^\\.achievement\\.[0-9a-z_]{1,12}': {
+          type: 'object',
+          properties: {
+            triggerParam: { type: 'string' },
+            target: { type: 'integer' },
+            achievementName: { type: 'string' },
+          },
+          required: ['triggerParam', 'target', 'achievementName'],
+        },
+      },
+      required: [],
+      minProperties: 1,
+    },
+    achievementOversizeRoutesData: {
+      type: 'object',
+      patternProperties: {
+        '^\\.achievement\\.[0-9a-z_]{1,12}': {
+          type: 'object',
+          properties: {
+            achievementName: { type: 'string' },
+          },
+          required: ['achievementName'],
+        },
+      },
+      required: [],
+      minProperties: 1,
+      maxProperties: 1,
+    },
+    achievementDeliverCargoData: {
+      type: 'object',
+      patternProperties: {
+        '^\\.achievement\\.[0-9a-z_]{1,12}': {
+          type: 'object',
+          properties: {
+            targets: StringArraySchema,
+            achievementName: { type: 'string' },
+          },
+          required: ['targets', 'achievementName'],
+        },
+      },
+      required: [],
+      minProperties: 1,
+    },
+    achievementFerryData: {
+      type: 'object',
+      patternProperties: {
+        '^\\.achievement\\.[0-9a-z_]{1,12}': {
+          type: 'object',
+          properties: {
+            endpointA: TokenStringSchema,
+            endpointB: TokenStringSchema,
+            achievementName: { type: 'string' },
+          },
+          required: ['endpointA', 'endpointB', 'achievementName'],
+        },
+      },
+      required: [],
+      minProperties: 1,
+    },
+    achievementEachDeliveryPoint: {
+      type: 'object',
+      patternProperties: {
+        '^\\.achievement\\.[0-9a-z_]{1,12}': {
+          type: 'object',
+          properties: {
+            sources: StringArraySchema,
+            targets: StringArraySchema,
+            achievementName: { type: 'string' },
+          },
+          required: ['sources', 'targets', 'achievementName'],
+        },
+      },
+      required: [],
+      minProperties: 1,
+    },
+  },
+  required: [
+    'achievementVisitCityData',
+    'achievementDelivery',
+    'achievementDeliveryCompany',
+    // 'achievementDeliveryPointCountry',
+    'achievementEachCompanyData',
+    'achievementTriggerData',
+    'achievementOversizeRoutesData',
+    'achievementDeliverCargoData',
+    'achievementFerryData',
+  ],
 };
 
 /** Only one of `effect` or `material` are expected to be present. */
