@@ -144,6 +144,53 @@ type UnlabeledPoi = BasePoi &
 
 export type Poi = LabeledPoi | UnlabeledPoi;
 
+export type Achievement = Readonly<
+  | {
+      type: 'visitCityData';
+      cities: readonly string[];
+    }
+  | {
+      type: 'delivery';
+      // note: only deliveries to companies are supported.
+      companies: readonly Readonly<{
+        company: string;
+        locationType: 'city' | 'country';
+        locationToken: string;
+      }>[];
+    }
+  | {
+      type: 'eachCompanyData' | 'deliverCargoData';
+      role: 'source' | 'target';
+      companies: readonly Readonly<{
+        company: string;
+        city: string;
+      }>[];
+    }
+  | {
+      type: 'triggerData';
+      param: string;
+      count: number;
+    }
+  | {
+      type: 'ferryData';
+      endpointA: string;
+      endpointB: string;
+    }
+  | {
+      type: 'eachDeliveryPoint';
+      sources: string[]; // e.g., .id_snake_riv.kennewick.lewiston.source
+      targets: string[];
+    }
+  | {
+      type: 'oversizeRoutesData';
+    }
+>;
+
+export interface Route {
+  fromCity: string;
+  toCity: string;
+}
+
 export type BaseItem = Readonly<{
   uid: bigint;
   type: ItemType;
@@ -220,6 +267,16 @@ export type Curve = BaseItem &
     endNodeUid: bigint;
   }>;
 
+export type TrajectoryItem = BaseItem &
+  Readonly<{
+    type: ItemType.TrajectoryItem;
+    nodeUids: readonly bigint[];
+    checkpoints: readonly Readonly<{
+      route: string;
+      checkpoint: string;
+    }>[];
+  }>;
+
 export type FerryItem = BaseItem &
   Readonly<{
     type: ItemType.Ferry;
@@ -241,16 +298,19 @@ export type CompanyItem = BaseItem &
 export type Cutscene = BaseItem &
   Readonly<{
     type: ItemType.Cutscene;
+    dlcGuard: number;
     flags: number;
     tags: readonly string[];
     nodeUid: bigint;
+    actionStringParams: readonly string[];
   }>;
 
 export type Trigger = BaseItem &
   Readonly<{
     type: ItemType.Trigger;
     dlcGuard: number;
-    actionTokens: readonly string[];
+    // [action token, params] tuples
+    actions: [string, readonly string[]][];
     nodeUids: readonly bigint[];
   }>;
 
@@ -283,7 +343,8 @@ export type Item =
   | Model
   | Terrain
   | Building
-  | Curve;
+  | Curve
+  | TrajectoryItem;
 
 export type RoadLook = Readonly<{
   lanesLeft: readonly string[];
@@ -391,12 +452,17 @@ export interface MapData {
   mapAreas: MapArea[];
   pois: Poi[];
   dividers: (Building | Curve)[];
+  trajectories: TrajectoryItem[];
+  triggers: Trigger[];
+  cutscenes: Cutscene[];
   countries: Country[];
   cities: City[];
   companyDefs: Company[];
   roadLooks: WithToken<RoadLook>[];
   prefabDescriptions: WithToken<PrefabDescription>[];
   modelDescriptions: WithToken<ModelDescription>[];
+  achievements: WithToken<Achievement>[];
+  routes: WithToken<Route>[];
 }
 
 // GeoJSON
@@ -445,6 +511,11 @@ export type ContourFeature = GeoJSON.Feature<
   { elevation: number }
 >;
 
+export type AchievementFeature = GeoJSON.Feature<
+  GeoJSON.Polygon | GeoJSON.Point,
+  { name: string; dlcGuard: number }
+>;
+
 export type AtsMapGeoJsonFeature =
   | MapAreaFeature
   | PrefabFeature
@@ -455,6 +526,7 @@ export type AtsMapGeoJsonFeature =
   | PoiFeature
   | FootprintFeature
   | ContourFeature
+  | AchievementFeature
   | DebugFeature;
 
 export type RoadType =

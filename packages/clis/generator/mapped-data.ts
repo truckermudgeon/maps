@@ -30,7 +30,13 @@ import process from 'process';
 import { logger } from './logger';
 import { readArrayFile } from './read-array-file';
 
-const MapDataKeys: Record<keyof MapData, void> = {
+const MapDataKeys: Record<
+  Exclude<
+    keyof MapData,
+    'trajectories' | 'triggers' | 'cutscenes' | 'achievements' | 'routes'
+  >,
+  void
+> = {
   cities: undefined,
   companies: undefined,
   companyDefs: undefined,
@@ -57,7 +63,13 @@ export type MappedData = Omit<
   {
     [K in keyof MapData]: Map<string, MapData[K][0]>;
   },
-  'pois' | 'elevation'
+  | 'pois'
+  | 'elevation'
+  | 'trajectories'
+  | 'triggers'
+  | 'cutscenes'
+  | 'achievements'
+  | 'routes'
 > & {
   pois: MapData['pois'];
   elevation: MapData['elevation'];
