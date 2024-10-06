@@ -622,6 +622,8 @@ function processRoadLookJson(obj: RoadLookSii): Map<string, RoadLook> {
         lanesRight = [],
         laneOffsetsLeft = [],
         laneOffsetsRight = [],
+        shoulderSpaceLeft,
+        shoulderSpaceRight,
       } = o;
       let offset = o.roadOffset;
       let laneOffset = undefined;
@@ -662,6 +664,8 @@ function processRoadLookJson(obj: RoadLookSii): Map<string, RoadLook> {
           lanesRight,
           offset,
           laneOffset,
+          shoulderSpaceLeft,
+          shoulderSpaceRight,
         },
       ];
     }),

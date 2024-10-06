@@ -1607,6 +1607,8 @@ function roadLookToProperties(
     leftLanes: look.lanesLeft.length,
     rightLanes: look.lanesRight.length,
     laneOffset: look.laneOffset,
+    shoulderSpaceLeft: look.shoulderSpaceLeft,
+    shoulderSpaceRight: look.shoulderSpaceRight,
     hidden,
   };
 }

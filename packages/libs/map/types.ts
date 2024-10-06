@@ -290,6 +290,8 @@ export type RoadLook = Readonly<{
   lanesRight: readonly string[];
   offset?: number;
   laneOffset?: number;
+  shoulderSpaceLeft?: number;
+  shoulderSpaceRight?: number;
 }>;
 
 interface BaseMapPoint {
@@ -472,6 +474,8 @@ export interface RoadLookProperties {
   rightLanes: number;
   hidden: boolean;
   laneOffset?: number;
+  shoulderSpaceLeft?: number;
+  shoulderSpaceRight?: number;
 }
 
 export interface FerryProperties {

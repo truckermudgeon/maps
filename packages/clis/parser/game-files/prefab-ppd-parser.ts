@@ -265,6 +265,7 @@ const roadSizeToLanes = {
   },
 };
 
+// values from https://github.com/SCSSoftware/BlenderTools/blob/34dff5239e0f46512af0400a84f6effa5933d4ab/addon/io_scs_tools/consts.py#L395-L402
 const roadOffsetToOffset = {
   0: 0,
   1: 1,
