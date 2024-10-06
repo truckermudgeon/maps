@@ -17,7 +17,8 @@ import {
   type StateCode,
 } from '@truckermudgeon/ui';
 import type { GeoJSON } from 'geojson';
-import { useEffect, useState } from 'react';
+import type { ReactElement } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 
 export interface CityOption {
   label: string;
@@ -43,6 +44,7 @@ type CityFC = GeoJSON.FeatureCollection<
 >;
 
 type SearchBarProps = {
+  selectDecorator: ReactElement;
   onSelect: (option: CityOption) => void;
 } & (
   | {
@@ -55,7 +57,7 @@ type SearchBarProps = {
 );
 
 export const CitySearchBar = (props: SearchBarProps) => {
-  const { map, onSelect } = props;
+  const { map, selectDecorator, onSelect } = props;
   const [sortedCities, setSortedCities] = useState<CityOption[]>([]);
   useEffect(() => {
     Promise.all([
@@ -91,20 +93,25 @@ export const CitySearchBar = (props: SearchBarProps) => {
       // Hacky way to clear the current selection when `map` prop changes.
       key={map}
       onChange={(_, v) => v && onSelect(v)}
-      placeholder={'Fly to...'}
+      placeholder={'Search cities...'}
       options={options}
       filterOptions={filterOptions}
       groupBy={option => option.state}
       blurOnSelect
       autoComplete
       renderGroup={formatGroupLabel}
+      sx={{
+        paddingInlineStart: 0,
+        flexBasis: '28em',
+      }}
+      startDecorator={selectDecorator}
     />
   );
 };
 
 function formatGroupLabel(params: AutocompleteRenderGroupParams) {
   return (
-    <>
+    <Fragment key={params.key}>
       <Typography
         m={1}
         level={'body-xs'}
@@ -115,7 +122,7 @@ function formatGroupLabel(params: AutocompleteRenderGroupParams) {
       </Typography>
       <List>{params.children}</List>
       <ListDivider />
-    </>
+    </Fragment>
   );
 }
 
