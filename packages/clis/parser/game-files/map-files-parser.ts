@@ -9,6 +9,7 @@ import {
 } from '@truckermudgeon/map/constants';
 import { toMapPosition } from '@truckermudgeon/map/prefabs';
 import type {
+  Achievement,
   Building,
   City,
   CityArea,
@@ -32,7 +33,9 @@ import type {
   PrefabDescription,
   Road,
   RoadLook,
+  Route,
   Terrain,
+  TrajectoryItem,
   Trigger,
 } from '@truckermudgeon/map/types';
 import type { JSONSchemaType } from 'ajv';
@@ -48,6 +51,7 @@ import { ScsArchive } from './scs-archive';
 import { parseSector } from './sector-parser';
 import { parseSii } from './sii-parser';
 import type {
+  AchievementsSii,
   CitySii,
   CompanySii,
   CountrySii,
@@ -55,8 +59,10 @@ import type {
   ModelSii,
   PrefabSii,
   RoadLookSii,
+  RouteSii,
 } from './sii-schemas';
 import {
+  AchievementsSiiSchema,
   CargoSiiSchema,
   CityCompanySiiSchema,
   CitySiiSchema,
@@ -69,6 +75,7 @@ import {
   ModelSiiSchema,
   PrefabSiiSchema,
   RoadLookSiiSchema,
+  RouteSiiSchema,
   ViewpointsSiiSchema,
   ajv,
 } from './sii-schemas';
@@ -86,6 +93,7 @@ export function parseMapFiles(
     'base.scs',
     'base_map.scs',
     'base_share.scs',
+    'core.scs',
     'def.scs',
     'locale.scs',
   ]);
@@ -266,7 +274,26 @@ function parseDefFiles(entries: Entries) {
   }
   logger.info('parsed', viewpoints.size, 'viewpoints');
 
+  const achievements = processAchievementsJson(
+    convertSiiToJson('def/achievements.sii', entries, AchievementsSiiSchema),
+  );
+  logger.info('parsed', achievements.size, 'achievements');
+
+  let routes: Map<string, Route>;
+  if (entries.files.get('def/route.sii')) {
+    routes = processRouteJson(
+      convertSiiToJson('def/route.sii', entries, RouteSiiSchema),
+    );
+  } else {
+    // if `def/route.sii` doesn't exist, then the installation doesn't have the
+    // Special Transport DLC.
+    routes = new Map();
+  }
+  logger.info('parsed', routes.size, 'special transport routes');
+
   return {
+    achievements,
+    routes,
     cities,
     countries,
     companies,
@@ -285,7 +312,10 @@ function convertSiiToJson<T>(
   schema: JSONSchemaType<T>,
 ): T {
   logger.debug('converting', siiPath, 'to json object');
-  const siiFile = Preconditions.checkExists(entries.files.get(siiPath));
+  const siiFile = Preconditions.checkExists(
+    entries.files.get(siiPath),
+    `${siiPath} does not exist`,
+  );
   const buffer = siiFile.read();
 
   // Some .sii files (like locale files) may be 3nk-encrypted.
@@ -674,6 +704,147 @@ function processRoadLookJson(obj: RoadLookSii): Map<string, RoadLook> {
   );
 }
 
+function processAchievementsJson(
+  obj: AchievementsSii,
+): Map<string, Achievement> {
+  const achievements = new Map<string, Achievement>();
+
+  //
+  // achievementVisitCityData
+  //
+  for (const a of Object.values(obj.achievementVisitCityData)) {
+    achievements.set(a.achievementName, {
+      type: 'visitCityData',
+      cities: a.cities,
+    });
+  }
+
+  //
+  // achievementDeliveryCompany
+  //
+  const deliveryCompanyKeys = Object.keys(obj.achievementDeliveryCompany);
+  for (const a of Object.values(obj.achievementDelivery)) {
+    // e.g., ".nv_quarries", for the condition ".nv_quarries.condition"
+    const condition = a.condition.split('.')[1];
+    const keys = deliveryCompanyKeys.filter(c => c.startsWith(`.${condition}`));
+    const companies: {
+      company: string;
+      locationType: 'city' | 'country';
+      locationToken: string;
+    }[] = [];
+    if (!keys.length) {
+      // if there's no company info, then the achievement is probably something
+      // cargo-related, like tx_cotton.
+      logger.warn('ignoring delivery achievement', a.achievementName);
+      continue;
+    }
+
+    for (const k of keys) {
+      const dc = assertExists(obj.achievementDeliveryCompany[k]);
+      if (dc.cityName == null && dc.countryName == null) {
+        continue;
+      }
+      assert(!!dc.cityName !== !!dc.countryName);
+      companies.push({
+        company: dc.companyName,
+        locationType: dc.cityName ? 'city' : 'country',
+        locationToken: assertExists(dc.cityName ?? dc.countryName),
+      });
+    }
+
+    achievements.set(a.achievementName, {
+      type: 'delivery',
+      companies,
+    });
+  }
+
+  //
+  // achievementEachCompanyData
+  //
+  for (const a of Object.values(obj.achievementEachCompanyData)) {
+    const { sources, targets } = a;
+    assert(!!sources !== !!targets);
+    const companies = (sources ?? targets)!.map(s => {
+      const [company, city] = s.split('.');
+      return { company, city };
+    });
+    achievements.set(a.achievementName, {
+      type: 'eachCompanyData',
+      role: targets ? 'target' : 'source',
+      companies,
+    });
+  }
+
+  //
+  // achievementTriggerData
+  //
+  for (const a of Object.values(obj.achievementTriggerData)) {
+    achievements.set(a.achievementName, {
+      type: 'triggerData',
+      param: a.triggerParam,
+      count: a.target,
+    });
+  }
+
+  //
+  // achievementDeliverCargoData
+  //
+  for (const a of Object.values(obj.achievementDeliverCargoData)) {
+    const { targets } = a;
+    const companies = targets.map(s => {
+      const [company, city] = s.split('.');
+      return { company, city };
+    });
+    achievements.set(a.achievementName, {
+      type: 'deliverCargoData',
+      role: 'target',
+      companies,
+    });
+  }
+
+  //
+  // achievementFerryData
+  //
+  for (const a of Object.values(obj.achievementFerryData)) {
+    achievements.set(a.achievementName, {
+      type: 'ferryData',
+      endpointA: a.endpointA,
+      endpointB: a.endpointB,
+    });
+  }
+
+  //
+  // achievementEachDeliveryPoint
+  //
+  for (const a of Object.values(obj.achievementEachDeliveryPoint)) {
+    achievements.set(a.achievementName, {
+      type: 'eachDeliveryPoint',
+      sources: a.sources,
+      targets: a.targets,
+    });
+  }
+
+  //
+  // achievementOversizeRoutesData
+  //
+  for (const a of Object.values(obj.achievementOversizeRoutesData)) {
+    achievements.set(a.achievementName, {
+      type: 'oversizeRoutesData',
+    });
+  }
+
+  return achievements;
+}
+
+function processRouteJson(obj: RouteSii): Map<string, Route> {
+  const routes = new Map<string, Route>();
+  for (const [key, route] of Object.entries(obj.routeData)) {
+    const routeKey = assertExists(key.split('.')[1]);
+    routes.set(routeKey, route);
+  }
+  return routes;
+}
+
 function parseSectorFiles(entries: Entries) {
   const mapDir = Preconditions.checkExists(entries.directories.get('map'));
   const mbds = mapDir.files.filter(f => f.endsWith('.mbd'));
@@ -914,6 +1085,8 @@ function postProcess(
   const models: Model[] = [];
   const prefabsByUid = new Map<bigint, Prefab>();
   const mapAreas: MapArea[] = [];
+  const cutscenes: Cutscene[] = [];
+  const triggers: Trigger[] = [];
   const ferryItems = new Map<string, FerryItem>();
   const poifulItems: (
     | Prefab
@@ -923,6 +1096,7 @@ function postProcess(
     | Cutscene
     | Trigger
   )[] = [];
+  const trajectories: TrajectoryItem[] = [];
 
   logger.log("checking items' references...");
   const start = Date.now();
@@ -990,11 +1164,13 @@ function postProcess(
         checkReference(item.nodeUid, nodesByUid, 'nodeUid', item);
         referencedNodeUids.add(item.nodeUid);
         poifulItems.push(item);
+        cutscenes.push(item);
         break;
       case ItemType.Trigger:
         checkReference(item.nodeUids, nodesByUid, 'nodeUids', item);
         item.nodeUids.forEach(uid => referencedNodeUids.add(uid));
         poifulItems.push(item);
+        triggers.push(item);
         break;
       case ItemType.Model:
         // sector parsing returns _all_ models, but
@@ -1016,6 +1192,11 @@ function postProcess(
         // elevations and aren't returned in their parsed forms.
         elevationNodeUids.add(item.startNodeUid);
         elevationNodeUids.add(item.endNodeUid);
+        break;
+      case ItemType.TrajectoryItem:
+        checkReference(item.nodeUids, nodesByUid, 'nodeUids', item);
+        item.nodeUids.forEach(uid => referencedNodeUids.add(uid));
+        trajectories.push(item);
         break;
       default:
         throw new UnreachableError(item);
@@ -1299,7 +1480,7 @@ function postProcess(
       case ItemType.Trigger: {
         const { x, y, sectorX, sectorY } = item;
         const pos = { x, y, sectorX, sectorY };
-        if (item.actionTokens.includes('hud_parking')) {
+        if (item.actions.find(([key]) => key === 'hud_parking')) {
           pois.push({
             ...pos,
             type: 'facility',
@@ -1503,12 +1684,17 @@ function postProcess(
       mapAreas,
       pois,
       dividers,
+      triggers,
+      trajectories,
+      cutscenes,
       countries: valuesWithTokens(defData.countries).map(withLocalizedName),
       cities: valuesWithTokens(cities).map(withLocalizedName),
       companyDefs: valuesWithTokens(defData.companies),
       roadLooks: valuesWithTokens(defData.roadLooks),
       prefabDescriptions: valuesWithTokens(defData.prefabs),
       modelDescriptions: valuesWithTokens(defData.models),
+      achievements: valuesWithTokens(defData.achievements),
+      routes: valuesWithTokens(defData.routes),
     },
     icons,
   };
