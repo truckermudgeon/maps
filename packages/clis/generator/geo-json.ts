@@ -921,11 +921,13 @@ export function convertToAchievementsGeoJson(
     cityToken: string,
     companyToken: string,
   ): Point | undefined => {
-    const company = [...companies.values()].find(
-      c =>
-        (c as WithToken<CompanyItem>).token === companyToken &&
-        c.cityToken === cityToken,
-    );
+    const company = companies
+      .values()
+      .find(
+        c =>
+          (c as WithToken<CompanyItem>).token === companyToken &&
+          c.cityToken === cityToken,
+      );
     if (!company) {
       return;
     }
