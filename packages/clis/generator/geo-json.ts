@@ -152,16 +152,14 @@ export function convertToGeoJson(
     .y(e => e.y);
   let lutSize = 0;
   const prefabNodeUids = new Set<bigint>(
-    [...prefabs.values()].flatMap(p => {
+    prefabs.values().flatMap(p => {
       assert(p.nodeUids.every(uid => nodes.has(uid.toString())));
       return p.nodeUids;
     }),
   );
 
   logger.log('creating map areas...');
-  const mapAreaFeatures = [...mapAreas.values()].map(a =>
-    areaToFeature(a, nodes),
-  );
+  const mapAreaFeatures = mapAreas.values().map(a => areaToFeature(a, nodes));
 
   // TODO ferry lines shown are dependent on DLCs present.
   logger.log('creating ferry/train lines...');
@@ -537,9 +535,9 @@ export function convertToGeoJson(
   logger.log('creating cities...');
 
   const citiesByCountryIsoA2 = getCitiesByCountryIsoA2();
-  let rankedCities: CityWithScaleRank[];
+  let rankedCities: IteratorObject<CityWithScaleRank>;
   if (map === 'usa') {
-    rankedCities = [...cities.values()].map(c => {
+    rankedCities = cities.values().map(c => {
       const toKey = (city: string, state: string) =>
         (city + state).toLowerCase().replace(/[^A-Za-z]/g, '');
       const key = toKey(c.name, c.countryToken);
@@ -571,7 +569,7 @@ export function convertToGeoJson(
         .replace(/\p{Diacritic}/gu, '')
         .toLowerCase();
 
-    rankedCities = [...cities.values()].map(c => {
+    rankedCities = cities.values().map(c => {
       // lowercasing because of Hungary.
       const country = assertExists(countries.get(c.countryToken.toLowerCase()));
       const isoA2 = ets2IsoA2.get(country.code) ?? country.code;
@@ -610,7 +608,7 @@ export function convertToGeoJson(
   const cityFeatures = rankedCities.map(cityToFeature);
 
   logger.log('creating states/countries...');
-  const countryFeatures = [...countries.values()].map(countryToFeature);
+  const countryFeatures = countries.values().map(countryToFeature);
 
   logger.log('creating pois...');
   const poiFeatures = pois.map(p => poiToFeature(p));

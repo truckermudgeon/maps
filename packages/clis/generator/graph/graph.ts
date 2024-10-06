@@ -313,10 +313,9 @@ export function generateGraph(tsMapData: MappedData) {
   logger.info(
     graph.size,
     'nodes,',
-    [...graph.values()].reduce(
-      (acc, ns) => acc + ns.forward.length + ns.backward.length,
-      0,
-    ),
+    graph
+      .values()
+      .reduce((acc, ns) => acc + ns.forward.length + ns.backward.length, 0),
     'edges',
   );
 
