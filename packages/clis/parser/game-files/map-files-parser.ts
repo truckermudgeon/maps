@@ -618,6 +618,7 @@ function processRoadLookJson(obj: RoadLookSii): Map<string, RoadLook> {
   return new Map<string, RoadLook>(
     Object.entries(roadLook).map(([key, o]) => {
       const {
+        name,
         lanesLeft = [],
         lanesRight = [],
         laneOffsetsLeft = [],
@@ -660,6 +661,7 @@ function processRoadLookJson(obj: RoadLookSii): Map<string, RoadLook> {
         key.split('.')[1],
         {
           // TODO add other fields from RoadLookSii; might let us better center road linestrings.
+          name,
           lanesLeft,
           lanesRight,
           offset,

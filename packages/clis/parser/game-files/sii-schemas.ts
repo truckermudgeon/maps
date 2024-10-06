@@ -459,6 +459,7 @@ export interface RoadLookSii {
   roadLook?: Record<
     string,
     {
+      name: string;
       lanesLeft?: string[];
       lanesRight?: string[];
       roadSizeLeft?: number;
@@ -484,6 +485,7 @@ export const RoadLookSiiSchema: JSONSchemaType<RoadLookSii> = {
         '^road\\..*$': {
           type: 'object',
           properties: {
+            name: { type: 'string' },
             lanesLeft: { ...StringArraySchema, nullable: true },
             lanesRight: { ...StringArraySchema, nullable: true },
             roadSizeLeft: { type: 'number', nullable: true },
@@ -504,6 +506,7 @@ export const RoadLookSiiSchema: JSONSchemaType<RoadLookSii> = {
               items: NumberTupleSchema,
             },
           },
+          required: ['name'],
         },
       },
       required: [],
