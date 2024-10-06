@@ -32,10 +32,18 @@ export function generateGraph(tsMapData: MappedData) {
   const { nodes, roads, prefabs, companies, prefabDescriptions, roadLooks } =
     tsMapData;
   const dlcGuardQuadTree = assertExists(
-    normalizeDlcGuards(roads, prefabs, tsMapData.mapAreas, tsMapData.pois, {
-      map: 'usa',
-      nodes,
-    }),
+    normalizeDlcGuards(
+      roads,
+      prefabs,
+      tsMapData.mapAreas,
+      tsMapData.triggers,
+      tsMapData.cutscenes,
+      tsMapData.pois,
+      {
+        map: 'usa',
+        nodes,
+      },
+    ),
   );
   const getDlcGuard = (node: Node): number =>
     dlcGuardQuadTree.find(node.x, node.y)?.dlcGuard ?? -1;
