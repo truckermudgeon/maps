@@ -8,11 +8,13 @@ import {
   type AtsDlcGuard,
 } from '@truckermudgeon/map/constants';
 import type {
+  Cutscene,
   MapArea,
   Node,
   Poi,
   Prefab,
   Road,
+  Trigger,
 } from '@truckermudgeon/map/types';
 import type { Quadtree } from 'd3-quadtree';
 import { quadtree } from 'd3-quadtree';
@@ -39,6 +41,8 @@ export function normalizeDlcGuards(
   roads: Map<string, Road>,
   prefabs: Map<string, Prefab>,
   mapAreas: Map<string, MapArea>,
+  triggers: Map<string, Trigger>,
+  cutscenes: Map<string, Cutscene>,
   pois: Poi[],
   context: {
     map: 'usa' | 'europe';
@@ -121,31 +125,26 @@ export function normalizeDlcGuards(
     return equivDlcGuard;
   };
 
+  const updateMap = <T extends { dlcGuard: number }>(
+    map: Map<string, T>,
+    getNodeUids: (t: T) => readonly bigint[],
+  ) => {
+    for (const [key, t] of map) {
+      const dlcGuard = normalizeDlcGuard(t.dlcGuard, getNodeUids(t));
+      if (dlcGuard != null) {
+        map.set(key, { ...t, dlcGuard });
+      }
+    }
+  };
+
   // Roads must be processed first, so that the QuadTree can be populated with
   // accurate-ish dlc guard values for use as fallbacks by other Items.
-  for (const [key, road] of roads) {
-    const dlcGuard = normalizeDlcGuard(road.dlcGuard, [
-      road.startNodeUid,
-      road.endNodeUid,
-    ]);
-    if (dlcGuard != null) {
-      roads.set(key, { ...road, dlcGuard });
-    }
-  }
+  updateMap(roads, road => [road.startNodeUid, road.endNodeUid]);
 
-  for (const [key, prefab] of prefabs) {
-    const dlcGuard = normalizeDlcGuard(prefab.dlcGuard, prefab.nodeUids);
-    if (dlcGuard != null) {
-      prefabs.set(key, { ...prefab, dlcGuard });
-    }
-  }
-
-  for (const [key, mapArea] of mapAreas) {
-    const dlcGuard = normalizeDlcGuard(mapArea.dlcGuard, mapArea.nodeUids);
-    if (dlcGuard != null) {
-      mapAreas.set(key, { ...mapArea, dlcGuard });
-    }
-  }
+  updateMap(prefabs, prefab => prefab.nodeUids);
+  updateMap(mapAreas, mapArea => mapArea.nodeUids);
+  updateMap(triggers, trigger => trigger.nodeUids);
+  updateMap(cutscenes, cutscene => [cutscene.nodeUid]);
 
   for (let i = 0; i < pois.length; i++) {
     const poi = pois[i];

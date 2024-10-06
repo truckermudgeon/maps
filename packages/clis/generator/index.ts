@@ -27,6 +27,7 @@ import url from 'url';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import {
+  convertToAchievementsGeoJson,
   convertToContoursGeoJson,
   convertToFootprintsGeoJson,
   convertToGeoJson,
@@ -302,6 +303,39 @@ function contoursCommandBuilder(yargs: yargs.Argv) {
     .parse();
 }
 
+function achievementsCommandBuilder(yargs: yargs.Argv) {
+  return yargs
+    .option('map', {
+      alias: 'm',
+      describe:
+        'Source map.\nSpecify multiple source maps with multiple -m arguments.',
+      choices: ['usa', 'europe'] as const,
+      default: ['usa'] as ('usa' | 'europe')[],
+      defaultDescription: 'usa',
+    })
+    .option('inputDir', {
+      alias: 'i',
+      describe: 'Path to dir containing achievements.json files',
+      type: 'string',
+      coerce: untildify,
+      demandOption: true,
+    })
+    .option('outputDir', {
+      alias: 'o',
+      describe: 'Path to dir output GeoJSON should be written to',
+      type: 'string',
+      coerce: untildify,
+      demandOption: true,
+    })
+    .option('dryRun', {
+      describe: "Don't write out any files.",
+      type: 'boolean',
+      default: false,
+    })
+    .check(maybeEnsureOutputDir)
+    .parse();
+}
+
 function citiesCommandBuilder(yargs: yargs.Argv) {
   return yargs
     .option('map', {
@@ -375,6 +409,12 @@ async function main() {
       'Generates contours.geojson from map-parser JSON files',
       contoursCommandBuilder,
       handleContoursCommand,
+    )
+    .command(
+      'achievements',
+      'Generates achievements.geojson from map-parser JSON files',
+      achievementsCommandBuilder,
+      handleAchievementsCommand,
     )
     .command(
       'spritesheet',
@@ -556,6 +596,32 @@ function handleContoursCommand(
       logger.log('deleting temporary GeoJSON files...');
       fs.rmSync(geoJsonPath);
     }
+  }
+
+  logger.success('done.');
+}
+
+function handleAchievementsCommand(
+  args: ReturnType<typeof achievementsCommandBuilder>,
+) {
+  for (const map of [args.map].flat()) {
+    // TODO read only the files necessary
+    const tsMapData = readMapData(args.inputDir, map, { includeHidden: false });
+    const geoJson = convertToAchievementsGeoJson(map, tsMapData);
+    if (args.dryRun) {
+      continue;
+    }
+
+    const gamePrefix = map === 'usa' ? 'ats' : 'ets2';
+    const geojsonFilename = `${gamePrefix}-achievements.geojson`;
+    const geoJsonPath = path.join(args.outputDir, geojsonFilename);
+    logger.log(
+      'writing',
+      geoJson.features.length,
+      'entries to',
+      geoJsonPath + '...',
+    );
+    writeGeojsonFile(geoJsonPath, geoJson);
   }
 
   logger.success('done.');

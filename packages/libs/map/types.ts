@@ -511,6 +511,11 @@ export type ContourFeature = GeoJSON.Feature<
   { elevation: number }
 >;
 
+export type AchievementFeature = GeoJSON.Feature<
+  GeoJSON.Polygon | GeoJSON.Point,
+  { name: string; dlcGuard: number }
+>;
+
 export type AtsMapGeoJsonFeature =
   | MapAreaFeature
   | PrefabFeature
@@ -521,6 +526,7 @@ export type AtsMapGeoJsonFeature =
   | PoiFeature
   | FootprintFeature
   | ContourFeature
+  | AchievementFeature
   | DebugFeature;
 
 export type RoadType =

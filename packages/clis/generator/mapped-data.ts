@@ -5,12 +5,14 @@ import {
   fromEts2CoordsToWgs84,
 } from '@truckermudgeon/map/projections';
 import type {
+  Achievement,
   Building,
   City,
   Company,
   CompanyItem,
   Country,
   Curve,
+  Cutscene,
   Ferry,
   MapArea,
   MapData,
@@ -22,6 +24,9 @@ import type {
   PrefabDescription,
   Road,
   RoadLook,
+  Route,
+  TrajectoryItem,
+  Trigger,
   WithToken,
 } from '@truckermudgeon/map/types';
 import fs from 'fs';
@@ -30,13 +35,8 @@ import process from 'process';
 import { logger } from './logger';
 import { readArrayFile } from './read-array-file';
 
-const MapDataKeys: Record<
-  Exclude<
-    keyof MapData,
-    'trajectories' | 'triggers' | 'cutscenes' | 'achievements' | 'routes'
-  >,
-  void
-> = {
+const MapDataKeys: Record<keyof MapData, void> = {
+  achievements: undefined,
   cities: undefined,
   companies: undefined,
   companyDefs: undefined,
@@ -53,6 +53,10 @@ const MapDataKeys: Record<
   prefabs: undefined,
   roadLooks: undefined,
   roads: undefined,
+  trajectories: undefined,
+  triggers: undefined,
+  cutscenes: undefined,
+  routes: undefined,
 };
 const mapJsonFiles = Object.freeze(Object.keys(MapDataKeys));
 
@@ -63,13 +67,7 @@ export type MappedData = Omit<
   {
     [K in keyof MapData]: Map<string, MapData[K][0]>;
   },
-  | 'pois'
-  | 'elevation'
-  | 'trajectories'
-  | 'triggers'
-  | 'cutscenes'
-  | 'achievements'
-  | 'routes'
+  'pois' | 'elevation'
 > & {
   pois: MapData['pois'];
   elevation: MapData['elevation'];
@@ -219,6 +217,16 @@ export function readMapData(
     },
   );
 
+  const achievements = readArrayFile<WithToken<Achievement>>(
+    toJsonFilePath('achievements.json'),
+  );
+  const trajectories = readArrayFile<TrajectoryItem>(
+    toJsonFilePath('trajectories.json'),
+  );
+  const cutscenes = readArrayFile<Cutscene>(toJsonFilePath('cutscenes.json'));
+  const triggers = readArrayFile<Trigger>(toJsonFilePath('triggers.json'));
+  const routes = readArrayFile<WithToken<Route>>(toJsonFilePath('routes.json'));
+
   const mapped = {
     nodes: nodesMap,
     roads: mapify(roads, r => String(r.uid)),
@@ -230,6 +238,11 @@ export function readMapData(
     mapAreas: mapify(mapAreas, a => String(a.uid)),
     countries: mapify(countries, c => c.token),
     cities: mapify(cities, c => c.token),
+    trajectories: mapify(trajectories, t => String(t.uid)),
+    cutscenes: mapify(cutscenes, c => String(c.uid)),
+    triggers: mapify(triggers, t => String(t.uid)),
+    achievements: mapify(achievements, a => a.token),
+    routes: mapify(routes, r => r.token),
     companyDefs: mapify(companyDefs, c => c.token),
     roadLooks: mapify(roadLooks, r => r.token),
     prefabDescriptions: mapify(prefabDescriptions, p => p.token),
