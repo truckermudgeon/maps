@@ -331,6 +331,7 @@ export interface PrefabDescription {
   nodes: {
     x: number;
     y: number;
+    z: number;
     rotation: number;
     // indices into `navCurves`
     inputLanes: number[];
@@ -353,8 +354,8 @@ export interface PrefabDescription {
     // Index of a navigational node which should be used if navigation starts from that AI curve or 0xffffffff if there is none.
     // Basically it is a reverse mapping to the curve_indices from nodes.
     navNodeIndex: number;
-    start: { x: number; y: number; rotation: number };
-    end: { x: number; y: number; rotation: number };
+    start: { x: number; y: number; z: number; rotation: number };
+    end: { x: number; y: number; z: number; rotation: number };
     nextLines: number[];
     prevLines: number[];
   }[];

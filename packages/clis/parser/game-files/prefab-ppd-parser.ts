@@ -313,6 +313,7 @@ export function parsePrefabPpd(buffer: Buffer): PrefabDescription {
       return {
         x: n.pos[0],
         y: n.pos[2],
+        z: n.pos[1],
         rotation,
         inputLanes: n.inputLanes.filter(v => v !== -1),
         outputLanes: n.outputLanes.filter(v => v !== -1),
@@ -332,6 +333,7 @@ export function parsePrefabPpd(buffer: Buffer): PrefabDescription {
         const baseProperties = {
           x: pos[0],
           y: pos[2],
+          z: pos[1],
           neighbors: rp.neighbors.slice(0, neighborCount),
         };
 
@@ -411,8 +413,8 @@ export function parsePrefabPpd(buffer: Buffer): PrefabDescription {
         endPos,
         endRot,
       } = rc;
-      const start = getXYR(startPos, startRot);
-      const end = getXYR(endPos, endRot);
+      const start = getXYZR(startPos, startRot);
+      const end = getXYZR(endPos, endRot);
       return {
         navNodeIndex,
         start,
@@ -442,16 +444,16 @@ export function parsePrefabPpd(buffer: Buffer): PrefabDescription {
   };
 }
 
-function getXYR(
+function getXYZR(
   pos: [number, number, number],
   rot: [number, number, number, number],
 ) {
-  const [x, , y] = pos;
+  const [x, z, y] = pos;
   // TODO probably not the right way to do quat => euler.
   const [rx, , rz] = rot;
   // theta starts normally, but increases CW instead of CCW since game's coord system
   // has Y growing downwards.
   let rotation = Math.PI - Math.atan2(rz, rx);
   rotation = (rotation % Math.PI) * 2 - Math.PI / 2;
-  return { x, y, rotation };
+  return { x, y, z, rotation };
 }
