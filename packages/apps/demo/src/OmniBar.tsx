@@ -4,10 +4,10 @@ import { toRadians } from '@truckermudgeon/base/geom';
 import type { StateCode } from '@truckermudgeon/ui';
 import React, { useEffect, useRef, useState } from 'react';
 import { useControl, useMap } from 'react-map-gl/maplibre';
-import type { GameOption } from './MapSelect';
-import { MapSelect, europeGameOption, usaGameOption } from './MapSelect';
-import type { CityOption } from './SearchBar';
-import { SearchBar } from './SearchBar';
+import type { CityOption } from './CitySearchBar';
+import { CitySearchBar } from './CitySearchBar';
+import type { GameOption } from './SearchSelect';
+import { SearchSelect, europeGameOption, usaGameOption } from './SearchSelect';
 
 export const mapCenters = {
   usa: {
@@ -20,10 +20,10 @@ export const mapCenters = {
   },
 };
 
-interface MapSelectAndSearchProps {
+interface OmniBarSearchProps {
   visibleStates: Set<StateCode>;
 }
-export const MapSelectAndSearch = (props: MapSelectAndSearchProps) => {
+export const OmniBar = (props: OmniBarSearchProps) => {
   const ref = useRef<HTMLDivElement>(null);
   useControl(
     () => ({
@@ -118,8 +118,8 @@ export const MapSelectAndSearch = (props: MapSelectAndSearchProps) => {
       style={{ width: 'calc(100svw - 64px)' }}
     >
       <Stack direction={'row'} gap={1}>
-        <MapSelect map={gameMap.value} onSelect={onMapSelect} />
-        <SearchBar
+        <SearchSelect map={gameMap.value} onSelect={onMapSelect} />
+        <CitySearchBar
           map={gameMap.value}
           onSelect={onSearchBarSelect}
           visibleStates={props.visibleStates}

@@ -54,7 +54,7 @@ type SearchBarProps = {
     }
 );
 
-export const SearchBar = (props: SearchBarProps) => {
+export const CitySearchBar = (props: SearchBarProps) => {
   const { map, onSelect } = props;
   const [sortedCities, setSortedCities] = useState<CityOption[]>([]);
   useEffect(() => {
