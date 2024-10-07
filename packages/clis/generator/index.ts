@@ -29,9 +29,9 @@ import { hideBin } from 'yargs/helpers';
 import {
   convertToAchievementsGeoJson,
   convertToContoursGeoJson,
-  convertToFootprintsGeoJson,
   convertToGeoJson,
 } from './geo-json';
+import { convertToFootprintsGeoJson } from './geo-json/footprints';
 import {
   createIsoA2Map,
   getCitiesByCountryIsoA2,

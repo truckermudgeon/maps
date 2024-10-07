@@ -1,14 +1,7 @@
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { areSetsEqual } from '@truckermudgeon/base/equals';
 import type { Position } from '@truckermudgeon/base/geom';
-import {
-  add,
-  distance,
-  midPoint,
-  nonUniformScale,
-  rotate,
-  toSplinePoints,
-} from '@truckermudgeon/base/geom';
+import { distance, midPoint, toSplinePoints } from '@truckermudgeon/base/geom';
 import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
 import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
 import type { AtsCountryId } from '@truckermudgeon/map/constants';
@@ -36,12 +29,8 @@ import type {
   DebugFeature,
   Ferry,
   FerryFeature,
-  FootprintFeature,
-  FootprintProperties,
   MapArea,
   MapAreaFeature,
-  Model,
-  ModelDescription,
   Node,
   Poi,
   PoiFeature,
@@ -657,58 +646,6 @@ function withDlcGuard<T extends CityFeature | PoiFeature>(
 
   (feature.properties as { dlcGuard: number }).dlcGuard = entry.dlcGuard;
   return feature;
-}
-
-export function convertToFootprintsGeoJson({
-  map,
-  nodes,
-  models,
-  modelDescriptions,
-}: {
-  map: 'usa' | 'europe';
-  nodes: Node[];
-  models: Model[];
-  modelDescriptions: (ModelDescription & {
-    token: string;
-  })[];
-}): GeoJSON.FeatureCollection<GeoJSON.Polygon, FootprintProperties> {
-  const nodesByUid = new Map(nodes.map(n => [n.uid, n]));
-  const modelDescs = new Map(modelDescriptions.map(m => [m.token, m]));
-  const normalizeCoordinates = createNormalizeFeature(map);
-
-  return {
-    type: 'FeatureCollection',
-    features: models
-      .map(m => {
-        const node = assertExists(nodesByUid.get(m.nodeUid));
-        const md = assertExists(modelDescs.get(m.token));
-        const o: Position = [node.x + md.center.x, node.y + md.center.y];
-        let tl: Position = add([md.start.x, md.start.y], o);
-        let tr: Position = add([md.end.x, md.start.y], o);
-        let br: Position = add([md.end.x, md.end.y], o);
-        let bl: Position = add([md.start.x, md.end.y], o);
-
-        [tl, tr, br, bl] = [tl, tr, br, bl].map(p =>
-          nonUniformScale(
-            rotate(p, node.rotation - Math.PI / 2, o),
-            [m.scale.x, m.scale.y],
-            o,
-          ),
-        );
-        return {
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [[tl, tr, br, bl, tl]],
-          },
-          properties: {
-            type: 'footprint',
-            height: Math.round(md.height * m.scale.z),
-          },
-        } as FootprintFeature;
-      })
-      .map(f => normalizeCoordinates(f)),
-  };
 }
 
 export function convertToContoursGeoJson({
