@@ -26,7 +26,8 @@ import * as process from 'process';
 import url from 'url';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-import { convertToAchievementsGeoJson, convertToGeoJson } from './geo-json';
+import { convertToGeoJson } from './geo-json';
+import { convertToAchievementsGeoJson } from './geo-json/achievements';
 import { convertToContoursGeoJson } from './geo-json/contours';
 import { convertToFootprintsGeoJson } from './geo-json/footprints';
 import {
