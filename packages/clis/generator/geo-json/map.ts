@@ -1,51 +1,25 @@
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { areSetsEqual } from '@truckermudgeon/base/equals';
 import type { Position } from '@truckermudgeon/base/geom';
-import {
-  add,
-  distance,
-  midPoint,
-  nonUniformScale,
-  rotate,
-  toSplinePoints,
-} from '@truckermudgeon/base/geom';
+import { distance, midPoint, toSplinePoints } from '@truckermudgeon/base/geom';
 import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
-import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
-import type { AtsCountryId } from '@truckermudgeon/map/constants';
-import {
-  AtsCountryIdToDlcGuard,
-  AtsDlcGuards,
-  ItemType,
-} from '@truckermudgeon/map/constants';
+import { Preconditions } from '@truckermudgeon/base/precon';
 import type { Polygon, RoadString } from '@truckermudgeon/map/prefabs';
 import {
   toMapPosition,
   toRoadStringsAndPolygons,
 } from '@truckermudgeon/map/prefabs';
-import {
-  fromAtsCoordsToWgs84,
-  fromEts2CoordsToWgs84,
-} from '@truckermudgeon/map/projections';
 import type {
-  Achievement,
-  AchievementFeature,
   AtsMapGeoJsonFeature,
   City,
   CityFeature,
-  CompanyItem,
-  ContourFeature,
   Country,
   CountryFeature,
-  Cutscene,
   DebugFeature,
   Ferry,
   FerryFeature,
-  FootprintFeature,
-  FootprintProperties,
   MapArea,
   MapAreaFeature,
-  Model,
-  ModelDescription,
   Node,
   Poi,
   PoiFeature,
@@ -57,28 +31,19 @@ import type {
   RoadLook,
   RoadLookProperties,
   RoadType,
-  Trigger,
-  WithToken,
 } from '@truckermudgeon/map/types';
 import * as turf from '@turf/helpers';
 import lineOffset from '@turf/line-offset';
-import * as cliProgress from 'cli-progress';
 import type { Quadtree } from 'd3-quadtree';
 import { quadtree } from 'd3-quadtree';
-import { tricontour } from 'd3-tricontour';
-import fs from 'fs';
 import type { GeoJSON } from 'geojson';
-import path from 'path';
-import polygonclipping from 'polygon-clipping';
-import url from 'url';
-import { normalizeDlcGuards } from './dlc-guards';
-import { logger } from './logger';
-import type { MappedData } from './mapped-data';
+import { normalizeDlcGuards } from '../dlc-guards';
+import { logger } from '../logger';
+import type { MappedData } from '../mapped-data';
+import { createNormalizeFeature } from './normalize';
+import { ets2IsoA2, getCitiesByCountryIsoA2 } from './populated-places';
 
-const __filename = url.fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-export type AtsGeoJson = GeoJSON.FeatureCollection<
+type AtsGeoJson = GeoJSON.FeatureCollection<
   AtsMapGeoJsonFeature['geometry'],
   AtsMapGeoJsonFeature['properties']
 >;
@@ -93,35 +58,9 @@ interface QtRoadEntry {
 type RoadQuadTree = Quadtree<QtRoadEntry>;
 
 /**
- * Maps ETS2 {@link Country} `code` values to ISO 3166-1 alpha-2 codes.
- * If an entry isn't listed here, then `Country::code` is assumed to
- * be an ISO 3166-1 alpha-2 code.
- */
-const ets2IsoA2 = new Map([
-  ['A', 'AT'],
-  ['B', 'BE'],
-  ['BIH', 'BA'],
-  ['EST', 'EE'],
-  ['F', 'FR'],
-  ['D', 'DE'],
-  ['H', 'HU'],
-  ['I', 'IT'],
-  ['RKS', 'XK'], // Kosovo
-  ['L', 'LU'],
-  ['NMK', 'MK'],
-  ['MNE', 'ME'],
-  ['N', 'NO'],
-  ['P', 'PT'],
-  ['SRB', 'RS'],
-  ['SLO', 'SI'],
-  ['E', 'ES'],
-  ['S', 'SE'],
-]);
-
-/**
  * Converts TSMapData into a GeoJSON FeatureCollection.
  */
-export function convertToGeoJson(
+export function convertToMapGeoJson(
   map: 'usa' | 'europe',
   tsMapData: MappedData,
   options: {
@@ -159,8 +98,7 @@ export function convertToGeoJson(
     },
   );
 
-  const normalize = createNormalize(map);
-  const normalizeCoordinates = createNormalizeCoordinates(map);
+  const normalizeFeature = createNormalizeFeature(map);
 
   const roadQuadTree = quadtree<{
     x: number;
@@ -235,15 +173,8 @@ export function convertToGeoJson(
     const de = countries.get('germany')!;
     countriesByCityName.set('Priwall', de);
   }
-  const normalizedFerryFeatures: FerryFeature[] = uniqFerries.map(f =>
-    ferryToNormalizedFeature(
-      map,
-      f,
-      cities,
-      countries,
-      countriesByCityName,
-      normalize,
-    ),
+  const ferryFeatures: FerryFeature[] = uniqFerries.map(f =>
+    ferryToFeature(map, f, cities, countries, countriesByCityName),
   );
 
   logger.log('creating dividers...');
@@ -348,7 +279,6 @@ export function convertToGeoJson(
     }
 
     const pf = prefabToFeatures(
-      normalize,
       p,
       assertExists(prefabDescriptions.get(p.token)),
       comps,
@@ -377,7 +307,6 @@ export function convertToGeoJson(
     logger.info(pass++, 'pass', refineList.size, 'unrefined prefabs left...');
     for (const p of refineList) {
       const pf = prefabToFeatures(
-        normalize,
         p,
         assertExists(prefabDescriptions.get(p.token)),
         assertExists(prefabComponents.get(p.token)),
@@ -396,7 +325,6 @@ export function convertToGeoJson(
   logger.log('adding unrefined prefabs using fallback road types...');
   for (const p of refineList) {
     const pf = prefabToFeatures(
-      normalize,
       p,
       assertExists(prefabDescriptions.get(p.token)),
       assertExists(prefabComponents.get(p.token)),
@@ -444,7 +372,6 @@ export function convertToGeoJson(
     let vjunctionsCombined = 0;
     for (const p of vJunctionList) {
       const pf = prefabToFeatures(
-        normalize,
         p,
         assertExists(prefabDescriptions.get(p.token)),
         assertExists(prefabComponents.get(p.token)),
@@ -668,14 +595,12 @@ export function convertToGeoJson(
     ...poiFeatures.map(p => withDlcGuard(p, dlcQuadTree)),
     //...dividerFeatures,
     ...debugNodeFeatures,
+    ...ferryFeatures,
   ];
 
   return {
     type: 'FeatureCollection',
-    features: [
-      ...features.map(f => normalizeCoordinates(f)),
-      ...normalizedFerryFeatures,
-    ],
+    features: features.map(f => normalizeFeature(f)),
   };
 }
 
@@ -704,499 +629,11 @@ function withDlcGuard<T extends CityFeature | PoiFeature>(
   return feature;
 }
 
-export function convertToFootprintsGeoJson({
-  map,
-  nodes,
-  models,
-  modelDescriptions,
-}: {
-  map: 'usa' | 'europe';
-  nodes: Node[];
-  models: Model[];
-  modelDescriptions: (ModelDescription & {
-    token: string;
-  })[];
-}): GeoJSON.FeatureCollection<GeoJSON.Polygon, FootprintProperties> {
-  const nodesByUid = new Map(nodes.map(n => [n.uid, n]));
-  const modelDescs = new Map(modelDescriptions.map(m => [m.token, m]));
-  const normalizeCoordinates = createNormalizeCoordinates(map);
-
-  return {
-    type: 'FeatureCollection',
-    features: models
-      .map(m => {
-        const node = assertExists(nodesByUid.get(m.nodeUid));
-        const md = assertExists(modelDescs.get(m.token));
-        const o: Position = [node.x + md.center.x, node.y + md.center.y];
-        let tl: Position = add([md.start.x, md.start.y], o);
-        let tr: Position = add([md.end.x, md.start.y], o);
-        let br: Position = add([md.end.x, md.end.y], o);
-        let bl: Position = add([md.start.x, md.end.y], o);
-
-        [tl, tr, br, bl] = [tl, tr, br, bl].map(p =>
-          nonUniformScale(
-            rotate(p, node.rotation - Math.PI / 2, o),
-            [m.scale.x, m.scale.y],
-            o,
-          ),
-        );
-        return {
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [[tl, tr, br, bl, tl]],
-          },
-          properties: {
-            type: 'footprint',
-            height: Math.round(md.height * m.scale.z),
-          },
-        } as FootprintFeature;
-      })
-      .map(f => normalizeCoordinates(f)),
-  };
-}
-
-export function convertToContoursGeoJson({
-  map,
-  points,
-}: {
-  map: 'usa' | 'europe';
-  points: [number, number, number][];
-}) {
-  const normalizeCoordinates = createNormalizeCoordinates(map, 4);
-  let min = Infinity;
-  let max = -Infinity;
-  for (const p of points) {
-    if (p[2] < min) {
-      min = p[2];
-    }
-    if (p[2] > max) {
-      max = p[2];
-    }
-  }
-  const levels = max - min + 1;
-
-  logger.log('calculating sector mask...');
-  const sectors = new Set<string>();
-  const boxes: [number, number][][][] = [];
-  for (const p of points) {
-    const sx = Math.floor(p[0] / 4000);
-    const sy = Math.floor(p[1] / 4000);
-    const key = `${sx}/${sy}`;
-    if (sectors.has(key)) {
-      continue;
-    }
-    sectors.add(key);
-
-    const minx = sx * 4000;
-    const miny = sy * 4000;
-    const maxx = minx + 4000;
-    const maxy = miny + 4000;
-    boxes.push([
-      [
-        [minx, miny],
-        [maxx, miny],
-        [maxx, maxy],
-        [minx, maxy],
-        [minx, miny],
-      ],
-    ]);
-  }
-  const sectorUnion = polygonclipping.union(boxes[0], ...boxes.slice(1));
-
-  logger.start(
-    'calculating',
-    levels,
-    map,
-    'contour levels',
-    `(${min} min, ${max} max)`,
-  );
-  const tric = tricontour();
-
-  const start = Date.now();
-  const bar = new cliProgress.SingleBar(
-    {
-      format: `[{bar}] | {value} of {total}`,
-      stopOnComplete: true,
-      clearOnComplete: true,
-    },
-    cliProgress.Presets.rect,
-  );
-  bar.start(levels, 0);
-
-  const features: ContourFeature[] = [];
-  tric.thresholds(Array.from({ length: levels }, (_, i) => i + min));
-  for (const c of tric.contours(points)) {
-    const { value, type, coordinates } = c;
-    const intersection = polygonclipping.intersection(
-      sectorUnion,
-      coordinates as Position[][][],
-    );
-    features.push(
-      normalizeCoordinates({
-        type: 'Feature',
-        properties: { elevation: value },
-        geometry: { type, coordinates: intersection },
-      }),
-    );
-    bar.increment();
-  }
-
-  logger.success(
-    levels,
-    'contours calculated and masked in',
-    (Date.now() - start) / 1000,
-    'seconds',
-  );
-
-  return {
-    type: 'FeatureCollection',
-    features,
-  } as const;
-}
-
-function calcDlcGuard(startDlc: number, endDlc: number) {
-  if (startDlc !== endDlc) {
-    logger.warn('dlcGuard mismatch', startDlc, endDlc);
-  }
-  return startDlc;
-}
-
-export function convertToAchievementsGeoJson(
-  map: 'usa' | 'europe',
-  tsMapData: MappedData,
-) {
-  const {
-    nodes,
-    achievements,
-    prefabs,
-    cities,
-    triggers,
-    cutscenes,
-    countries,
-    companies,
-    ferries,
-    routes,
-    trajectories,
-  } = tsMapData;
-  const dlcGuardQuadTree = assertExists(
-    normalizeDlcGuards(
-      tsMapData.roads,
-      prefabs,
-      tsMapData.mapAreas,
-      triggers,
-      cutscenes,
-      tsMapData.pois,
-      {
-        map,
-        nodes,
-      },
-    ),
-  );
-  const getDlcGuard = ({ x, y }: { x: number; y: number }): number => {
-    const g = dlcGuardQuadTree.find(x, y)?.dlcGuard ?? -1;
-    if (g == -1) {
-      logger.warn('-1 dlc guard!');
-    }
-    return g;
-  };
-
-  interface Point {
-    coordinates: { x: number; y: number };
-    dlcGuard: number;
-  }
-  const cityTokenToPoint = (t: string): Point => {
-    const city = assertExists(cities.get(t), `city ${t} does not exist`);
-    const cityArea = assertExists(city.areas.find(a => !a.hidden));
-    const country = assertExists(countries.get(city.countryToken));
-    return {
-      coordinates: {
-        x: city.x + cityArea.width / 2,
-        y: city.y + cityArea.height / 2,
-      },
-      dlcGuard: getDlcGuard(country),
-    };
-  };
-  const cityAndCompanyTokensToPoint = (
-    cityToken: string,
-    companyToken: string,
-  ): Point | undefined => {
-    const company = companies
-      .values()
-      .find(
-        c =>
-          (c as WithToken<CompanyItem>).token === companyToken &&
-          c.cityToken === cityToken,
-      );
-    if (!company) {
-      return;
-    }
-    const node = assertExists(nodes.get(company.nodeUid.toString(16)));
-    return {
-      coordinates: node,
-      dlcGuard: getDlcGuard(node),
-    };
-  };
-  const triggerAchievementToPoints = (
-    achievement: Achievement & { type: 'triggerData' },
-  ): Point[] => {
-    const achievementTriggers = new Map<string, Trigger[]>();
-    const achievementCutscenes = new Map<string, Cutscene[]>();
-    for (const item of [...triggers.values(), ...cutscenes.values()]) {
-      if (item.type === ItemType.Trigger) {
-        const actions = new Map(item.actions);
-        if (actions.has('achievement')) {
-          const params = assertExists(actions.get('achievement'));
-          const name = params[0];
-          putIfAbsent(name, [], achievementTriggers).push(item);
-        }
-      } else if (
-        item.type === ItemType.Cutscene &&
-        item.actionStringParams.find(s => s.startsWith('achievement 0'))
-      ) {
-        const name = item.actionStringParams
-          .find(s => s.startsWith('achievement 0'))
-          ?.split(' ')[2];
-        if (name) {
-          putIfAbsent(name, [], achievementCutscenes).push(item);
-        }
-      }
-    }
-
-    const { param } = achievement;
-    const triggerItems =
-      achievementTriggers.get(param) ?? achievementCutscenes.get(param) ?? [];
-    return triggerItems.map(item => {
-      // TODO use other points in Trigger to draw a circle or polygon
-      const firstNodeUid =
-        item.type === ItemType.Trigger ? item.nodeUids[0] : item.nodeUid;
-      const node = assertExists(nodes.get(firstNodeUid.toString(16)));
-      return {
-        coordinates: node,
-        dlcGuard: getDlcGuard(item),
-      };
-    });
-  };
-  const ferryAchievementToPoints = (
-    achievement: Achievement & { type: 'ferryData' },
-  ): Point[] => {
-    const aFerry = ferries.get(achievement.endpointA);
-    const bFerry = ferries.get(achievement.endpointB);
-    if (aFerry == null || bFerry == null) {
-      return [];
-    }
-
-    const aDlcGuard = getDlcGuard(aFerry);
-    const bDlcGuard = getDlcGuard(bFerry);
-    const dlcGuard = calcDlcGuard(aDlcGuard, bDlcGuard);
-    return [
-      { coordinates: aFerry, dlcGuard },
-      { coordinates: bFerry, dlcGuard },
-    ];
-  };
-  const deliveryPointAchievementToPoints = (
-    achievement: Achievement & { type: 'eachDeliveryPoint' },
-  ): Point[] => {
-    const cityTokens = new Set<string>(
-      [...achievement.sources, ...achievement.targets].flatMap(s =>
-        s.split('.').slice(2, 4),
-      ),
-    );
-    const unknownCities = [...cityTokens].filter(t => !cities.has(t));
-    if (unknownCities.length > 0) {
-      logger.error('unknown cities encountered', unknownCities);
-      return [];
-    }
-
-    const cs = [...cityTokens].map(t => assertExists(cities.get(t)));
-    const countryTokens = new Set<string>(cs.map(c => c.countryToken));
-    const atsDlc = [...countryTokens].map(t => {
-      const country = assertExists(countries.get(t));
-      const guard = assertExists(
-        AtsCountryIdToDlcGuard[country.id as AtsCountryId],
-      );
-      const set = AtsDlcGuards[guard];
-      assert(set.size === 1);
-      return [...set][0];
-    });
-    let dlcGuard: number | undefined;
-    for (const [key, set] of Object.entries(AtsDlcGuards)) {
-      if (atsDlc.every(c => set.has(c))) {
-        dlcGuard = Number(key);
-        break;
-      }
-    }
-    if (dlcGuard == null) {
-      logger.warn('could not calculate dlcGuard');
-      dlcGuard = 0;
-    }
-
-    return cs.map(city => {
-      const cityArea = assertExists(city.areas.find(a => !a.hidden));
-      return {
-        coordinates: {
-          x: city.x + cityArea.width / 2,
-          y: city.y + cityArea.height / 2,
-        },
-        dlcGuard,
-      };
-    });
-  };
-  const routesToPoints = (): Point[] => {
-    const points: Point[] = [];
-    for (const t of trajectories.values()) {
-      for (const c of t.checkpoints) {
-        const r = assertExists(routes.get(c.route));
-        const cs = [r.fromCity, r.toCity].map(t => assertExists(cities.get(t)));
-        const countryTokens = new Set<string>(cs.map(c => c.countryToken));
-        const atsDlc = [...countryTokens].map(t => {
-          const country = assertExists(countries.get(t));
-          const guard = assertExists(
-            AtsCountryIdToDlcGuard[country.id as AtsCountryId],
-          );
-          const set = AtsDlcGuards[guard];
-          if (set.size === 0) {
-            return 0;
-          }
-          assert(
-            set.size === 1,
-            `expected singleton set for ${country.id}, got ${[...set].join(',')}`,
-          );
-          return [...set][0];
-        });
-        let dlcGuard: number | undefined;
-        for (const [key, set] of Object.entries(AtsDlcGuards)) {
-          if (atsDlc.every(c => set.has(c))) {
-            dlcGuard = Number(key);
-            break;
-          }
-        }
-        if (dlcGuard == null) {
-          logger.warn('could not calculate dlcGuard');
-          dlcGuard = 0;
-        }
-
-        points.push({
-          coordinates: t,
-          dlcGuard,
-        });
-      }
-    }
-    return points;
-  };
-
-  const exists = <T>(x: T): x is NonNullable<T> => x != null;
-  const features: AchievementFeature[] = [...achievements.entries()].flatMap(
-    ([name, a]) => {
-      const points: Point[] = [];
-      switch (a.type) {
-        case 'visitCityData':
-          points.push(
-            ...a.cities.filter(t => cities.has(t)).map(cityTokenToPoint),
-          );
-          break;
-        case 'delivery':
-          points.push(
-            ...a.companies.flatMap(a => {
-              switch (a.locationType) {
-                case 'city':
-                  if (!cities.has(a.locationType)) {
-                    return [];
-                  }
-                  return assertExists(
-                    cityAndCompanyTokensToPoint(a.locationToken, a.company),
-                  );
-                case 'country': {
-                  const country = countries.get(a.locationToken);
-                  if (!country) {
-                    logger.warn('ignoring country', a.locationToken);
-                    return [];
-                  }
-
-                  const citiesInCountry = [...cities.values()].filter(
-                    c => c.countryToken === country.token,
-                  );
-                  return citiesInCountry
-                    .map(c => cityAndCompanyTokensToPoint(c.token, a.company))
-                    .filter(c => c != null);
-                }
-                default:
-                  throw new UnreachableError(a.locationType);
-              }
-            }),
-          );
-          break;
-        case 'eachCompanyData':
-        case 'deliverCargoData':
-          points.push(
-            ...a.companies
-              .map(c => cityAndCompanyTokensToPoint(c.city, c.company))
-              .filter(exists),
-          );
-          break;
-        case 'triggerData': {
-          const triggerItems = triggerAchievementToPoints(a);
-          points.push(...triggerItems);
-          if (triggerItems.length < a.count) {
-            logger.warn(
-              name,
-              'wants',
-              a.count,
-              'but received',
-              triggerItems.length,
-            );
-          }
-          break;
-        }
-        case 'ferryData':
-          points.push(...ferryAchievementToPoints(a));
-          break;
-        case 'eachDeliveryPoint': {
-          const deliverPoints = deliveryPointAchievementToPoints(a);
-          if (deliverPoints.length === 0) {
-            logger.warn('ignoring', name);
-          }
-          points.push(...deliverPoints);
-          break;
-        }
-        case 'oversizeRoutesData':
-          if (routes.size === 0) {
-            logger.warn('ignoring empty special transports routes map');
-            break;
-          }
-          points.push(...routesToPoints());
-          break;
-        default:
-          throw new UnreachableError(a);
-      }
-
-      // ALL THE HACKS
-      const uniqPoints = [
-        ...new Set<string>(points.map(p => JSON.stringify(p))),
-      ].map(s => JSON.parse(s) as Point);
-
-      return uniqPoints.map(({ coordinates: { x, y }, dlcGuard }) => ({
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: [x, y] },
-        properties: { name, dlcGuard },
-      }));
-    },
-  );
-
-  const normalizeCoordinates = createNormalizeCoordinates(map, 4);
-  return {
-    type: 'FeatureCollection',
-    features: features.map(normalizeCoordinates),
-  } as const;
-}
-
 /**
  * Joins adjacent `roadFeature`s together if their ends are close to each other,
  * and if their properties are compatible.
  */
-export function coalesceRoadFeatures(
-  roadFeatures: RoadFeature[],
-): RoadFeature[] {
+function coalesceRoadFeatures(roadFeatures: RoadFeature[]): RoadFeature[] {
   logger.log('coalescing road features...');
 
   const heads = new Map<string, RoadFeature[]>();
@@ -1359,55 +796,6 @@ export function coalesceRoadFeatures(
   return coalescedFeatures;
 }
 
-function createNormalize(map: 'usa' | 'europe', decimalPoints?: number) {
-  const tx = map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
-  return (p: number[]): Position => {
-    Preconditions.checkArgument(p.length === 2);
-    const pp = tx(p as Position);
-    if (decimalPoints == null) {
-      return pp;
-    }
-
-    const factor = Math.pow(10, decimalPoints);
-    return pp.map(v => Math.round(v * factor) / factor) as Position;
-  };
-}
-
-/**
- * Mutates coordinates in `feature` by normalizing them with `normalizer`.
- */
-function createNormalizeCoordinates(
-  map: 'usa' | 'europe',
-  decimalPoints?: number,
-) {
-  const normalize = createNormalize(map, decimalPoints);
-  return <T extends AtsMapGeoJsonFeature>(feature: T): T => {
-    switch (feature.geometry.type) {
-      case 'LineString':
-        feature.geometry.coordinates =
-          feature.geometry.coordinates.map(normalize);
-        break;
-      case 'Polygon':
-        feature.geometry.coordinates = feature.geometry.coordinates.map(p =>
-          p.map(normalize),
-        );
-        break;
-      case 'MultiPolygon':
-        feature.geometry.coordinates = feature.geometry.coordinates.map(p =>
-          p.map(pp => pp.map(ppp => normalize(ppp))),
-        );
-        break;
-      case 'Point':
-        feature.geometry.coordinates = normalize(feature.geometry.coordinates);
-        break;
-      default:
-        throw new UnreachableError(feature.geometry);
-    }
-
-    return feature;
-  };
-}
-
 function areaToFeature(
   area: MapArea,
   nodeMap: Map<string | bigint, Node>,
@@ -1434,7 +822,7 @@ function areaToFeature(
   };
 }
 
-function ferryToNormalizedFeature(
+function ferryToFeature(
   map: 'usa' | 'europe',
   ferry: Ferry,
   // cities by token
@@ -1443,7 +831,6 @@ function ferryToNormalizedFeature(
   countries: Map<string, Country>,
   // city-name-to-country fallback
   countriesFallback: Map<string, Country>,
-  normalize: (gameCoords: number[]) => Position,
 ): FerryFeature {
   Preconditions.checkArgument(ferry.connections.length === 1);
   const conn = ferry.connections[0];
@@ -1495,7 +882,7 @@ function ferryToNormalizedFeature(
         coordinates: [
           [ferry.x, ferry.y],
           [conn.x, conn.y],
-        ].map(normalize),
+        ],
       },
       properties: {
         type: ferry.train ? 'train' : 'ferry',
@@ -1542,7 +929,7 @@ function ferryToNormalizedFeature(
     y: -5859.375,
   };
 
-  const splinePoints: Position[] = [normalize(controlPoints[0].position)];
+  const splinePoints: Position[] = [controlPoints[0].position];
   for (let i = 1; i < controlPoints.length; i++) {
     const prev = controlPoints[i - 1];
     const curr = controlPoints[i];
@@ -1552,19 +939,18 @@ function ferryToNormalizedFeature(
     ) {
       const nprev = {
         ...prev,
-        position: normalize(prev.position),
+        position: prev.position,
         rotation: -Math.PI / 4,
       };
       const ncurr = {
         ...curr,
-        position: normalize(curr.position),
+        position: curr.position,
         rotation: -Math.PI / 2,
       };
       // create a spline in normalized space
       splinePoints.push(...toSplinePoints(nprev, ncurr));
     } else {
-      // create a spline in game space, _then_ normalize the spline
-      splinePoints.push(...toSplinePoints(prev, curr).map(normalize));
+      splinePoints.push(...toSplinePoints(prev, curr));
     }
   }
   return {
@@ -1656,7 +1042,6 @@ function countryToFeature(country: Country): CountryFeature {
 }
 
 function prefabToFeatures(
-  normalize: (gameCoords: number[]) => Position,
   prefab: Prefab,
   prefabDescription: PrefabDescription,
   {
@@ -1770,10 +1155,11 @@ function prefabToFeatures(
         nearestRoadType === 'unknown' &&
         !prefab.hidden
       ) {
-        const [lon, lat] = normalize([prefab.x, prefab.y]);
         logger.warn(
           'could not infer road type for prefab road at',
-          `/${lat.toFixed(3)}/${lon.toFixed(3)}`,
+          prefab.x,
+          ',',
+          prefab.y,
         );
       }
       return {
@@ -2025,58 +1411,4 @@ function arePropsConnectable(
   }
 
   return false;
-}
-
-export interface PopulatedPlacesProperties {
-  name: string;
-  namealt: string;
-  adm1name: string;
-  sov0name: string;
-  iso_a2: string;
-  scalerank: number;
-  featurecla: string;
-}
-export function getCitiesByCountryIsoA2(): Map<
-  string,
-  PopulatedPlacesProperties[]
-> {
-  const populatedPlaces = JSON.parse(
-    fs.readFileSync(
-      path.join(
-        __dirname,
-        'resources',
-        // from https://github.com/nvkelso/natural-earth-vector
-        'ne_10m_populated_places_simple.geojson',
-      ),
-      'utf-8',
-    ),
-  ) as unknown as GeoJSON.FeatureCollection<
-    GeoJSON.Point,
-    PopulatedPlacesProperties
-  >;
-  const citiesByCountryIsoA2 = new Map<string, PopulatedPlacesProperties[]>();
-  for (const { properties: city } of populatedPlaces.features) {
-    const isoA2 = city.sov0name === 'Kosovo' ? 'XK' : city.iso_a2;
-    const cities = putIfAbsent(isoA2, [], citiesByCountryIsoA2);
-    if (!/^[A-Z][A-Z]$/.test(isoA2)) {
-      // logger.warn(city.sov0name, 'has invalid iso a2 code');
-    }
-    cities.push(city);
-  }
-  return citiesByCountryIsoA2;
-}
-
-export function createIsoA2Map(): {
-  get: (gameCountryCode: string) => string;
-} {
-  const isoA2s = new Set(getCitiesByCountryIsoA2().keys());
-  return {
-    get: (gameCountryCode: string) => {
-      if (isoA2s.has(gameCountryCode)) {
-        return gameCountryCode;
-      }
-      Preconditions.checkArgument(ets2IsoA2.has(gameCountryCode));
-      return ets2IsoA2.get(gameCountryCode)!;
-    },
-  };
 }
