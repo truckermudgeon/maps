@@ -26,11 +26,8 @@ import * as process from 'process';
 import url from 'url';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-import {
-  convertToAchievementsGeoJson,
-  convertToContoursGeoJson,
-  convertToGeoJson,
-} from './geo-json';
+import { convertToAchievementsGeoJson, convertToGeoJson } from './geo-json';
+import { convertToContoursGeoJson } from './geo-json/contours';
 import { convertToFootprintsGeoJson } from './geo-json/footprints';
 import {
   createIsoA2Map,
