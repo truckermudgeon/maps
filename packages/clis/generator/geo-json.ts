@@ -22,10 +22,6 @@ import {
   toMapPosition,
   toRoadStringsAndPolygons,
 } from '@truckermudgeon/map/prefabs';
-import {
-  fromAtsCoordsToWgs84,
-  fromEts2CoordsToWgs84,
-} from '@truckermudgeon/map/projections';
 import type {
   Achievement,
   AchievementFeature,
@@ -69,6 +65,7 @@ import { tricontour } from 'd3-tricontour';
 import type { GeoJSON } from 'geojson';
 import polygonclipping from 'polygon-clipping';
 import { normalizeDlcGuards } from './dlc-guards';
+import { createNormalizeFeature } from './geo-json/normalize';
 import {
   ets2IsoA2,
   getCitiesByCountryIsoA2,
@@ -131,8 +128,7 @@ export function convertToGeoJson(
     },
   );
 
-  const normalize = createNormalize(map);
-  const normalizeCoordinates = createNormalizeCoordinates(map);
+  const normalizeFeature = createNormalizeFeature(map);
 
   const roadQuadTree = quadtree<{
     x: number;
@@ -207,15 +203,8 @@ export function convertToGeoJson(
     const de = countries.get('germany')!;
     countriesByCityName.set('Priwall', de);
   }
-  const normalizedFerryFeatures: FerryFeature[] = uniqFerries.map(f =>
-    ferryToNormalizedFeature(
-      map,
-      f,
-      cities,
-      countries,
-      countriesByCityName,
-      normalize,
-    ),
+  const ferryFeatures: FerryFeature[] = uniqFerries.map(f =>
+    ferryToFeature(map, f, cities, countries, countriesByCityName),
   );
 
   logger.log('creating dividers...');
@@ -320,7 +309,6 @@ export function convertToGeoJson(
     }
 
     const pf = prefabToFeatures(
-      normalize,
       p,
       assertExists(prefabDescriptions.get(p.token)),
       comps,
@@ -349,7 +337,6 @@ export function convertToGeoJson(
     logger.info(pass++, 'pass', refineList.size, 'unrefined prefabs left...');
     for (const p of refineList) {
       const pf = prefabToFeatures(
-        normalize,
         p,
         assertExists(prefabDescriptions.get(p.token)),
         assertExists(prefabComponents.get(p.token)),
@@ -368,7 +355,6 @@ export function convertToGeoJson(
   logger.log('adding unrefined prefabs using fallback road types...');
   for (const p of refineList) {
     const pf = prefabToFeatures(
-      normalize,
       p,
       assertExists(prefabDescriptions.get(p.token)),
       assertExists(prefabComponents.get(p.token)),
@@ -416,7 +402,6 @@ export function convertToGeoJson(
     let vjunctionsCombined = 0;
     for (const p of vJunctionList) {
       const pf = prefabToFeatures(
-        normalize,
         p,
         assertExists(prefabDescriptions.get(p.token)),
         assertExists(prefabComponents.get(p.token)),
@@ -640,14 +625,12 @@ export function convertToGeoJson(
     ...poiFeatures.map(p => withDlcGuard(p, dlcQuadTree)),
     //...dividerFeatures,
     ...debugNodeFeatures,
+    ...ferryFeatures,
   ];
 
   return {
     type: 'FeatureCollection',
-    features: [
-      ...features.map(f => normalizeCoordinates(f)),
-      ...normalizedFerryFeatures,
-    ],
+    features: features.map(f => normalizeFeature(f)),
   };
 }
 
@@ -691,7 +674,7 @@ export function convertToFootprintsGeoJson({
 }): GeoJSON.FeatureCollection<GeoJSON.Polygon, FootprintProperties> {
   const nodesByUid = new Map(nodes.map(n => [n.uid, n]));
   const modelDescs = new Map(modelDescriptions.map(m => [m.token, m]));
-  const normalizeCoordinates = createNormalizeCoordinates(map);
+  const normalizeCoordinates = createNormalizeFeature(map);
 
   return {
     type: 'FeatureCollection',
@@ -735,7 +718,7 @@ export function convertToContoursGeoJson({
   map: 'usa' | 'europe';
   points: [number, number, number][];
 }) {
-  const normalizeCoordinates = createNormalizeCoordinates(map, 4);
+  const normalizeCoordinates = createNormalizeFeature(map, 4);
   let min = Infinity;
   let max = -Infinity;
   for (const p of points) {
@@ -1155,7 +1138,7 @@ export function convertToAchievementsGeoJson(
     },
   );
 
-  const normalizeCoordinates = createNormalizeCoordinates(map, 4);
+  const normalizeCoordinates = createNormalizeFeature(map, 4);
   return {
     type: 'FeatureCollection',
     features: features.map(normalizeCoordinates),
@@ -1331,55 +1314,6 @@ export function coalesceRoadFeatures(
   return coalescedFeatures;
 }
 
-function createNormalize(map: 'usa' | 'europe', decimalPoints?: number) {
-  const tx = map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
-  return (p: number[]): Position => {
-    Preconditions.checkArgument(p.length === 2);
-    const pp = tx(p as Position);
-    if (decimalPoints == null) {
-      return pp;
-    }
-
-    const factor = Math.pow(10, decimalPoints);
-    return pp.map(v => Math.round(v * factor) / factor) as Position;
-  };
-}
-
-/**
- * Mutates coordinates in `feature` by normalizing them with `normalizer`.
- */
-function createNormalizeCoordinates(
-  map: 'usa' | 'europe',
-  decimalPoints?: number,
-) {
-  const normalize = createNormalize(map, decimalPoints);
-  return <T extends AtsMapGeoJsonFeature>(feature: T): T => {
-    switch (feature.geometry.type) {
-      case 'LineString':
-        feature.geometry.coordinates =
-          feature.geometry.coordinates.map(normalize);
-        break;
-      case 'Polygon':
-        feature.geometry.coordinates = feature.geometry.coordinates.map(p =>
-          p.map(normalize),
-        );
-        break;
-      case 'MultiPolygon':
-        feature.geometry.coordinates = feature.geometry.coordinates.map(p =>
-          p.map(pp => pp.map(ppp => normalize(ppp))),
-        );
-        break;
-      case 'Point':
-        feature.geometry.coordinates = normalize(feature.geometry.coordinates);
-        break;
-      default:
-        throw new UnreachableError(feature.geometry);
-    }
-
-    return feature;
-  };
-}
-
 function areaToFeature(
   area: MapArea,
   nodeMap: Map<string | bigint, Node>,
@@ -1406,7 +1340,7 @@ function areaToFeature(
   };
 }
 
-function ferryToNormalizedFeature(
+function ferryToFeature(
   map: 'usa' | 'europe',
   ferry: Ferry,
   // cities by token
@@ -1415,7 +1349,6 @@ function ferryToNormalizedFeature(
   countries: Map<string, Country>,
   // city-name-to-country fallback
   countriesFallback: Map<string, Country>,
-  normalize: (gameCoords: number[]) => Position,
 ): FerryFeature {
   Preconditions.checkArgument(ferry.connections.length === 1);
   const conn = ferry.connections[0];
@@ -1467,7 +1400,7 @@ function ferryToNormalizedFeature(
         coordinates: [
           [ferry.x, ferry.y],
           [conn.x, conn.y],
-        ].map(normalize),
+        ],
       },
       properties: {
         type: ferry.train ? 'train' : 'ferry',
@@ -1514,7 +1447,7 @@ function ferryToNormalizedFeature(
     y: -5859.375,
   };
 
-  const splinePoints: Position[] = [normalize(controlPoints[0].position)];
+  const splinePoints: Position[] = [controlPoints[0].position];
   for (let i = 1; i < controlPoints.length; i++) {
     const prev = controlPoints[i - 1];
     const curr = controlPoints[i];
@@ -1524,19 +1457,18 @@ function ferryToNormalizedFeature(
     ) {
       const nprev = {
         ...prev,
-        position: normalize(prev.position),
+        position: prev.position,
         rotation: -Math.PI / 4,
       };
       const ncurr = {
         ...curr,
-        position: normalize(curr.position),
+        position: curr.position,
         rotation: -Math.PI / 2,
       };
       // create a spline in normalized space
       splinePoints.push(...toSplinePoints(nprev, ncurr));
     } else {
-      // create a spline in game space, _then_ normalize the spline
-      splinePoints.push(...toSplinePoints(prev, curr).map(normalize));
+      splinePoints.push(...toSplinePoints(prev, curr));
     }
   }
   return {
@@ -1628,7 +1560,6 @@ function countryToFeature(country: Country): CountryFeature {
 }
 
 function prefabToFeatures(
-  normalize: (gameCoords: number[]) => Position,
   prefab: Prefab,
   prefabDescription: PrefabDescription,
   {
@@ -1742,10 +1673,11 @@ function prefabToFeatures(
         nearestRoadType === 'unknown' &&
         !prefab.hidden
       ) {
-        const [lon, lat] = normalize([prefab.x, prefab.y]);
         logger.warn(
           'could not infer road type for prefab road at',
-          `/${lat.toFixed(3)}/${lon.toFixed(3)}`,
+          prefab.x,
+          ',',
+          prefab.y,
         );
       }
       return {
