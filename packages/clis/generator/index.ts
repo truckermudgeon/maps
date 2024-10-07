@@ -26,10 +26,10 @@ import * as process from 'process';
 import url from 'url';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-import { convertToGeoJson } from './geo-json';
 import { convertToAchievementsGeoJson } from './geo-json/achievements';
 import { convertToContoursGeoJson } from './geo-json/contours';
 import { convertToFootprintsGeoJson } from './geo-json/footprints';
+import { convertToMapGeoJson } from './geo-json/map';
 import {
   createIsoA2Map,
   getCitiesByCountryIsoA2,
@@ -720,7 +720,7 @@ function handleMapCommand(args: ReturnType<typeof mapCommandBuilder>) {
   });
 
   logger.log('converting parsed map data to GeoJSON...');
-  const geoJson = convertToGeoJson(args.map, tsMapData, {
+  const geoJson = convertToMapGeoJson(args.map, tsMapData, {
     includeDebug: args.includeDebug,
     skipCoalescing: args.skipCoalescing,
   });

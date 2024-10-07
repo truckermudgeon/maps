@@ -37,16 +37,13 @@ import lineOffset from '@turf/line-offset';
 import type { Quadtree } from 'd3-quadtree';
 import { quadtree } from 'd3-quadtree';
 import type { GeoJSON } from 'geojson';
-import { normalizeDlcGuards } from './dlc-guards';
-import { createNormalizeFeature } from './geo-json/normalize';
-import {
-  ets2IsoA2,
-  getCitiesByCountryIsoA2,
-} from './geo-json/populated-places';
-import { logger } from './logger';
-import type { MappedData } from './mapped-data';
+import { normalizeDlcGuards } from '../dlc-guards';
+import { logger } from '../logger';
+import type { MappedData } from '../mapped-data';
+import { createNormalizeFeature } from './normalize';
+import { ets2IsoA2, getCitiesByCountryIsoA2 } from './populated-places';
 
-export type AtsGeoJson = GeoJSON.FeatureCollection<
+type AtsGeoJson = GeoJSON.FeatureCollection<
   AtsMapGeoJsonFeature['geometry'],
   AtsMapGeoJsonFeature['properties']
 >;
@@ -63,7 +60,7 @@ type RoadQuadTree = Quadtree<QtRoadEntry>;
 /**
  * Converts TSMapData into a GeoJSON FeatureCollection.
  */
-export function convertToGeoJson(
+export function convertToMapGeoJson(
   map: 'usa' | 'europe',
   tsMapData: MappedData,
   options: {
@@ -636,9 +633,7 @@ function withDlcGuard<T extends CityFeature | PoiFeature>(
  * Joins adjacent `roadFeature`s together if their ends are close to each other,
  * and if their properties are compatible.
  */
-export function coalesceRoadFeatures(
-  roadFeatures: RoadFeature[],
-): RoadFeature[] {
+function coalesceRoadFeatures(roadFeatures: RoadFeature[]): RoadFeature[] {
   logger.log('coalescing road features...');
 
   const heads = new Map<string, RoadFeature[]>();
