@@ -31,9 +31,11 @@ import {
   convertToContoursGeoJson,
   convertToFootprintsGeoJson,
   convertToGeoJson,
+} from './geo-json';
+import {
   createIsoA2Map,
   getCitiesByCountryIsoA2,
-} from './geo-json';
+} from './geo-json/populated-places';
 import { checkGraph } from './graph/check-graph';
 import { toDemoGraph } from './graph/demo-graph';
 import { generateGraph } from './graph/graph';
