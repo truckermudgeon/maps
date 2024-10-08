@@ -43,7 +43,7 @@ function main() {
       type: 'boolean',
       default: false,
     })
-    .parse();
+    .parseSync();
 
   const scsFilePaths = fs
     .readdirSync(args.inputDir, { withFileTypes: true })
