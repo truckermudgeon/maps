@@ -4,7 +4,7 @@ import {
   fromAtsCoordsToWgs84,
   fromEts2CoordsToWgs84,
 } from '@truckermudgeon/map/projections';
-import type { AtsMapGeoJsonFeature } from '@truckermudgeon/map/types';
+import type { GeoJSON } from 'geojson';
 
 /**
  * Mutates coordinates in `feature` by normalizing them with `normalizer`.
@@ -14,7 +14,16 @@ export function createNormalizeFeature(
   decimalPoints?: number,
 ) {
   const normalize = createNormalizeCoordinates(map, decimalPoints);
-  return <T extends AtsMapGeoJsonFeature>(feature: T): T => {
+  return <
+    T extends GeoJSON.Feature<
+      | GeoJSON.Point
+      | GeoJSON.LineString
+      | GeoJSON.Polygon
+      | GeoJSON.MultiPolygon
+    >,
+  >(
+    feature: T,
+  ): T => {
     switch (feature.geometry.type) {
       case 'LineString':
         feature.geometry.coordinates =
@@ -47,7 +56,10 @@ function createNormalizeCoordinates(
 ) {
   const tx = map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
   return (p: number[]): Position => {
-    Preconditions.checkArgument(p.length === 2);
+    Preconditions.checkArgument(
+      p.length === 2,
+      `expected 2 coords, received ${p.length}`,
+    );
     const pp = tx(p as Position);
     if (decimalPoints == null) {
       return pp;
