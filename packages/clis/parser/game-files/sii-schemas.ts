@@ -122,7 +122,7 @@ export const RouteSiiSchema: JSONSchemaType<RouteSii> = object({
   }),
 });
 
-export interface AchievementsSii {
+interface BaseAchievementsSii {
   achievementVisitCityData: Record<
     string,
     {
@@ -156,13 +156,6 @@ export interface AchievementsSii {
       countryName?: string;
     }
   >;
-  //  achievementDeliveryPointCountry: Record<
-  //    string,
-  //    {
-  //      role: string;
-  //      countryName: string;
-  //    }
-  //  >;
   achievementEachCompanyData: Record<
     string,
     {
@@ -191,17 +184,6 @@ export interface AchievementsSii {
     {
       targets: string[];
       achievementName: string;
-    }
-  >;
-  achievementFerryData: Record<
-    string,
-    {
-      achievementName: string;
-      // ATS
-      endpointA?: string;
-      endpointB?: string;
-      // ETS2
-      ferryType?: 'train' | 'ferry';
     }
   >;
   achievementEachDeliveryPoint: Record<
@@ -234,7 +216,7 @@ export interface AchievementsSii {
     }
   >;
 }
-export const AchievementsSiiSchema: JSONSchemaType<AchievementsSii> = object({
+const baseAchievementsProperties = {
   achievementVisitCityData: patternRecord(
     /^\.achievement\.[a-z]{2}_visit_[a-z]{3}$/,
     {
@@ -256,21 +238,6 @@ export const AchievementsSiiSchema: JSONSchemaType<AchievementsSii> = object({
     },
     ['companyName'],
   ),
-  //    achievementDeliveryPointCountry: {
-  //      type: 'object',
-  //      patternProperties: {
-  //        '^\\.achievement\\.[0-9a-z_]{1,12}': {
-  //          type: 'object',
-  //          properties: {
-  //            role: { type: 'string' },
-  //            countryName: token,
-  //          },
-  //          required: ['role', 'countryName'],
-  //        },
-  //      },
-  //      required: [],
-  //      minProperties: 1,
-  //    },
   achievementEachCompanyData: patternRecord(
     /^\.achievement\.[0-9a-z_]{1,12}$/,
     {
@@ -296,16 +263,6 @@ export const AchievementsSiiSchema: JSONSchemaType<AchievementsSii> = object({
       achievementName: string,
     },
   ),
-  achievementFerryData: patternRecord(
-    /^\.achievement\.[0-9a-z_]{1,12}$/,
-    {
-      endpointA: nullable(token),
-      endpointB: nullable(token),
-      ferryType: nullable(stringEnum('ferry', 'train')),
-      achievementName: string,
-    },
-    ['achievementName'],
-  ),
   achievementEachDeliveryPoint: patternRecord(
     /^\.achievement\.[0-9a-z_]{1,12}$/,
     {
@@ -314,7 +271,104 @@ export const AchievementsSiiSchema: JSONSchemaType<AchievementsSii> = object({
       achievementName: string,
     },
   ),
-});
+};
+export interface AtsAchievementsSii extends BaseAchievementsSii {
+  achievementFerryData: Record<
+    string,
+    {
+      achievementName: string;
+      endpointA: string;
+      endpointB: string;
+    }
+  >;
+}
+export interface Ets2AchievementsSii extends BaseAchievementsSii {
+  achievementFerryData: Record<
+    string,
+    {
+      achievementName: string;
+      ferryType: 'train' | 'ferry';
+    }
+  >;
+  achievementDeliveryPointCity: Record<
+    string,
+    {
+      role: 'source' | 'target';
+      cityName: string;
+    }
+  >;
+  achievementDeliveryLogData: Record<
+    string,
+    {
+      // one of the following combinations of string[] fields:
+      // ✅{ cargos, sourceCompanies }
+      // ❌{ cargos } (cargo-only achievements currently unsupported)
+      // ✅{ sourceCities, targetCities }
+      // ✅{ sourceCompanies }
+      // ✅{ sourceCities }
+      sourceCompanies?: string[];
+      cargos?: string[];
+      sourceCities?: string[];
+      targetCities?: string[];
+      achievementName: string;
+    }
+  >;
+  achievementCompareData: Record<
+    string,
+    {
+      achievementName: string;
+    }
+  >;
+  achievementVisitPrefabData: Record<
+    string,
+    {
+      prefab: string;
+      achievementName: string;
+    }
+  >;
+}
+export const AtsAchievementsSiiSchema: JSONSchemaType<AtsAchievementsSii> =
+  object({
+    ...baseAchievementsProperties,
+    achievementFerryData: patternRecord(/^\.achievement\.[0-9a-z_]{1,12}$/, {
+      endpointA: token,
+      endpointB: token,
+      achievementName: string,
+    }),
+  });
+export const Ets2AchievementsSiiSchema: JSONSchemaType<Ets2AchievementsSii> =
+  object({
+    ...baseAchievementsProperties,
+    achievementFerryData: patternRecord(/^\.achievement\.[0-9a-z_]{1,12}$/, {
+      ferryType: stringEnum('ferry', 'train'),
+      achievementName: string,
+    }),
+    achievementDeliveryPointCity: patternRecord(/^(\.[0-9a-z_]{1,12}){3,4}$/, {
+      role: stringEnum('source', 'target'),
+      cityName: token,
+    }),
+    achievementDeliveryLogData: patternRecord(
+      /^\.achievement\.[0-9a-z_]{1,12}$/,
+      {
+        sourceCompanies: nullable(stringArray),
+        cargos: nullable(stringArray),
+        sourceCities: nullable(stringArray),
+        targetCities: nullable(stringArray),
+        achievementName: string,
+      },
+      ['achievementName'],
+    ),
+    achievementCompareData: patternRecord(/^\.achievement\.[0-9a-z_]{1,12}$/, {
+      achievementName: string,
+    }),
+    achievementVisitPrefabData: patternRecord(
+      /^\.achievement\.[0-9a-z_]{1,12}$/,
+      {
+        prefab: token,
+        achievementName: string,
+      },
+    ),
+  });
 
 /** Only one of `effect` or `material` are expected to be present. */
 export interface IconMat {

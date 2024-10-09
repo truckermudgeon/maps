@@ -20,7 +20,7 @@ import { parsePrefabPpd } from './prefab-ppd-parser';
 import type { Entries } from './scs-archive';
 import { parseSii } from './sii-parser';
 import type {
-  AchievementsSii,
+  AtsAchievementsSii,
   CitySii,
   CompanySii,
   CountrySii,
@@ -31,7 +31,7 @@ import type {
   RouteSii,
 } from './sii-schemas';
 import {
-  AchievementsSiiSchema,
+  AtsAchievementsSiiSchema,
   CargoSiiSchema,
   CityCompanySiiSchema,
   CitySiiSchema,
@@ -199,8 +199,8 @@ export function parseDefFiles(entries: Entries) {
   }
   logger.info('parsed', viewpoints.size, 'viewpoints');
 
-  const achievements = processAchievementsJson(
-    convertSiiToJson('def/achievements.sii', entries, AchievementsSiiSchema),
+  const achievements = processAtsAchievementsJson(
+    convertSiiToJson('def/achievements.sii', entries, AtsAchievementsSiiSchema),
   );
   logger.info('parsed', achievements.size, 'achievements');
 
@@ -566,8 +566,8 @@ function processRoadLookJson(obj: RoadLookSii): Map<string, RoadLook> {
   );
 }
 
-function processAchievementsJson(
-  obj: AchievementsSii,
+function processAtsAchievementsJson(
+  obj: AtsAchievementsSii,
 ): Map<string, Achievement> {
   const achievements = new Map<string, Achievement>();
 
@@ -670,8 +670,8 @@ function processAchievementsJson(
   for (const a of Object.values(obj.achievementFerryData)) {
     achievements.set(a.achievementName, {
       type: 'ferryData',
-      endpointA: a.endpointA ?? 'TODO',
-      endpointB: a.endpointB ?? 'TODO',
+      endpointA: a.endpointA,
+      endpointB: a.endpointB,
     });
   }
 
