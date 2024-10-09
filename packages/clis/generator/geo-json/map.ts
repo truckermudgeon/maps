@@ -519,8 +519,7 @@ export function convertToMapGeoJson(
         .toLowerCase();
 
     rankedCities = cities.values().map(c => {
-      // lowercasing because of Hungary.
-      const country = assertExists(countries.get(c.countryToken.toLowerCase()));
+      const country = assertExists(countries.get(c.countryToken));
       const isoA2 = ets2IsoA2.get(country.code) ?? country.code;
       const countryCities = citiesByCountryIsoA2.get(isoA2);
       if (countryCities == null) {
