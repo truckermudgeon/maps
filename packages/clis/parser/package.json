@@ -22,6 +22,7 @@
     "@truckermudgeon/base": "0.0.0",
     "@truckermudgeon/map": "0.0.0",
     "ajv": "^8.12.0",
+    "ajv-keywords": "^5.1.0",
     "bindings": "^1.5.0",
     "chevrotain": "^10.5.0",
     "cli-progress": "^3.12.0",

@@ -1,7 +1,10 @@
 import type { JSONSchemaType } from 'ajv';
 import Ajv from 'ajv';
+import AjvKeywords from 'ajv-keywords';
 
 export const ajv = new Ajv();
+AjvKeywords(ajv, 'transform');
+
 // Workaround for bigint support
 // https://github.com/ajv-validator/ajv/issues/1116#issuecomment-664821182
 ajv.addKeyword({
@@ -24,42 +27,83 @@ ajv.addKeyword({
 // - can reveal important changes to files that need to be taken into account,
 //   like the changes in icon .mat files to support SDF files.
 
-const NumberTupleSchema: JSONSchemaType<[number, number]> = {
-  type: 'array',
-  items: [{ type: 'number' }, { type: 'number' }],
-  minItems: 2,
-  maxItems: 2,
-};
-const NumberTripleSchema: JSONSchemaType<[number, number, number]> = {
-  type: 'array',
-  items: [{ type: 'number' }, { type: 'number' }, { type: 'number' }],
-  minItems: 3,
-  maxItems: 3,
-};
-const NumberQuadrupleSchema: JSONSchemaType<[number, number, number, number]> =
-  {
+const integer: JSONSchemaType<number> = { type: 'integer' } as const;
+const number: JSONSchemaType<number> = { type: 'number' } as const;
+const string: JSONSchemaType<string> = { type: 'string' } as const;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+const bigint: JSONSchemaType<bigint> = { dataType: 'bigint' } as any;
+
+type Tuple<T, N extends number, R extends T[] = []> = R['length'] extends N
+  ? R
+  : Tuple<T, N, [T, ...R]>;
+
+const arrayOf = <T>(items: T) =>
+  ({
     type: 'array',
-    items: [
-      { type: 'number' },
-      { type: 'number' },
-      { type: 'number' },
-      { type: 'number' },
-    ],
-    minItems: 4,
-    maxItems: 4,
-  };
-const StringArraySchema: JSONSchemaType<string[]> = {
-  type: 'array',
-  items: { type: 'string' },
-  minItems: 1,
+    items,
+    minItems: 1,
+  }) as const;
+const fixedLengthArray = <T, N extends number>(
+  item: JSONSchemaType<T>,
+  length: N,
+): JSONSchemaType<Tuple<T, N>> =>
+  ({
+    ...arrayOf(item),
+    minItems: length,
+    maxItems: length,
+  }) as unknown as JSONSchemaType<Tuple<T, N>>;
+const stringEnum = <T extends string>(...values: readonly T[]) =>
+  ({
+    type: 'string',
+    enum: values,
+  }) as const;
+const stringPattern = (regex: RegExp) =>
+  ({
+    type: 'string',
+    pattern: regex.source,
+  }) as const;
+const nullable = <T extends object>(t: T) =>
+  ({
+    ...t,
+    nullable: true,
+  }) as const;
+const object = <T extends object, U extends keyof T>(
+  properties: T,
+  // TODO figure out a way to remove the need for this argument. It should be
+  //  calculate-able, based on non-nullable `properties`.
+  required: U[] = Object.keys(properties) as U[],
+) => {
+  return {
+    type: 'object',
+    properties,
+    required,
+  } as const;
 };
-const LocaleTokenSchema: JSONSchemaType<string> = {
-  type: 'string',
-  pattern: '^@@.+@@$',
-};
-const TokenStringSchema: JSONSchemaType<string> = {
-  type: 'string',
-  pattern: '^[0-9a-z_]{1,12}$',
+const patternRecord = <T extends object, U extends keyof T>(
+  pattern: RegExp,
+  properties: T,
+  required: U[] = Object.keys(properties) as U[],
+) =>
+  ({
+    type: 'object',
+    patternProperties: {
+      [pattern.source]: object(properties, required),
+    },
+    required: [],
+    minProperties: 1,
+    additionalProperties: false,
+  }) as const;
+
+const numberTuple = fixedLengthArray(number, 2);
+const numberTriple = fixedLengthArray(number, 3);
+const numberQuadruple = fixedLengthArray(number, 4);
+const stringArray = arrayOf(string);
+const localeToken = stringPattern(/^@@.+@@$/);
+const token = {
+  ...stringPattern(/^[0-9a-z_]{1,12}$/),
+  // ETS2 has some country and city names (e.g. Hungary, Odense) as capitalized
+  // tokens. Lowercase them so they're valid tokens.
+  transform: ['toLowerCase'],
 };
 
 export interface RouteSii {
@@ -71,27 +115,12 @@ export interface RouteSii {
     }
   >;
 }
-export const RouteSiiSchema: JSONSchemaType<RouteSii> = {
-  type: 'object',
-  properties: {
-    routeData: {
-      type: 'object',
-      patternProperties: {
-        '^\\.route_data\\.[a-z][a-z]{1,12}': {
-          type: 'object',
-          properties: {
-            fromCity: { type: 'string' },
-            toCity: { type: 'string' },
-          },
-          required: ['fromCity', 'toCity'],
-        },
-      },
-      required: [],
-      minProperties: 1,
-    },
-  },
-  required: ['routeData'],
-};
+export const RouteSiiSchema: JSONSchemaType<RouteSii> = object({
+  routeData: patternRecord(/^route_data\.[0-9a-z_]{1,12}$/, {
+    fromCity: token,
+    toCity: token,
+  }),
+});
 
 export interface AchievementsSii {
   achievementVisitCityData: Record<
@@ -205,265 +234,126 @@ export interface AchievementsSii {
     }
   >;
 }
-export const AchievementsSiiSchema: JSONSchemaType<AchievementsSii> = {
-  type: 'object',
-  properties: {
-    achievementVisitCityData: {
-      type: 'object',
-      patternProperties: {
-        '^\\.achievement\\.[a-z][a-z]_visit_cit': {
-          type: 'object',
-          properties: {
-            cities: StringArraySchema,
-            achievementName: { type: 'string' },
-          },
-          required: ['cities', 'achievementName'],
-        },
-      },
-      required: [],
-      minProperties: 1,
+export const AchievementsSiiSchema: JSONSchemaType<AchievementsSii> = object({
+  achievementVisitCityData: patternRecord(
+    /^\.achievement\.[a-z]{2}_visit_[a-z]{3}$/,
+    {
+      cities: stringArray,
+      achievementName: string,
     },
-    achievementDelivery: {
-      type: 'object',
-      patternProperties: {
-        '^\\.achievement\\.[0-9a-z_]{1,12}': {
-          type: 'object',
-          properties: {
-            condition: {
-              type: 'string',
-              pattern: '^\\.[0-9a-z_]{1,12}\\.condition$',
-            },
-            target: { type: 'integer' },
-            achievementName: { type: 'string' },
-          },
-          required: ['condition', 'achievementName'],
-        },
-      },
-      required: [],
-      minProperties: 1,
+  ),
+  achievementDelivery: patternRecord(/^\.achievement\.[0-9a-z_]{1,12}$/, {
+    condition: stringPattern(/^\.[0-9a-z_]{1,12}\.condition$/),
+    target: integer,
+    achievementName: string,
+  }),
+  achievementDeliveryCompany: patternRecord(
+    /^(\.[0-9a-z_]{1,12}){2,4}$/,
+    {
+      companyName: token,
+      cityName: nullable(token),
+      countryName: nullable(token),
     },
-    achievementDeliveryCompany: {
-      type: 'object',
-      patternProperties: {
-        '^\\.achievement\\.[0-9a-z_]{1,12}': {
-          type: 'object',
-          properties: {
-            companyName: TokenStringSchema,
-            cityName: { ...TokenStringSchema, nullable: true },
-            countryName: { ...TokenStringSchema, nullable: true },
-          },
-          required: ['companyName'],
-        },
-      },
-      required: [],
-      minProperties: 1,
+    ['companyName'],
+  ),
+  //    achievementDeliveryPointCountry: {
+  //      type: 'object',
+  //      patternProperties: {
+  //        '^\\.achievement\\.[0-9a-z_]{1,12}': {
+  //          type: 'object',
+  //          properties: {
+  //            role: { type: 'string' },
+  //            countryName: token,
+  //          },
+  //          required: ['role', 'countryName'],
+  //        },
+  //      },
+  //      required: [],
+  //      minProperties: 1,
+  //    },
+  achievementEachCompanyData: patternRecord(
+    /^\.achievement\.[0-9a-z_]{1,12}$/,
+    {
+      targets: nullable(stringArray),
+      sources: nullable(stringArray),
+      achievementName: string,
     },
-    //    achievementDeliveryPointCountry: {
-    //      type: 'object',
-    //      patternProperties: {
-    //        '^\\.achievement\\.[0-9a-z_]{1,12}': {
-    //          type: 'object',
-    //          properties: {
-    //            role: { type: 'string' },
-    //            countryName: TokenStringSchema,
-    //          },
-    //          required: ['role', 'countryName'],
-    //        },
-    //      },
-    //      required: [],
-    //      minProperties: 1,
-    //    },
-    achievementEachCompanyData: {
-      type: 'object',
-      patternProperties: {
-        '^\\.achievement\\.[0-9a-z_]{1,12}': {
-          type: 'object',
-          properties: {
-            targets: { ...StringArraySchema, nullable: true },
-            sources: { ...StringArraySchema, nullable: true },
-            achievementName: { type: 'string' },
-          },
-          required: ['achievementName'],
-        },
-      },
-      required: [],
-      minProperties: 1,
+    ['achievementName'],
+  ),
+  achievementTriggerData: patternRecord(/^\.achievement\.[0-9a-z_]{1,12}$/, {
+    triggerParam: string,
+    target: integer,
+    achievementName: string,
+  }),
+  achievementOversizeRoutesData: patternRecord(
+    /^\.achievement\.[0-9a-z_]{1,12}$/,
+    { achievementName: string },
+  ),
+  achievementDeliverCargoData: patternRecord(
+    /^\.achievement\.[0-9a-z_]{1,12}$/,
+    {
+      targets: stringArray,
+      achievementName: string,
     },
-    achievementTriggerData: {
-      type: 'object',
-      patternProperties: {
-        '^\\.achievement\\.[0-9a-z_]{1,12}': {
-          type: 'object',
-          properties: {
-            triggerParam: { type: 'string' },
-            target: { type: 'integer' },
-            achievementName: { type: 'string' },
-          },
-          required: ['triggerParam', 'target', 'achievementName'],
-        },
-      },
-      required: [],
-      minProperties: 1,
+  ),
+  achievementFerryData: patternRecord(
+    /^\.achievement\.[0-9a-z_]{1,12}$/,
+    {
+      endpointA: nullable(token),
+      endpointB: nullable(token),
+      ferryType: nullable(stringEnum('ferry', 'train')),
+      achievementName: string,
     },
-    achievementOversizeRoutesData: {
-      type: 'object',
-      patternProperties: {
-        '^\\.achievement\\.[0-9a-z_]{1,12}': {
-          type: 'object',
-          properties: {
-            achievementName: { type: 'string' },
-          },
-          required: ['achievementName'],
-        },
-      },
-      required: [],
-      minProperties: 1,
-      maxProperties: 1,
+    ['achievementName'],
+  ),
+  achievementEachDeliveryPoint: patternRecord(
+    /^\.achievement\.[0-9a-z_]{1,12}$/,
+    {
+      sources: stringArray,
+      targets: stringArray,
+      achievementName: string,
     },
-    achievementDeliverCargoData: {
-      type: 'object',
-      patternProperties: {
-        '^\\.achievement\\.[0-9a-z_]{1,12}': {
-          type: 'object',
-          properties: {
-            targets: StringArraySchema,
-            achievementName: { type: 'string' },
-          },
-          required: ['targets', 'achievementName'],
-        },
-      },
-      required: [],
-      minProperties: 1,
-    },
-    achievementFerryData: {
-      type: 'object',
-      patternProperties: {
-        '^\\.achievement\\.[0-9a-z_]{1,12}': {
-          type: 'object',
-          properties: {
-            endpointA: { ...TokenStringSchema, nullable: true },
-            endpointB: { ...TokenStringSchema, nullable: true },
-            ferryType: {
-              type: 'string',
-              enum: ['ferry', 'train'],
-              nullable: true,
-            },
-            achievementName: { type: 'string' },
-          },
-          required: ['achievementName'],
-        },
-      },
-      required: [],
-      minProperties: 1,
-    },
-    achievementEachDeliveryPoint: {
-      type: 'object',
-      patternProperties: {
-        '^\\.achievement\\.[0-9a-z_]{1,12}': {
-          type: 'object',
-          properties: {
-            sources: StringArraySchema,
-            targets: StringArraySchema,
-            achievementName: { type: 'string' },
-          },
-          required: ['sources', 'targets', 'achievementName'],
-        },
-      },
-      required: [],
-      minProperties: 1,
-    },
-  },
-  required: [
-    'achievementVisitCityData',
-    'achievementDelivery',
-    'achievementDeliveryCompany',
-    // 'achievementDeliveryPointCountry',
-    'achievementEachCompanyData',
-    'achievementTriggerData',
-    'achievementOversizeRoutesData',
-    'achievementDeliverCargoData',
-    'achievementFerryData',
-  ],
-};
+  ),
+});
 
 /** Only one of `effect` or `material` are expected to be present. */
 export interface IconMat {
   effect?: {
-    'ui.rfx'?: { texture: { texture: { source: string } } };
-    'ui.sdf.rfx'?: {
-      texture: { texture: { source: string } };
-      aux: [number, number, number, number][]; // will always have 5 quads
-    };
+    'ui.rfx'?: IconMatRfx;
+    'ui.sdf.rfx'?: IconMatSdfRfx;
   };
   material?: { ui: { texture: string } };
 }
-export const IconMatSchema: JSONSchemaType<IconMat> = {
-  type: 'object',
-  properties: {
-    effect: {
-      type: 'object',
-      nullable: true,
-      properties: {
-        'ui.rfx': {
-          type: 'object',
-          nullable: true,
-          properties: {
-            texture: {
-              type: 'object',
-              properties: {
-                texture: {
-                  type: 'object',
-                  properties: { source: { type: 'string' } },
-                  required: ['source'],
-                },
-              },
-              required: ['texture'],
-            },
-          },
-          required: ['texture'],
+// Break up the above into separate interfaces to workaround some typing issues.
+interface IconMatRfx {
+  texture: { texture: { source: string } };
+}
+interface IconMatSdfRfx {
+  texture: { texture: { source: string } };
+  aux: Tuple<Tuple<number, 4>, 5>;
+}
+const IconMatRfxSchema = object({
+  texture: object({ texture: object({ source: string }) }),
+});
+const IconMatSdfRfxSchema = object({
+  texture: object({ texture: object({ source: string }) }),
+  aux: fixedLengthArray(numberQuadruple, 5),
+});
+export const IconMatSchema: JSONSchemaType<IconMat> = object(
+  {
+    effect: nullable(
+      object(
+        {
+          'ui.rfx': nullable(IconMatRfxSchema),
+          'ui.sdf.rfx': nullable(IconMatSdfRfxSchema),
         },
-        'ui.sdf.rfx': {
-          type: 'object',
-          nullable: true,
-          properties: {
-            texture: {
-              type: 'object',
-              properties: {
-                texture: {
-                  type: 'object',
-                  properties: { source: { type: 'string' } },
-                  required: ['source'],
-                },
-              },
-              required: ['texture'],
-            },
-            aux: {
-              type: 'array',
-              items: NumberQuadrupleSchema,
-              minItems: 5,
-              maxItems: 5,
-            },
-          },
-          required: ['texture', 'aux'],
-        },
-      },
-      required: [],
-    },
-    material: {
-      type: 'object',
-      nullable: true,
-      properties: {
-        ui: {
-          type: 'object',
-          properties: { texture: { type: 'string' } },
-          required: ['texture'],
-        },
-      },
-      required: ['ui'],
-    },
+        [],
+      ),
+    ),
+    material: nullable(object({ ui: object({ texture: string }) })),
   },
-  required: [],
-};
+  [],
+);
 
 export interface LocalizationSii {
   localizationDb: {
@@ -476,26 +366,17 @@ export interface LocalizationSii {
       | Record<string, never>;
   };
 }
-export const LocalizationSiiSchema: JSONSchemaType<LocalizationSii> = {
-  type: 'object',
-  properties: {
-    localizationDb: {
-      type: 'object',
-      properties: {
-        '.localization': {
-          type: 'object',
-          properties: {
-            key: StringArraySchema,
-            val: StringArraySchema,
-          },
-          required: [],
-        },
+export const LocalizationSiiSchema: JSONSchemaType<LocalizationSii> = object({
+  localizationDb: object({
+    '.localization': object(
+      {
+        key: stringArray,
+        val: stringArray,
       },
-      required: ['.localization'],
-    },
-  },
-  required: ['localizationDb'],
-};
+      [],
+    ),
+  }),
+});
 
 export interface FerrySii {
   ferryData: Record<
@@ -506,53 +387,25 @@ export interface FerrySii {
     }
   >;
 }
-export const FerrySiiSchema: JSONSchemaType<FerrySii> = {
-  type: 'object',
-  properties: {
-    ferryData: {
-      type: 'object',
-      patternProperties: {
-        '^ferry\\..*$': {
-          type: 'object',
-          properties: {
-            ferryName: { type: 'string' },
-            ferryNameLocalized: { ...LocaleTokenSchema, nullable: true },
-          },
-          required: ['ferryName'],
-        },
-      },
-      required: [],
-      minProperties: 1,
-      maxProperties: 1,
+export const FerrySiiSchema: JSONSchemaType<FerrySii> = object({
+  ferryData: patternRecord(
+    /^ferry\.[0-9a-z_]{1,12}$/,
+    {
+      ferryName: string,
+      ferryNameLocalized: nullable(localeToken),
     },
-  },
-  required: ['ferryData'],
-};
+    ['ferryName'],
+  ),
+});
 
 export interface CompanySii {
   companyPermanent: Record<string, { name: string }>;
 }
-export const CompanySiiSchema: JSONSchemaType<CompanySii> = {
-  type: 'object',
-  properties: {
-    companyPermanent: {
-      type: 'object',
-      patternProperties: {
-        '^company\\.permanent\\..*$': {
-          type: 'object',
-          properties: {
-            name: { type: 'string' },
-          },
-          required: ['name'],
-        },
-      },
-      required: [],
-      minProperties: 1,
-      maxProperties: 1,
-    },
-  },
-  required: ['companyPermanent'],
-};
+export const CompanySiiSchema: JSONSchemaType<CompanySii> = object({
+  companyPermanent: patternRecord(/^company\.permanent\.[0-9a-z_]{1,12}$/, {
+    name: string,
+  }),
+});
 
 export interface CountrySii {
   countryData?: Record<
@@ -566,37 +419,20 @@ export interface CountrySii {
     }
   >;
 }
-export const CountrySiiSchema: JSONSchemaType<CountrySii> = {
-  type: 'object',
-  properties: {
-    countryData: {
-      type: 'object',
-      nullable: true,
-      patternProperties: {
-        '^country\\.data\\..*$': {
-          type: 'object',
-          properties: {
-            name: { type: 'string' },
-            nameLocalized: LocaleTokenSchema,
-            countryCode: { type: 'string' },
-            countryId: { type: 'integer' },
-            pos: NumberTripleSchema,
-          },
-          required: [
-            'name',
-            'nameLocalized',
-            'countryCode',
-            'countryId',
-            'pos',
-          ],
-        },
-      },
-      required: [],
-      maxProperties: 1,
-    },
+export const CountrySiiSchema: JSONSchemaType<CountrySii> = object(
+  {
+    countryData: nullable(
+      patternRecord(/^country\.data\.[0-9a-z_]{1,12}$/, {
+        name: string,
+        nameLocalized: localeToken,
+        countryCode: string,
+        countryId: integer,
+        pos: numberTriple,
+      }),
+    ),
   },
-  required: [],
-};
+  [],
+);
 
 export interface CitySii {
   cityData?: Record<
@@ -609,30 +445,23 @@ export interface CitySii {
     }
   >;
 }
-export const CitySiiSchema: JSONSchemaType<CitySii> = {
-  type: 'object',
-  properties: {
-    cityData: {
-      type: 'object',
-      nullable: true,
-      patternProperties: {
-        '^city\\..*$': {
-          type: 'object',
-          properties: {
-            cityName: { type: 'string' },
-            cityNameLocalized: LocaleTokenSchema,
-            country: { type: 'string' },
-            population: { type: 'integer', nullable: true },
-          },
-          required: ['cityName', 'cityNameLocalized', 'country'],
+export const CitySiiSchema: JSONSchemaType<CitySii> = object(
+  {
+    cityData: nullable(
+      patternRecord(
+        /^city\.[0-9a-z_]{1,12}$/,
+        {
+          cityName: string,
+          cityNameLocalized: localeToken,
+          country: token,
+          population: nullable(integer),
         },
-      },
-      required: [],
-      maxProperties: 1,
-    },
+        ['cityName', 'cityNameLocalized', 'country'],
+      ),
+    ),
   },
-  required: [],
-};
+  [],
+);
 
 export interface ViewpointsSii {
   photoAlbumItem: Record<
@@ -640,7 +469,7 @@ export interface ViewpointsSii {
     {
       name: string;
       dlcId: string;
-      objectsUid: bigint[];
+      objectsUid: [bigint];
     }
   >;
   photoAlbumGroup: Record<
@@ -651,46 +480,17 @@ export interface ViewpointsSii {
     }
   >;
 }
-export const ViewpointsSiiSchema: JSONSchemaType<ViewpointsSii> = {
-  type: 'object',
-  properties: {
-    photoAlbumItem: {
-      type: 'object',
-      patternProperties: {
-        '^album\\.viewpoints\\..*$': {
-          type: 'object',
-          properties: {
-            name: LocaleTokenSchema,
-            dlcId: { type: 'string' },
-            objectsUid: {
-              type: 'array',
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
-              items: { dataType: 'bigint' } as any,
-              maxItems: 1,
-            },
-          },
-          required: ['name', 'dlcId', 'objectsUid'],
-        },
-      },
-      required: [],
-    },
-    photoAlbumGroup: {
-      type: 'object',
-      patternProperties: {
-        '^album\\.viewpoints\\..*$': {
-          type: 'object',
-          properties: {
-            name: LocaleTokenSchema,
-            items: StringArraySchema,
-          },
-          required: ['name', 'items'],
-        },
-      },
-      required: [],
-    },
-  },
-  required: ['photoAlbumItem', 'photoAlbumGroup'],
-};
+export const ViewpointsSiiSchema: JSONSchemaType<ViewpointsSii> = object({
+  photoAlbumItem: patternRecord(/^album\.viewpoints\.[0-9a-z_]{1,12}$/, {
+    name: localeToken,
+    dlcId: token,
+    objectsUid: fixedLengthArray(bigint, 1),
+  }),
+  photoAlbumGroup: patternRecord(/^album\.viewpoints\.[0-9a-z_]{1,12}$/, {
+    name: localeToken,
+    items: stringArray,
+  }),
+});
 
 interface FerryConnectionSii {
   ferryConnection: Record<
@@ -704,86 +504,54 @@ interface FerryConnectionSii {
     }
   >;
 }
-export const FerryConnectionSiiSchema: JSONSchemaType<FerryConnectionSii> = {
-  type: 'object',
-  properties: {
-    ferryConnection: {
-      type: 'object',
-      patternProperties: {
-        '^conn\\..*$': {
-          type: 'object',
-          properties: {
-            price: { type: 'number' },
-            time: { type: 'number' },
-            distance: { type: 'number' },
-            connectionPositions: {
-              type: 'array',
-              nullable: true,
-              items: NumberTripleSchema,
-            },
-            connectionDirections: {
-              type: 'array',
-              nullable: true,
-              items: NumberTripleSchema,
-            },
-          },
-          required: ['price', 'time', 'distance'],
-        },
+export const FerryConnectionSiiSchema: JSONSchemaType<FerryConnectionSii> =
+  object({
+    ferryConnection: patternRecord(
+      /^conn(\.[0-9a-z_]{1,12}){2}$/,
+      {
+        price: number,
+        time: number,
+        distance: number,
+        connectionPositions: nullable(arrayOf(numberTriple)),
+        connectionDirections: nullable(arrayOf(numberTriple)),
       },
-      required: [],
-      minProperties: 1,
-      maxProperties: 1,
-    },
-  },
-  required: ['ferryConnection'],
-};
+      ['price', 'time', 'distance'],
+    ),
+  });
 
 export interface PrefabSii {
   prefabModel?: Record<string, { prefabDesc: string; modelDesc: string }>;
 }
-export const PrefabSiiSchema: JSONSchemaType<PrefabSii> = {
-  type: 'object',
-  properties: {
-    prefabModel: {
-      type: 'object',
-      nullable: true,
-      patternProperties: {
-        '^prefab\\..*$': {
-          type: 'object',
-          properties: {
-            prefabDesc: { type: 'string' },
-            modelDesc: { type: 'string' },
-          },
-          required: ['prefabDesc', 'modelDesc'],
-        },
-      },
-      required: [],
-    },
+export const PrefabSiiSchema: JSONSchemaType<PrefabSii> = object(
+  {
+    prefabModel: nullable(
+      patternRecord(/^prefab\.[0-9a-z_]{1,12}$/, {
+        prefabDesc: string,
+        modelDesc: string,
+      }),
+    ),
   },
-};
+  [],
+);
 
 export interface ModelSii {
   modelDef?: Record<string, { modelDesc?: string; vegetationModel?: string }>;
 }
-export const ModelSiiSchema: JSONSchemaType<ModelSii> = {
-  type: 'object',
-  properties: {
-    modelDef: {
-      type: 'object',
-      nullable: true,
-      patternProperties: {
-        '^model\\..*$': {
-          type: 'object',
-          properties: {
-            modelDesc: { type: 'string', nullable: true },
-            vegetationModel: { type: 'string', nullable: true },
-          },
+export const ModelSiiSchema: JSONSchemaType<ModelSii> = object(
+  {
+    modelDef: nullable(
+      patternRecord(
+        /^model\.[0-9a-z_]{1,12}$/,
+        {
+          modelDesc: nullable(string),
+          vegetationModel: nullable(string),
         },
-      },
-      required: [],
-    },
+        [],
+      ),
+    ),
   },
-};
+  [],
+);
 
 export interface RoadLookSii {
   roadLook?: Record<
@@ -805,90 +573,47 @@ export interface RoadLookSii {
   >;
 }
 // TODO do something with roadTemplateVariant (see road_look.template.sii)?
-export const RoadLookSiiSchema: JSONSchemaType<RoadLookSii> = {
-  type: 'object',
-  properties: {
-    roadLook: {
-      type: 'object',
-      nullable: true,
-      patternProperties: {
-        '^road\\..*$': {
-          type: 'object',
-          properties: {
-            name: { type: 'string' },
-            lanesLeft: { ...StringArraySchema, nullable: true },
-            lanesRight: { ...StringArraySchema, nullable: true },
-            roadSizeLeft: { type: 'number', nullable: true },
-            roadSizeRight: { type: 'number', nullable: true },
-            roadOffset: { type: 'number', nullable: true },
-            centerLineLeftOffset: { type: 'number', nullable: true },
-            centerLineRightOffset: { type: 'number', nullable: true },
-            shoulderSpaceLeft: { type: 'number', nullable: true },
-            shoulderSpaceRight: { type: 'number', nullable: true },
-            laneOffsetsLeft: {
-              type: 'array',
-              nullable: true,
-              items: NumberTupleSchema,
-            },
-            laneOffsetsRight: {
-              type: 'array',
-              nullable: true,
-              items: NumberTupleSchema,
-            },
-          },
-          required: ['name'],
+export const RoadLookSiiSchema: JSONSchemaType<RoadLookSii> = object(
+  {
+    roadLook: nullable(
+      patternRecord(
+        /^road\.[0-9a-z_]{1,12}$/,
+        {
+          name: string,
+          lanesLeft: nullable(stringArray),
+          lanesRight: nullable(stringArray),
+          roadSizeLeft: nullable(number),
+          roadSizeRight: nullable(number),
+          roadOffset: nullable(number),
+          centerLineLeftOffset: nullable(number),
+          centerLineRightOffset: nullable(number),
+          shoulderSpaceLeft: nullable(number),
+          shoulderSpaceRight: nullable(number),
+          laneOffsetsLeft: nullable(arrayOf(numberTuple)),
+          laneOffsetsRight: nullable(arrayOf(numberTuple)),
         },
-      },
-      required: [],
-    },
+        ['name'],
+      ),
+    ),
   },
-};
+  [],
+);
 
 export interface CityCompanySii {
   companyDef: Record<string, { city: string }>;
 }
-export const CityCompanySiiSchema: JSONSchemaType<CityCompanySii> = {
-  type: 'object',
-  properties: {
-    companyDef: {
-      type: 'object',
-      patternProperties: {
-        '^\\..*$': {
-          type: 'object',
-          properties: {
-            city: { type: 'string' },
-          },
-          required: ['city'],
-        },
-      },
-      required: [],
-    },
-  },
-  required: ['companyDef'],
-};
+export const CityCompanySiiSchema: JSONSchemaType<CityCompanySii> = object({
+  companyDef: patternRecord(/^\.[0-9a-z_]{1,12}$/, {
+    city: token,
+  }),
+});
 
 export interface CargoSii {
   cargoDef: Record<string, { cargo: string }>;
 }
-export const CargoSiiSchema: JSONSchemaType<CargoSii> = {
-  type: 'object',
-  properties: {
-    cargoDef: {
-      type: 'object',
-      patternProperties: {
-        '^\\..*$': {
-          type: 'object',
-          properties: {
-            // Note: more information (like l18n strings) for `cargo.foo` can be found in defs/cargo/foo.sui.
-            cargo: { type: 'string', pattern: '^cargo\\.' },
-          },
-          required: ['cargo'],
-        },
-      },
-      required: [],
-      minProperties: 1,
-      maxProperties: 1,
-    },
-  },
-  required: ['cargoDef'],
-};
+export const CargoSiiSchema: JSONSchemaType<CargoSii> = object({
+  cargoDef: patternRecord(/^\.[0-9a-z_]{1,12}$/, {
+    // Note: more information (like l18n strings) for `cargo.foo` can be found in defs/cargo/foo.sui.
+    cargo: stringPattern(/^cargo\.[0-9a-z_]{1,12}$/),
+  }),
+});
