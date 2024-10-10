@@ -106,6 +106,22 @@ const token = {
   transform: ['toLowerCase'],
 };
 
+export interface VersionSii {
+  fsPackSet: Record<
+    string,
+    {
+      application: 'ats' | 'eut2';
+      version: string;
+    }
+  >;
+}
+export const VersionSiiSchema: JSONSchemaType<VersionSii> = object({
+  fsPackSet: patternRecord(/^_nameless(\.[0-9a-z_]{1,12}){2}$/, {
+    application: stringEnum('ats', 'eut2'),
+    version: stringPattern(/^\d+(\.\d+){3}$/),
+  }),
+});
+
 export interface RouteSii {
   routeData: Record<
     string,
@@ -122,11 +138,27 @@ export const RouteSiiSchema: JSONSchemaType<RouteSii> = object({
   }),
 });
 
-interface BaseAchievementsSii {
+export interface BaseAchievementsSii {
   achievementVisitCityData: Record<
     string,
     {
       cities: string[];
+      achievementName: string;
+    }
+  >;
+  achievementDeliveryLogData: Record<
+    string,
+    {
+      // one of the following combinations of string[] fields:
+      // { cargos, sourceCompanies }
+      // { cargos }
+      // { sourceCities, targetCities }
+      // { sourceCompanies }
+      // { sourceCities }
+      sourceCompanies?: string[];
+      cargos?: string[];
+      sourceCities?: string[];
+      targetCities?: string[];
       achievementName: string;
     }
   >;
@@ -224,6 +256,17 @@ const baseAchievementsProperties = {
       achievementName: string,
     },
   ),
+  achievementDeliveryLogData: patternRecord(
+    /^\.achievement\.[0-9a-z_]{1,12}$/,
+    {
+      sourceCompanies: nullable(stringArray),
+      cargos: nullable(stringArray),
+      sourceCities: nullable(stringArray),
+      targetCities: nullable(stringArray),
+      achievementName: string,
+    },
+    ['achievementName'],
+  ),
   achievementDelivery: patternRecord(/^\.achievement\.[0-9a-z_]{1,12}$/, {
     condition: stringPattern(/^\.[0-9a-z_]{1,12}\.condition$/),
     target: integer,
@@ -290,27 +333,12 @@ export interface Ets2AchievementsSii extends BaseAchievementsSii {
       ferryType: 'train' | 'ferry';
     }
   >;
+  // referenced by achievementDelivery, e.g. ib_a_coruna
   achievementDeliveryPointCity: Record<
     string,
     {
       role: 'source' | 'target';
       cityName: string;
-    }
-  >;
-  achievementDeliveryLogData: Record<
-    string,
-    {
-      // one of the following combinations of string[] fields:
-      // ✅{ cargos, sourceCompanies }
-      // ❌{ cargos } (cargo-only achievements currently unsupported)
-      // ✅{ sourceCities, targetCities }
-      // ✅{ sourceCompanies }
-      // ✅{ sourceCities }
-      sourceCompanies?: string[];
-      cargos?: string[];
-      sourceCities?: string[];
-      targetCities?: string[];
-      achievementName: string;
     }
   >;
   achievementCompareData: Record<
@@ -347,17 +375,6 @@ export const Ets2AchievementsSiiSchema: JSONSchemaType<Ets2AchievementsSii> =
       role: stringEnum('source', 'target'),
       cityName: token,
     }),
-    achievementDeliveryLogData: patternRecord(
-      /^\.achievement\.[0-9a-z_]{1,12}$/,
-      {
-        sourceCompanies: nullable(stringArray),
-        cargos: nullable(stringArray),
-        sourceCities: nullable(stringArray),
-        targetCities: nullable(stringArray),
-        achievementName: string,
-      },
-      ['achievementName'],
-    ),
     achievementCompareData: patternRecord(/^\.achievement\.[0-9a-z_]{1,12}$/, {
       achievementName: string,
     }),

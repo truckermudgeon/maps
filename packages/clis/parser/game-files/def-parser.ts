@@ -21,9 +21,11 @@ import type { Entries } from './scs-archive';
 import { parseSii } from './sii-parser';
 import type {
   AtsAchievementsSii,
+  BaseAchievementsSii,
   CitySii,
   CompanySii,
   CountrySii,
+  Ets2AchievementsSii,
   FerrySii,
   ModelSii,
   PrefabSii,
@@ -37,6 +39,7 @@ import {
   CitySiiSchema,
   CompanySiiSchema,
   CountrySiiSchema,
+  Ets2AchievementsSiiSchema,
   FerryConnectionSiiSchema,
   FerrySiiSchema,
   ModelSiiSchema,
@@ -47,8 +50,12 @@ import {
 } from './sii-schemas';
 import { includeDirectiveCollector } from './sii-visitors';
 
-export function parseDefFiles(entries: Entries) {
-  logger.log('parsing def, prefab .ppd, and model .pmg files...');
+export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
+  logger.log(
+    'parsing',
+    application,
+    'def, prefab .ppd, and model .pmg files...',
+  );
   const def = Preconditions.checkExists(entries.directories.get('def'));
 
   const cities = new Map<
@@ -199,9 +206,22 @@ export function parseDefFiles(entries: Entries) {
   }
   logger.info('parsed', viewpoints.size, 'viewpoints');
 
-  const achievements = processAtsAchievementsJson(
-    convertSiiToJson('def/achievements.sii', entries, AtsAchievementsSiiSchema),
-  );
+  const achievements =
+    application === 'ats'
+      ? processAtsAchievementsJson(
+          convertSiiToJson(
+            'def/achievements.sii',
+            entries,
+            AtsAchievementsSiiSchema,
+          ),
+        )
+      : processEts2AchievementsJson(
+          convertSiiToJson(
+            'def/achievements.sii',
+            entries,
+            Ets2AchievementsSiiSchema,
+          ),
+        );
   logger.info('parsed', achievements.size, 'achievements');
 
   let routes: Map<string, Route>;
@@ -566,8 +586,8 @@ function processRoadLookJson(obj: RoadLookSii): Map<string, RoadLook> {
   );
 }
 
-function processAtsAchievementsJson(
-  obj: AtsAchievementsSii,
+function processBaseAchievementsJson(
+  obj: BaseAchievementsSii,
 ): Map<string, Achievement> {
   const achievements = new Map<string, Achievement>();
 
@@ -582,6 +602,31 @@ function processAtsAchievementsJson(
   }
 
   //
+  // achievementDeliveryLogData
+  //
+  for (const a of Object.values(obj.achievementDeliveryLogData)) {
+    const {
+      cargos = [],
+      sourceCities = [],
+      sourceCompanies = [],
+      targetCities = [],
+    } = a;
+    const locations = [
+      ...sourceCities.map(city => ({ type: 'city', city }) as const),
+      ...targetCities.map(city => ({ type: 'city', city }) as const),
+      ...sourceCompanies.map(companyAndCity => {
+        const [company, city] = companyAndCity.split('.');
+        return { type: 'company', company, city } as const;
+      }),
+    ];
+    achievements.set(a.achievementName, {
+      type: 'deliveryLogData',
+      locations,
+      cargos,
+    });
+  }
+
+  //
   // achievementDeliveryCompany
   //
   const deliveryCompanyKeys = Object.keys(obj.achievementDeliveryCompany);
@@ -589,21 +634,27 @@ function processAtsAchievementsJson(
     // e.g., ".nv_quarries", for the condition ".nv_quarries.condition"
     const condition = a.condition.split('.')[1];
     const keys = deliveryCompanyKeys.filter(c => c.startsWith(`.${condition}`));
+    if (!keys.length) {
+      // if there's no company info, then the achievement is probably something
+      // cargo-related, like tx_cotton, or is city-based (e.g., ib_a_coruna).
+      logger.warn(
+        'ignoring delivery achievement (no matching companies)',
+        a.achievementName,
+        a.condition,
+      );
+      continue;
+    }
+
     const companies: {
       company: string;
       locationType: 'city' | 'country';
       locationToken: string;
     }[] = [];
-    if (!keys.length) {
-      // if there's no company info, then the achievement is probably something
-      // cargo-related, like tx_cotton.
-      logger.warn('ignoring delivery achievement', a.achievementName);
-      continue;
-    }
-
     for (const k of keys) {
       const dc = assertExists(obj.achievementDeliveryCompany[k]);
       if (dc.cityName == null && dc.countryName == null) {
+        // "any matching company" condition, like ks_salt.
+        // currently unsupported.
         continue;
       }
       assert(!!dc.cityName !== !!dc.countryName);
@@ -613,10 +664,16 @@ function processAtsAchievementsJson(
         locationToken: assertExists(dc.cityName ?? dc.countryName),
       });
     }
+    if (companies.length === 0) {
+      continue;
+    }
 
     achievements.set(a.achievementName, {
       type: 'delivery',
-      companies,
+      delivery: {
+        type: 'company',
+        companies,
+      },
     });
   }
 
@@ -665,17 +722,6 @@ function processAtsAchievementsJson(
   }
 
   //
-  // achievementFerryData
-  //
-  for (const a of Object.values(obj.achievementFerryData)) {
-    achievements.set(a.achievementName, {
-      type: 'ferryData',
-      endpointA: a.endpointA,
-      endpointB: a.endpointB,
-    });
-  }
-
-  //
   // achievementEachDeliveryPoint
   //
   for (const a of Object.values(obj.achievementEachDeliveryPoint)) {
@@ -692,6 +738,97 @@ function processAtsAchievementsJson(
   for (const a of Object.values(obj.achievementOversizeRoutesData)) {
     achievements.set(a.achievementName, {
       type: 'oversizeRoutesData',
+    });
+  }
+
+  return achievements;
+}
+
+function processAtsAchievementsJson(
+  obj: AtsAchievementsSii,
+): Map<string, Achievement> {
+  const achievements = processBaseAchievementsJson(obj);
+
+  //
+  // achievementFerryData
+  //
+  for (const a of Object.values(obj.achievementFerryData)) {
+    achievements.set(a.achievementName, {
+      type: 'ferryData',
+      endpointA: a.endpointA,
+      endpointB: a.endpointB,
+    });
+  }
+
+  return achievements;
+}
+
+function processEts2AchievementsJson(
+  obj: Ets2AchievementsSii,
+): Map<string, Achievement> {
+  const achievements = processBaseAchievementsJson(obj);
+
+  //
+  // achievementFerryData
+  //
+  for (const a of Object.values(obj.achievementFerryData)) {
+    achievements.set(a.achievementName, {
+      type: 'ferryDataByType',
+      ferryType: a.ferryType,
+    });
+  }
+
+  //
+  // achievementDeliveryPointCity
+  //
+  const deliveryCityKeys = Object.keys(obj.achievementDeliveryPointCity);
+  for (const a of Object.values(obj.achievementDelivery)) {
+    // e.g., ".ib_a_coruna", for the condition ".ib_a_coruna.condition"
+    const condition = a.condition.split('.')[1];
+    const keys = deliveryCityKeys.filter(c => c.startsWith(`.${condition}`));
+    if (!keys.length) {
+      // if there's no city info, then the achievement is probably something
+      // cargo-related, like bw_ore_caravan.
+      logger.warn(
+        'ignoring delivery achievement (no matching cities)',
+        a.achievementName,
+      );
+      continue;
+    }
+
+    const cities: { cityToken: string }[] = [];
+    for (const k of keys) {
+      const dc = assertExists(obj.achievementDeliveryPointCity[k]);
+      cities.push({ cityToken: dc.cityName });
+    }
+
+    assert(!achievements.has(a.achievementName));
+    achievements.set(a.achievementName, {
+      type: 'delivery',
+      delivery: {
+        type: 'city',
+        cities,
+      },
+    });
+  }
+
+  //
+  // achievementCompareData
+  //
+  for (const a of Object.values(obj.achievementCompareData)) {
+    achievements.set(a.achievementName, {
+      type: 'compareData',
+      achievementName: a.achievementName,
+    });
+  }
+
+  //
+  // achievementVisitPrefabData
+  //
+  for (const a of Object.values(obj.achievementVisitPrefabData)) {
+    achievements.set(a.achievementName, {
+      type: 'visitPrefabData',
+      prefab: a.prefab,
     });
   }
 
