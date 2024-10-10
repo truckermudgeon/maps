@@ -39,24 +39,27 @@ export function convertToAchievementsGeoJson(
     countries,
     companies,
     ferries,
+    pois,
     routes,
     trajectories,
   } = tsMapData;
-  const dlcGuardQuadTree = assertExists(
-    normalizeDlcGuards(
-      tsMapData.roads,
-      prefabs,
-      tsMapData.mapAreas,
-      triggers,
-      cutscenes,
-      tsMapData.pois,
-      {
-        map,
-        nodes,
-      },
-    ),
+  const dlcGuardQuadTree = normalizeDlcGuards(
+    tsMapData.roads,
+    prefabs,
+    tsMapData.mapAreas,
+    triggers,
+    cutscenes,
+    pois,
+    {
+      map,
+      nodes,
+    },
   );
   const getDlcGuard = ({ x, y }: { x: number; y: number }): number => {
+    if (!dlcGuardQuadTree) {
+      // dlc guards unsupported for current map.
+      return 0;
+    }
     const g = dlcGuardQuadTree.find(x, y)?.dlcGuard ?? -1;
     if (g == -1) {
       logger.warn('-1 dlc guard!');
@@ -95,6 +98,45 @@ export function convertToAchievementsGeoJson(
       coordinates: node,
       dlcGuard: getDlcGuard(node),
     };
+  };
+  const deliveryAchievementToPoints = (
+    achievement: Achievement & { type: 'delivery' },
+  ): Point[] => {
+    const { delivery } = achievement;
+    switch (delivery.type) {
+      case 'company':
+        return delivery.companies.flatMap(a => {
+          switch (a.locationType) {
+            case 'city':
+              if (!cities.has(a.locationToken)) {
+                return [];
+              }
+              return assertExists(
+                cityAndCompanyTokensToPoint(a.locationToken, a.company),
+              );
+            case 'country': {
+              const country = countries.get(a.locationToken);
+              if (!country) {
+                logger.warn('ignoring country', a.locationToken);
+                return [];
+              }
+
+              const citiesInCountry = [...cities.values()].filter(
+                c => c.countryToken === country.token,
+              );
+              return citiesInCountry
+                .map(c => cityAndCompanyTokensToPoint(c.token, a.company))
+                .filter(c => c != null);
+            }
+            default:
+              throw new UnreachableError(a.locationType);
+          }
+        });
+      case 'city':
+        return delivery.cities.map(c => cityTokenToPoint(c.cityToken));
+      default:
+        throw new UnreachableError(delivery);
+    }
   };
   const triggerAchievementToPoints = (
     achievement: Achievement & { type: 'triggerData' },
@@ -153,6 +195,17 @@ export function convertToAchievementsGeoJson(
       { coordinates: bFerry, dlcGuard },
     ];
   };
+  const ferryByTypeAchievementToPoints = (
+    achievement: Achievement & { type: 'ferryDataByType' },
+  ): Point[] => {
+    const ferriesByType = [...ferries.values()].filter(
+      f => f.train === (achievement.ferryType === 'train'),
+    );
+    return ferriesByType.map(f => ({
+      coordinates: f,
+      dlcGuard: getDlcGuard(f),
+    }));
+  };
   const deliveryPointAchievementToPoints = (
     achievement: Achievement & { type: 'eachDeliveryPoint' },
   ): Point[] => {
@@ -169,24 +222,30 @@ export function convertToAchievementsGeoJson(
 
     const cs = [...cityTokens].map(t => assertExists(cities.get(t)));
     const countryTokens = new Set<string>(cs.map(c => c.countryToken));
-    const atsDlc = [...countryTokens].map(t => {
-      const country = assertExists(countries.get(t));
-      const guard = assertExists(
-        AtsCountryIdToDlcGuard[country.id as AtsCountryId],
-      );
-      const set = AtsDlcGuards[guard];
-      assert(set.size === 1);
-      return [...set][0];
-    });
     let dlcGuard: number | undefined;
-    for (const [key, set] of Object.entries(AtsDlcGuards)) {
-      if (atsDlc.every(c => set.has(c))) {
-        dlcGuard = Number(key);
-        break;
+    // TODO add support for ETS2 dlc guards
+    if (map === 'usa') {
+      const atsDlc = [...countryTokens].map(t => {
+        const country = assertExists(countries.get(t));
+        const guard = assertExists(
+          AtsCountryIdToDlcGuard[country.id as AtsCountryId],
+        );
+        const set = AtsDlcGuards[guard];
+        assert(set.size === 1);
+        return [...set][0];
+      });
+      for (const [key, set] of Object.entries(AtsDlcGuards)) {
+        if (atsDlc.every(c => set.has(c))) {
+          dlcGuard = Number(key);
+          break;
+        }
       }
-    }
-    if (dlcGuard == null) {
-      logger.warn('could not calculate dlcGuard');
+      if (dlcGuard == null) {
+        logger.warn('could not calculate dlcGuard');
+        dlcGuard = 0;
+      }
+    } else {
+      // ETS2 dlc guards unsupported.
       dlcGuard = 0;
     }
 
@@ -208,30 +267,36 @@ export function convertToAchievementsGeoJson(
         const r = assertExists(routes.get(c.route));
         const cs = [r.fromCity, r.toCity].map(t => assertExists(cities.get(t)));
         const countryTokens = new Set<string>(cs.map(c => c.countryToken));
-        const atsDlc = [...countryTokens].map(t => {
-          const country = assertExists(countries.get(t));
-          const guard = assertExists(
-            AtsCountryIdToDlcGuard[country.id as AtsCountryId],
-          );
-          const set = AtsDlcGuards[guard];
-          if (set.size === 0) {
-            return 0;
-          }
-          assert(
-            set.size === 1,
-            `expected singleton set for ${country.id}, got ${[...set].join(',')}`,
-          );
-          return [...set][0];
-        });
         let dlcGuard: number | undefined;
-        for (const [key, set] of Object.entries(AtsDlcGuards)) {
-          if (atsDlc.every(c => set.has(c))) {
-            dlcGuard = Number(key);
-            break;
+        // TODO add support for ETS2 dlc guards
+        if (map === 'usa') {
+          const atsDlc = [...countryTokens].map(t => {
+            const country = assertExists(countries.get(t));
+            const guard = assertExists(
+              AtsCountryIdToDlcGuard[country.id as AtsCountryId],
+            );
+            const set = AtsDlcGuards[guard];
+            if (set.size === 0) {
+              return 0;
+            }
+            assert(
+              set.size === 1,
+              `expected singleton set for ${country.id}, got ${[...set].join(',')}`,
+            );
+            return [...set][0];
+          });
+          for (const [key, set] of Object.entries(AtsDlcGuards)) {
+            if (atsDlc.every(c => set.has(c))) {
+              dlcGuard = Number(key);
+              break;
+            }
           }
-        }
-        if (dlcGuard == null) {
-          logger.warn('could not calculate dlcGuard');
+          if (dlcGuard == null) {
+            logger.warn('could not calculate dlcGuard');
+            dlcGuard = 0;
+          }
+        } else {
+          // ETS2 dlc guards unsupported.
           dlcGuard = 0;
         }
 
@@ -255,35 +320,7 @@ export function convertToAchievementsGeoJson(
           );
           break;
         case 'delivery':
-          points.push(
-            ...a.companies.flatMap(a => {
-              switch (a.locationType) {
-                case 'city':
-                  if (!cities.has(a.locationType)) {
-                    return [];
-                  }
-                  return assertExists(
-                    cityAndCompanyTokensToPoint(a.locationToken, a.company),
-                  );
-                case 'country': {
-                  const country = countries.get(a.locationToken);
-                  if (!country) {
-                    logger.warn('ignoring country', a.locationToken);
-                    return [];
-                  }
-
-                  const citiesInCountry = [...cities.values()].filter(
-                    c => c.countryToken === country.token,
-                  );
-                  return citiesInCountry
-                    .map(c => cityAndCompanyTokensToPoint(c.token, a.company))
-                    .filter(c => c != null);
-                }
-                default:
-                  throw new UnreachableError(a.locationType);
-              }
-            }),
-          );
+          points.push(...deliveryAchievementToPoints(a));
           break;
         case 'eachCompanyData':
         case 'deliverCargoData':
@@ -310,6 +347,9 @@ export function convertToAchievementsGeoJson(
         case 'ferryData':
           points.push(...ferryAchievementToPoints(a));
           break;
+        case 'ferryDataByType':
+          points.push(...ferryByTypeAchievementToPoints(a));
+          break;
         case 'eachDeliveryPoint': {
           const deliverPoints = deliveryPointAchievementToPoints(a);
           if (deliverPoints.length === 0) {
@@ -325,6 +365,59 @@ export function convertToAchievementsGeoJson(
           }
           points.push(...routesToPoints());
           break;
+        case 'deliveryLogData':
+          points.push(
+            ...a.locations
+              .map(l => {
+                switch (l.type) {
+                  case 'city':
+                    return cityTokenToPoint(l.city);
+                  case 'company':
+                    return cityAndCompanyTokensToPoint(l.city, l.company);
+                  default:
+                    throw new UnreachableError(l);
+                }
+              })
+              .filter(exists),
+          );
+          break;
+        case 'compareData':
+          if (a.achievementName === 'use_all_ports') {
+            points.push(
+              ...pois
+                .filter(p => p.type === 'ferry')
+                .map(f => ({
+                  coordinates: f,
+                  dlcGuard: getDlcGuard(f),
+                })),
+            );
+          } else if (a.achievementName === 'discover_all_agencies') {
+            points.push(
+              ...pois
+                .filter(
+                  p => p.type === 'facility' && p.icon === 'recruitment_ico',
+                )
+                .map(f => ({
+                  coordinates: f,
+                  dlcGuard: getDlcGuard(f),
+                })),
+            );
+          } else {
+            logger.warn('unknown compareData achievement', a.achievementName);
+          }
+          break;
+        case 'visitPrefabData': {
+          const prefab = prefabs.values().find(p => p.token === a.prefab);
+          if (!prefab) {
+            logger.warn('unknown prefab', a.prefab, 'for achievement', a.token);
+            break;
+          }
+          points.push({
+            coordinates: prefab,
+            dlcGuard: getDlcGuard(prefab),
+          });
+          break;
+        }
         default:
           throw new UnreachableError(a);
       }

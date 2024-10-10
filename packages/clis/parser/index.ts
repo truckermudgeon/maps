@@ -16,12 +16,11 @@ const untildify = (path: string) =>
 
 function main() {
   const args = yargs(hideBin(process.argv))
-    .usage(
-      'Parses ATS game data and outputs map JSON and PNG files.\nUsage: $0 -i <dir> -o <dir>',
-    )
+    .usage('Parses ATS/ETS2 game data and outputs map JSON and PNG files.\n')
+    .usage('Usage: $0 -i <dir> -o <dir>')
     .option('inputDir', {
       alias: 'i',
-      describe: 'Path to ATS game dir (the one with all the .scs files)',
+      describe: 'Path to ATS/ETS2 game dir (the one with all the .scs files)',
       type: 'string',
       coerce: untildify,
       demandOption: true,

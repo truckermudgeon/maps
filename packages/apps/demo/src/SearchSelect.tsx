@@ -1,11 +1,11 @@
 import { EmojiEvents, LocationCity } from '@mui/icons-material';
 import { List, ListItem, Option, Select, Stack, Typography } from '@mui/joy';
 import { assertExists } from '@truckermudgeon/base/assert';
-import { Preconditions } from '@truckermudgeon/base/precon';
+import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
 
 export type SearchOption = Readonly<
   {
-    label: string; // this is unused.
+    label: string;
     value: {
       map: 'usa' | 'europe';
       search: 'cities' | 'achievements';
@@ -48,7 +48,6 @@ interface SearchSelectProps {
 }
 
 export const SearchSelect = ({ selected, onSelect }: SearchSelectProps) => {
-  console.log('rendering search select component', selected);
   return (
     <Select
       sx={{ paddingBlock: 0, minWidth: 'fit-content' }}
@@ -81,50 +80,46 @@ export const SearchSelect = ({ selected, onSelect }: SearchSelectProps) => {
         );
       }}
     >
-      <List>
-        <ListItem>
-          <Typography level={'body-xs'} fontWeight={'lg'}>
-            ATS
-          </Typography>
-        </ListItem>
-        <Option
-          value={options[0].value}
-          sx={{ px: '1em', textTransform: 'capitalize' }}
-        >
-          <LocationCity />
-          {options[0].value.search}
-        </Option>
-        <Option
-          value={options[1].value}
-          sx={{ px: '1em', textTransform: 'capitalize' }}
-        >
-          <EmojiEvents />
-          {options[1].value.search}
-        </Option>
-      </List>
-      <List>
-        <ListItem>
-          <Typography level={'body-xs'} fontWeight={'lg'}>
-            ETS2
-          </Typography>
-        </ListItem>
-        <Option
-          value={options[2].value}
-          sx={{ px: '1em', textTransform: 'capitalize' }}
-        >
-          <LocationCity />
-          {options[2].value.search}
-        </Option>
-        {/*
-        <Option
-          value={options[3].value}
-          sx={{ px: '1em', textTransform: 'capitalize' }}
-        >
-          <EmojiEvents />
-          {options[3].value.search}
-        </Option>
-        */}
-      </List>
+      {Object.entries(Object.groupBy(options, ({ label }) => label)).map(
+        ([label, value]) => {
+          return (
+            <List key={label}>
+              <ListItem>
+                <Typography level={'body-xs'} fontWeight={'lg'}>
+                  {label}
+                </Typography>
+              </ListItem>
+              {value?.map(option => {
+                return (
+                  <Option
+                    key={option.value.search}
+                    value={option.value}
+                    sx={{ px: '1em', textTransform: 'capitalize' }}
+                  >
+                    <Decoration search={option.value.search} />
+                    {option.value.search}
+                  </Option>
+                );
+              })}
+            </List>
+          );
+        },
+      )}
     </Select>
   );
+};
+
+const Decoration = ({
+  search,
+}: {
+  search: SearchOption['value']['search'];
+}) => {
+  switch (search) {
+    case 'cities':
+      return <LocationCity />;
+    case 'achievements':
+      return <EmojiEvents />;
+    default:
+      throw new UnreachableError(search);
+  }
 };

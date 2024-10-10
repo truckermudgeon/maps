@@ -41,7 +41,11 @@ import { parseDefFiles } from './def-parser';
 import type { Entries } from './scs-archive';
 import { ScsArchive } from './scs-archive';
 import { parseSector } from './sector-parser';
-import { IconMatSchema, LocalizationSiiSchema } from './sii-schemas';
+import {
+  IconMatSchema,
+  LocalizationSiiSchema,
+  VersionSiiSchema,
+} from './sii-schemas';
 
 export function parseMapFiles(
   scsFilePaths: string[],
@@ -58,6 +62,7 @@ export function parseMapFiles(
     'core.scs',
     'def.scs',
     'locale.scs',
+    'version.scs',
   ]);
   const archives = scsFilePaths
     .filter(p => {
@@ -70,8 +75,9 @@ export function parseMapFiles(
     });
   const entries = new CombinedEntries(archives);
   try {
+    const version = parseVersionSii(entries);
     const icons = parseIconMatFiles(entries);
-    const defData = parseDefFiles(entries);
+    const defData = parseDefFiles(entries, version.application);
     const l10n = assertExists(parseLocaleFiles(entries).get('en_us'));
     const sectorData = parseSectorFiles(entries);
     //const sectorData = { map: 'europe', sectors: new Map() };
@@ -82,6 +88,16 @@ export function parseMapFiles(
   } finally {
     archives.forEach(a => a.dispose());
   }
+}
+
+function parseVersionSii(entries: Entries) {
+  const { application, version } = assertExists(
+    Object.values(
+      convertSiiToJson('version.sii', entries, VersionSiiSchema).fsPackSet,
+    )[0],
+  );
+  logger.info('parsing', application, version);
+  return { application, version };
 }
 
 function parseSectorFiles(entries: Entries) {
