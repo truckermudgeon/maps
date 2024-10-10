@@ -25,7 +25,6 @@ export interface AchievementOption {
   value: string;
   desc: string;
   imgUrl: string;
-  map: 'usa' | 'europe';
   features: {
     coordinates: [number, number];
     dlcGuard: number;
@@ -59,11 +58,12 @@ export const AchievementSearchBar = (props: SearchBarProps) => {
   const { map, selectDecorator, onSelect } = props;
   const [achievements, setAchievements] = useState<AchievementOption[]>([]);
   useEffect(() => {
+    const game = map === 'usa' ? 'ats' : 'ets2';
     Promise.all([
-      fetch('ats-achievements.json').then(
+      fetch(`${game}-achievements.json`).then(
         r => r.json() as Promise<AchievementsJson>,
       ),
-      fetch('ats-achievements.geojson').then(
+      fetch(`${game}-achievements.geojson`).then(
         r =>
           r.json() as Promise<
             GeoJSON.FeatureCollection<
@@ -73,28 +73,27 @@ export const AchievementSearchBar = (props: SearchBarProps) => {
           >,
       ),
     ]).then(
-      ([atsAchievements, atsGeoJson]) => {
+      ([achievements, geoJson]) => {
         const features = new Map<
           string,
           { coordinates: [number, number]; dlcGuard: number }[]
         >();
-        for (const f of atsGeoJson.features) {
+        for (const f of geoJson.features) {
           putIfAbsent(f.properties.name, [], features).push({
             coordinates: f.geometry.coordinates as [number, number],
             dlcGuard: f.properties.dlcGuard,
           });
         }
         const geoNames = new Set<string>(
-          atsGeoJson.features.map(feature => feature.properties.name),
+          geoJson.features.map(feature => feature.properties.name),
         );
         setAchievements([
-          ...atsAchievements.data
+          ...achievements.data
             .filter(a => geoNames.has(a.id))
             .map(a => ({
               ...a,
               label: a.title,
               value: a.id,
-              map: 'usa' as const,
               features: assertExists(features.get(a.id)),
             }))
             .sort((a, b) => a.label.localeCompare(b.label)),
@@ -102,18 +101,16 @@ export const AchievementSearchBar = (props: SearchBarProps) => {
       },
       () => console.error('could not load achievements json.'),
     );
-  }, []);
+  }, [map]);
 
   const options = achievements.filter(a => {
-    const mapMatches = a.map === map;
     if (map === 'europe') {
       // TODO add country filtering for europe
-      return mapMatches;
+      return true;
     }
     const enabledDlcGuards = toAtsDlcGuards(props.visibleStateDlcs);
-    return (
-      mapMatches &&
-      a.features.some(f => enabledDlcGuards.has(f.dlcGuard as AtsDlcGuard))
+    return a.features.some(f =>
+      enabledDlcGuards.has(f.dlcGuard as AtsDlcGuard),
     );
   });
 

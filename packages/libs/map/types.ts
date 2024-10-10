@@ -151,12 +151,21 @@ export type Achievement = Readonly<
     }
   | {
       type: 'delivery';
-      // note: only deliveries to companies are supported.
-      companies: readonly Readonly<{
-        company: string;
-        locationType: 'city' | 'country';
-        locationToken: string;
-      }>[];
+      delivery:
+        | {
+            type: 'company';
+            companies: readonly Readonly<{
+              company: string;
+              locationType: 'city' | 'country';
+              locationToken: string;
+            }>[];
+          }
+        | {
+            type: 'city';
+            cities: readonly Readonly<{
+              cityToken: string;
+            }>[];
+          };
     }
   | {
       type: 'eachCompanyData' | 'deliverCargoData';
@@ -177,12 +186,41 @@ export type Achievement = Readonly<
       endpointB: string;
     }
   | {
+      type: 'ferryDataByType';
+      ferryType: 'ferry' | 'train';
+    }
+  | {
       type: 'eachDeliveryPoint';
       sources: string[]; // e.g., .id_snake_riv.kennewick.lewiston.source
       targets: string[];
     }
   | {
       type: 'oversizeRoutesData';
+    }
+  | {
+      type: 'deliveryLogData';
+      locations: (
+        | {
+            type: 'company';
+            company: string;
+            city: string;
+          }
+        | {
+            type: 'city';
+            city: string;
+          }
+      )[];
+      // TODO: map cargo achievements (treat as start point) only if `locations`
+      //  is empty. Need to parse oversize_offer_data.sii for ST achievements.
+      cargos: string[];
+    }
+  | {
+      type: 'compareData';
+      achievementName: string;
+    }
+  | {
+      type: 'visitPrefabData';
+      prefab: string;
     }
 >;
 
