@@ -134,7 +134,7 @@ export const AchievementSearchBar = (props: SearchBarProps) => {
       }}
       startDecorator={selectDecorator}
       renderOption={(props, option) => (
-        <AutocompleteOption {...props}>
+        <AutocompleteOption {...props} key={option.value}>
           <ListItemDecorator
             sx={{
               border: '2px solid var(--joy-palette-neutral-outlinedBorder)',
