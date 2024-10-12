@@ -807,8 +807,9 @@ function postProcess(
     const { nodeUid, train } = assertExists(ferryItems.get(token));
     const { x, y } = assertExists(nodesByUid.get(nodeUid));
 
-    const connections: FerryConnection[] = partialFerry.connections.map(
-      partialConnection => {
+    const connections: FerryConnection[] = partialFerry.connections
+      .filter(c => ferryItems.has(c.token))
+      .map(partialConnection => {
         const { nodeUid } = assertExists(
           ferryItems.get(partialConnection.token),
         );
@@ -823,8 +824,7 @@ function postProcess(
           x,
           y,
         };
-      },
-    );
+      });
     ferries.push(
       withLocalizedName({
         ...partialFerry,
