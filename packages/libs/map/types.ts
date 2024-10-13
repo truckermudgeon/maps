@@ -559,7 +559,10 @@ export interface DefData {
 // GeoJSON
 
 export type DebugFeature = GeoJSON.Feature<
-  GeoJSON.Polygon | GeoJSON.LineString | GeoJSON.Point,
+  | GeoJSON.Polygon
+  | GeoJSON.LineString
+  | GeoJSON.MultiLineString
+  | GeoJSON.Point,
   DebugProperties
 >;
 

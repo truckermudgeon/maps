@@ -10,11 +10,13 @@ import * as ets2Villages from './commands/ets2-villages';
 import * as footprints from './commands/footprints';
 import * as graph from './commands/graph';
 import * as map from './commands/map';
+import * as prefabCurves from './commands/prefab-curves';
 import * as spritesheet from './commands/spritesheet';
 
 async function main() {
   await yargs(hideBin(process.argv))
     .command(map)
+    .command(prefabCurves)
     .command(cities)
     .command(ets2Villages)
     .command(footprints)

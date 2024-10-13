@@ -18,6 +18,7 @@ export function createNormalizeFeature(
     T extends GeoJSON.Feature<
       | GeoJSON.Point
       | GeoJSON.LineString
+      | GeoJSON.MultiLineString
       | GeoJSON.Polygon
       | GeoJSON.MultiPolygon
     >,
@@ -28,6 +29,11 @@ export function createNormalizeFeature(
       case 'LineString':
         feature.geometry.coordinates =
           feature.geometry.coordinates.map(normalize);
+        break;
+      case 'MultiLineString':
+        feature.geometry.coordinates = feature.geometry.coordinates.map(l =>
+          l.map(normalize),
+        );
         break;
       case 'Polygon':
         feature.geometry.coordinates = feature.geometry.coordinates.map(p =>
