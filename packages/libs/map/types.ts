@@ -461,7 +461,7 @@ export type PolygonMapPoint = BaseMapPoint & {
   roadOver: boolean;
 };
 export type MapPoint = RoadMapPoint | PolygonMapPoint;
-export interface NavCurve {
+interface NavCurve {
   // From https://modding.scssoft.com/wiki/Games/ETS2/Modding_guides/1.30#Prefabs:
   // Index of a navigational node which should be used if navigation starts from that AI curve or 0xffffffff if there is none.
   // Basically it is a reverse mapping to the curve_indices from nodes.

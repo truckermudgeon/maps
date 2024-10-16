@@ -19,7 +19,6 @@ import lineOffset from '@turf/line-offset';
 import { MapAreaColor } from './constants';
 import type {
   MapPoint,
-  NavCurve,
   Node,
   PolygonMapPoint,
   Prefab,
@@ -623,36 +622,34 @@ export interface Lane {
 export function calculateLaneInfo(
   prefabDesc: PrefabDescription,
 ): Map<number, Lane[]> {
-  const res = new Map<number, Lane[]>();
-  for (
-    let startingNodeIndex = 0;
-    startingNodeIndex < prefabDesc.nodes.length;
-    startingNodeIndex++
-  ) {
-    const node = prefabDesc.nodes[startingNodeIndex];
-    for (const inputLaneIndex of node.inputLanes) {
-      const lanes = getLanes(prefabDesc, inputLaneIndex);
-      res.set(startingNodeIndex, lanes);
-    }
-  }
-  return res;
+  return new Map(
+    prefabDesc.nodes.map((node, nodeIndex) => [
+      nodeIndex,
+      node.inputLanes.map(inputLaneIndex =>
+        getLane(prefabDesc, inputLaneIndex),
+      ),
+    ]),
+  );
 }
 
-function getLanes(
-  prefabDesc: PrefabDescription,
-  inputLaneIndex: number,
-): Lane[] {
-  const branches: NavCurve[] = [];
+function getLane(prefabDesc: PrefabDescription, inputLaneIndex: number): Lane {
   const startCurve = prefabDesc.navCurves[inputLaneIndex];
   Preconditions.checkArgument(
     startCurve.prevLines.length === 0,
     'inputLaneIndex must refer to a starting navCurve',
   );
 
-  // TODO
+  return {
+    branches: getCurvePaths(prefabDesc, inputLaneIndex).map(p => {
+      const cis = p.curvePathIndices;
+      const curvePoints: { x: number; y: number }[] = [];
 
-  const lanes: Lane[] = [];
-  return lanes;
+      return {
+        curvePoints,
+        targetNodeIndex: p.endingNodeIndex,
+      };
+    }),
+  };
 }
 
 /**
@@ -682,7 +679,6 @@ export function calculateNodeConnections(
 }
 
 interface CurvePath {
-  endingCurveIndex: number;
   endingNodeIndex: number;
   curvePathIndices: number[];
 }
@@ -723,7 +719,6 @@ function getCurvePaths(
     if (endingCurveIndexToNodeIndex.has(curveIndex)) {
       return [
         {
-          endingCurveIndex: curveIndex,
           endingNodeIndex: endingCurveIndexToNodeIndex.get(curveIndex)!,
           curvePathIndices: [],
         },
