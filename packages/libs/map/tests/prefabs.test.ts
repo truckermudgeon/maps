@@ -1,5 +1,10 @@
 import { calculateNodeConnections } from '../prefabs';
-import { prefab_2k031, prefab_2o0ds, prefab_mt_2o004 } from './fixtures';
+import {
+  prefab_2k031,
+  prefab_2o09g,
+  prefab_2o0ds,
+  prefab_mt_2o004,
+} from './fixtures';
 
 describe('calculateNodeConnections', () => {
   it('handles roundabouts', () => {
@@ -28,6 +33,13 @@ describe('calculateNodeConnections', () => {
         [0, [2, 1]],
         [1, [2]],
         [2, [1, 0]],
+      ]),
+    );
+
+    expect(calculateNodeConnections(prefab_2o09g)).toEqual(
+      new Map([
+        [0, [2]],
+        [1, [2]],
       ]),
     );
   });

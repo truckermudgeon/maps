@@ -681,10 +681,16 @@ export function calculateNodeConnections(
   return mapValues(connections, numbers => [...new Set(numbers)]);
 }
 
-function getEndingNodeIndices(
+interface CurvePath {
+  endingCurveIndex: number;
+  endingNodeIndex: number;
+  curvePathIndices: number[];
+}
+
+function getCurvePaths(
   prefabDesc: PrefabDescription,
   inputLaneIndex: number,
-): number[] {
+): CurvePath[] {
   // there's probably a better way to do this, using more of the information stored in a prefab desc
   // (e.g., navNode.connections info). but i don't get how that stuff works, so trace where
   // curves lead.
@@ -700,7 +706,7 @@ function getEndingNodeIndices(
 
   // recursively follow a tree of curves to the ending-curve leaves.
   const seenIndices = new Set<number>();
-  const getEndingCurveIndices = (curveIndex: number) => {
+  const getEndingCurveIndices = (curveIndex: number): CurvePath[] => {
     if (seenIndices.has(curveIndex)) {
       // in a cycle (e.g., a roundabout); return an empty array, because this
       // curve does not lead to an ending-curve.
@@ -708,20 +714,42 @@ function getEndingNodeIndices(
     }
     seenIndices.add(curveIndex);
 
-    const endingCurveIndices: number[] = [];
-    for (const nextCurveIndex of prefabDesc.navCurves[curveIndex].nextLines) {
-      endingCurveIndices.push(...getEndingCurveIndices(nextCurveIndex));
-    }
     if (endingCurveIndexToNodeIndex.has(curveIndex)) {
-      endingCurveIndices.push(curveIndex);
+      return [
+        {
+          endingCurveIndex: curveIndex,
+          endingNodeIndex: endingCurveIndexToNodeIndex.get(curveIndex)!,
+          curvePathIndices: [],
+        },
+      ];
+    }
+
+    const endingCurveIndices: CurvePath[] = [];
+    for (const nextCurveIndex of prefabDesc.navCurves[curveIndex].nextLines) {
+      endingCurveIndices.push(
+        ...getEndingCurveIndices(nextCurveIndex).map(curvePath => ({
+          ...curvePath,
+          curvePathIndices: [nextCurveIndex, ...curvePath.curvePathIndices],
+        })),
+      );
     }
     return endingCurveIndices;
   };
 
-  const endingCurveIndices = new Set(getEndingCurveIndices(inputLaneIndex));
-  return [...endingCurveIndices].map(curveIndex =>
-    assertExists(endingCurveIndexToNodeIndex.get(curveIndex)),
-  );
+  const paths = getEndingCurveIndices(inputLaneIndex);
+  return paths.map(curvePath => ({
+    ...curvePath,
+    curvePathIndices: [inputLaneIndex, ...curvePath.curvePathIndices],
+  }));
+}
+
+function getEndingNodeIndices(
+  prefabDesc: PrefabDescription,
+  inputLaneIndex: number,
+): number[] {
+  const curvePaths = getCurvePaths(prefabDesc, inputLaneIndex);
+  const endingNodeIndices = new Set(curvePaths.map(c => c.endingNodeIndex));
+  return [...endingNodeIndices];
 }
 
 function toNumber(numberOrAuto: number | 'auto') {
