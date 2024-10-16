@@ -19,6 +19,7 @@ import lineOffset from '@turf/line-offset';
 import { MapAreaColor } from './constants';
 import type {
   MapPoint,
+  NavCurve,
   Node,
   PolygonMapPoint,
   Prefab,
@@ -608,6 +609,52 @@ export function toRoadStringsAndPolygons(prefab: PrefabDescription): {
   };
 }
 
+export interface Lane {
+  branches: {
+    curvePoints: { x: number; y: number }[]; // in prefab space
+    targetNodeIndex: number;
+  }[];
+}
+
+/**
+ * Returns a map of 0-based starting node indices to a list of `Lane`s
+ * originating at that node index, ordered by closest-to-"divider" first.
+ */
+export function calculateLaneInfo(
+  prefabDesc: PrefabDescription,
+): Map<number, Lane[]> {
+  const res = new Map<number, Lane[]>();
+  for (
+    let startingNodeIndex = 0;
+    startingNodeIndex < prefabDesc.nodes.length;
+    startingNodeIndex++
+  ) {
+    const node = prefabDesc.nodes[startingNodeIndex];
+    for (const inputLaneIndex of node.inputLanes) {
+      const lanes = getLanes(prefabDesc, inputLaneIndex);
+      res.set(startingNodeIndex, lanes);
+    }
+  }
+  return res;
+}
+
+function getLanes(
+  prefabDesc: PrefabDescription,
+  inputLaneIndex: number,
+): Lane[] {
+  const branches: NavCurve[] = [];
+  const startCurve = prefabDesc.navCurves[inputLaneIndex];
+  Preconditions.checkArgument(
+    startCurve.prevLines.length === 0,
+    'inputLaneIndex must refer to a starting navCurve',
+  );
+
+  // TODO
+
+  const lanes: Lane[] = [];
+  return lanes;
+}
+
 /**
  * Returns a map of 0-based starting node indices to a list of 0-based ending node indices
  */
@@ -651,33 +698,27 @@ function getEndingNodeIndices(
     }
   }
 
-  // messy recursive logic to follow a tree of curves.
-  const visitedCurveIndices = new Set<number>();
-  let visitDepth = 0;
-  const visitCurveAtIndex = (curveIndex: number) => {
-    if (endingCurveIndexToNodeIndex.has(curveIndex)) {
-      return [curveIndex];
-    }
-
-    const endingCurveIndices: number[] = [];
-    visitDepth++;
-    if (visitedCurveIndices.has(curveIndex) && visitDepth >= 20) {
-      // probably in a cycle (like a roundabout); exit out.
-      // TODO improve cycle detection.
-      visitDepth--;
+  // recursively follow a tree of curves to the ending-curve leaves.
+  const seenIndices = new Set<number>();
+  const getEndingCurveIndices = (curveIndex: number) => {
+    if (seenIndices.has(curveIndex)) {
+      // in a cycle (e.g., a roundabout); return an empty array, because this
+      // curve does not lead to an ending-curve.
       return [];
     }
-    visitedCurveIndices.add(curveIndex);
-    for (const nextCurveIndex of prefabDesc.navCurves[curveIndex].nextLines) {
-      endingCurveIndices.push(...visitCurveAtIndex(nextCurveIndex));
-    }
-    visitDepth--;
+    seenIndices.add(curveIndex);
 
+    const endingCurveIndices: number[] = [];
+    for (const nextCurveIndex of prefabDesc.navCurves[curveIndex].nextLines) {
+      endingCurveIndices.push(...getEndingCurveIndices(nextCurveIndex));
+    }
+    if (endingCurveIndexToNodeIndex.has(curveIndex)) {
+      endingCurveIndices.push(curveIndex);
+    }
     return endingCurveIndices;
   };
 
-  // follow the curve chain starting at inputLaneIndex, populating endingCurveIndices as we do.
-  const endingCurveIndices = new Set(visitCurveAtIndex(inputLaneIndex));
+  const endingCurveIndices = new Set(getEndingCurveIndices(inputLaneIndex));
   return [...endingCurveIndices].map(curveIndex =>
     assertExists(endingCurveIndexToNodeIndex.get(curveIndex)),
   );
