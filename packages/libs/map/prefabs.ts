@@ -704,9 +704,15 @@ function getCurvePaths(
     }
   }
 
-  // recursively follow a tree of curves to the ending-curve leaves.
+  const prefix = (curvePath: CurvePath, curveIndex: number): CurvePath => ({
+    ...curvePath,
+    curvePathIndices: [curveIndex, ...curvePath.curvePathIndices],
+  });
+
+  // recursively follow a tree of curves to the ending-curve leaves, collecting
+  // the curves travelled along the way.
   const seenIndices = new Set<number>();
-  const getEndingCurveIndices = (curveIndex: number): CurvePath[] => {
+  const getPaths = (curveIndex: number): CurvePath[] => {
     if (seenIndices.has(curveIndex)) {
       // in a cycle (e.g., a roundabout); return an empty array, because this
       // curve does not lead to an ending-curve.
@@ -727,20 +733,13 @@ function getCurvePaths(
     const endingCurveIndices: CurvePath[] = [];
     for (const nextCurveIndex of prefabDesc.navCurves[curveIndex].nextLines) {
       endingCurveIndices.push(
-        ...getEndingCurveIndices(nextCurveIndex).map(curvePath => ({
-          ...curvePath,
-          curvePathIndices: [nextCurveIndex, ...curvePath.curvePathIndices],
-        })),
+        ...getPaths(nextCurveIndex).map(p => prefix(p, nextCurveIndex)),
       );
     }
     return endingCurveIndices;
   };
 
-  const paths = getEndingCurveIndices(inputLaneIndex);
-  return paths.map(curvePath => ({
-    ...curvePath,
-    curvePathIndices: [inputLaneIndex, ...curvePath.curvePathIndices],
-  }));
+  return getPaths(inputLaneIndex).map(p => prefix(p, inputLaneIndex));
 }
 
 function getEndingNodeIndices(
