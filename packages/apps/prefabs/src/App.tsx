@@ -1,6 +1,7 @@
 import { Grid } from '@mui/joy';
 import { useState } from 'react';
 import { Details } from './Details';
+import { LaneControl } from './LaneControl';
 import type { PrefabOption } from './PrefabSelect';
 import { PrefabSelect } from './PrefabSelect';
 import { Preview } from './Preview';
@@ -20,7 +21,12 @@ const App = () => {
         <PrefabSelect onChange={onChange} />
       </Grid>
       <Grid xs={8} sx={{ height: 'calc(100vh - 80px)' }}>
-        {active && <Preview prefab={active.value.prefabDesc} />}
+        {active && (
+          <>
+            <LaneControl prefab={active.value.prefabDesc} />
+            <Preview prefab={active.value.prefabDesc} />
+          </>
+        )}
       </Grid>
       <Grid xs={4} sx={{ height: 'calc(100vh - 80px)', overflowY: 'scroll' }}>
         {active && (

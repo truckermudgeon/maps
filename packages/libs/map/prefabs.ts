@@ -9,6 +9,7 @@ import {
   rotate,
   subtract,
   toRadians,
+  toSplinePoints,
   translate,
 } from '@truckermudgeon/base/geom';
 import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
@@ -16,6 +17,7 @@ import { Preconditions } from '@truckermudgeon/base/precon';
 import * as turf from '@turf/helpers';
 import lineIntersect from '@turf/line-intersect';
 import lineOffset from '@turf/line-offset';
+import simplify from '@turf/simplify';
 import { MapAreaColor } from './constants';
 import type {
   MapPoint,
@@ -610,7 +612,7 @@ export function toRoadStringsAndPolygons(prefab: PrefabDescription): {
 
 export interface Lane {
   branches: {
-    curvePoints: { x: number; y: number }[]; // in prefab space
+    curvePoints: [number, number][]; // in prefab space
     targetNodeIndex: number;
   }[];
 }
@@ -642,10 +644,28 @@ function getLane(prefabDesc: PrefabDescription, inputLaneIndex: number): Lane {
   return {
     branches: getCurvePaths(prefabDesc, inputLaneIndex).map(p => {
       const cis = p.curvePathIndices;
-      const curvePoints: { x: number; y: number }[] = [];
+      const curvePoints: [number, number][] = [];
+      for (const ci of cis) {
+        const curve = prefabDesc.navCurves[ci];
+        const points = toSplinePoints(
+          {
+            position: [curve.start.x, curve.start.y],
+            rotation: curve.start.rotation,
+          },
+          {
+            position: [curve.end.x, curve.end.y],
+            rotation: curve.end.rotation,
+          },
+        );
+        curvePoints.push(...points);
+      }
+      const simplified = simplify(turf.lineString(curvePoints), {
+        tolerance: 0.1,
+        mutate: true,
+      });
 
       return {
-        curvePoints,
+        curvePoints: simplified.geometry.coordinates as [number, number][],
         targetNodeIndex: p.endingNodeIndex,
       };
     }),
