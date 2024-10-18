@@ -15,6 +15,7 @@ import type {
   CompanyItem,
   Curve,
   Cutscene,
+  DefData,
   Ferry,
   FerryConnection,
   FerryItem,
@@ -49,12 +50,19 @@ import {
 
 export function parseMapFiles(
   scsFilePaths: string[],
-  includeDlc: boolean,
-): {
-  map: string;
-  mapData: MapData;
-  icons: Map<string, Buffer>;
-} {
+  { includeDlc, onlyDefs }: { includeDlc: boolean; onlyDefs: boolean },
+):
+  | {
+      onlyDefs: false;
+      map: string;
+      mapData: MapData;
+      icons: Map<string, Buffer>;
+    }
+  | {
+      onlyDefs: true;
+      map: string;
+      defData: DefData;
+    } {
   const requiredFiles = new Set([
     'base.scs',
     'base_map.scs',
@@ -76,15 +84,22 @@ export function parseMapFiles(
   const entries = new CombinedEntries(archives);
   try {
     const version = parseVersionSii(entries);
-    const icons = parseIconMatFiles(entries);
     const defData = parseDefFiles(entries, version.application);
     const l10n = assertExists(parseLocaleFiles(entries).get('en_us'));
-    const sectorData = parseSectorFiles(entries);
-    //const sectorData = { map: 'europe', sectors: new Map() };
+    if (onlyDefs) {
+      return {
+        onlyDefs: true,
+        map: version.application === 'ats' ? 'usa' : 'europe',
+        defData: toDefData(defData, l10n),
+      };
+    }
 
-    // do things like update city data with position info,
-    // generate additional overlays from prefab info / company item info
-    return postProcess(defData, sectorData, icons, l10n);
+    const icons = parseIconMatFiles(entries);
+    const sectorData = parseSectorFiles(entries);
+    return {
+      onlyDefs: false,
+      ...postProcess(defData, sectorData, icons, l10n),
+    };
   } finally {
     archives.forEach(a => a.dispose());
   }
@@ -788,18 +803,7 @@ function postProcess(
     });
   }
 
-  const withLocalizedName = <
-    T extends { name: string; nameLocalized: string | undefined },
-  >(
-    o: T,
-  ) => ({
-    ...o,
-    nameLocalized: undefined,
-    name: o.nameLocalized
-      ? // If it weren't for Winterland, we could assert that o.nameLocalized guarantees an entry in the l10n table.
-        (l10n.get(o.nameLocalized.replaceAll('@', '')) ?? o.name)
-      : o.name,
-  });
+  const withLocalizedName = createWithLocalizedName(l10n);
 
   // Augment partial ferry info from defs with start/end position info
   const ferries: Ferry[] = [];
@@ -953,6 +957,35 @@ function postProcess(
     },
     icons,
   };
+}
+
+function toDefData(
+  defData: ReturnType<typeof parseDefFiles>,
+  l10n: Map<string, string>,
+) {
+  const withLocalizedName = createWithLocalizedName(l10n);
+  return {
+    countries: valuesWithTokens(defData.countries).map(withLocalizedName),
+    companyDefs: valuesWithTokens(defData.companies),
+    roadLooks: valuesWithTokens(defData.roadLooks),
+    prefabDescriptions: valuesWithTokens(defData.prefabs),
+    modelDescriptions: valuesWithTokens(defData.models),
+    achievements: valuesWithTokens(defData.achievements),
+    routes: valuesWithTokens(defData.routes),
+  };
+}
+
+function createWithLocalizedName(l10n: Map<string, string>) {
+  return <T extends { name: string; nameLocalized: string | undefined }>(
+    o: T,
+  ) => ({
+    ...o,
+    nameLocalized: undefined,
+    name: o.nameLocalized
+      ? // If it weren't for Winterland, we could assert that o.nameLocalized guarantees an entry in the l10n table.
+        (l10n.get(o.nameLocalized.replaceAll('@', '')) ?? o.name)
+      : o.name,
+  });
 }
 
 function valuesWithTokens<V>(map: Map<string, V>): (V & { token: string })[] {

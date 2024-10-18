@@ -479,7 +479,7 @@ export interface ModelDescription {
 
 export type WithToken<T> = T & { token: string };
 
-export interface MapData {
+export interface MapData extends DefData {
   nodes: Node[];
   elevation: [number, number, number][];
   roads: Road[];
@@ -493,8 +493,11 @@ export interface MapData {
   trajectories: TrajectoryItem[];
   triggers: Trigger[];
   cutscenes: Cutscene[];
-  countries: Country[];
   cities: City[];
+}
+
+export interface DefData {
+  countries: Country[];
   companyDefs: Company[];
   roadLooks: WithToken<RoadLook>[];
   prefabDescriptions: WithToken<PrefabDescription>[];

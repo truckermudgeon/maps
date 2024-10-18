@@ -1,6 +1,6 @@
 #!/usr/bin/env -S NODE_OPTIONS=--max-old-space-size=8192 npx tsx
 
-import type { MapData } from '@truckermudgeon/map/types';
+import type { DefData, MapData } from '@truckermudgeon/map/types';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -33,12 +33,17 @@ function main() {
       demandOption: true,
     })
     .option('includeDlc', {
-      describe: 'parse DLC files',
+      describe: 'Include DLC files',
       type: 'boolean',
       default: true,
     })
+    .option('onlyDefs', {
+      describe: 'Parse data from /def files, only',
+      type: 'boolean',
+      default: false,
+    })
     .option('dryRun', {
-      describe: "Don't write out any files.",
+      describe: "Don't write out any files",
       type: 'boolean',
       default: false,
     })
@@ -49,7 +54,7 @@ function main() {
     .filter(e => e.isFile() && e.name.endsWith('.scs'))
     .map(e => path.join(args.inputDir, e.name));
 
-  const { map, mapData, icons } = parseMapFiles(scsFilePaths, args.includeDlc);
+  const { map, ...result } = parseMapFiles(scsFilePaths, args);
   if (args.dryRun) {
     logger.success('dry run complete.');
     return;
@@ -58,8 +63,10 @@ function main() {
   if (!fs.existsSync(args.outputDir)) {
     fs.mkdirSync(args.outputDir, { recursive: true });
   }
-  for (const key of Object.keys(mapData)) {
-    const collection = mapData[key as keyof MapData];
+
+  const data = result.onlyDefs ? result.defData : result.mapData;
+  for (const key of Object.keys(data)) {
+    const collection = data[key as keyof (MapData | DefData)];
     const filename = `${map}-${key}.json`;
     logger.log('writing', collection.length, `entries to ${filename}...`);
     fs.writeFileSync(
@@ -67,14 +74,19 @@ function main() {
       JSON.stringify(collection, null, 2),
     );
   }
+
   const pngOutputDir = path.join(args.outputDir, 'icons');
-  logger.log('writing', icons.size, `.png files to ${pngOutputDir}...`);
-  if (!fs.existsSync(pngOutputDir)) {
-    fs.mkdirSync(pngOutputDir);
+  if (!result.onlyDefs) {
+    const { icons } = result;
+    logger.log('writing', icons.size, `.png files to ${pngOutputDir}...`);
+    if (!fs.existsSync(pngOutputDir)) {
+      fs.mkdirSync(pngOutputDir);
+    }
+    for (const [name, buffer] of icons) {
+      fs.writeFileSync(path.join(pngOutputDir, name + '.png'), buffer);
+    }
   }
-  for (const [name, buffer] of icons) {
-    fs.writeFileSync(path.join(pngOutputDir, name + '.png'), buffer);
-  }
+
   logger.success('done.');
 }
 
