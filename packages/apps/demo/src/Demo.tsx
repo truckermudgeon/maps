@@ -35,8 +35,8 @@ const Demo = () => {
     mapCenters[ensureValidMapValue(localStorage.getItem('tm-map'))];
 
   const [searchParams] = useSearchParams();
-  const lat = Number(searchParams.get('mlat'));
-  const lon = Number(searchParams.get('mlon'));
+  const lat = Number(searchParams.get('mlat') ?? undefined);
+  const lon = Number(searchParams.get('mlon') ?? undefined);
   const markerPos =
     inRange(lat, [-90, 90]) && inRange(lon, [-180, 180])
       ? { lat, lon }
