@@ -180,6 +180,7 @@ enum Ets2Dlc {
   Krone,
   /** Feldbinder factory in Winsen, Germany. */
   Feldbinder,
+  Greece,
 }
 export type Ets2SelectableDlc = Exclude<
   Ets2Dlc,
@@ -208,6 +209,9 @@ export const Ets2DlcGuards: Record<number, ReadonlySet<Ets2Dlc>> = {
   17: new Set([Ets2Dlc.WestBalkans, Ets2Dlc.GoingEast]),
   18: new Set([Ets2Dlc.WestBalkans, Ets2Dlc.BeyondTheBalticSea]),
   19: new Set([Ets2Dlc.Feldbinder]),
+  20: new Set([Ets2Dlc.Greece]),
+  21: new Set([Ets2Dlc.Greece, Ets2Dlc.GoingEast]),
+  22: new Set([Ets2Dlc.Greece, Ets2Dlc.WestBalkans]),
 };
 
 // names, color values defined in def/map_data.sii
