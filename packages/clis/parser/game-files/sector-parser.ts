@@ -1,3 +1,4 @@
+import { normalizeRadians } from '@truckermudgeon/base/geom';
 import {
   ItemType,
   MapColorUtils,
@@ -851,9 +852,8 @@ function toTerrain(
 }
 
 function toNode(rawNode: SectorNode): WithoutSectorXY<Node> {
-  const [rx, , rz] = rawNode.rot;
-  let rotation = Math.PI - Math.atan2(rz, rx);
-  rotation = (rotation % Math.PI) * 2 - Math.PI / 2;
+  const [qw, , qy] = rawNode.rot;
+  const rotation = normalizeRadians(Math.atan2(-qy, qw) * 2 - Math.PI / 2);
 
   return {
     uid: rawNode.uid,
