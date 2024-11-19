@@ -454,6 +454,6 @@ function getXYZR(
   const [qw, , qy] = rotQuat;
   // theta starts normally, but increases CW instead of CCW since game's coord
   // system has Y growing downwards.
-  const rotation = normalizeRadians(Math.atan2(-qw, qy) * 2 - Math.PI / 2);
+  const rotation = normalizeRadians(Math.atan2(-qy, qw) * 2 - Math.PI / 2);
   return { x, y, z, rotation, rotationQuat: rotQuat };
 }
