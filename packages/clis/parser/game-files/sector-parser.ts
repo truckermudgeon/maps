@@ -861,6 +861,7 @@ function toNode(rawNode: SectorNode): WithoutSectorXY<Node> {
     y: rawNode.pos[2] / 256,
     z: rawNode.pos[1] / 256,
     rotation,
+    rotationQuat: rawNode.rot,
     forwardItemUid: rawNode.forwardItemUid,
     backwardItemUid: rawNode.backwardItemUid,
     forwardCountryId: rawNode.forwardCountryId,

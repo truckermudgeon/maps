@@ -15,7 +15,9 @@ export type Node = Readonly<{
   x: number;
   y: number;
   z: number;
+  // rotation about game's y-axis (not map y-axis), aka yaw.
   rotation: number;
+  rotationQuat: [number, number, number, number];
   forwardItemUid: bigint;
   backwardItemUid: bigint;
   sectorX: number;
@@ -432,6 +434,7 @@ export interface PrefabDescription {
     y: number;
     z: number;
     rotation: number;
+    rotationDir: [number, number, number];
     // indices into `navCurves`
     inputLanes: number[];
     // indices into `navCurves`
@@ -453,8 +456,20 @@ export interface PrefabDescription {
     // Index of a navigational node which should be used if navigation starts from that AI curve or 0xffffffff if there is none.
     // Basically it is a reverse mapping to the curve_indices from nodes.
     navNodeIndex: number;
-    start: { x: number; y: number; z: number; rotation: number };
-    end: { x: number; y: number; z: number; rotation: number };
+    start: {
+      x: number;
+      y: number;
+      z: number;
+      rotation: number;
+      rotationQuat: [number, number, number, number];
+    };
+    end: {
+      x: number;
+      y: number;
+      z: number;
+      rotation: number;
+      rotationQuat: [number, number, number, number];
+    };
     nextLines: number[];
     prevLines: number[];
   }[];

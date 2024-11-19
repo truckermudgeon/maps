@@ -1,4 +1,5 @@
 import { assert } from '@truckermudgeon/base/assert';
+import { normalizeRadians } from '@truckermudgeon/base/geom';
 import { MapColor } from '@truckermudgeon/map/constants';
 import type { MapPoint, PrefabDescription } from '@truckermudgeon/map/types';
 import * as r from 'restructure';
@@ -315,6 +316,7 @@ export function parsePrefabPpd(buffer: Buffer): PrefabDescription {
         y: n.pos[2],
         z: n.pos[1],
         rotation,
+        rotationDir: n.rot,
         inputLanes: n.inputLanes.filter(v => v !== -1),
         outputLanes: n.outputLanes.filter(v => v !== -1),
       };
@@ -446,14 +448,12 @@ export function parsePrefabPpd(buffer: Buffer): PrefabDescription {
 
 function getXYZR(
   pos: [number, number, number],
-  rot: [number, number, number, number],
+  rotQuat: [number, number, number, number],
 ) {
   const [x, z, y] = pos;
-  // TODO probably not the right way to do quat => euler.
-  const [rx, , rz] = rot;
-  // theta starts normally, but increases CW instead of CCW since game's coord system
-  // has Y growing downwards.
-  let rotation = Math.PI - Math.atan2(rz, rx);
-  rotation = (rotation % Math.PI) * 2 - Math.PI / 2;
-  return { x, y, z, rotation };
+  const [qw, , qy] = rotQuat;
+  // theta starts normally, but increases CW instead of CCW since game's coord
+  // system has Y growing downwards.
+  const rotation = normalizeRadians(Math.atan2(-qw, qy) * 2 - Math.PI / 2);
+  return { x, y, z, rotation, rotationQuat: rotQuat };
 }
