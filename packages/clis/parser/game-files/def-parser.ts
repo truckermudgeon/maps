@@ -7,11 +7,14 @@ import type {
   Country,
   Ferry,
   FerryConnection,
+  LaneSpeedClass,
   ModelDescription,
   PrefabDescription,
   RoadLook,
   Route,
+  SpeedLimits,
 } from '@truckermudgeon/map/types';
+import { isLaneSpeedClass } from '@truckermudgeon/map/types';
 import type { JSONSchemaType } from 'ajv';
 import { logger } from '../logger';
 import { convertSiiToJson } from './convert-sii-to-json';
@@ -31,6 +34,7 @@ import type {
   PrefabSii,
   RoadLookSii,
   RouteSii,
+  SpeedLimitsSii,
 } from './sii-schemas';
 import {
   AtsAchievementsSiiSchema,
@@ -46,6 +50,7 @@ import {
   PrefabSiiSchema,
   RoadLookSiiSchema,
   RouteSiiSchema,
+  SpeedLimitSiiSchema,
   ViewpointsSiiSchema,
 } from './sii-schemas';
 import { includeDirectiveCollector } from './sii-visitors';
@@ -96,7 +101,22 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
       if (f.startsWith('city.')) {
         processAndAdd(path, CitySiiSchema, processCityJson, cities);
       } else if (f.startsWith('country.')) {
-        processAndAdd(path, CountrySiiSchema, processCountryJson, countries);
+        const partialCountry = processCountryJson(
+          convertSiiToJson(path, entries, CountrySiiSchema),
+        );
+        if (partialCountry) {
+          const truckSpeedLimits = processSpeedLimitJson(
+            convertSiiToJson(
+              path.replace('.sui', '/speed_limits.sii'),
+              entries,
+              SpeedLimitSiiSchema,
+            ),
+          );
+          countries.set(partialCountry.token, {
+            ...partialCountry,
+            truckSpeedLimits,
+          });
+        }
       } else if (f.startsWith('company.')) {
         processAndAdd(path, CompanySiiSchema, processCompanyJson, companies);
       } else if (f.startsWith('ferry.')) {
@@ -299,6 +319,33 @@ function processCountryJson(obj: CountrySii) {
     y: rawCountry.pos[2],
     code: rawCountry.countryCode,
   };
+}
+
+function toLaneSpeedClass(str: string): LaneSpeedClass {
+  const lsc = str.replace(/(_[a-z0-9])/g, g => g.substring(1).toUpperCase());
+  assert(isLaneSpeedClass(lsc));
+  return lsc as LaneSpeedClass;
+}
+
+function processSpeedLimitJson(obj: SpeedLimitsSii) {
+  const { laneSpeedClass, limit, maxLimit, urbanLimit } =
+    obj.countrySpeedLimit['.speed_limit.truck'];
+
+  // HACK: extra validation that isn't expressed in schema
+  assert(
+    [limit, maxLimit, urbanLimit].every(
+      array => array.length === laneSpeedClass.length,
+    ),
+  );
+
+  return laneSpeedClass.reduce((obj, className, index) => {
+    obj[toLaneSpeedClass(className)] = {
+      limit: limit[index],
+      maxLimit: maxLimit[index],
+      urbanLimit: urbanLimit[index],
+    };
+    return obj;
+  }, {} as SpeedLimits);
 }
 
 function processCompanyJson(obj: CompanySii, entries: Entries): Company {

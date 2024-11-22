@@ -47,7 +47,33 @@ export type Country = Readonly<{
   x: number;
   y: number;
   code: string;
+  truckSpeedLimits: SpeedLimits;
 }>;
+export type SpeedLimits = Partial<{
+  [k in LaneSpeedClass]: {
+    limit: number;
+    urbanLimit: number;
+    maxLimit: number;
+  };
+}>;
+
+export type LaneSpeedClass =
+  | 'localRoad'
+  | 'dividedRoad'
+  | 'freeway'
+  | 'expressway'
+  | 'motorway'
+  | 'slowRoad';
+const laneSpeedClassRecord: Record<LaneSpeedClass, true> = {
+  dividedRoad: true,
+  expressway: true,
+  freeway: true,
+  localRoad: true,
+  motorway: true,
+  slowRoad: true,
+};
+export const isLaneSpeedClass = (s: string): s is LaneSpeedClass =>
+  Object.prototype.hasOwnProperty.call(laneSpeedClassRecord, s);
 
 export type Company = Readonly<{
   token: string;
@@ -585,6 +611,7 @@ export type AtsMapGeoJsonFeature =
   | AchievementFeature
   | DebugFeature;
 
+// loosely based on keys and speed_class values in def/world/traffic_lane.sii
 export type RoadType =
   | 'freeway'
   | 'divided'

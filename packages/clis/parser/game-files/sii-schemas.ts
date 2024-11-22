@@ -37,11 +37,14 @@ type Tuple<T, N extends number, R extends T[] = []> = R['length'] extends N
   ? R
   : Tuple<T, N, [T, ...R]>;
 
-const arrayOf = <T>(items: T) =>
+const arrayOf = <T>(
+  items: T,
+  size: { minItems?: number; maxItems?: number } = { minItems: 1 },
+) =>
   ({
     type: 'array',
     items,
-    minItems: 1,
+    ...size,
   }) as const;
 const fixedLengthArray = <T, N extends number>(
   item: JSONSchemaType<T>,
@@ -669,6 +672,49 @@ export const RoadLookSiiSchema: JSONSchemaType<RoadLookSii> = object(
   },
   [],
 );
+
+type AtsLaneSpeedClass = 'local_road' | 'divided_road' | 'freeway';
+type Ets2LaneSpeedClass =
+  | 'local_road'
+  | 'expressway'
+  | 'motorway'
+  | 'slow_road';
+type LaneSpeedClass = AtsLaneSpeedClass | Ets2LaneSpeedClass;
+export interface SpeedLimitsSii {
+  countrySpeedLimit: {
+    '.speed_limit.truck': {
+      // the following fields represent parallel arrays
+      laneSpeedClass: LaneSpeedClass[];
+      limit: number[];
+      urbanLimit: number[];
+      maxLimit: number[];
+    };
+  };
+}
+export const SpeedLimitSiiSchema: JSONSchemaType<SpeedLimitsSii> = object({
+  countrySpeedLimit: object({
+    ['.speed_limit.truck']: object({
+      laneSpeedClass: arrayOf(
+        stringEnum(
+          'local_road',
+          'divided_road',
+          'freeway',
+          'expressway',
+          'motorway',
+          'slow_road',
+        ),
+        // truck speed limits, at minimum, define:
+        // - local_road
+        // - divided_road (or expressway, in ETS2)
+        // - freeway (or motorway, in ETS2)
+        { minItems: 3 },
+      ),
+      limit: arrayOf(number),
+      urbanLimit: arrayOf(number),
+      maxLimit: arrayOf(number),
+    }),
+  }),
+});
 
 export interface CityCompanySii {
   companyDef: Record<string, { city: string }>;
