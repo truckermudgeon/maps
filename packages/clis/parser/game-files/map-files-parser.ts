@@ -199,7 +199,8 @@ function parseLocaleFiles(entries: Entries): Map<string, Map<string, string>> {
       if (
         f !== 'local.sii' &&
         f !== 'local.override.sii' &&
-        f !== 'localization.sui'
+        f !== 'localization.sui' &&
+        f !== 'photoalbum.sui'
       ) {
         continue;
       }
@@ -627,15 +628,22 @@ function postProcess(
             const label =
               // Note: tried to treat this similar to viewpoints by searching
               // for entries in def files and matching item.uids, but item.uids
-              // didn't match what was in the def files.
-              l10n.get(`landmark_${item.token}`) ?? item.token;
+              // didn't match what was in the def files. Guessing landmark
+              // object uids correspond to model uids, and not map overlay uids.
+              l10n.get(`landmark_${item.token}`);
+            if (label == null) {
+              logger.warn(
+                'missing landmark info for item',
+                item.uid.toString(16),
+              );
+            }
             pois.push({
               ...pos,
               type: 'landmark',
               dlcGuard: item.dlcGuard,
               nodeUid: item.nodeUid,
               icon: 'photo_sight_captured',
-              label,
+              label: label ?? '',
             });
             break;
           }
@@ -733,17 +741,17 @@ function postProcess(
           break;
         }
         const labelToken = defData.viewpoints.get(item.uid);
-        if (labelToken == null) {
-          logger.warn('missing viewpoint info for item', item.uid.toString());
+        const label = l10n.get(labelToken ?? '');
+        if (label == null) {
+          logger.warn('missing viewpoint info for item', item.uid.toString(16));
         }
-        const label = l10n.get(labelToken ?? '') ?? item.tags.join(', ');
         const { x, y, sectorX, sectorY } = item;
         const pos = { x, y, sectorX, sectorY };
         pois.push({
           ...pos,
           type: 'viewpoint',
           icon: 'viewpoint',
-          label,
+          label: label ?? '',
         });
         break;
       }

@@ -565,6 +565,41 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           })}
         />
       )}
+      {hasPois(visibleIcons) &&
+        (visibleIcons.has(MapIcon.Viewpoint) ||
+          visibleIcons.has(MapIcon.PhotoSight)) && (
+          <Layer
+            id={game + 'poi-icon-labels'}
+            source-layer={game}
+            type={'symbol'}
+            minzoom={enableIconAutoHide ? 9.5 : 0}
+            filter={[
+              'all',
+              ['==', ['geometry-type'], 'Point'],
+              ['==', ['get', 'type'], 'poi'],
+              [
+                'in',
+                ['get', 'poiType'],
+                ['literal', ['viewpoint', 'landmark']],
+              ],
+              createPoiFilter(visibleIcons),
+              dlcGuardFilter,
+            ]}
+            layout={{
+              ...iconLayout(enableIconAutoHide, 0.6, 1.25, 2.5, {
+                vertical: 2,
+                horizontal: 2,
+              }),
+              ...baseTextLayout,
+              'text-field': '{poiName}',
+              'text-allow-overlap': !enableIconAutoHide,
+              'text-variable-anchor': ['left', 'right', 'top', 'bottom'],
+              'text-radial-offset': 1.5,
+              'text-size': 10,
+            }}
+            paint={colors.baseTextPaint}
+          />
+        )}
     </Source>
   );
 };
