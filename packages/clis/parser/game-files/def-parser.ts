@@ -208,8 +208,9 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
     entries.directories.get('def/photo_album'),
   );
   const viewpoints = new Map<bigint, string>(); // item.uid to l10n token
+  let itemCount = 0;
   for (const f of defPhotoAlbum.files) {
-    if (!/^viewpoints\.sui$/.test(f)) {
+    if (!/^(viewpoints|landmarks)\.sui$/.test(f)) {
       continue;
     }
     const json = convertSiiToJson(
@@ -219,13 +220,14 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
     );
     const items = json.photoAlbumItem;
     for (const val of Object.values(items)) {
+      itemCount++;
       for (const uid of val.objectsUid) {
         const token = val.name.replace(/(^@@)|(@@$)/g, '');
         viewpoints.set(uid, token);
       }
     }
   }
-  logger.info('parsed', viewpoints.size, 'viewpoints');
+  logger.info('parsed', itemCount, 'viewpoints and photo trophies');
 
   const achievements =
     application === 'ats'
