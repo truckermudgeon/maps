@@ -4,6 +4,7 @@ import type { Position } from '@truckermudgeon/base/geom';
 import { distance, midPoint, toSplinePoints } from '@truckermudgeon/base/geom';
 import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
 import { Preconditions } from '@truckermudgeon/base/precon';
+import { isLabeledPoi } from '@truckermudgeon/map/constants';
 import type { Polygon, RoadString } from '@truckermudgeon/map/prefabs';
 import {
   toMapPosition,
@@ -972,8 +973,7 @@ function poiToFeature(poi: Poi): PoiFeature {
       type: 'poi',
       sprite: poi.icon,
       poiType: poi.type,
-      // TODO labels should be present for all `Poi` of type `LabeledPoi`
-      poiName: poi.type === 'company' ? poi.label : poi.icon,
+      poiName: isLabeledPoi(poi) ? poi.label : undefined,
       dlcGuard: 'dlcGuard' in poi ? poi.dlcGuard : undefined,
     },
     geometry: {

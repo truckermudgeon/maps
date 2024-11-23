@@ -64,16 +64,6 @@ export type LaneSpeedClass =
   | 'expressway'
   | 'motorway'
   | 'slowRoad';
-const laneSpeedClassRecord: Record<LaneSpeedClass, true> = {
-  dividedRoad: true,
-  expressway: true,
-  freeway: true,
-  localRoad: true,
-  motorway: true,
-  slowRoad: true,
-};
-export const isLaneSpeedClass = (s: string): s is LaneSpeedClass =>
-  Object.prototype.hasOwnProperty.call(laneSpeedClassRecord, s);
 
 export type Company = Readonly<{
   token: string;
@@ -124,7 +114,8 @@ export type NonFacilityPoi =
   | 'ferry'
   | 'train';
 
-type LabeledPoi = BasePoi &
+// Be sure to update `isLabeledPoi` helper function when changing `LabeledPoi::type`.
+export type LabeledPoi = BasePoi &
   Readonly<
     | {
         type: Exclude<NonFacilityPoi, 'landmark'>;
@@ -679,7 +670,7 @@ export interface PoiProperties {
   type: 'poi';
   sprite: string;
   poiType: string; // Overlay, Viewpoint, Company, etc.
-  poiName?: string; // Company name, if poiType is Company
+  poiName?: string; // POI label, if available
   dlcGuard?: number; // For dlc-guarded POIs, like road icons
 }
 

@@ -40,7 +40,10 @@ export function convertSiiToJson<T>(
   //   key[]: foo
   //   val[]: bar
   // Hardcode a wrapper so parsing still works.
-  if (siiPath.includes('localization.sui')) {
+  if (
+    siiPath.includes('localization.sui') ||
+    siiPath.includes('photoalbum.sui')
+  ) {
     sii = `localizationDb : .localization {${sii}}`;
   }
 

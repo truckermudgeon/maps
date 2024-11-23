@@ -543,7 +543,7 @@ export interface ViewpointsSii {
     {
       name: string;
       dlcId: string;
-      objectsUid: [bigint];
+      objectsUid: bigint[];
     }
   >;
   photoAlbumGroup: Record<
@@ -555,15 +555,21 @@ export interface ViewpointsSii {
   >;
 }
 export const ViewpointsSiiSchema: JSONSchemaType<ViewpointsSii> = object({
-  photoAlbumItem: patternRecord(/^album\.viewpoints\.[0-9a-z_]{1,12}$/, {
-    name: localeToken,
-    dlcId: token,
-    objectsUid: fixedLengthArray(bigint, 1),
-  }),
-  photoAlbumGroup: patternRecord(/^album\.viewpoints\.[0-9a-z_]{1,12}$/, {
-    name: localeToken,
-    items: stringArray,
-  }),
+  photoAlbumItem: patternRecord(
+    /^album\.(viewpoints|landmarks)\.[0-9a-z_]{1,12}$/,
+    {
+      name: localeToken,
+      dlcId: token,
+      objectsUid: arrayOf(bigint),
+    },
+  ),
+  photoAlbumGroup: patternRecord(
+    /^album\.(viewpoints|landmarks)\.[0-9a-z_]{1,12}$/,
+    {
+      name: localeToken,
+      items: stringArray,
+    },
+  ),
 });
 
 interface FerryConnectionSii {
