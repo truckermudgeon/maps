@@ -124,6 +124,7 @@ export type NonFacilityPoi =
   | 'ferry'
   | 'train';
 
+// Be sure to update `isLabeledPoi` helper function when changing `LabeledPoi::type`.
 type LabeledPoi = BasePoi &
   Readonly<
     | {
@@ -171,6 +172,13 @@ type UnlabeledPoi = BasePoi &
   >;
 
 export type Poi = LabeledPoi | UnlabeledPoi;
+
+export const isLabeledPoi = (poi: Poi): poi is LabeledPoi =>
+  poi.type === 'company' ||
+  poi.type === 'landmark' ||
+  poi.type === 'viewpoint' ||
+  poi.type === 'ferry' ||
+  poi.type === 'train';
 
 export type Achievement = Readonly<
   | {

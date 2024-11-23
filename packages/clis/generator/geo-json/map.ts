@@ -32,6 +32,7 @@ import type {
   RoadLookProperties,
   RoadType,
 } from '@truckermudgeon/map/types';
+import { isLabeledPoi } from '@truckermudgeon/map/types';
 import * as turf from '@turf/helpers';
 import lineOffset from '@turf/line-offset';
 import type { Quadtree } from 'd3-quadtree';
@@ -972,8 +973,7 @@ function poiToFeature(poi: Poi): PoiFeature {
       type: 'poi',
       sprite: poi.icon,
       poiType: poi.type,
-      // TODO labels should be present for all `Poi` of type `LabeledPoi`
-      poiName: poi.type === 'company' ? poi.label : poi.icon,
+      poiName: isLabeledPoi(poi) ? poi.label : undefined,
       dlcGuard: 'dlcGuard' in poi ? poi.dlcGuard : undefined,
     },
     geometry: {
