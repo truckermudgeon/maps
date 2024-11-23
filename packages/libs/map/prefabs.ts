@@ -16,7 +16,7 @@ import { Preconditions } from '@truckermudgeon/base/precon';
 import * as turf from '@turf/helpers';
 import lineIntersect from '@turf/line-intersect';
 import lineOffset from '@turf/line-offset';
-import { MapColor } from './constants';
+import { MapAreaColor } from './constants';
 import type {
   MapPoint,
   Node,
@@ -49,11 +49,16 @@ export function toMapPosition(
   return rotate(translate(position, prefabStart), rotation, originPosition);
 }
 
-const colorZIndexes: Record<MapColor, number> = {
-  [MapColor.Road]: 3,
-  [MapColor.Light]: 0,
-  [MapColor.Dark]: 2,
-  [MapColor.Green]: 1,
+const colorZIndexes: Record<MapAreaColor, number> = {
+  [MapAreaColor.Road]: 3,
+  [MapAreaColor.Light]: 0,
+  [MapAreaColor.Dark]: 2,
+  [MapAreaColor.Green]: 1,
+  [MapAreaColor.NavRed]: 99,
+  [MapAreaColor.NavGreen]: 98,
+  [MapAreaColor.NavBlue]: 97,
+  [MapAreaColor.NavYellow]: 96,
+  [MapAreaColor.NavPurple]: 95,
 };
 
 interface RoadSegment {
@@ -85,7 +90,7 @@ export type RoadString = BaseRoadString & {
 export interface Polygon {
   points: Position[];
   zIndex: number;
-  color: MapColor;
+  color: MapAreaColor;
 }
 
 export function toRoadStringsAndPolygons(prefab: PrefabDescription): {

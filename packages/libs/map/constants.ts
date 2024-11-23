@@ -210,26 +210,63 @@ export const Ets2DlcGuards: Record<number, ReadonlySet<Ets2Dlc>> = {
   19: new Set([Ets2Dlc.Feldbinder]),
 };
 
-export enum MapColor {
+// names, color values defined in def/map_data.sii
+export enum MapAreaColor {
   Road = 0,
   Light,
   Dark,
   Green,
+  NavRed,
+  NavGreen,
+  NavBlue,
+  NavYellow,
+  NavPurple,
+  /*
+	map_area_color_name[]: "Nav-Red"
+	map_area_color[]: 0xFF787890
+	map_area_discovered_color[]: 0xFF000099
+
+	map_area_color_name[]: "Nav-Green"
+	map_area_color[]: 0xFF759076
+	map_area_discovered_color[]: 0xFF35A54D
+
+	map_area_color_name[]: "Nav-Blue"
+	map_area_color[]: 0xFF907576
+	map_area_discovered_color[]: 0xFFD9772F
+
+	map_area_color_name[]: "Nav-Yellow"
+	map_area_color[]: 0xFF778f90
+	map_area_discovered_color[]: 0xFF24D4EC
+
+	map_area_color_name[]: "Nav-Purple"
+	map_area_color[]: 0xFF827279
+	map_area_discovered_color[]: 0xFFA93E6E
+  */
 }
 
-export const MapColorUtils = {
+export const MapAreaColorUtils = {
   from: (n: number) => {
     switch (n) {
       case 0:
-        return MapColor.Road;
+        return MapAreaColor.Road;
       case 1:
-        return MapColor.Light;
+        return MapAreaColor.Light;
       case 2:
-        return MapColor.Dark;
+        return MapAreaColor.Dark;
       case 3:
-        return MapColor.Green;
+        return MapAreaColor.Green;
+      case 4:
+        return MapAreaColor.NavRed;
+      case 5:
+        return MapAreaColor.NavGreen;
+      case 6:
+        return MapAreaColor.NavBlue;
+      case 7:
+        return MapAreaColor.NavYellow;
+      case 8:
+        return MapAreaColor.NavPurple;
       default:
-        throw new Error('unknown MapColor: ' + n);
+        throw new Error('unknown MapAreaColor: ' + n);
     }
   },
 };

@@ -1,6 +1,6 @@
 import { assert } from '@truckermudgeon/base/assert';
 import { normalizeRadians } from '@truckermudgeon/base/geom';
-import { MapColor } from '@truckermudgeon/map/constants';
+import { MapAreaColor } from '@truckermudgeon/map/constants';
 import type { MapPoint, PrefabDescription } from '@truckermudgeon/map/types';
 import * as r from 'restructure';
 import { logger } from '../logger';
@@ -342,13 +342,13 @@ export function parsePrefabPpd(buffer: Buffer): PrefabDescription {
         if (isPolygon) {
           assert(!seenDummy);
           const { paint } = rp.visualFlags;
-          let color: MapColor = MapColor.Road;
+          let color: MapAreaColor = MapAreaColor.Road;
           if (paint.light) {
-            color = MapColor.Light;
+            color = MapAreaColor.Light;
           } else if (paint.dark) {
-            color = MapColor.Dark;
+            color = MapAreaColor.Dark;
           } else if (paint.green) {
-            color = MapColor.Green;
+            color = MapAreaColor.Green;
           }
           return {
             ...baseProperties,
