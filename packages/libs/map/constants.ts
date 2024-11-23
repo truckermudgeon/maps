@@ -1,5 +1,5 @@
 import { assert } from '@truckermudgeon/base/assert';
-import type { FacilityIcon } from './types';
+import type { FacilityIcon, LabeledPoi, Poi } from './types';
 
 export enum AtsDlc {
   Arizona,
@@ -348,6 +348,13 @@ export function toFacilityIcon(spawnPointType: SpawnPointType): FacilityIcon {
       throw new Error(`${spawnPointType} is not a facility`);
   }
 }
+
+export const isLabeledPoi = (poi: Poi): poi is LabeledPoi =>
+  poi.type === 'company' ||
+  poi.type === 'landmark' ||
+  poi.type === 'viewpoint' ||
+  poi.type === 'ferry' ||
+  poi.type === 'train';
 
 type Enumerate<
   N extends number,

@@ -4,6 +4,7 @@ import type { Position } from '@truckermudgeon/base/geom';
 import { distance, midPoint, toSplinePoints } from '@truckermudgeon/base/geom';
 import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
 import { Preconditions } from '@truckermudgeon/base/precon';
+import { isLabeledPoi } from '@truckermudgeon/map/constants';
 import type { Polygon, RoadString } from '@truckermudgeon/map/prefabs';
 import {
   toMapPosition,
@@ -32,7 +33,6 @@ import type {
   RoadLookProperties,
   RoadType,
 } from '@truckermudgeon/map/types';
-import { isLabeledPoi } from '@truckermudgeon/map/types';
 import * as turf from '@turf/helpers';
 import lineOffset from '@turf/line-offset';
 import type { Quadtree } from 'd3-quadtree';
