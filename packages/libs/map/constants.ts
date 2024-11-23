@@ -1,5 +1,5 @@
 import { assert } from '@truckermudgeon/base/assert';
-import type { FacilityIcon, LabeledPoi, Poi } from './types';
+import type { FacilityIcon, LabeledPoi, LaneSpeedClass, Poi } from './types';
 
 export enum AtsDlc {
   Arizona,
@@ -348,6 +348,17 @@ export function toFacilityIcon(spawnPointType: SpawnPointType): FacilityIcon {
       throw new Error(`${spawnPointType} is not a facility`);
   }
 }
+
+const laneSpeedClassRecord: Record<LaneSpeedClass, true> = {
+  dividedRoad: true,
+  expressway: true,
+  freeway: true,
+  localRoad: true,
+  motorway: true,
+  slowRoad: true,
+};
+export const isLaneSpeedClass = (s: string): s is LaneSpeedClass =>
+  Object.prototype.hasOwnProperty.call(laneSpeedClassRecord, s);
 
 export const isLabeledPoi = (poi: Poi): poi is LabeledPoi =>
   poi.type === 'company' ||

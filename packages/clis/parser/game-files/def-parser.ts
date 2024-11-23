@@ -1,5 +1,6 @@
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { Preconditions } from '@truckermudgeon/base/precon';
+import { isLaneSpeedClass } from '@truckermudgeon/map/constants';
 import type {
   Achievement,
   City,
@@ -14,7 +15,6 @@ import type {
   Route,
   SpeedLimits,
 } from '@truckermudgeon/map/types';
-import { isLaneSpeedClass } from '@truckermudgeon/map/types';
 import type { JSONSchemaType } from 'ajv';
 import { logger } from '../logger';
 import { convertSiiToJson } from './convert-sii-to-json';

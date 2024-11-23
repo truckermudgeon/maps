@@ -64,16 +64,6 @@ export type LaneSpeedClass =
   | 'expressway'
   | 'motorway'
   | 'slowRoad';
-const laneSpeedClassRecord: Record<LaneSpeedClass, true> = {
-  dividedRoad: true,
-  expressway: true,
-  freeway: true,
-  localRoad: true,
-  motorway: true,
-  slowRoad: true,
-};
-export const isLaneSpeedClass = (s: string): s is LaneSpeedClass =>
-  Object.prototype.hasOwnProperty.call(laneSpeedClassRecord, s);
 
 export type Company = Readonly<{
   token: string;
