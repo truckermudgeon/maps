@@ -679,7 +679,7 @@ export interface PoiProperties {
   type: 'poi';
   sprite: string;
   poiType: string; // Overlay, Viewpoint, Company, etc.
-  poiName?: string; // Company name, if poiType is Company
+  poiName?: string; // POI label, if available
   dlcGuard?: number; // For dlc-guarded POIs, like road icons
 }
 

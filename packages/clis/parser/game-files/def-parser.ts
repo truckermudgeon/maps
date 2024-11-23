@@ -219,9 +219,10 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
     );
     const items = json.photoAlbumItem;
     for (const val of Object.values(items)) {
-      const uid = val.objectsUid[0];
-      const token = val.name.replace(/(^@@)|(@@$)/g, '');
-      viewpoints.set(uid, token);
+      for (const uid of val.objectsUid) {
+        const token = val.name.replace(/(^@@)|(@@$)/g, '');
+        viewpoints.set(uid, token);
+      }
     }
   }
   logger.info('parsed', viewpoints.size, 'viewpoints');
