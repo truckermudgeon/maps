@@ -146,7 +146,7 @@ export function readMapData(
   const focusXYPlus = (padding: number) => (pos: { x: number; y: number }) =>
     focusXY(pos, padding);
 
-  logger.log('reading ats-map JSON files...');
+  logger.log(`reading ${map} map JSON files...`);
   const cities = allCities.filter(focusXY);
   const cityTokens = new Set(cities.map(c => c.token));
   const countryTokens = new Set(cities.map(c => c.countryToken));
