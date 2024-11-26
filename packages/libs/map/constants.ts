@@ -225,27 +225,6 @@ export enum MapAreaColor {
   NavBlue,
   NavYellow,
   NavPurple,
-  /*
-	map_area_color_name[]: "Nav-Red"
-	map_area_color[]: 0xFF787890
-	map_area_discovered_color[]: 0xFF000099
-
-	map_area_color_name[]: "Nav-Green"
-	map_area_color[]: 0xFF759076
-	map_area_discovered_color[]: 0xFF35A54D
-
-	map_area_color_name[]: "Nav-Blue"
-	map_area_color[]: 0xFF907576
-	map_area_discovered_color[]: 0xFFD9772F
-
-	map_area_color_name[]: "Nav-Yellow"
-	map_area_color[]: 0xFF778f90
-	map_area_discovered_color[]: 0xFF24D4EC
-
-	map_area_color_name[]: "Nav-Purple"
-	map_area_color[]: 0xFF827279
-	map_area_discovered_color[]: 0xFFA93E6E
-  */
 }
 
 export const MapAreaColorUtils = {
