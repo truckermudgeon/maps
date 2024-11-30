@@ -630,39 +630,39 @@
     },
     {
       "id": "aca_first",
-      "title": "Get the Ball Rollin' (Upcoming)",
-      "desc": " Hidden.",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/52cd1d8d821f8716e8b0b4bf51e94be6e4a65af9.jpg"
+      "title": "Get the Ball Rollin'",
+      "desc": "Complete the first scenario of the first chapter in Truck Driving Basics (Driving Academy)",
+      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/f111d20de9f50d680a7b636597eaf3f22944eb27.jpg"
     },
     {
       "id": "aca_interior",
-      "title": "Professional Driver (Upcoming)",
-      "desc": " Hidden.",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/52cd1d8d821f8716e8b0b4bf51e94be6e4a65af9.jpg"
+      "title": "Professional Driver",
+      "desc": "Complete at least 6 scenarios in the fourth chapter of Truck Driving Basics while using only the interior camera (Driving Academy)",
+      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/6649089537ee4a8a5df43f56eb8d81f558b70a5c.jpg"
     },
     {
       "id": "aca_truck_driving",
-      "title": "Dedicated Student (Upcoming)",
-      "desc": " Hidden.",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/52cd1d8d821f8716e8b0b4bf51e94be6e4a65af9.jpg"
+      "title": "Dedicated Student",
+      "desc": "Complete at least 28 scenarios in Truck Driving Basics including the final exams (Driving Academy)",
+      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/e594e13fb10fb783c674f8239052b250173baf14.jpg"
     },
     {
       "id": "aca_no_forward",
-      "title": "One-Shottin' It (Upcoming)",
-      "desc": " Hidden.",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/52cd1d8d821f8716e8b0b4bf51e94be6e4a65af9.jpg"
+      "title": "One-Shottin' It",
+      "desc": "Complete any scenario in fourth chapter of Truck Driving Basics in one attempt without correcting by driving forward (Driving Academy)",
+      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/29739caf46d433d4e85e15479a58ba904660ea50.jpg"
     },
     {
       "id": "aca_manual_transmission",
-      "title": "Rowing Through the Gears (Upcoming)",
-      "desc": " Hidden.",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/52cd1d8d821f8716e8b0b4bf51e94be6e4a65af9.jpg"
+      "title": "Rowing Through the Gears",
+      "desc": "Complete 20 scenarios in chapters two, three or four of Truck Driving Basics using an H-shifter or sequential transmission (Driving Academy)",
+      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/2946ab452f17cd51c84cdd3e39683c2b3ee1a2af.jpg"
     },
     {
       "id": "aca_consecutive",
-      "title": "Failure Is Not an Option (Upcoming)",
-      "desc": " Hidden.",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/52cd1d8d821f8716e8b0b4bf51e94be6e4a65af9.jpg"
+      "title": "Failure Is Not an Option",
+      "desc": "Complete any 5 scenarios in a row without failure from the third or fourth chapter in Truck Driving Basics (Driving Academy)",
+      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/42c8d23894c6cb67a505c56b4b8b255b11d715d3.jpg"
     }
   ]
 }

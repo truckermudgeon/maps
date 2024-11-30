@@ -180,6 +180,7 @@ enum Ets2Dlc {
   Krone,
   /** Feldbinder factory in Winsen, Germany. */
   Feldbinder,
+  Greece,
 }
 export type Ets2SelectableDlc = Exclude<
   Ets2Dlc,
@@ -208,28 +209,47 @@ export const Ets2DlcGuards: Record<number, ReadonlySet<Ets2Dlc>> = {
   17: new Set([Ets2Dlc.WestBalkans, Ets2Dlc.GoingEast]),
   18: new Set([Ets2Dlc.WestBalkans, Ets2Dlc.BeyondTheBalticSea]),
   19: new Set([Ets2Dlc.Feldbinder]),
+  20: new Set([Ets2Dlc.Greece]),
+  21: new Set([Ets2Dlc.Greece, Ets2Dlc.GoingEast]),
+  22: new Set([Ets2Dlc.Greece, Ets2Dlc.WestBalkans]),
 };
 
-export enum MapColor {
+// names, color values defined in def/map_data.sii
+export enum MapAreaColor {
   Road = 0,
   Light,
   Dark,
   Green,
+  NavRed,
+  NavGreen,
+  NavBlue,
+  NavYellow,
+  NavPurple,
 }
 
-export const MapColorUtils = {
+export const MapAreaColorUtils = {
   from: (n: number) => {
     switch (n) {
       case 0:
-        return MapColor.Road;
+        return MapAreaColor.Road;
       case 1:
-        return MapColor.Light;
+        return MapAreaColor.Light;
       case 2:
-        return MapColor.Dark;
+        return MapAreaColor.Dark;
       case 3:
-        return MapColor.Green;
+        return MapAreaColor.Green;
+      case 4:
+        return MapAreaColor.NavRed;
+      case 5:
+        return MapAreaColor.NavGreen;
+      case 6:
+        return MapAreaColor.NavBlue;
+      case 7:
+        return MapAreaColor.NavYellow;
+      case 8:
+        return MapAreaColor.NavPurple;
       default:
-        throw new Error('unknown MapColor: ' + n);
+        throw new Error('unknown MapAreaColor: ' + n);
     }
   },
 };

@@ -708,11 +708,15 @@ function processBaseAchievementsJson(
         continue;
       }
       assert(!!dc.cityName !== !!dc.countryName);
-      companies.push({
+      const company = {
         company: dc.companyName,
         locationType: dc.cityName ? 'city' : 'country',
         locationToken: assertExists(dc.cityName ?? dc.countryName),
-      });
+      } as const;
+      // HACK "deep" comparison
+      if (!companies.find(c => JSON.stringify(c) === JSON.stringify(company))) {
+        companies.push(company);
+      }
     }
     if (companies.length === 0) {
       continue;
@@ -852,14 +856,23 @@ function processEts2AchievementsJson(
       cities.push({ cityToken: dc.cityName });
     }
 
-    assert(!achievements.has(a.achievementName));
-    achievements.set(a.achievementName, {
-      type: 'delivery',
-      delivery: {
-        type: 'city',
-        cities,
-      },
-    });
+    if (achievements.has(a.achievementName)) {
+      // if the achievement already exists, then the achievement is probably
+      // something like gr_olive, where the source companies/cities are arguably
+      // more important than the destination cities.
+      logger.warn(
+        'ignoring delivery achievement (already exists)',
+        a.achievementName,
+      );
+    } else {
+      achievements.set(a.achievementName, {
+        type: 'delivery',
+        delivery: {
+          type: 'city',
+          cities,
+        },
+      });
+    }
   }
 
   //

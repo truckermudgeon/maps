@@ -1,7 +1,7 @@
 import { normalizeRadians } from '@truckermudgeon/base/geom';
 import {
   ItemType,
-  MapColorUtils,
+  MapAreaColorUtils,
   MapOverlayTypeUtils,
 } from '@truckermudgeon/map/constants';
 import type {
@@ -703,7 +703,7 @@ function toMapArea(
     dlcGuard: (rawItem.flags & 0x00_00_ff_00) >> 8,
     drawOver: (rawItem.flags & 0x00_00_00_01) !== 0 ? true : undefined,
     nodeUids: rawItem.nodeUids,
-    color: MapColorUtils.from(rawItem.colorIndex),
+    color: MapAreaColorUtils.from(rawItem.colorIndex),
   };
 }
 

@@ -7,7 +7,7 @@ import type {
 import {
   AtsSelectableDlcs,
   Ets2SelectableDlcs,
-  MapColor,
+  MapAreaColor,
   toAtsDlcGuards,
 } from '@truckermudgeon/map/constants';
 import type {
@@ -105,7 +105,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           'fill-color': mapAreaColor(mode),
           'fill-outline-color': [
             'case',
-            ['==', ['get', 'color'], MapColor.Road],
+            ['==', ['get', 'color'], MapAreaColor.Road],
             colors.mapAreaOutline,
             mapAreaColor(mode),
           ],
@@ -890,18 +890,29 @@ const roadColors: { [k in Mode]: RoadColors } = {
   },
 };
 
-const mapColors: { [k in Mode]: Record<MapColor, string> } = {
+const mapColors: { [k in Mode]: Record<MapAreaColor, string> } = {
   light: {
     [0]: 'hsl(200, 8%, 92%)', // road
     [1]: 'hsl(38, 59%, 76%)', // light
     [2]: 'hsl(38, 64%, 58%)', // dark
     [3]: 'hsl(92, 31%, 70%)', // green
+    // nav colors come directly from map_data.sii
+    [4]: 'hsl(0, 100%, 30%)', // nav-red
+    [5]: 'hsl(107, 51%, 43%)', // nav-green
+    [6]: 'hsl(201, 53%, 39%)', // nav-blue
+    [7]: 'hsl(53, 84%, 53%)', // nav-yellow
+    [8]: 'hsl(267,46% ,45%)', // nav-purple
   },
   dark: {
     [0]: 'hsl(200, 2%, 36%)', // road
     [1]: 'hsl(38, 25%, 35%)', // light
     [2]: 'hsl(38, 25%, 25%)', // dark
     [3]: 'hsl(143, 20%, 25%)', // green
+    [4]: 'hsl(0, 100%, 25%)', // nav-red
+    [5]: 'hsl(107, 51%, 25%)', // nav-green
+    [6]: 'hsl(201, 53%, 25%)', // nav-blue
+    [7]: 'hsl(53, 84%, 25%)', // nav-yellow
+    [8]: 'hsl(267, 46%, 25%)', // nav-purple
   },
 };
 

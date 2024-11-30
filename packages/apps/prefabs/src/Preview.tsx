@@ -7,6 +7,12 @@ const mapColors = {
   [1]: '#e6cc9f', // light
   [2]: '#d8a54e', // dark
   [3]: '#b1ca9b', // green
+  // unexpected "nav" colors
+  [4]: '#ff00ff',
+  [5]: '#ff00ff',
+  [6]: '#ff00ff',
+  [7]: '#ff00ff',
+  [8]: '#ff00ff',
 };
 
 export const Preview = ({ prefab }: { prefab: PrefabDescription }) => {

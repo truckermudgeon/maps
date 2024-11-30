@@ -1,12 +1,12 @@
 import type { GeoJSON } from 'geojson';
 import type {
   ItemType,
-  MapColor,
+  MapAreaColor,
   MapOverlayType,
   SpawnPointType,
 } from './constants';
 
-export type { MapColor } from './constants';
+export type { MapAreaColor } from './constants';
 
 // Parsing types
 
@@ -285,7 +285,7 @@ export type MapArea = BaseItem &
     dlcGuard: number;
     drawOver?: true;
     nodeUids: readonly bigint[];
-    color: MapColor;
+    color: MapAreaColor;
   }>;
 
 export type CityArea = BaseItem &
@@ -440,7 +440,7 @@ export type RoadMapPoint = BaseMapPoint & {
 };
 export type PolygonMapPoint = BaseMapPoint & {
   type: 'polygon';
-  color: MapColor;
+  color: MapAreaColor;
   roadOver: boolean;
 };
 export type MapPoint = RoadMapPoint | PolygonMapPoint;
@@ -634,14 +634,14 @@ export interface PrefabProperties {
   type: 'prefab';
   dlcGuard: number;
   zIndex: number;
-  color: MapColor;
+  color: MapAreaColor;
 }
 
 export interface MapAreaProperties {
   type: 'mapArea';
   dlcGuard: number;
   zIndex: number;
-  color: MapColor;
+  color: MapAreaColor;
 }
 
 export interface DebugProperties {
