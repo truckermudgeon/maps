@@ -107,13 +107,20 @@ export function convertToAchievementsGeoJson(
       case 'company':
         return delivery.companies.flatMap(a => {
           switch (a.locationType) {
-            case 'city':
+            case 'city': {
               if (!cities.has(a.locationToken)) {
                 return [];
               }
-              return assertExists(
-                cityAndCompanyTokensToPoint(a.locationToken, a.company),
+              const point = cityAndCompanyTokensToPoint(
+                a.locationToken,
+                a.company,
               );
+              // some achievements data may be incorrect, like "Spa City"
+              // allowing delivery to a wal_food_mkt depot in Hot Springs, AR,
+              // which no longer exists as of ATS 1.53 (it was replaced by a
+              // sht_mkt).
+              return point ? [point] : [];
+            }
             case 'country': {
               const country = countries.get(a.locationToken);
               if (!country) {
