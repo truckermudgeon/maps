@@ -174,6 +174,12 @@ export function convertToMapGeoJson(
     const de = countries.get('germany')!;
     countriesByCityName.set('Priwall', de);
   }
+  if (countries.has('greece')) {
+    const gr = countries.get('greece')!;
+    countriesByCityName.set('Igoumenitsa', gr);
+    countriesByCityName.set('Piraeus', gr);
+    countriesByCityName.set('Lixouri', gr);
+  }
   const ferryFeatures: FerryFeature[] = uniqFerries.map(f =>
     ferryToFeature(map, f, cities, countries, countriesByCityName),
   );
