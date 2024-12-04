@@ -2,6 +2,7 @@ import { EmojiEvents, LocationCity } from '@mui/icons-material';
 import { List, ListItem, Option, Select, Stack, Typography } from '@mui/joy';
 import { assertExists } from '@truckermudgeon/base/assert';
 import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
+import groupBy from 'object.groupby';
 
 export type SearchOption = Readonly<
   {
@@ -80,7 +81,7 @@ export const SearchSelect = ({ selected, onSelect }: SearchSelectProps) => {
         );
       }}
     >
-      {Object.entries(Object.groupBy(options, ({ label }) => label)).map(
+      {Object.entries(groupBy(options, ({ label }) => label)).map(
         ([label, value]) => {
           return (
             <List key={label}>
