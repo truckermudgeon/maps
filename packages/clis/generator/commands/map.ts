@@ -11,7 +11,7 @@ import { maybeEnsureOutputDir, untildify } from './path-helpers';
 
 export const command = 'map';
 export const describe =
-  'Generates {usa,europe}.{geojson,pmtiles} from map-parser JSON files';
+  'Generates {usa,europe}.{geojson,pmtiles,mbtiles} from map-parser JSON files';
 
 export const builder = (yargs: Argv) =>
   yargs
@@ -80,8 +80,8 @@ export const builder = (yargs: Argv) =>
       alias: 't',
       describe:
         'Type of files to write.\nSpecify multiple types with multiple -t arguments.',
-      choices: ['pmtiles', 'geojson'] as const,
-      default: ['pmtiles'] as ('pmtiles' | 'geojson')[],
+      choices: ['pmtiles', 'geojson', 'mbtiles'] as const,
+      default: ['pmtiles'] as ('pmtiles' | 'geojson' | 'mbtiles')[],
       defaultDescription: 'pmtiles',
     })
     .option('dryRun', {
@@ -90,7 +90,7 @@ export const builder = (yargs: Argv) =>
       default: false,
     })
     .option('minAttrs', {
-      describe: "Don't write out unused GeoJSON attrs in pmtiles.",
+      describe: "Don't write out unused GeoJSON attrs in pmtiles/mbtiles.",
       type: 'boolean',
       default: true,
     })
@@ -105,7 +105,8 @@ export const builder = (yargs: Argv) =>
 export function handler(args: BuilderArguments<typeof builder>) {
   const startTime = Date.now();
 
-  if (args.type.includes('pmtiles')) {
+  const types = Array.isArray(args.type) ? args.type : [args.type];
+  if (types.includes('pmtiles') || types.includes('mbtiles')) {
     // TODO verify tippecanoe is installed
   }
 
@@ -140,12 +141,12 @@ export function handler(args: BuilderArguments<typeof builder>) {
   });
   let geoJsonPath: string | undefined;
   const gamePrefix = args.map === 'usa' ? 'ats' : 'ets2';
-  if (!args.dryRun && args.type.includes('geojson')) {
+  if (!args.dryRun && types.includes('geojson')) {
     geoJsonPath = path.join(args.outputDir, `${gamePrefix}.geojson`);
     logger.log('writing GeoJSON files...');
     fs.writeFileSync(geoJsonPath, JSON.stringify(geoJson, null, 2));
   }
-  if (!args.dryRun && args.type.includes('pmtiles')) {
+  if (!args.dryRun && types.some(t => t.endsWith('tiles'))) {
     let cleanupGeoJson = false;
     if (geoJsonPath == null) {
       geoJsonPath = path.join(os.tmpdir(), `${gamePrefix}.geojson`);
@@ -172,38 +173,44 @@ export function handler(args: BuilderArguments<typeof builder>) {
       'color',
       'name',
     ];
-    // write to tmp dir, in case webpack-dev-server is watching (we don't
-    // want crazy reloads while the file is being written to)
-    const tmpPmTilesPath = path.join(os.tmpdir(), `${gamePrefix}.pmtiles`);
-    const tmpPmTilesLog = path.join(os.tmpdir(), `${gamePrefix}.pmtiles.log`);
-    const cmd =
-      // min-zoom 4, max-zoom 14.
-      // max-zoom shouldn't be too low, otherwise rounding artifacts will
-      // appear, like rectangles that look like trapezoids.
-      `tippecanoe -Z4 -z13 ` +
-      (args.minAttrs ? minAttributes.map(a => `-y ${a}`).join(' ') + ' ' : '') +
-      `-B 4 ` + // -B 4 preserves all points, starting at zoom 4
-      `-b 10` + // -b 10 helps with tile-boundary weirdness
-      ` --force -o ${tmpPmTilesPath} ${geoJsonPath} ` +
-      `> ${tmpPmTilesLog} 2>&1`;
 
-    logger.log('running tippecanoe to generate pmtiles file...');
-    logger.info('  ', cmd);
-    execSync(cmd);
-    logger.log(
-      '\n',
-      'tippecanoe output:\n',
-      fs
-        .readFileSync(tmpPmTilesLog, 'utf-8')
-        .split('\n')
-        .map(l => `  ${l}`)
-        .join('\n'),
-      '\n',
-    );
+    for (const type of types.filter(t => t.endsWith('tiles'))) {
+      // write to tmp dir, in case dev server is watching (we don't want crazy
+      // reloads while the file is being written to)
+      const tmpTilesPath = path.join(os.tmpdir(), `${gamePrefix}.${type}`);
+      const tmpTilesLog = path.join(os.tmpdir(), `${gamePrefix}.${type}.log`);
+      const cmd =
+        // min-zoom 4, max-zoom 14.
+        // max-zoom shouldn't be too low, otherwise rounding artifacts will
+        // appear, like rectangles that look like trapezoids.
+        `tippecanoe -Z4 -z13 ` +
+        (args.minAttrs
+          ? minAttributes.map(a => `-y ${a}`).join(' ') + ' '
+          : '') +
+        `-B 4 ` + // -B 4 preserves all points, starting at zoom 4
+        `-b 10` + // -b 10 helps with tile-boundary weirdness
+        ` --force -o ${tmpTilesPath} ${geoJsonPath} ` +
+        `> ${tmpTilesLog} 2>&1`;
 
-    const pmTilesPath = path.join(args.outputDir, `${gamePrefix}.pmtiles`);
-    fs.renameSync(tmpPmTilesPath, pmTilesPath);
-    fs.rmSync(tmpPmTilesLog);
+      logger.log(`running tippecanoe to generate ${type} file...`);
+      logger.info('  ', cmd);
+      execSync(cmd);
+      logger.log(
+        '\n',
+        'tippecanoe output:\n',
+        fs
+          .readFileSync(tmpTilesLog, 'utf-8')
+          .split('\n')
+          .map(l => `  ${l}`)
+          .join('\n'),
+        '\n',
+      );
+
+      const tilesPath = path.join(args.outputDir, `${gamePrefix}.${type}`);
+      fs.renameSync(tmpTilesPath, tilesPath);
+      fs.rmSync(tmpTilesLog);
+    }
+
     if (cleanupGeoJson) {
       logger.log('deleting temporary GeoJSON files...');
       fs.rmSync(geoJsonPath);
