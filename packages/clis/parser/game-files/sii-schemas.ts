@@ -109,6 +109,10 @@ const token = {
   transform: ['toLowerCase'],
 };
 
+// Debug helpers to parse any file as .sii file, without caring about schema/typing.
+export type AnySii = Record<string, unknown>;
+export const AnySiiSchema: JSONSchemaType<AnySii> = object({});
+
 export interface VersionSii {
   fsPackSet: Record<
     string,
