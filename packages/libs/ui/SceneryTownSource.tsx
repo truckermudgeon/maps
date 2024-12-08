@@ -85,7 +85,7 @@ export const SceneryTownSource = (props: SceneryTownSourceProps) => {
           'text-variable-anchor': textVariableAnchor,
           'text-size': 10.5,
         }}
-        paint={colors.baseTextPaint}
+        paint={colors.primaryTextPaint}
       />
     </Source>
   );

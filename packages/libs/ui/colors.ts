@@ -1,13 +1,25 @@
 import type { SymbolLayerSpecification } from 'maplibre-gl';
 
-const lightBaseTextPaint: SymbolLayerSpecification['paint'] = {
+const lightPrimaryTextPaint: SymbolLayerSpecification['paint'] = {
   'text-color': 'hsl(42, 10%, 14%)',
   'text-halo-width': 2,
   'text-halo-color': 'hsl(42, 10%, 100%)',
 };
 
-const darkBaseTextPaint: SymbolLayerSpecification['paint'] = {
+const lightSecondaryTextPaint: SymbolLayerSpecification['paint'] = {
+  'text-color': 'hsl(42, 10%, 24%)',
+  'text-halo-width': 2,
+  'text-halo-color': 'hsl(42, 10%, 100%)',
+};
+
+const darkPrimaryTextPaint: SymbolLayerSpecification['paint'] = {
   'text-color': 'hsl(42, 10%, 86%)',
+  'text-halo-width': 2,
+  'text-halo-color': 'hsl(42, 10%, 0%)',
+};
+
+const darkSecondaryTextPaint: SymbolLayerSpecification['paint'] = {
+  'text-color': 'hsl(42, 10%, 76%)',
   'text-halo-width': 2,
   'text-halo-color': 'hsl(42, 10%, 0%)',
 };
@@ -22,7 +34,8 @@ export const modeColors = {
     stateBorder: '#aaa',
     countryBorder: '#ccc',
     // game
-    baseTextPaint: lightBaseTextPaint,
+    primaryTextPaint: lightPrimaryTextPaint,
+    secondaryTextPaint: lightSecondaryTextPaint,
     hiddenRoad: '#e9e9e8',
     footprint: '#e9e9e8',
     ferryLine: '#6c90ff88',
@@ -40,7 +53,8 @@ export const modeColors = {
     stateBorder: '#555',
     countryBorder: '#333',
     // game
-    baseTextPaint: darkBaseTextPaint,
+    primaryTextPaint: darkPrimaryTextPaint,
+    secondaryTextPaint: darkSecondaryTextPaint,
     hiddenRoad: '#404038',
     footprint: '#30302f88',
     ferryLine: '#6c90ff88',

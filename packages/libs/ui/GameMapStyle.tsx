@@ -468,7 +468,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             'icon-allow-overlap': !enableIconAutoHide,
             'icon-size': 0.6,
           }}
-          paint={colors.baseTextPaint}
+          paint={colors.primaryTextPaint}
         />
       )}
       {visibleIcons.has(MapIcon.CityNames) && (
@@ -495,7 +495,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             'icon-allow-overlap': !enableIconAutoHide,
             'icon-size': 0.6,
           }}
-          paint={colors.baseTextPaint}
+          paint={colors.primaryTextPaint}
         />
       )}
       {visibleIcons.has(MapIcon.CityNames) && (
@@ -521,7 +521,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             'icon-allow-overlap': !enableIconAutoHide,
             'icon-size': 0.8,
           }}
-          paint={colors.baseTextPaint}
+          paint={colors.primaryTextPaint}
         />
       )}
       {game === 'ets2' && visibleIcons.has(MapIcon.CityNames) && (
@@ -543,7 +543,30 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             'text-variable-anchor': textVariableAnchor,
             'text-size': 14,
           }}
-          paint={colors.baseTextPaint}
+          paint={colors.primaryTextPaint}
+        />
+      )}
+      {game === 'ats' && visibleIcons.has(MapIcon.CityNames) && (
+        <Layer
+          id={game + 'country-labels'}
+          source-layer={game}
+          type={'symbol'}
+          minzoom={4}
+          maxzoom={6.5}
+          filter={[
+            'all',
+            ['==', ['geometry-type'], 'Point'],
+            ['==', ['get', 'type'], 'country'],
+          ]}
+          layout={{
+            ...baseTextLayout,
+            'text-font': ['Open Sans Light'],
+            'text-field': '{name}',
+            'text-transform': 'uppercase',
+            'text-variable-anchor': textVariableAnchor,
+            'text-size': ['step', ['zoom'], 10, 5, 13],
+          }}
+          paint={colors.secondaryTextPaint}
         />
       )}
       {hasPois(visibleIcons) && (
@@ -597,7 +620,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
               'text-radial-offset': 1.5,
               'text-size': 10,
             }}
-            paint={colors.baseTextPaint}
+            paint={colors.primaryTextPaint}
           />
         )}
     </Source>

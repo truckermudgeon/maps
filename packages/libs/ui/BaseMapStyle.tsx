@@ -43,7 +43,7 @@ export const BaseMapStyle = (props: BaseMapStyleProps) => {
           filter={['!=', ['get', 'name'], 'Serbia-Kosovo']}
           paint={{
             'line-color': colors.countryBorder,
-            'line-width': 1,
+            'line-width': 2,
             'line-opacity': 1,
           }}
         />
@@ -53,9 +53,9 @@ export const BaseMapStyle = (props: BaseMapStyleProps) => {
           filter={['==', ['get', 'name'], 'Serbia-Kosovo']}
           paint={{
             'line-color': colors.countryBorder,
-            'line-width': 1,
+            'line-width': 2,
             'line-opacity': 1,
-            'line-dasharray': [3, 3],
+            'line-dasharray': [3, 2],
           }}
         />
       </Source>
