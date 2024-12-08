@@ -18,13 +18,13 @@ export const BaseMapStyle = (props: BaseMapStyleProps) => {
       <Layer
         id={'background'}
         type={'background'}
-        paint={{ 'background-color': colors.water }}
+        paint={{ 'background-color': colors.land }}
       />
       <Source id={'world'} type={'vector'} url={'pmtiles:///world.pmtiles'}>
         <Layer
-          source-layer={'land'}
+          source-layer={'water'}
           type={'fill'}
-          paint={{ 'fill-color': colors.land }}
+          paint={{ 'fill-color': colors.water }}
         />
         {children}
         <Layer
@@ -40,6 +40,7 @@ export const BaseMapStyle = (props: BaseMapStyleProps) => {
         <Layer
           source-layer={'countries'}
           type={'line'}
+          filter={['!=', ['get', 'name'], 'Serbia-Kosovo']}
           paint={{
             'line-color': colors.countryBorder,
             'line-width': 1,
@@ -47,10 +48,14 @@ export const BaseMapStyle = (props: BaseMapStyleProps) => {
           }}
         />
         <Layer
-          source-layer={'lakes'}
-          type={'fill'}
+          source-layer={'countries'}
+          type={'line'}
+          filter={['==', ['get', 'name'], 'Serbia-Kosovo']}
           paint={{
-            'fill-color': colors.water,
+            'line-color': colors.countryBorder,
+            'line-width': 1,
+            'line-opacity': 1,
+            'line-dasharray': [3, 3],
           }}
         />
       </Source>
