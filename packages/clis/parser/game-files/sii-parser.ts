@@ -39,6 +39,11 @@ const NumberLiteral = createToken({
   longer_alt: [HexLiteral, Property],
   pattern: /[-+]?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?/,
 });
+const BinaryFloat = createToken({
+  name: 'BinaryFloat',
+  // Hexadecimal representation of IEEE 754 binary32 floats, big-endian.
+  pattern: /&[0-9a-fA-F]{8}/,
+});
 const WhiteSpace = createToken({
   name: 'WhiteSpace',
   pattern: /\s+/,
@@ -63,6 +68,7 @@ const allTokens = [
   AtInclude,
   StringLiteral,
   NumberLiteral,
+  BinaryFloat,
   HexLiteral,
   Property,
   WhiteSpace,
@@ -86,7 +92,11 @@ class SiiParser extends CstParser {
     this.CONSUME(LParen);
     this.AT_LEAST_ONE_SEP({
       SEP: Comma,
-      DEF: () => this.CONSUME(NumberLiteral),
+      DEF: () =>
+        this.OR([
+          { ALT: () => this.CONSUME(NumberLiteral) },
+          { ALT: () => this.CONSUME(BinaryFloat) },
+        ]),
     });
     this.CONSUME(RParen);
   });
@@ -102,6 +112,7 @@ class SiiParser extends CstParser {
     this.OR([
       { ALT: () => this.CONSUME(StringLiteral) },
       { ALT: () => this.CONSUME(NumberLiteral) },
+      { ALT: () => this.CONSUME(BinaryFloat) },
       { ALT: () => this.CONSUME(HexLiteral) },
       { ALT: () => this.CONSUME(Property) },
       { ALT: () => this.SUBRULE(this.numberTuple) },
