@@ -28,7 +28,8 @@ export interface NumberTupleCstNode extends CstNode {
 
 export type NumberTupleCstChildren = {
   LParen: IToken[];
-  NumberLiteral: IToken[];
+  NumberLiteral?: IToken[];
+  BinaryFloat?: IToken[];
   Comma?: IToken[];
   RParen: IToken[];
 };
@@ -54,6 +55,7 @@ export type ObjectPropertyValueCstChildren = {
   String?: IToken[];
   NumberLiteral?: IToken[];
   HexLiteral?: IToken[];
+  BinaryFloat?: IToken[];
   Property?: IToken[];
   numberTuple?: NumberTupleCstNode[];
   numberAuxTuple?: NumberAuxTupleCstNode[];
