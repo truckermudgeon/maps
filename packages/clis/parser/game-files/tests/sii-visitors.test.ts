@@ -81,7 +81,7 @@ mileage_target : mileage.ok_oklacity {
     });
   });
 
-  it.todo('parses mileage target ok_seiling', () => {
+  it('parses mileage target ok_seiling', () => {
     const text = `
 SiiNunit
 {
