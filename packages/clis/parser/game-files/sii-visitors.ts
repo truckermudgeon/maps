@@ -76,6 +76,12 @@ class JsonConverterVisitor extends getSiiVisitorClass<
       json.value = quotedStringToString(children.String[0].image);
     } else if (children.NumberLiteral) {
       json.value = stringToNumber(children.NumberLiteral[0].image);
+      if (
+        (json.value as number) > Number.MAX_SAFE_INTEGER &&
+        /^\d+$/.test(children.NumberLiteral[0].image)
+      ) {
+        json.value = BigInt(children.NumberLiteral[0].image);
+      }
     } else if (children.BinaryFloat) {
       json.value = stringToFloat(children.BinaryFloat[0].image);
     } else if (children.HexLiteral) {

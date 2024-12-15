@@ -81,8 +81,7 @@ mileage_target : mileage.ok_oklacity {
     });
   });
 
-  // skip/todo: implement bigint node_uid for ok_seiling
-  it.skip('parses mileage target ok_seiling', () => {
+  it('parses mileage target ok_seiling', () => {
     const text = `
 SiiNunit
 {
