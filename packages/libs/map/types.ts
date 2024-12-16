@@ -102,6 +102,18 @@ export type Ferry = Readonly<{
   connections: FerryConnection[];
 }>;
 
+export type MileageTarget = Readonly<{
+  token: string;
+  editorName: string;
+  defaultName: string;
+  nameVariants: string[];
+  distanceOffset: number;
+  nodeUid?: bigint;
+  x?: number; // easting
+  y?: number; // southing
+  searchRadius?: number;
+}>;
+
 type BasePoi = Readonly<{
   x: number;
   y: number;
@@ -539,6 +551,7 @@ export interface DefData {
   modelDescriptions: WithToken<ModelDescription>[];
   achievements: WithToken<Achievement>[];
   routes: WithToken<Route>[];
+  mileageTargets: MileageTarget[];
 }
 
 // GeoJSON

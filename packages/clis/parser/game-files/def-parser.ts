@@ -9,6 +9,7 @@ import type {
   Ferry,
   FerryConnection,
   LaneSpeedClass,
+  MileageTarget,
   ModelDescription,
   PrefabDescription,
   RoadLook,
@@ -30,6 +31,7 @@ import type {
   CountrySii,
   Ets2AchievementsSii,
   FerrySii,
+  MileageTargetsSii,
   ModelSii,
   PrefabSii,
   RoadLookSii,
@@ -46,6 +48,7 @@ import {
   Ets2AchievementsSiiSchema,
   FerryConnectionSiiSchema,
   FerrySiiSchema,
+  MileageTargetsSiiSchema,
   ModelSiiSchema,
   PrefabSiiSchema,
   RoadLookSiiSchema,
@@ -207,6 +210,15 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
   logger.info('parsed', models.size, 'building models');
   logger.info('parsed', vegetation.size, 'vegetation models');
 
+  const mileageTargets: Map<string, MileageTarget> = processMileageTargetJson(
+    convertSiiToJson(
+      'def/sign/mileage_targets.sii',
+      entries,
+      MileageTargetsSiiSchema,
+    ),
+  );
+  logger.info('parsed', mileageTargets.size, 'mileage targets');
+
   const defPhotoAlbum = Preconditions.checkExists(
     entries.directories.get('def/photo_album'),
   );
@@ -273,6 +285,7 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
     roadLooks,
     models,
     vegetation,
+    mileageTargets,
     viewpoints,
   };
 }
@@ -908,4 +921,40 @@ function processRouteJson(obj: RouteSii): Map<string, Route> {
     routes.set(routeKey, route);
   }
   return routes;
+}
+
+function processMileageTargetJson(
+  obj: MileageTargetsSii,
+): Map<string, MileageTarget> {
+  const mileageTargets = new Map<string, MileageTarget>();
+  for (const [key, rawTarget] of Object.entries(obj.mileageTarget)) {
+    const token = assertExists(key.split('.')[1]);
+    let target: MileageTarget = {
+      token: token,
+      editorName: rawTarget.editorName,
+      defaultName: rawTarget.defaultName,
+      nameVariants: Array.isArray(rawTarget.names) ? rawTarget.names : [],
+      distanceOffset: rawTarget.distanceOffset,
+    };
+    // Some mileage targets are specified with a position, which we can use
+    // directly. For other mileage targets, a node uid is given, which we'll
+    // have to try to resolve later using data from map sector files.
+    if (rawTarget.position.every(v => v != null)) {
+      // SCS coordinates: easting, up, southing
+      const [x, , y] = rawTarget.position.map(v => Math.round(v * 100) / 100);
+      target = { ...target, x, y };
+    } else if (rawTarget.nodeUid != null) {
+      target = { ...target, nodeUid: rawTarget.nodeUid };
+    } else {
+      // A total lack of position information is rare, but it can happen for
+      // test data or unreleased DLC. Either way, nothing we can do about it.
+      logger.debug('skipping mileage target (no position, nor uid)', token);
+      continue;
+    }
+    if (rawTarget.searchRadius >= 0) {
+      target = { ...target, searchRadius: rawTarget.searchRadius };
+    }
+    mileageTargets.set(token, target);
+  }
+  return mileageTargets;
 }
