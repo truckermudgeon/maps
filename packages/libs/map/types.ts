@@ -49,13 +49,16 @@ export type Country = Readonly<{
   code: string;
   truckSpeedLimits: SpeedLimits;
 }>;
-export type SpeedLimits = Partial<{
-  [k in LaneSpeedClass]: {
-    limit: number;
-    urbanLimit: number;
-    maxLimit: number;
-  };
-}>;
+export type SpeedLimits = Partial<
+  Record<
+    LaneSpeedClass,
+    {
+      limit: number;
+      urbanLimit: number;
+      maxLimit: number;
+    }
+  >
+>;
 
 export type LaneSpeedClass =
   | 'localRoad'
