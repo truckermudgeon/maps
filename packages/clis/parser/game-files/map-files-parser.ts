@@ -990,8 +990,7 @@ function createWithLocalizedName(l10n: Map<string, string>) {
     ...o,
     nameLocalized: undefined,
     name: o.nameLocalized
-      ? // If it weren't for Winterland, we could assert that o.nameLocalized guarantees an entry in the l10n table.
-        (l10n.get(o.nameLocalized.replaceAll('@', '')) ?? o.name)
+      ? assertExists(l10n.get(o.nameLocalized.replaceAll('@', '')))
       : o.name,
   });
 }
