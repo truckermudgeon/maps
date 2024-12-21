@@ -16,6 +16,7 @@ import type {
   Ferry,
   MapArea,
   MapData,
+  MileageTarget,
   Model,
   ModelDescription,
   Node,
@@ -44,6 +45,7 @@ const MapDataKeys: Record<keyof MapData, void> = {
   dividers: undefined,
   ferries: undefined,
   mapAreas: undefined,
+  mileageTargets: undefined,
   modelDescriptions: undefined,
   models: undefined,
   nodes: undefined,
@@ -226,6 +228,9 @@ export function readMapData(
   const cutscenes = readArrayFile<Cutscene>(toJsonFilePath('cutscenes.json'));
   const triggers = readArrayFile<Trigger>(toJsonFilePath('triggers.json'));
   const routes = readArrayFile<WithToken<Route>>(toJsonFilePath('routes.json'));
+  const mileageTargets = readArrayFile<WithToken<MileageTarget>>(
+    toJsonFilePath('mileageTargets.json'),
+  );
 
   const mapped = {
     nodes: nodesMap,
@@ -247,6 +252,7 @@ export function readMapData(
     roadLooks: mapify(roadLooks, r => r.token),
     prefabDescriptions: mapify(prefabDescriptions, p => p.token),
     modelDescriptions: mapify(modelDescriptions, p => p.token),
+    mileageTargets: mapify(mileageTargets, t => t.token),
     pois,
     elevation,
   };

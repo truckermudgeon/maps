@@ -541,6 +541,36 @@ export const CitySiiSchema: JSONSchemaType<CitySii> = object(
   [],
 );
 
+export interface MileageTargetsSii {
+  mileageTarget: Record<
+    string,
+    {
+      editorName: string;
+      defaultName: string;
+      names: number | string[];
+      distanceOffset: number;
+      nodeUid: string;
+      position: [number, number, number];
+      searchRadius: number;
+    }
+  >;
+}
+export const MileageTargetsSiiSchema: JSONSchemaType<MileageTargetsSii> =
+  object(
+    {
+      mileageTarget: patternRecord(/^mileage\.[0-9a-z_]{1,12}$/, {
+        editorName: string,
+        defaultName: string,
+        names: { anyOf: [number, stringArray] },
+        distanceOffset: number,
+        nodeUid: { anyOf: [bigint, string] },
+        position: fixedLengthArray(nullable(number), 3),
+        searchRadius: number,
+      }),
+    },
+    [],
+  );
+
 export interface ViewpointsSii {
   photoAlbumItem: Record<
     string,
