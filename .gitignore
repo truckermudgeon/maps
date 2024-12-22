@@ -3,25 +3,11 @@
 node_modules
 build
 
-# generated files for the demo app
-*.geojson
-usa-graph-demo.json
-ats*.*
-ets2*.*
-sprites*.*
-# the patterns above can be a little too wide.
-# make sure they don't include .ts source files.
-!sprites*.ts
-!ats*.ts
-!ets2*.ts
-
-# generated files for the prefabs app
-usa-nodes.json
-usa-prefabs.json
-usa-prefabDescriptions.json
-europe-nodes.json
-europe-prefabs.json
-europe-prefabDescriptions.json
+# generated files used by web apps
+packages/apps/*/public/*.geojson
+packages/apps/*/public/*.json
+packages/apps/*/public/*.pmtiles
+packages/apps/*/public/sprites*.*
 
 .DS_Store
 npm-debug.log*
