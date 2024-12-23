@@ -8,7 +8,8 @@
   "bin": "./index.ts",
   "scripts": {
     "build": "node-gyp configure && node-gyp build",
-    "postinstall": "ln -sf ../../packages/clis/parser/index.ts ../../../node_modules/.bin/parser"
+    "postinstall": "ln -sf ../../packages/clis/parser/index.ts ../../../node_modules/.bin/parser",
+    "gen:types": "npx tsx -e 'import { generateVisitorDts } from \"./game-files/sii-parser\"; console.log(generateVisitorDts());' | npx prettier --parser typescript > types/sii-visitor.d.ts"
   },
   "devDependencies": {
     "@types/cli-progress": "^3.11.5",

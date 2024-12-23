@@ -228,9 +228,3 @@ effect : "ui.rfx" {
     expectToParse(text);
   });
 });
-
-//describe('types', () => {
-//  it('generates', () => {
-//    console.log(generateVisitorDts());
-//  });
-//});

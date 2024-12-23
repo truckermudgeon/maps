@@ -121,28 +121,19 @@ export type SiiCstChildren = {
 
 export interface SiiVisitor<IN, OUT> extends ICstVisitor<IN, OUT> {
   includeDirective(children: IncludeDirectiveCstChildren, param?: IN): OUT;
-
   objectPropertyIndex(
     children: ObjectPropertyIndexCstChildren,
     param?: IN,
   ): OUT;
-
   numberTuple(children: NumberTupleCstChildren, param?: IN): OUT;
-
   numberAuxTuple(children: NumberAuxTupleCstChildren, param?: IN): OUT;
-
   objectPropertyValue(
     children: ObjectPropertyValueCstChildren,
     param?: IN,
   ): OUT;
-
   objectProperty(children: ObjectPropertyCstChildren, param?: IN): OUT;
-
   object(children: ObjectCstChildren, param?: IN): OUT;
-
   wrappedSii(children: WrappedSiiCstChildren, param?: IN): OUT;
-
   unwrappedSii(children: UnwrappedSiiCstChildren, param?: IN): OUT;
-
   sii(children: SiiCstChildren, param?: IN): OUT;
 }
