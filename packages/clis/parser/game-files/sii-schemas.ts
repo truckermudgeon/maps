@@ -30,6 +30,7 @@ ajv.addKeyword({
 const integer: JSONSchemaType<number> = { type: 'integer' } as const;
 const number: JSONSchemaType<number> = { type: 'number' } as const;
 const string: JSONSchemaType<string> = { type: 'string' } as const;
+const null_: JSONSchemaType<null> = { type: 'null', nullable: true } as const;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
 const bigint: JSONSchemaType<bigint> = { dataType: 'bigint' } as any;
 
@@ -37,6 +38,12 @@ type Tuple<T, N extends number, R extends T[] = []> = R['length'] extends N
   ? R
   : Tuple<T, N, [T, ...R]>;
 
+const constInteger = <T extends number>(n: T) =>
+  ({
+    type: 'integer',
+    minimum: n,
+    maximum: n,
+  }) as JSONSchemaType<T>;
 const arrayOf = <T>(
   items: T,
   size: { minItems?: number; maxItems?: number } = { minItems: 1 },
@@ -540,6 +547,53 @@ export const CitySiiSchema: JSONSchemaType<CitySii> = object(
   },
   [],
 );
+
+export interface MileageTargetsSii {
+  mileageTarget: Record<
+    string,
+    {
+      editorName: string;
+      defaultName: string;
+      // The number zero as `names` signifies an empty array of strings.
+      names: 0 | string[];
+      distanceOffset: number;
+      nodeUid?: bigint;
+      position: [number, number, number] | [null, null, null];
+      searchRadius: number;
+    }
+  >;
+}
+export const MileageTargetsSiiSchema: JSONSchemaType<MileageTargetsSii> =
+  object(
+    {
+      mileageTarget: patternRecord(
+        /^mileage\.[0-9a-z_]{1,12}$/,
+        {
+          editorName: string,
+          defaultName: string,
+          names: { anyOf: [constInteger(0), stringArray] },
+          distanceOffset: number,
+          // `nodeUid` is optional, but the `nullable` combinator can't be used
+          // here because it's not compatible with the custom `bigint`
+          // descriptor. instead, cast it to the type that `nullable` produces.
+          nodeUid: bigint as typeof bigint & { nullable: true },
+          position: {
+            anyOf: [fixedLengthArray(number, 3), fixedLengthArray(null_, 3)],
+          },
+          searchRadius: number,
+        },
+        [
+          'editorName',
+          'defaultName',
+          'names',
+          'distanceOffset',
+          'position',
+          'searchRadius',
+        ],
+      ),
+    },
+    [],
+  );
 
 export interface ViewpointsSii {
   photoAlbumItem: Record<

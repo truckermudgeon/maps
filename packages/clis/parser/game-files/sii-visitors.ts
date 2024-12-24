@@ -62,7 +62,7 @@ class JsonConverterVisitor extends getSiiVisitorClass<
         } else {
           const tempWrapper = { value: undefined };
           this.visit(p.objectPropertyValue, tempWrapper);
-          obj[propKey] = assertExists(tempWrapper.value);
+          obj[propKey] = tempWrapper.value;
         }
       }
     }
@@ -72,7 +72,9 @@ class JsonConverterVisitor extends getSiiVisitorClass<
     children: ObjectPropertyValueCstChildren,
     json: { value: unknown },
   ): void {
-    if (children.String) {
+    if (children.Nil) {
+      json.value = undefined;
+    } else if (children.String) {
       json.value = quotedStringToString(children.String[0].image);
     } else if (children.NumberLiteral) {
       json.value = stringToNumber(children.NumberLiteral[0].image);

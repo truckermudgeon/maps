@@ -56,6 +56,7 @@ export interface ObjectPropertyValueCstNode extends CstNode {
 }
 
 export type ObjectPropertyValueCstChildren = {
+  Nil?: IToken[];
   String?: IToken[];
   NumberLiteral?: IToken[];
   BinaryFloat?: IToken[];

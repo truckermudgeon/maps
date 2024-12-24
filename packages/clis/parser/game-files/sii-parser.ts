@@ -24,6 +24,10 @@ const Property = createToken({
   // The negative lookahead for `x` is to ensure HexLiterals can be parsed.
   pattern: /([a-zA-Z0-9_.]+)|((0(?!x))?[1-9]+[a-z_.]+[a-z0-9_.]+)/,
 });
+const NilLiteral = createToken({
+  name: 'Nil',
+  pattern: /nil/,
+});
 const StringLiteral = createToken({
   name: 'String',
   // Can't simply use /"[^"]*"/, because we might have string literals with
@@ -66,6 +70,7 @@ const allTokens = [
   Comma,
   Colon,
   AtInclude,
+  NilLiteral,
   StringLiteral,
   NumberLiteral,
   BinaryFloat,
@@ -110,6 +115,7 @@ class SiiParser extends CstParser {
   });
   readonly objectPropertyValue = this.RULE('objectPropertyValue', () => {
     this.OR([
+      { ALT: () => this.CONSUME(NilLiteral) },
       { ALT: () => this.CONSUME(StringLiteral) },
       { ALT: () => this.CONSUME(NumberLiteral) },
       { ALT: () => this.CONSUME(BinaryFloat) },

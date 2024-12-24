@@ -72,7 +72,7 @@ mileage_target : mileage.ok_oklacity {
           imageAtlasIndices: 0,
           imageAtlasPaths: 0,
           names: ['Okla. City'],
-          nodeUid: 'nil',
+          nodeUid: undefined,
           position: [-7257.50341796875, 21.56877326965332, 19497.71875],
           searchRadius: 50,
           variants: ['okla_city'],
