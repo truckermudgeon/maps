@@ -20,6 +20,7 @@ export const Details = ({ prefab, locations }: DetailsProps) => {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { token, path, ...prefabRest } = prefab;
   return (
     <Tabs defaultValue={0}>

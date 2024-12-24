@@ -811,6 +811,7 @@ function toParallelRoadStrings(roadString: InternalRoadString): [
   ];
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function toVRoadStrings(
   roadString: InternalRoadString,
 ): [InternalRoadString, InternalRoadString] {

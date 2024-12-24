@@ -959,7 +959,7 @@ const roadCaseColor = (mode: 'light' | 'dark'): ExpressionSpecification => [
   'match',
   ['get', 'roadType'],
   ...(Object.entries(roadColors[mode]).flatMap(
-    ([roadType, [_, casingColor]]) => [roadType, casingColor],
+    ([roadType, [, casingColor]]) => [roadType, casingColor],
   ) as Array7<string>),
   '#b0b', // fallback
 ];
