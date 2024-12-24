@@ -146,6 +146,28 @@ prefab_model : prefab.us_29n
     expectToParse(text);
   });
 
+  it('parses binary float numbers', () => {
+    const text = `
+binary_float : .test {
+ zero: &00000000
+ no_data: &7f7fffff
+ mixed: (&c72bb452, 120, &c601f2d8)
+}
+    `;
+    expectToParse(text);
+    const res = parseSii(text);
+    expect(res.input[6].tokenType.name).toBe('BinaryFloat');
+    expect(res.input[6].image).toBe('&00000000');
+    expect(res.input[9].tokenType.name).toBe('BinaryFloat');
+    expect(res.input[9].image).toBe('&7f7fffff');
+    expect(res.input[13].tokenType.name).toBe('BinaryFloat');
+    expect(res.input[13].image).toBe('&c72bb452');
+    expect(res.input[15].tokenType.name).toBe('NumberLiteral');
+    expect(res.input[15].image).toBe('120');
+    expect(res.input[17].tokenType.name).toBe('BinaryFloat');
+    expect(res.input[17].image).toBe('&c601f2d8');
+  });
+
   it('parses country files', () => {
     const text = `
     country_data : country.data.california

@@ -62,7 +62,7 @@ class JsonConverterVisitor extends getSiiVisitorClass<
         } else {
           const tempWrapper = { value: undefined };
           this.visit(p.objectPropertyValue, tempWrapper);
-          obj[propKey] = assertExists(tempWrapper.value);
+          obj[propKey] = tempWrapper.value;
         }
       }
     }
@@ -72,19 +72,36 @@ class JsonConverterVisitor extends getSiiVisitorClass<
     children: ObjectPropertyValueCstChildren,
     json: { value: unknown },
   ): void {
-    if (children.String) {
+    if (children.Nil) {
+      json.value = undefined;
+    } else if (children.String) {
       json.value = quotedStringToString(children.String[0].image);
     } else if (children.NumberLiteral) {
       json.value = stringToNumber(children.NumberLiteral[0].image);
+      if (
+        (json.value as number) > Number.MAX_SAFE_INTEGER &&
+        /^\d+$/.test(children.NumberLiteral[0].image)
+      ) {
+        json.value = BigInt(children.NumberLiteral[0].image);
+      }
+    } else if (children.BinaryFloat) {
+      json.value = stringToFloat(children.BinaryFloat[0].image);
     } else if (children.HexLiteral) {
       const bigInt = BigInt(children.HexLiteral[0].image);
       json.value = bigInt <= Number.MAX_SAFE_INTEGER ? Number(bigInt) : bigInt;
     } else if (children.Property) {
       json.value = children.Property[0].image;
     } else if (children.numberTuple) {
-      json.value = children.numberTuple[0].children.NumberLiteral.map(l =>
-        stringToNumber(l.image),
+      const arr: NumberTupleChild[] = [];
+      children.numberTuple[0].children.NumberLiteral?.forEach(l =>
+        arr.push({ value: stringToNumber(l.image), offset: l.startOffset }),
       );
+      children.numberTuple[0].children.BinaryFloat?.forEach(l =>
+        arr.push({ value: stringToFloat(l.image), offset: l.startOffset }),
+      );
+      // Regular numbers and binary floats may be mixed in any order.
+      // Sort by the offset to get the original order from the SII file.
+      json.value = arr.sort((a, b) => a.offset - b.offset).map(x => x.value);
     } else if (children.numberAuxTuple) {
       json.value = children.numberAuxTuple[0].children.NumberLiteral.map(l =>
         stringToNumber(l.image),
@@ -99,6 +116,11 @@ class JsonConverterVisitor extends getSiiVisitorClass<
   override includeDirective(children: IncludeDirectiveCstChildren) {
     logger.warn('ignoring @include directive', children.String[0].image);
   }
+}
+
+interface NumberTupleChild {
+  value: number | null;
+  offset: number;
 }
 
 class IncludeDirectiveCollector extends getSiiVisitorClass<string[]>() {
@@ -143,4 +165,18 @@ function stringToNumber(str: string) {
     throw new Error('could not parse number: ' + str);
   }
   return num;
+}
+
+function stringToFloat(str: string): number | null {
+  const binaryInt = parseInt(str.substring(1), 16);
+  if (isNaN(binaryInt)) {
+    throw new Error('could not parse binary float: ' + str);
+  }
+  if (binaryInt == 0x7f7fffff) {
+    // binary32 float max finite value, used as a "no data" marker
+    return null;
+  }
+  const data = new DataView(new ArrayBuffer(4));
+  data.setUint32(0, binaryInt);
+  return data.getFloat32(0);
 }
