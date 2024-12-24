@@ -53,7 +53,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
     { state: string; name: string }
   >[] = [];
   for (const line of villagesCsvLines.slice(1)) {
-    const [name, countryCode, x, _, y, notes] = line
+    const [name, countryCode, x, , y, notes] = line
       .split(';')
       .map(col => col.trim());
     if (!validCountryCodes.has(countryCode)) {

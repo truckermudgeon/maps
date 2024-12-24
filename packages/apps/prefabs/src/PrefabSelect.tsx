@@ -129,18 +129,18 @@ function toOptions(
         mp => mp.type === 'road' && mp.lanesRight && mp.lanesLeft,
       );
       const allRoads = desc.mapPoints.every(p => p.type === 'road');
-      const allAuto = desc.mapPoints.every(
-        p =>
-          p.type === 'road' &&
-          p.lanesLeft === 'auto' &&
-          p.lanesRight === 'auto',
-      );
-      const someAuto = desc.mapPoints.some(
-        p =>
-          p.type === 'road' &&
-          p.lanesLeft === 'auto' &&
-          p.lanesRight === 'auto',
-      );
+      // const allAuto = desc.mapPoints.every(
+      //   p =>
+      //     p.type === 'road' &&
+      //     p.lanesLeft === 'auto' &&
+      //     p.lanesRight === 'auto',
+      // );
+      // const someAuto = desc.mapPoints.some(
+      //   p =>
+      //     p.type === 'road' &&
+      //     p.lanesLeft === 'auto' &&
+      //     p.lanesRight === 'auto',
+      // );
       return allRoads && roadPoints.length > 1; //&& desc.nodes.length == 3; // && p.nodes.length !== 2 && p.mapPoints.length !== 2
     })
     .map(desc => {
