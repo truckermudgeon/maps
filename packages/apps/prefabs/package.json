@@ -7,8 +7,7 @@
   "scripts": {
     "start": "vite",
     "build": "tsc && vite build",
-    "serve": "vite preview",
-    "test": "vitest"
+    "serve": "vite preview"
   },
   "devDependencies": {
     "@truckermudgeon/generator": "^0.0.0",
@@ -20,8 +19,7 @@
     "typescript": "^5.4.2",
     "vite": "^5.0.11",
     "vite-plugin-eslint": "^1.8.1",
-    "vite-tsconfig-paths": "^5.0.1",
-    "vitest": "^2.1.2"
+    "vite-tsconfig-paths": "^5.0.1"
   },
   "dependencies": {
     "@emotion/react": "^11.11.3",
