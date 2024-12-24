@@ -1191,6 +1191,10 @@ function prefabToFeatures(
   ];
 }
 
+function test() {
+  console.log('test');
+}
+
 function roadToFeature(
   road: Road,
   roadLook: RoadLook,
