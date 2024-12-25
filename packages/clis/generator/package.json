@@ -27,7 +27,7 @@
     "consola": "^3.2.3",
     "d3-quadtree": "^3.0.1",
     "d3-tricontour": "^1.0.2",
-    "jimp": "^0.22.12",
+    "jimp": "^1.6.0",
     "polygon-clipping": "^0.15.7",
     "spritesmith": "^3.4.1",
     "tinypool": "^1.0.0",
