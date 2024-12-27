@@ -723,6 +723,9 @@ export interface Neighbor {
   readonly distance: number;
   /** True if this Neighbor's edge represents a one-lane road. */
   readonly isOneLaneRoad?: true;
+  /** True if this Neighbor's edge represents a ferry route. */
+  // TODO combine this with isOneLaneRoad into an enum
+  readonly isFerry?: true;
   /**
    * The direction one must travel in _after_ reaching this Neighbor's node.
    * Not the direction of this Neighbor's edge.

@@ -375,44 +375,47 @@ function updateGraphWithFerries(
     const ferryNodeUid = ferry.nodeUid.toString(16);
     const ferryNode = assertExists(nodes.get(ferryNodeUid));
     const road = assertExists(roadQuadtree.find(ferry.x, ferry.y));
-    const neighbors = assertExists(graph.get(road.nodeUid));
 
     // establish edges from closest road to ferry
-    neighbors.forward.push(
+    // TODO look into simplying graph by only having one direction to/from ferry
+    const roadToFerryEdges: readonly Neighbor[] = [
       createNeighbor(road, ferryNode, 'forward', getDlcGuard),
       createNeighbor(road, ferryNode, 'backward', getDlcGuard),
-    );
-    neighbors.backward.push(
-      createNeighbor(road, ferryNode, 'forward', getDlcGuard),
-      createNeighbor(road, ferryNode, 'backward', getDlcGuard),
-    );
+    ];
+    const roadNeighbors = assertExists(graph.get(road.nodeUid));
+    roadNeighbors.forward.push(...roadToFerryEdges);
+    roadNeighbors.backward.push(...roadToFerryEdges);
 
     assert(graph.get(ferryNodeUid) == null);
+    graph.set(ferryNodeUid, { forward: [], backward: [] });
+    const ferryNeighbors = assertExists(graph.get(ferryNodeUid));
     const roadNode = assertExists(nodes.get(road.nodeUid));
     // establish edges from origin ferry to closet road
-    const ferryNeighbors = {
-      forward: [
-        createNeighbor(ferryNode, roadNode, 'forward', getDlcGuard),
-        createNeighbor(ferryNode, roadNode, 'backward', getDlcGuard),
-      ],
-      backward: [
-        createNeighbor(ferryNode, roadNode, 'forward', getDlcGuard),
-        createNeighbor(ferryNode, roadNode, 'backward', getDlcGuard),
-      ],
-    };
+    const ferryToRoadEdges: readonly Neighbor[] = [
+      createNeighbor(ferryNode, roadNode, 'forward', getDlcGuard),
+      createNeighbor(ferryNode, roadNode, 'backward', getDlcGuard),
+    ];
+    ferryNeighbors.forward.push(...ferryToRoadEdges);
+    ferryNeighbors.backward.push(...ferryToRoadEdges);
+
     for (const connection of ferry.connections) {
       const otherFerryNodeUid = connection.nodeUid.toString(16);
       const otherFerryNode = assertExists(nodes.get(otherFerryNodeUid));
-      graph.set(ferryNodeUid, ferryNeighbors);
       // establish edges from origin ferry to destination ferry
-      ferryNeighbors.forward.push(
-        createNeighbor(ferryNode, otherFerryNode, 'forward', getDlcGuard),
-        createNeighbor(ferryNode, otherFerryNode, 'backward', getDlcGuard),
-      );
-      ferryNeighbors.backward.push(
-        createNeighbor(ferryNode, otherFerryNode, 'forward', getDlcGuard),
-        createNeighbor(ferryNode, otherFerryNode, 'backward', getDlcGuard),
-      );
+      const ferryToFerryEdges: readonly Neighbor[] = [
+        {
+          ...createNeighbor(ferryNode, otherFerryNode, 'forward', getDlcGuard),
+          distance: connection.distance,
+          isFerry: true,
+        },
+        {
+          ...createNeighbor(ferryNode, otherFerryNode, 'backward', getDlcGuard),
+          distance: connection.distance,
+          isFerry: true,
+        },
+      ];
+      ferryNeighbors.forward.push(...ferryToFerryEdges);
+      ferryNeighbors.backward.push(...ferryToFerryEdges);
     }
   }
 }
