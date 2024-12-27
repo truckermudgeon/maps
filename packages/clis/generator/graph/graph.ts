@@ -10,6 +10,7 @@ import type {
   Node,
   Prefab,
 } from '@truckermudgeon/map/types';
+import { quadtree } from 'd3-quadtree';
 import { normalizeDlcGuards } from '../dlc-guards';
 import { logger } from '../logger';
 import type { MappedData } from '../mapped-data';
@@ -22,15 +23,24 @@ type Context = Pick<
   | 'prefabs'
   | 'prefabDescriptions'
   | 'companies'
+  | 'ferries'
 > & {
+  map: 'usa' | 'europe';
   prefabConnections: Map<string, Map<number, number[]>>;
   companiesByPrefabItemId: Map<string, CompanyItem>;
   getDlcGuard: (node: Node) => number;
 };
 
-export function generateGraph(tsMapData: MappedData) {
-  const { nodes, roads, prefabs, companies, prefabDescriptions, roadLooks } =
-    tsMapData;
+export function generateGraph(tsMapData: MappedData, map: 'usa' | 'europe') {
+  const {
+    nodes,
+    roads,
+    prefabs,
+    companies,
+    ferries,
+    prefabDescriptions,
+    roadLooks,
+  } = tsMapData;
   const dlcGuardQuadTree = assertExists(
     normalizeDlcGuards(
       roads,
@@ -48,7 +58,9 @@ export function generateGraph(tsMapData: MappedData) {
   const getDlcGuard = (node: Node): number =>
     dlcGuardQuadTree.find(node.x, node.y)?.dlcGuard ?? -1;
 
-  const allCompanies = [...companies.values()];
+  const allCompanies = [...companies.values()].filter(company =>
+    tsMapData.cities.has(company.cityToken),
+  );
   const companiesByPrefabItemId = new Map(
     allCompanies.map(companyItem => [
       companyItem.prefabUid.toString(16),
@@ -126,7 +138,8 @@ export function generateGraph(tsMapData: MappedData) {
     }
   }
 
-  const context = {
+  const context: Context = {
+    map,
     nodes,
     roads,
     roadLooks,
@@ -137,6 +150,7 @@ export function generateGraph(tsMapData: MappedData) {
     ),
     companies,
     companiesByPrefabItemId,
+    ferries,
     getDlcGuard,
   };
 
@@ -152,10 +166,13 @@ export function generateGraph(tsMapData: MappedData) {
       forward: getNeighborsInDirection(node, 'forward', context),
       backward: getNeighborsInDirection(node, 'backward', context),
     };
-    if (neighbors.forward.length || neighbors.backward.length) {
+    const hasNeighbors = neighbors.forward.length || neighbors.backward.length;
+    if (hasNeighbors) {
       graph.set(node.uid.toString(16), neighbors);
     }
   }
+
+  updateGraphWithFerries(graph, context);
 
   // massage graph to address problematic intersections. specifically:
   // look for "dead end" nodes that can be exited in one direction, but can't be
@@ -310,13 +327,15 @@ export function generateGraph(tsMapData: MappedData) {
   // edge that says we _can_ exit.
   // TODO write a general solution and search for all prefab intersections that lead into
   // a company prefab one-way, then add fudged edges (similar to the dead-end fudging earlier).
-  const hackNeighbors = assertExists(graph.get('3301e888d4055f5e'));
-  hackNeighbors.forward.push({
-    nodeId: '3301e888b6855e83',
-    distance: 32,
-    direction: 'forward',
-    dlcGuard: 13, // The DLC Guard value for Colorado, which is where Lamar is.
-  });
+  if (map === 'usa') {
+    const hackNeighbors = assertExists(graph.get('3301e888d4055f5e'));
+    hackNeighbors.forward.push({
+      nodeId: '3301e888b6855e83',
+      distance: 32,
+      direction: 'forward',
+      dlcGuard: 13, // The DLC Guard value for Colorado, which is where Lamar is.
+    });
+  }
 
   logger.info(
     graph.size,
@@ -332,6 +351,167 @@ export function generateGraph(tsMapData: MappedData) {
   // find the bug.
 
   return graph;
+}
+
+function updateGraphWithFerries(
+  graph: Map<
+    string,
+    {
+      forward: Neighbor[];
+      backward: Neighbor[];
+    }
+  >,
+  context: Context,
+) {
+  const { nodes, roads, prefabs, prefabDescriptions, ferries } = context;
+  const roadQuadtree = quadtree<{
+    x: number;
+    y: number;
+    nodeUid: string;
+  }>()
+    .x(e => e.x)
+    .y(e => e.y);
+
+  const maybeAddNode = (nid: bigint) => {
+    const maybeNode = nodes.get(nid.toString(16));
+    if (maybeNode) {
+      roadQuadtree.add({
+        x: maybeNode.x,
+        y: maybeNode.y,
+        nodeUid: nid.toString(16),
+      });
+    }
+  };
+
+  for (const road of roads.values()) {
+    maybeAddNode(road.startNodeUid);
+    maybeAddNode(road.endNodeUid);
+  }
+  for (const prefab of prefabs.values()) {
+    // HACK ignore troublesome prefab near priwall ferry station:
+    //   "token": "14004"
+    //   "path": "prefab2/fork_temp/invis/invis_r1_fork_tmpl.ppd"
+    // (navCurves data has empty nextLines and prevLines arrays)
+    if (
+      context.map === 'europe' &&
+      prefab.uid.toString(16) === '4cd14de4b6e67ccf'
+    ) {
+      continue;
+    }
+    const desc = assertExists(prefabDescriptions.get(prefab.token));
+    if (
+      desc.mapPoints.every(p => p.type === 'road') &&
+      desc.navCurves.length > 0
+    ) {
+      for (const nid of prefab.nodeUids) {
+        maybeAddNode(nid);
+      }
+    }
+  }
+
+  for (const ferry of ferries.values()) {
+    const ferryNodeUid = ferry.nodeUid.toString(16);
+    const ferryNode = assertExists(nodes.get(ferryNodeUid));
+    const road = assertExists(roadQuadtree.find(ferry.x, ferry.y));
+    const roadNode = assertExists(nodes.get(road.nodeUid));
+    const neighbors = assertExists(graph.get(road.nodeUid));
+    // establish edges from closest road to ferry
+    neighbors.forward.push(
+      {
+        nodeId: ferryNodeUid,
+        distance: distance(ferryNode, road),
+        direction: 'forward',
+        dlcGuard: context.getDlcGuard(ferryNode),
+      },
+      {
+        nodeId: ferryNodeUid,
+        distance: distance(ferryNode, road),
+        direction: 'backward',
+        dlcGuard: context.getDlcGuard(ferryNode),
+      },
+    );
+    neighbors.backward.push(
+      {
+        nodeId: ferryNodeUid,
+        distance: distance(ferryNode, road),
+        direction: 'forward',
+        dlcGuard: context.getDlcGuard(ferryNode),
+      },
+      {
+        nodeId: ferryNodeUid,
+        distance: distance(ferryNode, road),
+        direction: 'backward',
+        dlcGuard: context.getDlcGuard(ferryNode),
+      },
+    );
+
+    assert(graph.get(ferryNodeUid) == null);
+    // establish edges from origin ferry to closet road
+    const ferryNeighbors = {
+      forward: [
+        {
+          nodeId: road.nodeUid,
+          distance: distance(ferryNode, road),
+          direction: 'forward' as const,
+          dlcGuard: context.getDlcGuard(roadNode),
+        },
+        {
+          nodeId: road.nodeUid,
+          distance: distance(ferryNode, road),
+          direction: 'backward' as const,
+          dlcGuard: context.getDlcGuard(roadNode),
+        },
+      ],
+      backward: [
+        {
+          nodeId: road.nodeUid,
+          distance: distance(ferryNode, road),
+          direction: 'forward' as const,
+          dlcGuard: context.getDlcGuard(roadNode),
+        },
+        {
+          nodeId: road.nodeUid,
+          distance: distance(ferryNode, road),
+          direction: 'backward' as const,
+          dlcGuard: context.getDlcGuard(roadNode),
+        },
+      ],
+    };
+    for (const connection of ferry.connections) {
+      const otherFerryNodeUid = connection.nodeUid.toString(16);
+      const otherFerryNode = assertExists(nodes.get(otherFerryNodeUid));
+      graph.set(ferryNodeUid, ferryNeighbors);
+      // establish edges from origin ferry to destination ferry
+      ferryNeighbors.forward.push(
+        {
+          nodeId: otherFerryNodeUid,
+          distance: connection.distance,
+          direction: 'forward',
+          dlcGuard: context.getDlcGuard(otherFerryNode),
+        },
+        {
+          nodeId: otherFerryNodeUid,
+          distance: connection.distance,
+          direction: 'backward',
+          dlcGuard: context.getDlcGuard(otherFerryNode),
+        },
+      );
+      ferryNeighbors.backward.push(
+        {
+          nodeId: otherFerryNodeUid,
+          distance: connection.distance,
+          direction: 'forward',
+          dlcGuard: context.getDlcGuard(otherFerryNode),
+        },
+        {
+          nodeId: otherFerryNodeUid,
+          distance: connection.distance,
+          direction: 'backward',
+          dlcGuard: context.getDlcGuard(otherFerryNode),
+        },
+      );
+    }
+  }
 }
 
 function getNeighborsInDirection(
