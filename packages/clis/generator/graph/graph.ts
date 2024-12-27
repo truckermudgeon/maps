@@ -4,6 +4,7 @@ import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
 import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
 import { ItemType } from '@truckermudgeon/map/constants';
 import { calculateNodeConnections } from '@truckermudgeon/map/prefabs';
+import type { Direction } from '@truckermudgeon/map/routing';
 import type {
   CompanyItem,
   Neighbor,
@@ -241,20 +242,11 @@ export function generateGraph(tsMapData: MappedData, map: 'usa' | 'europe') {
     assert(!graph.has(companyNode.uid.toString(16)));
     // at ths point, companyNodeUid is completely absent in the graph.
     // link the company node to the closest node already in the graph.
-    const toKey = (x: number, y: number) => `${x},${y}`;
-    const { sectorX: sx, sectorY: sy } = companyNode;
-    const nodesInSector = [
-      ...(nodesBySector.get(toKey(sx - 1, sy - 1)) ?? []),
-      ...(nodesBySector.get(toKey(sx + 0, sy - 1)) ?? []),
-      ...(nodesBySector.get(toKey(sx + 1, sy - 1)) ?? []),
-      ...(nodesBySector.get(toKey(sx - 1, sy + 0)) ?? []),
-      ...(nodesBySector.get(toKey(sx + 0, sy + 0)) ?? []),
-      ...(nodesBySector.get(toKey(sx + 1, sy + 0)) ?? []),
-      ...(nodesBySector.get(toKey(sx - 1, sy + 1)) ?? []),
-      ...(nodesBySector.get(toKey(sx + 0, sy + 1)) ?? []),
-      ...(nodesBySector.get(toKey(sx + 1, sy + 1)) ?? []),
-    ];
-    const closest = nodesInSector
+    const nodesInSectorRange = getObjectsInSectorRange(
+      companyNode,
+      nodesBySector,
+    );
+    const closest = nodesInSectorRange
       .sort((a, b) => distance(a, companyNode) - distance(b, companyNode))
       .find(n => n.uid !== companyNode.uid);
     if (!closest) {
@@ -262,7 +254,6 @@ export function generateGraph(tsMapData: MappedData, map: 'usa' | 'europe') {
       throw new Error();
     }
     assert(graph.has(closest.uid.toString(16)));
-    const dist = distance(closest, companyNode);
     //logger.info(
     //  'hacked connection',
     //  Number(dist.toFixed(3)),
@@ -273,50 +264,20 @@ export function generateGraph(tsMapData: MappedData, map: 'usa' | 'europe') {
     // establish edges from company node to closest node
     graph.set(companyNode.uid.toString(16), {
       forward: [
-        {
-          nodeId: closest.uid.toString(16),
-          distance: dist,
-          direction: 'forward',
-          dlcGuard: getDlcGuard(closest),
-        },
-        {
-          nodeId: closest.uid.toString(16),
-          distance: dist,
-          direction: 'backward',
-          dlcGuard: getDlcGuard(closest),
-        },
+        createNeighbor(companyNode, closest, 'forward', getDlcGuard),
+        createNeighbor(companyNode, closest, 'backward', getDlcGuard),
       ],
       backward: [],
     });
     // establish edges from closest node to company node
     const neighbors = graph.get(closest.uid.toString(16))!;
     neighbors.forward.push(
-      {
-        nodeId: companyNode.uid.toString(16),
-        distance: dist,
-        direction: 'forward',
-        dlcGuard: getDlcGuard(companyNode),
-      },
-      {
-        nodeId: companyNode.uid.toString(16),
-        distance: dist,
-        direction: 'backward',
-        dlcGuard: getDlcGuard(companyNode),
-      },
+      createNeighbor(closest, companyNode, 'forward', getDlcGuard),
+      createNeighbor(closest, companyNode, 'backward', getDlcGuard),
     );
     neighbors.backward.push(
-      {
-        nodeId: companyNode.uid.toString(16),
-        distance: dist,
-        direction: 'forward',
-        dlcGuard: getDlcGuard(companyNode),
-      },
-      {
-        nodeId: companyNode.uid.toString(16),
-        distance: dist,
-        direction: 'backward',
-        dlcGuard: getDlcGuard(companyNode),
-      },
+      createNeighbor(closest, companyNode, 'forward', getDlcGuard),
+      createNeighbor(closest, companyNode, 'backward', getDlcGuard),
     );
   }
 
@@ -363,7 +324,8 @@ function updateGraphWithFerries(
   >,
   context: Context,
 ) {
-  const { nodes, roads, prefabs, prefabDescriptions, ferries } = context;
+  const { nodes, roads, prefabs, prefabDescriptions, ferries, getDlcGuard } =
+    context;
   const roadQuadtree = quadtree<{
     x: number;
     y: number;
@@ -413,68 +375,29 @@ function updateGraphWithFerries(
     const ferryNodeUid = ferry.nodeUid.toString(16);
     const ferryNode = assertExists(nodes.get(ferryNodeUid));
     const road = assertExists(roadQuadtree.find(ferry.x, ferry.y));
-    const roadNode = assertExists(nodes.get(road.nodeUid));
     const neighbors = assertExists(graph.get(road.nodeUid));
+
     // establish edges from closest road to ferry
     neighbors.forward.push(
-      {
-        nodeId: ferryNodeUid,
-        distance: distance(ferryNode, road),
-        direction: 'forward',
-        dlcGuard: context.getDlcGuard(ferryNode),
-      },
-      {
-        nodeId: ferryNodeUid,
-        distance: distance(ferryNode, road),
-        direction: 'backward',
-        dlcGuard: context.getDlcGuard(ferryNode),
-      },
+      createNeighbor(road, ferryNode, 'forward', getDlcGuard),
+      createNeighbor(road, ferryNode, 'backward', getDlcGuard),
     );
     neighbors.backward.push(
-      {
-        nodeId: ferryNodeUid,
-        distance: distance(ferryNode, road),
-        direction: 'forward',
-        dlcGuard: context.getDlcGuard(ferryNode),
-      },
-      {
-        nodeId: ferryNodeUid,
-        distance: distance(ferryNode, road),
-        direction: 'backward',
-        dlcGuard: context.getDlcGuard(ferryNode),
-      },
+      createNeighbor(road, ferryNode, 'forward', getDlcGuard),
+      createNeighbor(road, ferryNode, 'backward', getDlcGuard),
     );
 
     assert(graph.get(ferryNodeUid) == null);
+    const roadNode = assertExists(nodes.get(road.nodeUid));
     // establish edges from origin ferry to closet road
     const ferryNeighbors = {
       forward: [
-        {
-          nodeId: road.nodeUid,
-          distance: distance(ferryNode, road),
-          direction: 'forward' as const,
-          dlcGuard: context.getDlcGuard(roadNode),
-        },
-        {
-          nodeId: road.nodeUid,
-          distance: distance(ferryNode, road),
-          direction: 'backward' as const,
-          dlcGuard: context.getDlcGuard(roadNode),
-        },
+        createNeighbor(ferryNode, roadNode, 'forward', getDlcGuard),
+        createNeighbor(ferryNode, roadNode, 'backward', getDlcGuard),
       ],
       backward: [
-        {
-          nodeId: road.nodeUid,
-          distance: distance(ferryNode, road),
-          direction: 'forward' as const,
-          dlcGuard: context.getDlcGuard(roadNode),
-        },
-        {
-          nodeId: road.nodeUid,
-          distance: distance(ferryNode, road),
-          direction: 'backward' as const,
-          dlcGuard: context.getDlcGuard(roadNode),
-        },
+        createNeighbor(ferryNode, roadNode, 'forward', getDlcGuard),
+        createNeighbor(ferryNode, roadNode, 'backward', getDlcGuard),
       ],
     };
     for (const connection of ferry.connections) {
@@ -483,32 +406,12 @@ function updateGraphWithFerries(
       graph.set(ferryNodeUid, ferryNeighbors);
       // establish edges from origin ferry to destination ferry
       ferryNeighbors.forward.push(
-        {
-          nodeId: otherFerryNodeUid,
-          distance: connection.distance,
-          direction: 'forward',
-          dlcGuard: context.getDlcGuard(otherFerryNode),
-        },
-        {
-          nodeId: otherFerryNodeUid,
-          distance: connection.distance,
-          direction: 'backward',
-          dlcGuard: context.getDlcGuard(otherFerryNode),
-        },
+        createNeighbor(ferryNode, otherFerryNode, 'forward', getDlcGuard),
+        createNeighbor(ferryNode, otherFerryNode, 'backward', getDlcGuard),
       );
       ferryNeighbors.backward.push(
-        {
-          nodeId: otherFerryNodeUid,
-          distance: connection.distance,
-          direction: 'forward',
-          dlcGuard: context.getDlcGuard(otherFerryNode),
-        },
-        {
-          nodeId: otherFerryNodeUid,
-          distance: connection.distance,
-          direction: 'backward',
-          dlcGuard: context.getDlcGuard(otherFerryNode),
-        },
+        createNeighbor(ferryNode, otherFerryNode, 'forward', getDlcGuard),
+        createNeighbor(ferryNode, otherFerryNode, 'backward', getDlcGuard),
       );
     }
   }
@@ -684,4 +587,42 @@ function rotateLeft<T>(arr: T[], count: number): T[] {
   }
 
   return arr.slice(-count, arr.length).concat(arr.slice(0, -count));
+}
+
+function createNeighbor(
+  from: { x: number; y: number },
+  toNode: Node,
+  direction: Direction,
+  getDlcGuard: (n: Node) => number,
+): Neighbor {
+  return {
+    nodeId: toNode.uid.toString(16),
+    distance: distance(from, toNode),
+    direction,
+    dlcGuard: getDlcGuard(toNode),
+  };
+}
+
+function toSectorKey(o: { sectorX: number; sectorY: number }) {
+  return `${o.sectorX},${o.sectorY}`;
+}
+
+function getObjectsInSectorRange<T>(
+  sectorKey: { sectorX: number; sectorY: number },
+  objectsBySector: Map<string, T[]>,
+): T[] {
+  const toKey = (sectorX: number, sectorY: number) =>
+    toSectorKey({ sectorX, sectorY });
+  const { sectorX: sx, sectorY: sy } = sectorKey;
+  return [
+    ...(objectsBySector.get(toKey(sx - 1, sy - 1)) ?? []),
+    ...(objectsBySector.get(toKey(sx + 0, sy - 1)) ?? []),
+    ...(objectsBySector.get(toKey(sx + 1, sy - 1)) ?? []),
+    ...(objectsBySector.get(toKey(sx - 1, sy + 0)) ?? []),
+    ...(objectsBySector.get(toKey(sx + 0, sy + 0)) ?? []),
+    ...(objectsBySector.get(toKey(sx + 1, sy + 0)) ?? []),
+    ...(objectsBySector.get(toKey(sx - 1, sy + 1)) ?? []),
+    ...(objectsBySector.get(toKey(sx + 0, sy + 1)) ?? []),
+    ...(objectsBySector.get(toKey(sx + 1, sy + 1)) ?? []),
+  ];
 }
