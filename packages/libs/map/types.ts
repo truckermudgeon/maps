@@ -80,6 +80,7 @@ export type FerryConnection = Readonly<{
   token: string;
   name: string;
   nameLocalized: string | undefined;
+  nodeUid: bigint;
   x: number;
   y: number;
   price: number;
@@ -97,6 +98,7 @@ export type Ferry = Readonly<{
   train: boolean;
   name: string;
   nameLocalized: string | undefined;
+  nodeUid: bigint;
   x: number;
   y: number;
   connections: FerryConnection[];

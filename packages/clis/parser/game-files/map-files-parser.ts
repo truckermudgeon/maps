@@ -833,6 +833,7 @@ function postProcess(
           ...partialConnection,
           name,
           nameLocalized,
+          nodeUid,
           x,
           y,
         };
@@ -842,6 +843,7 @@ function postProcess(
         ...partialFerry,
         train,
         connections,
+        nodeUid,
         x,
         y,
       }),
