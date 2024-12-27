@@ -924,12 +924,11 @@ function ferryToFeature(
     rotation: sp.rotation,
   }));
 
-  // HACK: the current UK coordinate massaging ends up ferry routes from Plymouth where everything past a certain
-  // point within a spline gets hard-shifted to the west. This is because we create splines, _then_ project every
-  // spline point to WGS84. To work around this:
-  // - detect the troublesome ferry connection point that produces such splines
-  // - normalize the spline endpoints to WGS84 first, _then_ create the spline in normalized space
-  //   - this involves some hardcoded rotation adjustments so that the spline looks ok in normalized space.
+  // HACK: the current UK coordinate massaging ends up with ferry routes from
+  // Plymouth where everything past a certain point within a spline gets
+  // hard-shifted to the west. This is because we create splines, _then_ project
+  // every spline point to WGS84. To work around this, ignore the troublesome
+  // point.
   const troublesomePoint = {
     x: -60546.875,
     y: -5859.375,
@@ -943,21 +942,9 @@ function ferryToFeature(
       prev.position[0] === troublesomePoint.x &&
       prev.position[1] === troublesomePoint.y
     ) {
-      const nprev = {
-        ...prev,
-        position: prev.position,
-        rotation: -Math.PI / 4,
-      };
-      const ncurr = {
-        ...curr,
-        position: curr.position,
-        rotation: -Math.PI / 2,
-      };
-      // create a spline in normalized space
-      splinePoints.push(...toSplinePoints(nprev, ncurr));
-    } else {
-      splinePoints.push(...toSplinePoints(prev, curr));
+      continue;
     }
+    splinePoints.push(...toSplinePoints(prev, curr));
   }
   return {
     type: 'Feature',
