@@ -8,6 +8,9 @@
   "exports": {
     "./*": "./*.ts"
   },
+  "scripts": {
+    "test": "vitest"
+  },
   "devDependencies": {
     "typescript": "^5.4.2"
   },
