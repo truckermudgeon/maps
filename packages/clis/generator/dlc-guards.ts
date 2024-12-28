@@ -74,14 +74,12 @@ export function normalizeDlcGuards(
     if (dlcGuard !== 0) {
       for (const nid of nodeUids) {
         const nidString = nid.toString(16);
-        const node = nodes.get(nidString);
-        if (node) {
-          dlcQuadTree.add({
-            x: node.x,
-            y: node.y,
-            dlcGuard,
-          });
-        }
+        const node = assertExists(nodes.get(nidString));
+        dlcQuadTree.add({
+          x: node.x,
+          y: node.y,
+          dlcGuard,
+        });
       }
       return;
     }
@@ -102,10 +100,7 @@ export function normalizeDlcGuards(
     if (mostReferencedEntries.length === 0) {
       // no non-zero country IDs. Fallback to the dlc guard associated with the
       // closest node.
-      const node = nodes.get(nodeUids[0].toString(16));
-      if (!node) {
-        return;
-      }
+      const node = assertExists(nodes.get(nodeUids[0].toString(16)));
       const closestNode = dlcQuadTree.find(node.x, node.y);
       return closestNode?.dlcGuard;
     }
@@ -171,10 +166,7 @@ export function normalizeDlcGuards(
 }
 
 function getCountryIds(nodeUid: bigint, nodes: Map<string, Node>): number[] {
-  const node = nodes.get(nodeUid.toString(16));
-  if (!node) {
-    return [];
-  }
+  const node = assertExists(nodes.get(nodeUid.toString(16)));
   const { forwardCountryId, backwardCountryId } = node;
   if (forwardCountryId !== backwardCountryId) {
     logger.warn('country mismatch', forwardCountryId, backwardCountryId);
