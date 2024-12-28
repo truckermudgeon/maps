@@ -135,7 +135,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
   });
 
   logger.log('converting parsed map data to GeoJSON...');
-  const geoJson = convertToMapGeoJson(args.map, tsMapData, {
+  const geoJson = convertToMapGeoJson(tsMapData, {
     includeDebug: args.includeDebug,
     skipCoalescing: args.skipCoalescing,
   });

@@ -66,9 +66,9 @@ export async function handler(args: BuilderArguments<typeof builder>) {
     includeHidden: false,
   });
 
-  const graph = generateGraph(tsMapData, args.map);
+  const graph = generateGraph(tsMapData);
   if (args.check) {
-    await checkGraph(graph, tsMapData, args.map);
+    await checkGraph(graph, tsMapData);
   }
 
   if (!args.dryRun) {

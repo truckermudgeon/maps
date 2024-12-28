@@ -28,9 +28,8 @@ interface Unrouteable {
 export async function checkGraph(
   graph: Map<string, Neighbors>,
   tsMapData: MappedData,
-  map: 'usa' | 'europe',
 ) {
-  const { nodes, companies, prefabs, cities } = tsMapData;
+  const { map, nodes, companies, prefabs, cities } = tsMapData;
 
   // check that all companies in known cities can be reached from some
   // random company.

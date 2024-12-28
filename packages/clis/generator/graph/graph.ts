@@ -18,6 +18,7 @@ import type { MappedData } from '../mapped-data';
 
 type Context = Pick<
   MappedData,
+  | 'map'
   | 'nodes'
   | 'roads'
   | 'roadLooks'
@@ -26,14 +27,14 @@ type Context = Pick<
   | 'companies'
   | 'ferries'
 > & {
-  map: 'usa' | 'europe';
   prefabConnections: Map<string, Map<number, number[]>>;
   companiesByPrefabItemId: Map<string, CompanyItem>;
   getDlcGuard: (node: Node) => number;
 };
 
-export function generateGraph(tsMapData: MappedData, map: 'usa' | 'europe') {
+export function generateGraph(tsMapData: MappedData) {
   const {
+    map,
     nodes,
     roads,
     prefabs,
@@ -42,22 +43,20 @@ export function generateGraph(tsMapData: MappedData, map: 'usa' | 'europe') {
     prefabDescriptions,
     roadLooks,
   } = tsMapData;
-  const dlcGuardQuadTree = assertExists(
-    normalizeDlcGuards(
-      roads,
-      prefabs,
-      tsMapData.mapAreas,
-      tsMapData.triggers,
-      tsMapData.cutscenes,
-      tsMapData.pois,
-      {
-        map: 'usa',
-        nodes,
-      },
-    ),
+  const dlcGuardQuadTree = normalizeDlcGuards(
+    roads,
+    prefabs,
+    tsMapData.mapAreas,
+    tsMapData.triggers,
+    tsMapData.cutscenes,
+    tsMapData.pois,
+    {
+      map: 'usa',
+      nodes,
+    },
   );
   const getDlcGuard = (node: Node): number =>
-    dlcGuardQuadTree.find(node.x, node.y)?.dlcGuard ?? -1;
+    dlcGuardQuadTree?.find(node.x, node.y)?.dlcGuard ?? -1;
 
   const allCompanies = [...companies.values()].filter(company =>
     tsMapData.cities.has(company.cityToken),

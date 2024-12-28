@@ -8,11 +8,10 @@ import type { MappedData } from '../mapped-data';
 import { createNormalizeFeature } from './normalize';
 
 export function convertToPrefabCurvesGeoJson(
-  map: 'usa' | 'europe',
   tsMapData: MappedData,
 ): GeoJSON.FeatureCollection {
+  const { map, nodes, prefabs, prefabDescriptions } = tsMapData;
   const normalizeFeature = createNormalizeFeature(map);
-  const { nodes, prefabs, prefabDescriptions } = tsMapData;
   const curveFeatures: DebugFeature[] = [];
 
   for (const p of prefabs.values()) {

@@ -93,7 +93,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
 
   writeGeojsonFile(
     path.join(args.outputDir, `${args.map}-prefab-curves.geojson`),
-    convertToPrefabCurvesGeoJson(args.map, tsMapData),
+    convertToPrefabCurvesGeoJson(tsMapData),
   );
   logger.success('done.');
 }

@@ -62,7 +62,6 @@ type RoadQuadTree = Quadtree<QtRoadEntry>;
  * Converts TSMapData into a GeoJSON FeatureCollection.
  */
 export function convertToMapGeoJson(
-  map: 'usa' | 'europe',
   tsMapData: MappedData,
   options: {
     includeDebug: boolean;
@@ -70,6 +69,7 @@ export function convertToMapGeoJson(
   },
 ): AtsGeoJson {
   const {
+    map,
     nodes,
     roads,
     ferries,

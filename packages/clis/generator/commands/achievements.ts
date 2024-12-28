@@ -45,7 +45,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
   for (const map of [args.map].flat()) {
     // TODO read only the files necessary
     const tsMapData = readMapData(args.inputDir, map, { includeHidden: false });
-    const geoJson = convertToAchievementsGeoJson(map, tsMapData);
+    const geoJson = convertToAchievementsGeoJson(tsMapData);
     if (args.dryRun) {
       continue;
     }

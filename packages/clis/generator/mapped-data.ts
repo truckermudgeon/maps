@@ -65,12 +65,13 @@ const mapJsonFiles = Object.freeze(Object.keys(MapDataKeys));
 // Transforms MapData (a type containing all array properties) into a type with
 // all Map<string, ...> properties, _except_ for `pois` and `elevation` (which
 // are left alone as arrays).
-export type MappedData = Omit<
+export type MappedData<T extends 'usa' | 'europe' = 'usa' | 'europe'> = Omit<
   {
     [K in keyof MapData]: Map<string, MapData[K][0]>;
   },
   'pois' | 'elevation'
 > & {
+  map: T;
   pois: MapData['pois'];
   elevation: MapData['elevation'];
 };
@@ -91,11 +92,11 @@ interface Options {
   focus?: FocusOptions;
 }
 
-export function readMapData(
+export function readMapData<T extends 'usa' | 'europe'>(
   inputDir: string,
-  map: 'usa' | 'europe',
+  map: T,
   options: Options,
-): MappedData {
+): MappedData<T> {
   checkJsonFilesPresent(inputDir, map);
   const toJsonFilePath = (fn: string) => path.join(inputDir, map + '-' + fn);
   const { includeHidden, focus: focusOptions } = options;
@@ -264,7 +265,7 @@ export function readMapData(
       logger.info(mapOrArray.size, k);
     }
   }
-  return mapped;
+  return { ...mapped, map };
 }
 
 function mapify<T>(arr: T[], k: (t: T) => string): Map<string, T> {

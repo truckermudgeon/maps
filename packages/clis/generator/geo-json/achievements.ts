@@ -25,11 +25,9 @@ interface Point {
   dlcGuard: number;
 }
 
-export function convertToAchievementsGeoJson(
-  map: 'usa' | 'europe',
-  tsMapData: MappedData,
-) {
+export function convertToAchievementsGeoJson(tsMapData: MappedData) {
   const {
+    map,
     nodes,
     achievements,
     prefabs,
