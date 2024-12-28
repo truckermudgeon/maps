@@ -461,6 +461,28 @@ export type PolygonMapPoint = BaseMapPoint & {
   roadOver: boolean;
 };
 export type MapPoint = RoadMapPoint | PolygonMapPoint;
+interface NavCurve {
+  // From https://modding.scssoft.com/wiki/Games/ETS2/Modding_guides/1.30#Prefabs:
+  // Index of a navigational node which should be used if navigation starts from that AI curve or 0xffffffff if there is none.
+  // Basically it is a reverse mapping to the curve_indices from nodes.
+  navNodeIndex: number;
+  start: {
+    x: number;
+    y: number;
+    z: number;
+    rotation: number;
+    rotationQuat: [number, number, number, number];
+  };
+  end: {
+    x: number;
+    y: number;
+    z: number;
+    rotation: number;
+    rotationQuat: [number, number, number, number];
+  };
+  nextLines: number[];
+  prevLines: number[];
+}
 export interface PrefabDescription {
   // prefab's entry/exit points
   nodes: {
@@ -485,28 +507,7 @@ export interface PrefabDescription {
     y: number;
     action: string;
   }[];
-  navCurves: {
-    // From https://modding.scssoft.com/wiki/Games/ETS2/Modding_guides/1.30#Prefabs:
-    // Index of a navigational node which should be used if navigation starts from that AI curve or 0xffffffff if there is none.
-    // Basically it is a reverse mapping to the curve_indices from nodes.
-    navNodeIndex: number;
-    start: {
-      x: number;
-      y: number;
-      z: number;
-      rotation: number;
-      rotationQuat: [number, number, number, number];
-    };
-    end: {
-      x: number;
-      y: number;
-      z: number;
-      rotation: number;
-      rotationQuat: [number, number, number, number];
-    };
-    nextLines: number[];
-    prevLines: number[];
-  }[];
+  navCurves: NavCurve[];
   navNodes: {
     type: 'physical' | 'ai';
     // if type is physical: the index of the normal node (see nodes array) this navNode ends at.
@@ -559,7 +560,10 @@ export interface DefData {
 // GeoJSON
 
 export type DebugFeature = GeoJSON.Feature<
-  GeoJSON.Polygon | GeoJSON.LineString | GeoJSON.Point,
+  | GeoJSON.Polygon
+  | GeoJSON.LineString
+  | GeoJSON.MultiLineString
+  | GeoJSON.Point,
   DebugProperties
 >;
 

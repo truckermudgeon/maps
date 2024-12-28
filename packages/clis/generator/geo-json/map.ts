@@ -1199,6 +1199,7 @@ function roadToFeature(
   );
   const properties = {
     ...roadLookToProperties(roadLook, !!road.hidden),
+    lookToken: road.roadLookToken,
     dlcGuard: road.dlcGuard,
     startNodeUid: road.startNodeUid.toString(16),
     endNodeUid: road.endNodeUid.toString(16),

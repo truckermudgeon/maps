@@ -1,5 +1,8 @@
-import { getExtent, toSplinePoints } from '@truckermudgeon/base/geom';
-import { toRoadStringsAndPolygons } from '@truckermudgeon/map/prefabs';
+import { getExtent } from '@truckermudgeon/base/geom';
+import {
+  calculateLaneInfo,
+  toRoadStringsAndPolygons,
+} from '@truckermudgeon/map/prefabs';
 import type { PrefabDescription } from '@truckermudgeon/map/types';
 
 const mapColors = {
@@ -52,18 +55,6 @@ export const Preview = ({ prefab }: { prefab: PrefabDescription }) => {
           orient="auto"
         >
           <path d="M 0 0 L 5 2.5 L 0 5 z" fill="#000" />
-        </marker>
-        <marker
-          id="triangle"
-          viewBox="0 0 5 5"
-          refX="1"
-          refY="2.5"
-          markerUnits="strokeWidth"
-          markerWidth="5"
-          markerHeight="5"
-          orient="auto"
-        >
-          <path d="M 0 0 L 5 2.5 L 0 5 z" fill="#f44" />
         </marker>
         <marker
           id="triangleBlue"
@@ -146,66 +137,25 @@ export const Preview = ({ prefab }: { prefab: PrefabDescription }) => {
         x2={0}
         y2={maxY + 2 * yPadding}
       />
-      {prefab.navNodes.flatMap((nn, i) =>
-        nn.connections.flatMap((conn, j) => {
-          return conn.curveIndices.map(curveIdx => {
-            const curve = prefab.navCurves[curveIdx];
-            const points = toSplinePoints(
-              {
-                position: [curve.start.x, curve.start.y],
-                rotation: curve.start.rotation,
-              },
-              {
-                position: [curve.end.x, curve.end.y],
-                rotation: curve.end.rotation,
-              },
-            );
-
-            return (
+      {calculateLaneInfo(prefab)
+        .entries()
+        .toArray()
+        .flatMap(([nodeIndex, lanes]) =>
+          lanes.flatMap((lane, laneIndex) =>
+            lane.branches.flatMap(({ curvePoints }, branchIndex) => (
               <polyline
-                key={`nn-${i}-${j}-${curveIdx}`}
-                stroke={nn.type === 'physical' ? 'red' : 'green'}
+                key={`lane-${nodeIndex}-${laneIndex}-${branchIndex}`}
+                id={`lane-${nodeIndex}-${laneIndex}-${branchIndex}`}
+                stroke="blue"
                 strokeWidth={0.4}
                 opacity={0.5}
-                points={points.map(pos => pos.join(',')).join(' ')}
+                points={curvePoints.map(p => p.join(',')).join(' ')}
                 fill="none"
-                markerEnd="url(#triangle)"
+                markerEnd="url(#triangleBlue)"
               />
-            );
-          });
-        }),
-      )}
-      {prefab.navCurves
-        .filter((_, i) => {
-          const nnCis = prefab.navNodes.flatMap(nn =>
-            nn.connections.flatMap(conn => conn.curveIndices),
-          );
-          return !nnCis.includes(i);
-        })
-        .flatMap((curve, i) => {
-          const points = toSplinePoints(
-            {
-              position: [curve.start.x, curve.start.y],
-              rotation: curve.start.rotation,
-            },
-            {
-              position: [curve.end.x, curve.end.y],
-              rotation: curve.end.rotation,
-            },
-          );
-
-          return (
-            <polyline
-              key={`nc-${i}`}
-              stroke="blue"
-              strokeWidth={0.4}
-              opacity={0.5}
-              points={points.map(pos => pos.join(',')).join(' ')}
-              fill="none"
-              markerEnd="url(#triangleBlue)"
-            />
-          );
-        })}
+            )),
+          ),
+        )}
     </svg>
   );
 };

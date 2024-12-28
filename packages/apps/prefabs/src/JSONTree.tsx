@@ -8,7 +8,7 @@ export const JSONTree = ({ data }: { data: unknown }) => (
   <div style={{ fontSize: '90%', lineHeight: 1.1 }}>
     <_JSONTree
       data={data}
-      theme={'monokai'}
+      theme={{ extend: 'monokai', base00: 'transparent' }}
       invertTheme={true}
       hideRoot={true}
       shouldExpandNodeInitially={shouldExpandNodeInitially}
