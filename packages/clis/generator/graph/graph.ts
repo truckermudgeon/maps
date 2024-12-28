@@ -51,7 +51,7 @@ export function generateGraph(tsMapData: MappedData) {
     tsMapData.cutscenes,
     tsMapData.pois,
     {
-      map: 'usa',
+      map,
       nodes,
     },
   );
