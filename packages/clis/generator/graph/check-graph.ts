@@ -2,7 +2,10 @@ import {
   AtsSelectableDlcs,
   toAtsDlcGuards,
 } from '@truckermudgeon/map/constants';
-import { fromAtsCoordsToWgs84 } from '@truckermudgeon/map/projections';
+import {
+  fromAtsCoordsToWgs84,
+  fromEts2CoordsToWgs84,
+} from '@truckermudgeon/map/projections';
 import type { Route } from '@truckermudgeon/map/routing';
 import type { CompanyItem, Neighbors } from '@truckermudgeon/map/types';
 import * as cliProgress from 'cli-progress';
@@ -25,12 +28,16 @@ interface Unrouteable {
 export async function checkGraph(
   graph: Map<string, Neighbors>,
   tsMapData: MappedData,
+  map: 'usa' | 'europe',
 ) {
-  const { nodes, companies, prefabs } = tsMapData;
+  const { nodes, companies, prefabs, cities } = tsMapData;
 
-  // check that all companies can be reached from some random company.
-  const allCompanies = [...companies.values()].filter(company =>
-    prefabs.has(company.prefabUid.toString(16)),
+  // check that all companies in known cities can be reached from some
+  // random company.
+  const allCompanies = [...companies.values()].filter(
+    company =>
+      cities.has(company.cityToken) &&
+      prefabs.has(company.prefabUid.toString(16)),
   );
   const originCompany =
     allCompanies[Math.floor(Math.random() * allCompanies.length)];
@@ -79,8 +86,8 @@ export async function checkGraph(
             if (!route.success) {
               unrouteable.push({
                 numIters: route.numIters,
-                start: toSummary(start),
-                end: toSummary(end),
+                start: toSummary(start, map),
+                end: toSummary(end, map),
               });
             }
           })
@@ -102,8 +109,9 @@ export async function checkGraph(
   logger.warn(unrouteable.length, 'unrouteable trips\n', unrouteable);
 }
 
-function toSummary(c: CompanyItem): CompanySummary {
-  const [lng, lat] = fromAtsCoordsToWgs84([c.x, c.y]).map(v => v.toFixed(3));
+function toSummary(c: CompanyItem, map: 'usa' | 'europe'): CompanySummary {
+  const project = map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
+  const [lng, lat] = project([c.x, c.y]).map(v => v.toFixed(3));
   return {
     company: toString(c),
     nodeUid: c.nodeUid,

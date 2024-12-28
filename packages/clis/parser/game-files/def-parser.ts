@@ -74,10 +74,10 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
   const companies = new Map<string, Company>();
   const ferries = new Map<
     string,
-    Omit<Ferry, 'x' | 'y' | 'connections' | 'train'> & {
+    Omit<Ferry, 'nodeUid' | 'x' | 'y' | 'connections' | 'train'> & {
       connections: Omit<
         FerryConnection,
-        'x' | 'y' | 'name' | 'nameLocalized'
+        'nodeUid' | 'x' | 'y' | 'name' | 'nameLocalized'
       >[];
     }
   >();
@@ -426,7 +426,7 @@ function processFerryJson(obj: FerrySii, entries: Entries) {
   );
   const connections: Omit<
     FerryConnection,
-    'x' | 'y' | 'name' | 'nameLocalized'
+    'nodeUid' | 'x' | 'y' | 'name' | 'nameLocalized'
   >[] = [];
 
   // find matching connection file for `token`.
