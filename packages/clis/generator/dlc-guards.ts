@@ -64,6 +64,11 @@ export function normalizeDlcGuards<T extends 'usa' | 'europe'>(
       unknownDlcGuards.add(dlcGuard);
       return;
     }
+    nodeUids = nodeUids.filter(nid => nodes.has(nid.toString(16)));
+    if (nodeUids.length === 0) {
+      return;
+    }
+
     if (dlcGuard !== 0) {
       for (const nid of nodeUids) {
         const nidString = nid.toString(16);

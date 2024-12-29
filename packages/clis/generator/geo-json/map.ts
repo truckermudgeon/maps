@@ -954,6 +954,7 @@ function poiToFeature(poi: Poi): PoiFeature {
       poiType: poi.type,
       poiName: isLabeledPoi(poi) ? poi.label : undefined,
       dlcGuard: 'dlcGuard' in poi ? poi.dlcGuard : undefined,
+      prefabUid: 'prefabUid' in poi ? poi.prefabUid : undefined,
     },
     geometry: {
       type: 'Point',

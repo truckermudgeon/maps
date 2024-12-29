@@ -694,6 +694,7 @@ export interface PoiProperties {
   poiType: string; // Overlay, Viewpoint, Company, etc.
   poiName?: string; // POI label, if available
   dlcGuard?: number; // For dlc-guarded POIs, like road icons
+  prefabUid?: bigint;
 }
 
 export type ScopedCityFeature = GeoJSON.Feature<
