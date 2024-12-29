@@ -287,7 +287,7 @@ export function generateGraph(tsMapData: MappedData) {
   // edge that says we _can_ exit.
   // TODO write a general solution and search for all prefab intersections that lead into
   // a company prefab one-way, then add fudged edges (similar to the dead-end fudging earlier).
-  if (map === 'usa') {
+  if (map === 'usa' && graph.has('3301e888d4055f5e')) {
     const hackNeighbors = assertExists(graph.get('3301e888d4055f5e'));
     hackNeighbors.forward.push({
       nodeId: '3301e888b6855e83',
@@ -568,7 +568,7 @@ function convertToNodeMap(
   nodes: Map<string, Node>,
 ): Map<Node, Node[]> {
   const nodeMap = new Map<Node, Node[]>();
-  const destinationNodes = rotateLeft(
+  const destinationNodes = rotateRight(
     item.nodeUids.map(id => nodes.get(id.toString(16))),
     item.originNodeIndex,
   );
@@ -582,7 +582,7 @@ function convertToNodeMap(
   return nodeMap;
 }
 
-function rotateLeft<T>(arr: T[], count: number): T[] {
+function rotateRight<T>(arr: T[], count: number): T[] {
   Preconditions.checkArgument(0 <= count && count < arr.length);
   if (count === 0) {
     return arr;

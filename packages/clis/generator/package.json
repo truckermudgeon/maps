@@ -5,6 +5,9 @@
   "license": "GPL-3.0-or-later",
   "type": "module",
   "bin": "./index.ts",
+  "scripts": {
+    "test": "vitest"
+  },
   "devDependencies": {
     "@types/cli-progress": "^3.11.5",
     "@types/d3-quadtree": "^3.0.6",
