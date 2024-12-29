@@ -40,19 +40,8 @@ export function convertToAchievementsGeoJson(tsMapData: MappedData) {
     pois,
     routes,
     trajectories,
-  } = tsMapData;
-  const dlcGuardQuadTree = normalizeDlcGuards(
-    tsMapData.roads,
-    prefabs,
-    tsMapData.mapAreas,
-    triggers,
-    cutscenes,
-    pois,
-    {
-      map,
-      nodes,
-    },
-  );
+    dlcGuardQuadTree,
+  } = normalizeDlcGuards(tsMapData);
   const getDlcGuard = ({ x, y }: { x: number; y: number }): number => {
     if (!dlcGuardQuadTree) {
       // dlc guards unsupported for current map.

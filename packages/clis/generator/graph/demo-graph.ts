@@ -31,7 +31,7 @@ export function toDemoGraph(
     [...allNodeUids].map(nodeUid => [nodeUid, (idCount++).toString(36)]),
   );
 
-  const { companies, companyDefs, nodes, prefabs } = tsMapData;
+  const { companies, companyDefs, nodes } = tsMapData;
 
   // the demo app needs:
   // * graph with re-mapped node uids, and minimized data (shorter prop keys, elided props)
@@ -56,7 +56,7 @@ export function toDemoGraph(
 
   // * companies with re-mapped node uids, and node uids of other companies they can deliver to
   const eligibleCompanies = [...companies.values()].filter(c =>
-    prefabs.has(c.prefabUid.toString(16)),
+    allNodeUids.has(c.nodeUid.toString(16)),
   );
   const companyDefsByCargoIn = new Map<string, Company[]>();
   for (const company of eligibleCompanies) {

@@ -7,18 +7,11 @@ import {
   type AtsCountryId,
   type AtsDlcGuard,
 } from '@truckermudgeon/map/constants';
-import type {
-  Cutscene,
-  MapArea,
-  Node,
-  Poi,
-  Prefab,
-  Road,
-  Trigger,
-} from '@truckermudgeon/map/types';
+import type { Node } from '@truckermudgeon/map/types';
 import type { Quadtree } from 'd3-quadtree';
 import { quadtree } from 'd3-quadtree';
 import { logger } from './logger';
+import type { MappedData } from './mapped-data';
 
 interface QtDlcGuardEntry {
   x: number;
@@ -29,33 +22,33 @@ interface QtDlcGuardEntry {
 export type DlcGuardQuadTree = Quadtree<QtDlcGuardEntry>;
 
 /**
- * Replaces the items in the given collections with copies of those items that
- * have best-effort normalized `dlcGuard` values.
+ * Returns a copy of `tsMapData`, where the items in the collections have
+ * best-effort normalized `dlcGuard` values, along with a quadtree that can
+ * be used to find the closest normalized `dlcGuard` for a given point.
  *
  * An item with a `dlcGuard` of 0 does _not_ mean that the item belongs to the
  * base-game map content. In order for DLC hiding to work as if that were the
  * case, 0-values are normalized based on the country IDs of the Nodes
  * associated with the item.
  */
-export function normalizeDlcGuards(
-  roads: Map<string, Road>,
-  prefabs: Map<string, Prefab>,
-  mapAreas: Map<string, MapArea>,
-  triggers: Map<string, Trigger>,
-  cutscenes: Map<string, Cutscene>,
-  pois: Poi[],
-  context: {
-    map: 'usa' | 'europe';
-    nodes: Map<string, Node>;
-  },
-): DlcGuardQuadTree | undefined {
-  const { map, nodes } = context;
+export function normalizeDlcGuards<T extends 'usa' | 'europe'>(
+  tsMapData: MappedData<T>,
+): MappedData<T> & { dlcGuardQuadTree?: DlcGuardQuadTree } {
+  const { map } = tsMapData;
   if (map === 'europe') {
     logger.error('ets2 dlc guard normalization is not yet supported.');
-    return;
+    return tsMapData;
   }
 
-  const dlcQuadTree: DlcGuardQuadTree = quadtree<QtDlcGuardEntry>()
+  const nodes = new Map(tsMapData.nodes);
+  const roads = new Map(tsMapData.roads);
+  const prefabs = new Map(tsMapData.prefabs);
+  const mapAreas = new Map(tsMapData.mapAreas);
+  const triggers = new Map(tsMapData.triggers);
+  const cutscenes = new Map(tsMapData.cutscenes);
+  const pois = new Array(...tsMapData.pois);
+
+  const dlcGuardQuadTree: DlcGuardQuadTree = quadtree<QtDlcGuardEntry>()
     .x(e => e.x)
     .y(e => e.y);
   const unknownDlcGuards = new Set<number>();
@@ -75,7 +68,7 @@ export function normalizeDlcGuards(
       for (const nid of nodeUids) {
         const nidString = nid.toString(16);
         const node = assertExists(nodes.get(nidString));
-        dlcQuadTree.add({
+        dlcGuardQuadTree.add({
           x: node.x,
           y: node.y,
           dlcGuard,
@@ -101,7 +94,7 @@ export function normalizeDlcGuards(
       // no non-zero country IDs. Fallback to the dlc guard associated with the
       // closest node.
       const node = assertExists(nodes.get(nodeUids[0].toString(16)));
-      const closestNode = dlcQuadTree.find(node.x, node.y);
+      const closestNode = dlcGuardQuadTree.find(node.x, node.y);
       return closestNode?.dlcGuard;
     }
 
@@ -116,7 +109,7 @@ export function normalizeDlcGuards(
     for (const nid of nodeUids) {
       const nidString = nid.toString(16);
       const node = assertExists(nodes.get(nidString));
-      dlcQuadTree.add({
+      dlcGuardQuadTree.add({
         x: node.x,
         y: node.y,
         dlcGuard: equivDlcGuard,
@@ -162,10 +155,22 @@ export function normalizeDlcGuards(
   }
 
   logger.warn('Unknown ATS dlc guards', unknownDlcGuards);
-  return dlcQuadTree;
+  return {
+    ...tsMapData,
+    nodes,
+    roads,
+    prefabs,
+    mapAreas,
+    triggers,
+    cutscenes,
+    dlcGuardQuadTree,
+  };
 }
 
-function getCountryIds(nodeUid: bigint, nodes: Map<string, Node>): number[] {
+function getCountryIds(
+  nodeUid: bigint,
+  nodes: ReadonlyMap<string, Node>,
+): number[] {
   const node = assertExists(nodes.get(nodeUid.toString(16)));
   const { forwardCountryId, backwardCountryId } = node;
   if (forwardCountryId !== backwardCountryId) {

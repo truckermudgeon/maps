@@ -67,13 +67,13 @@ const mapJsonFiles = Object.freeze(Object.keys(MapDataKeys));
 // are left alone as arrays).
 export type MappedData<T extends 'usa' | 'europe' = 'usa' | 'europe'> = Omit<
   {
-    [K in keyof MapData]: Map<string, MapData[K][0]>;
+    [K in keyof MapData]: ReadonlyMap<string, MapData[K][0]>;
   },
   'pois' | 'elevation'
 > & {
   map: T;
-  pois: MapData['pois'];
-  elevation: MapData['elevation'];
+  pois: Readonly<MapData['pois']>;
+  elevation: Readonly<MapData['elevation']>;
 };
 
 export type FocusOptions = { radiusMeters: number } & (

@@ -68,6 +68,7 @@ export function convertToMapGeoJson(
     skipCoalescing: boolean;
   },
 ): AtsGeoJson {
+  logger.log('normalizing dlcGuard values...');
   const {
     map,
     nodes,
@@ -75,29 +76,14 @@ export function convertToMapGeoJson(
     ferries,
     prefabs,
     mapAreas,
-    triggers,
-    cutscenes,
     dividers,
     pois,
     cities,
     countries,
     roadLooks,
     prefabDescriptions,
-  } = tsMapData;
-
-  logger.log('normalizing dlcGuard values...');
-  const dlcQuadTree = normalizeDlcGuards(
-    roads,
-    prefabs,
-    mapAreas,
-    triggers,
-    cutscenes,
-    pois,
-    {
-      map,
-      nodes,
-    },
-  );
+    dlcGuardQuadTree,
+  } = normalizeDlcGuards(tsMapData);
 
   const normalizeFeature = createNormalizeFeature(map);
 
@@ -596,9 +582,9 @@ export function convertToMapGeoJson(
     ...mapAreaFeatures,
     ...prefabFeatures,
     ...processedRoadFeatures,
-    ...cityFeatures.map(c => withDlcGuard(c, dlcQuadTree)),
+    ...cityFeatures.map(c => withDlcGuard(c, dlcGuardQuadTree)),
     ...countryFeatures,
-    ...poiFeatures.map(p => withDlcGuard(p, dlcQuadTree)),
+    ...poiFeatures.map(p => withDlcGuard(p, dlcGuardQuadTree)),
     //...dividerFeatures,
     ...debugNodeFeatures,
     ...ferryFeatures,
@@ -804,7 +790,7 @@ function coalesceRoadFeatures(roadFeatures: RoadFeature[]): RoadFeature[] {
 
 function areaToFeature(
   area: MapArea,
-  nodeMap: Map<string | bigint, Node>,
+  nodeMap: ReadonlyMap<string | bigint, Node>,
 ): MapAreaFeature {
   const points = area.nodeUids.map(id => {
     const node = assertExists(nodeMap.get(id));
@@ -832,11 +818,11 @@ function ferryToFeature(
   map: 'usa' | 'europe',
   ferry: Ferry,
   // cities by token
-  cities: Map<string, City>,
+  cities: ReadonlyMap<string, City>,
   // countries by token
-  countries: Map<string, Country>,
+  countries: ReadonlyMap<string, Country>,
   // city-name-to-country fallback
-  countriesFallback: Map<string, Country>,
+  countriesFallback: ReadonlyMap<string, Country>,
 ): FerryFeature {
   Preconditions.checkArgument(ferry.connections.length === 1);
   const conn = ferry.connections[0];
@@ -1043,10 +1029,10 @@ function prefabToFeatures(
     polygons: Polygon[];
     roadStrings: RoadString[];
   },
-  nodes: Map<string | bigint, Node>,
+  nodes: ReadonlyMap<string | bigint, Node>,
   // TODO make use of this to better position roads within a prefab
-  _roadMap: Map<string, Road>,
-  roadLookMap: Map<string, RoadLook>,
+  _roadMap: ReadonlyMap<string, Road>,
+  roadLookMap: ReadonlyMap<string, RoadLook>,
   roadQuadTree: Quadtree<{ x: number; y: number; roadLookToken: string }>,
   opts: {
     allowUnknownRoadType: boolean;
@@ -1181,7 +1167,7 @@ function prefabToFeatures(
 function roadToFeature(
   road: Road,
   roadLook: RoadLook,
-  nodes: Map<bigint | string, Node>,
+  nodes: ReadonlyMap<bigint | string, Node>,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _dividerFeatures: GeoJSON.Feature<GeoJSON.LineString>[],
 ): RoadFeature[] {

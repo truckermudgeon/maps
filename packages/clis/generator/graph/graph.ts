@@ -35,40 +35,36 @@ type Context = Pick<
 export function generateGraph(tsMapData: MappedData) {
   const {
     map,
-    nodes,
+    nodes: _nodes,
     roads,
-    prefabs,
-    companies,
+    prefabs: _prefabs,
+    companies: _companies,
     ferries,
     prefabDescriptions,
     roadLooks,
-  } = tsMapData;
-  const dlcGuardQuadTree = normalizeDlcGuards(
-    roads,
-    prefabs,
-    tsMapData.mapAreas,
-    tsMapData.triggers,
-    tsMapData.cutscenes,
-    tsMapData.pois,
-    {
-      map,
-      nodes,
-    },
-  );
+    dlcGuardQuadTree,
+  } = normalizeDlcGuards(tsMapData);
   const getDlcGuard = (node: Node): number =>
     dlcGuardQuadTree?.find(node.x, node.y)?.dlcGuard ?? -1;
 
-  const allCompanies = [...companies.values()].filter(company =>
-    tsMapData.cities.has(company.cityToken),
+  // Part of the pre-processing phase involves deleting entries from the nodes
+  // and prefabs maps. Create mutable copies to allow for this.
+  const nodes = new Map(_nodes);
+  const prefabs = new Map(_prefabs);
+
+  const companies = new Map(
+    [..._companies.entries()].filter(([, company]) =>
+      // filter out companies in unknown cities (e.g., cities in upcoming DLC)
+      tsMapData.cities.has(company.cityToken),
+    ),
   );
   const companiesByPrefabItemId = new Map(
-    allCompanies.map(companyItem => [
-      companyItem.prefabUid.toString(16),
-      companyItem,
-    ]),
+    companies
+      .values()
+      .map(companyItem => [companyItem.prefabUid.toString(16), companyItem]),
   );
 
-  for (const company of allCompanies) {
+  for (const company of companies.values()) {
     if (!prefabs.has(company.prefabUid.toString(16))) {
       logger.warn(
         'could not find prefab for company',
@@ -565,7 +561,7 @@ function getNeighborsInDirection(
 function convertToNodeMap(
   connectionIndices: Map<number, number[]>,
   item: Prefab,
-  nodes: Map<string, Node>,
+  nodes: ReadonlyMap<string, Node>,
 ): Map<Node, Node[]> {
   const nodeMap = new Map<Node, Node[]>();
   const destinationNodes = rotateRight(

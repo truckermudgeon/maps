@@ -8,6 +8,9 @@ export function putIfAbsent<K, V>(key: K, defValue: V, map: Map<K, V>) {
   return v;
 }
 
-export function mapValues<K, V, U>(map: Map<K, V>, m: (v: V) => U): Map<K, U> {
+export function mapValues<K, V, U>(
+  map: ReadonlyMap<K, V>,
+  m: (v: V) => U,
+): Map<K, U> {
   return new Map([...map.entries()].map(([k, v]) => [k, m(v)]));
 }
