@@ -2,6 +2,7 @@
 /out
 node_modules
 build
+coverage
 
 # generated files used by web apps
 packages/apps/*/public/*.geojson
