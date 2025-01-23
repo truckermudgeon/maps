@@ -1,8 +1,8 @@
 import type { Position } from '@truckermudgeon/base/geom';
 import * as proj4 from 'proj4';
 
-// assumes `Normal Sphere` definition of Earth
-// https://proj.org/en/stable/usage/ellipsoids.html#built-in-ellipsoid-definitions
+// The Earth radius is canceled out in the coordinate calculation, so the exact
+// value doesn't matter. The chosen radius is the Clarke 1866 Authalic Sphere.
 const earthRadiusMeters = 6_370_997;
 const lengthOfDegree = (earthRadiusMeters * Math.PI) / 180;
 
