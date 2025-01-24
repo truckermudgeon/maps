@@ -53,16 +53,6 @@ export const DestinationTypes = (props: {
   onClick: (dest: PoiType) => void;
 }) => (
   <Box display={'grid'} gridTemplateColumns={'repeat(3, 1fr)'} gap={2}>
-    {/*
-    <>
-      <DestinationButton
-        Icon={SportsScore}
-        color={'#77e'}
-        label={'Job drop-off: Gallon Oil in San Diego, CA'}
-      />
-      <Divider />
-    </>
-    */}
     {Object.entries(destinations).map(([key, { Icon, label, color }]) => (
       <DestinationButton
         key={key}
