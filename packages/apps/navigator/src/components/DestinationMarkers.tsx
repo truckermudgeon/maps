@@ -5,7 +5,7 @@ import { Marker } from 'react-map-gl/maplibre';
 export const DestinationMarkers = (props: {
   destinations: SearchResult[];
   selectedDestinationNodeUid: string | undefined;
-  forceDisplay: true | undefined;
+  forceDisplay: boolean | undefined;
   onDestinationClick: (dest: SearchResult) => void;
 }) => {
   console.log('render destination markers', {

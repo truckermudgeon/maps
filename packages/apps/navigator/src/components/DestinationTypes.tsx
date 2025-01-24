@@ -16,7 +16,7 @@ interface Destination {
   color: string;
 }
 
-const destinations: Record<PoiType, Destination> = {
+export const destinations: Record<PoiType, Destination> = {
   [PoiType.COMPANY]: {
     Icon: Unarchive,
     label: 'Companies',
