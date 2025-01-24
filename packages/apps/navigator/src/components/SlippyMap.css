@@ -1,0 +1,91 @@
+/* Tweaks to MapLibre styling to make it more similar to Joy UI */
+
+html[data-joy-color-scheme='dark'] .maplibregl-ctrl-attrib.maplibregl-compact {
+  background-color: #000;
+}
+
+html[data-joy-color-scheme='dark']
+  .maplibregl-ctrl-attrib.maplibregl-compact-show
+  .maplibregl-ctrl-attrib-button {
+  background-color: #444;
+}
+
+html[data-joy-color-scheme='dark']
+  .maplibregl-ctrl-attrib.maplibregl-compact-show
+  a {
+  color: #eee;
+}
+
+html[data-joy-color-scheme='dark'] .maplibregl-ctrl-attrib-button {
+  background-color: #333;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='lightgray' fill-rule='evenodd' viewBox='0 0 20 20'%3E%3Cpath d='M4 10a6 6 0 1 0 12 0 6 6 0 1 0-12 0m5-3a1 1 0 1 0 2 0 1 1 0 1 0-2 0m0 3a1 1 0 1 1 2 0v3a1 1 0 1 1-2 0'/%3E%3C/svg%3E");
+}
+
+.maplibregl-ctrl-group {
+  background: none;
+  border-radius: 6px;
+}
+
+.maplibregl-ctrl-group:not(:empty) {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+html[data-joy-color-scheme='dark'] .maplibregl-ctrl-group:not(:empty) {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+html[data-joy-color-scheme='dark'] .maplibregl-ctrl-group button + button {
+  border-top-color: rgba(255, 255, 255, 0.15);
+}
+
+.maplibregl-ctrl-group button {
+  background-color: var(--joy-palette-background-surface);
+  width: 34px;
+  height: 34px;
+  display: flex;
+}
+
+.maplibregl-ctrl button:not(:disabled):hover {
+  background-color: var(
+    --variant-plainHoverBg,
+    var(
+      --joy-palette-neutral-plainHoverBg,
+      var(--joy-palette-neutral-100, #f0f4f8)
+    )
+  ) !important;
+}
+
+.maplibregl-ctrl button .maplibregl-ctrl-icon.maplibregl-ctrl-icon {
+  background: color-mix(in srgb, currentColor 65%, transparent) none;
+  width: 29px;
+  height: 29px;
+  margin: auto;
+}
+
+.maplibregl-ctrl
+  button:not(:disabled)
+  .maplibregl-ctrl-icon.maplibregl-ctrl-icon:hover {
+  background: color-mix(in srgb, currentColor 85%, transparent) none;
+}
+
+.maplibregl-ctrl button:disabled .maplibregl-ctrl-icon {
+  opacity: unset;
+  background: color-mix(in srgb, currentColor 50%, transparent) none;
+}
+
+.maplibregl-ctrl button.maplibregl-ctrl-zoom-out .maplibregl-ctrl-icon {
+  mask-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 29 29'%3E%3Cpath d='M10 13c-.75 0-1.5.75-1.5 1.5S9.25 16 10 16h9c.75 0 1.5-.75 1.5-1.5S19.75 13 19 13h-9z'/%3E%3C/svg%3E");
+}
+.maplibregl-ctrl button.maplibregl-ctrl-zoom-in .maplibregl-ctrl-icon {
+  mask-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 29 29'%3E%3Cpath d='M14.5 8.5c-.75 0-1.5.75-1.5 1.5v3h-3c-.75 0-1.5.75-1.5 1.5S9.25 16 10 16h3v3c0 .75.75 1.5 1.5 1.5S16 19.75 16 19v-3h3c.75 0 1.5-.75 1.5-1.5S19.75 13 19 13h-3v-3c0-.75-.75-1.5-1.5-1.5z'/%3E%3C/svg%3E");
+}
+.maplibregl-ctrl button.maplibregl-ctrl-compass .maplibregl-ctrl-icon {
+  mask-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 29 29' stroke-linejoin='round' stroke-width='1.5' stroke='black'%3E%3Cpath stroke='black' d='m11 13.5 3.5-7 3.5 7z'/%3E%3Cpath fill='none' d='m11 16.5 3.5 7 3.5-7z'/%3E%3C/svg%3E");
+}
+.maplibregl-ctrl button.maplibregl-ctrl-fullscreen .maplibregl-ctrl-icon {
+  mask-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 29 29'%3E%3Cpath d='M24 16v5.5c0 1.75-.75 2.5-2.5 2.5H16v-1l3-1.5-4-5.5 1-1 5.5 4 1.5-3h1zM6 16l1.5 3 5.5-4 1 1-4 5.5 3 1.5v1H7.5C5.75 24 5 23.25 5 21.5V16h1zm7-11v1l-3 1.5 4 5.5-1 1-5.5-4L6 13H5V7.5C5 5.75 5.75 5 7.5 5H13zm11 2.5c0-1.75-.75-2.5-2.5-2.5H16v1l3 1.5-4 5.5 1 1 5.5-4 1.5 3h1V7.5z'/%3E%3C/svg%3E");
+}
+.maplibregl-ctrl button.maplibregl-ctrl-shrink .maplibregl-ctrl-icon {
+  mask-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 29 29'%3E%3Cpath d='M18.5 16c-1.75 0-2.5.75-2.5 2.5V24h1l1.5-3 5.5 4 1-1-4-5.5 3-1.5v-1h-5.5zM13 18.5c0-1.75-.75-2.5-2.5-2.5H5v1l3 1.5L4 24l1 1 5.5-4 1.5 3h1v-5.5zm3-8c0 1.75.75 2.5 2.5 2.5H24v-1l-3-1.5L25 5l-1-1-5.5 4L17 5h-1v5.5zM10.5 13c1.75 0 2.5-.75 2.5-2.5V5h-1l-1.5 3L5 4 4 5l4 5.5L5 12v1h5.5z'/%3E%3C/svg%3E");
+}
