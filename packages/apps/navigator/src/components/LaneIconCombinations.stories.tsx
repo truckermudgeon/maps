@@ -4,7 +4,7 @@ import type { PropsWithChildren } from 'react';
 import { LaneIcon } from './LaneIcon';
 
 const meta = {
-  title: 'Route/LaneIcon',
+  title: 'Route/Lane Icon',
   component: LaneIconCombinations,
   parameters: {
     layout: 'centered',
