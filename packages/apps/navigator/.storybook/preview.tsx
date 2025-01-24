@@ -5,9 +5,10 @@ import {
   Experimental_CssVarsProvider as MaterialCssVarsProvider,
   experimental_extendTheme as materialExtendTheme,
 } from '@mui/material/styles';
-import { Preview, StoryContext } from '@storybook/react';
+import type { Preview, StoryContext } from '@storybook/react';
+import type { ReactNode } from 'react';
 import * as React from 'react';
-import { ReactNode, useEffect } from 'react';
+import { useEffect } from 'react';
 
 const preview: Preview = {
   parameters: {

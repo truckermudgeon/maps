@@ -11,7 +11,7 @@ const meta = {
     (Story: () => React.JSX.Element, context: StoryContext) => (
       <SlippyMap
         {...SlippyMapDefault.args}
-        mode={context.globals['theme']}
+        mode={context.globals['theme'] as 'light' | 'dark'}
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-expect-error
         PlayerMarker={Story}
