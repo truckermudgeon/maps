@@ -31,8 +31,8 @@ export const globalTypes = {
       icon: 'paintbrush',
       dynamicTitle: true,
       items: [
-        { value: 'light', left: '☀️', title: 'Light mode' },
-        { value: 'dark', left: '🌙', title: 'Dark mode' },
+        { value: 'light', title: 'Light mode' },
+        { value: 'dark', title: 'Dark mode' },
       ],
     },
   },
