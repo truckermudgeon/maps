@@ -14,3 +14,4 @@ packages/apps/*/public/sprites*.*
 npm-debug.log*
 tsconfig.tsbuildinfo
 .eslintcache
+*storybook.log

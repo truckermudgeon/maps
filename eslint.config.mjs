@@ -21,7 +21,6 @@ export default [
       'out',
       '**/build',
       '**/public',
-      '**/vitest.config.ts',
       '**/find-route-worker-wrapper.js',
     ],
   },

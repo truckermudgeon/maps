@@ -11,6 +11,9 @@
       "path": "packages/apps/demo"
     },
     {
+      "path": "packages/apps/navigator"
+    },
+    {
       "path": "packages/apps/prefabs"
     },
     {
