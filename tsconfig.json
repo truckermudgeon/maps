@@ -23,9 +23,6 @@
       "path": "packages/clis/parser"
     },
     {
-      "path": "packages/libs/api"
-    },
-    {
       "path": "packages/libs/base"
     },
     {

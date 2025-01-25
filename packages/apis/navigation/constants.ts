@@ -1,5 +1,3 @@
-import { z } from 'zod';
-
 export enum PoiType {
   COMPANY,
   FUEL,
@@ -26,16 +24,3 @@ export const enum BranchType {
   U_TURN_RIGHT,
   MERGE = -1,
 }
-
-const RouteSegmentSchema = z.object({
-  key: z.string(),
-  lonLats: z.array(z.tuple([z.number(), z.number()])),
-  distance: z.number(),
-  time: z.number(),
-  strategy: z.enum(['shortest', 'smallRoads']),
-});
-
-export const RouteSchema = z.object({
-  id: z.string(),
-  segments: z.array(RouteSegmentSchema),
-});

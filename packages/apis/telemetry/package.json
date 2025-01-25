@@ -7,15 +7,18 @@
   "scripts": {
     "start": "npx tsx index.ts"
   },
+  "exports": {
+    "./types": "./types.ts"
+  },
   "devDependencies": {
-    "@types/express": "^4.17.21",
+    "@types/ws": "^8.5.13",
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "@trpc/server": "^10.45.2",
     "@truckermudgeon/api": "0.0.0",
-    "express": "^4.18.2",
-    "socket.io": "^4.7.4",
-    "tsx": "^4.7.0"
+    "tsx": "^4.7.0",
+    "ws": "^8.18.0"
   },
   "//": "declaring trucksim-telemetry as optional so i can continue dev on macOS.",
   "optionalDependencies": {
