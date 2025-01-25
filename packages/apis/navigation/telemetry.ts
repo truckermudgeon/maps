@@ -1,7 +1,7 @@
 import { createTRPCProxyClient, createWSClient, wsLink } from '@trpc/client';
-import type { TruckSimTelemetry } from '@truckermudgeon/api/types';
 import { Preconditions } from '@truckermudgeon/base/precon';
 import type { AppRouter as TelemetryAppRouter } from '@truckermudgeon/telemetry';
+import type { TruckSimTelemetry } from '@truckermudgeon/telemetry/types';
 import { EventEmitter } from 'events';
 
 let listeningToTelemetry = false;

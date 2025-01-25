@@ -7,6 +7,9 @@
   "scripts": {
     "start": "npx tsx index.ts"
   },
+  "exports": {
+    "./types": "./types.ts"
+  },
   "devDependencies": {
     "@types/ws": "^8.5.13",
     "typescript": "^5.3.3"

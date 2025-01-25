@@ -1,5 +1,5 @@
-import type { TruckSimTelemetry } from '@truckermudgeon/api/types';
 import { fromAtsCoordsToWgs84 } from '@truckermudgeon/map/projections';
+import type { TruckSimTelemetry } from '@truckermudgeon/telemetry/types';
 import bearing from '@turf/bearing';
 
 export function toGameState(telemetry: TruckSimTelemetry) {

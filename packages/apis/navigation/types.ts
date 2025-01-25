@@ -54,3 +54,11 @@ export interface TrailerState {
   x: number;
   y: number;
 }
+
+export interface GameState {
+  speedMph: number;
+  position: [number, number];
+  bearing: number;
+  speedLimit: number;
+  scale: number;
+}

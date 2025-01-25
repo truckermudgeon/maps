@@ -1,7 +1,7 @@
 import { createHTTPServer } from '@trpc/server/adapters/standalone';
 import { applyWSSHandler } from '@trpc/server/adapters/ws';
 import { observable } from '@trpc/server/observable';
-import type { GameState, TruckSimTelemetry } from '@truckermudgeon/api/types';
+import type { TruckSimTelemetry } from '@truckermudgeon/telemetry/types';
 import { WebSocketServer } from 'ws';
 import { z } from 'zod';
 import { PoiType, ScopeType } from './constants';
@@ -9,6 +9,7 @@ import { toGameState } from './game-state';
 import { listenToTelemetry } from './telemetry';
 import { publicProcedure, router } from './trpc';
 import type {
+  GameState,
   Route,
   RouteDirection,
   SearchResult,

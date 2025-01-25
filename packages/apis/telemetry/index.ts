@@ -1,12 +1,12 @@
 import { createHTTPServer } from '@trpc/server/adapters/standalone';
 import { applyWSSHandler } from '@trpc/server/adapters/ws';
 import { observable } from '@trpc/server/observable';
-import type { TruckSimTelemetry } from '@truckermudgeon/api/types';
 import fs from 'fs';
 import path from 'path';
 import url from 'url';
 import { WebSocketServer } from 'ws';
 import { publicProcedure, router } from './trpc.js';
+import type { TruckSimTelemetry } from './types';
 
 let getTelemetry: () => TruckSimTelemetry | undefined = () => undefined;
 
