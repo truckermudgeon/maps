@@ -19,24 +19,25 @@ const preview: Preview = {
       },
     },
   },
-
-  //tags: ['autodocs'],
-};
-
-export const globalTypes = {
-  theme: {
-    name: 'Theme',
-    title: 'Theme',
-    defaultValue: 'light',
-    toolbar: {
-      icon: 'paintbrush',
-      dynamicTitle: true,
-      items: [
-        { value: 'light', title: 'Light mode' },
-        { value: 'dark', title: 'Dark mode' },
-      ],
+  globalTypes: {
+    theme: {
+      name: 'Theme',
+      title: 'Theme',
+      toolbar: {
+        icon: 'paintbrush',
+        dynamicTitle: true,
+        items: [
+          { value: 'light', title: 'Light mode' },
+          { value: 'dark', title: 'Dark mode' },
+        ],
+      },
     },
   },
+  initialGlobals: {
+    theme: 'light',
+  },
+
+  //tags: ['autodocs'],
 };
 
 const materialTheme = materialExtendTheme();
