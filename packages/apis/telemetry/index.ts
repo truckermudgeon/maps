@@ -1,87 +1,86 @@
-import type {
-  Telemetry,
-  TelemetryServerToClientEvents,
-  TruckSimTelemetry,
-} from '@truckermudgeon/api/types';
-import express from 'express';
+import { createHTTPServer } from '@trpc/server/adapters/standalone';
+import { applyWSSHandler } from '@trpc/server/adapters/ws';
+import { observable } from '@trpc/server/observable';
+import type { TruckSimTelemetry } from '@truckermudgeon/api/types';
 import fs from 'fs';
-import { createServer } from 'http';
 import path from 'path';
-import { Server } from 'socket.io';
 import url from 'url';
+import { WebSocketServer } from 'ws';
+import { publicProcedure, router } from './trpc.js';
 
-const __filename = url.fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const serverName = path.basename(__dirname);
-const app = express();
-const server = createServer(app);
-const io = new Server<never, TelemetryServerToClientEvents>(server);
+let getTelemetry: () => TruckSimTelemetry | undefined = () => undefined;
 
-let getTelemetry: () => Telemetry | undefined;
+const appRouter = router({
+  onTelemetry: publicProcedure.subscription(() => {
+    console.log('subscribing to telemetry::onTelemetry');
+    return observable<TruckSimTelemetry>(emit => {
+      const intervalId = setInterval(() => {
+        const telemetry = getTelemetry();
+        if (telemetry) {
+          emit.next(telemetry);
+        } else {
+          console.log('telemetry::onTelemetry complete');
+          emit.complete();
+          clearInterval(intervalId);
+        }
+      }, 500);
 
-try {
-  // can't install trucksim-telemetry on macOS because it's Windows-only.
-
-  // eslint-disable-next-line
-  // @ts-ignore
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-member-access
-  const tst = (await import('trucksim-telemetry')).default;
-  console.log('real telemetry mode');
-
-  getTelemetry = () => {
-    // eslint-disable-next-line
-    const data = tst.getData() as TruckSimTelemetry | undefined;
-    return data ? toTelemetry(data) : undefined;
-  };
-} catch {
-  console.log('fake telemetry mode');
-
-  const recordingPath = path.join(
-    __dirname,
-    'recordings',
-    'hays-to-san-angelo.json',
-  );
-  const fakeEntries = JSON.parse(
-    fs.readFileSync(recordingPath, 'utf-8'),
-  ) as Telemetry[];
-  let entryIndex = 0;
-  getTelemetry = () => {
-    if (entryIndex === fakeEntries.length) {
-      entryIndex = 0;
-    }
-    return fakeEntries[entryIndex++];
-  };
-}
-
-io.on('connection', socket => {
-  console.log(`${serverName} user connected`);
-  socket.on('disconnect', () => {
-    console.log(`${serverName} user disconnected`);
-    clearInterval(intervalId);
-  });
-
-  const intervalId = setInterval(() => {
-    const telemetry = getTelemetry();
-    if (telemetry) {
-      socket.emit('update', telemetry);
-    }
-  }, 500);
+      return () => {
+        console.log('unsubscribing from telemetry::onTelemetry');
+        clearInterval(intervalId);
+      };
+    });
+  }),
 });
 
-server.listen(3000, () => {
-  console.log(`${serverName} listening on 3000`);
-});
+export type AppRouter = typeof appRouter;
 
-function toTelemetry(data: TruckSimTelemetry): Telemetry {
-  const { truck, job, navigation, game } = data;
-  return {
-    position: truck.position,
-    heading: truck.orientation.heading,
-    speed: truck.speed,
-    source: job.source,
-    destination: job.destination,
-    speedLimit: navigation.speedLimit,
-    timestamp: game.timestamp,
-    scale: game.scale,
-  };
+// cheap args processing:
+//   first arg is optional and specifies a telemetry mode: 'recorded' or 'live'.
+//   if not present, telemetry mode is assumed to be 'recorded'.
+async function main() {
+  const telemetryMode = process.argv.slice(2)[0] ?? 'recorded';
+  switch (telemetryMode) {
+    case 'recorded': {
+      console.log('using recorded telemetry');
+      const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+      const logFile = fs.readFileSync(
+        path.join(__dirname, 'recordings', 'socal-log.txt'),
+        'utf-8',
+      );
+      const fakeEntries = logFile
+        .split('\n')
+        .filter(l => l !== '')
+        .map(json => JSON.parse(json) as TruckSimTelemetry | undefined);
+      let entryIndex = 0;
+      getTelemetry = () => {
+        if (entryIndex === fakeEntries.length) {
+          entryIndex = 0;
+        }
+        return fakeEntries[entryIndex++];
+      };
+      break;
+    }
+    case 'live': {
+      console.log('using live telemetry');
+      // can't install trucksim-telemetry on macOS because it's Windows-only.
+      // eslint-disable-next-line
+      // @ts-ignore
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-member-access
+      const tst = (await import('trucksim-telemetry')).default;
+      // eslint-disable-next-line
+      getTelemetry = () => tst.getData() as TruckSimTelemetry | undefined;
+      break;
+    }
+    default:
+      throw new Error('unrecognized telemetry mode: ' + telemetryMode);
+  }
+
+  const { server, listen } = createHTTPServer({ router: appRouter });
+  const wss = new WebSocketServer({ server });
+  applyWSSHandler<AppRouter>({ wss, router: appRouter });
+  listen(3001);
+  console.log('telemetry server listening at http://localhost:3001');
 }
+
+await main();
