@@ -3,6 +3,7 @@ import { applyWSSHandler } from '@trpc/server/adapters/ws';
 import { observable } from '@trpc/server/observable';
 import fs from 'fs';
 import path from 'path';
+import readline from 'readline';
 import url from 'url';
 import { WebSocketServer } from 'ws';
 import zlib from 'zlib';
@@ -51,13 +52,46 @@ async function main() {
         .split('\n')
         .filter(l => l !== '')
         .map(json => JSON.parse(json) as TruckSimTelemetry | undefined);
+
       let entryIndex = 0;
+      let paused = false;
       getTelemetry = () => {
         if (entryIndex === fakeEntries.length) {
           entryIndex = 0;
         }
-        return fakeEntries[entryIndex++];
+        const telemetry = fakeEntries[entryIndex];
+        if (!paused) {
+          entryIndex++;
+        }
+        return telemetry;
       };
+
+      readline.emitKeypressEvents(process.stdin);
+      if (process.stdin.setRawMode != null) {
+        process.stdin.setRawMode(true);
+      }
+      const keypressListener = (
+        _: unknown,
+        key: { ctrl: boolean; shift: boolean; name: string },
+      ) => {
+        if (key.ctrl && key.name === 'c') {
+          process.exit();
+        }
+
+        const delta = key.shift ? 10 : 1;
+        if (key.name === 'space') {
+          paused = !paused;
+          console.log('paused:', paused);
+        } else if (key.name === 'left') {
+          entryIndex = Math.max(0, entryIndex - delta);
+          console.log('progress:', entryIndex, '/', fakeEntries.length - 1);
+        } else if (key.name === 'right') {
+          entryIndex = Math.min(entryIndex + delta, fakeEntries.length - 1);
+          console.log('progress:', entryIndex, '/', fakeEntries.length - 1);
+        }
+      };
+      process.stdin.on('keypress', keypressListener);
+      process.on('exit', () => process.stdin.off('keypress', keypressListener));
       break;
     }
     case 'live': {
