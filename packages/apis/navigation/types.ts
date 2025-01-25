@@ -1,5 +1,5 @@
-import type { z } from 'zod';
-import type { BranchType, RouteSchema } from './constants';
+import type { Mode } from '@truckermudgeon/map/routing';
+import type { BranchType } from './constants';
 
 export interface RouteDirection {
   direction: BranchType;
@@ -36,4 +36,21 @@ export interface SearchResult {
   facilityUrls: string[];
 }
 
-export type Route = z.infer<typeof RouteSchema>;
+interface RouteSegment {
+  key: string;
+  lonLats: [number, number][];
+  distance: number;
+  time: number;
+  strategy: Mode;
+}
+
+export interface Route {
+  id: string;
+  segments: RouteSegment[];
+}
+
+export interface TrailerState {
+  attached: false;
+  x: number;
+  y: number;
+}
