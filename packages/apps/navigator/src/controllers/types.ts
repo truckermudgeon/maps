@@ -49,7 +49,7 @@ export interface NavSheetStore extends DestinationsStore {
   readonly showBackButton: boolean;
 
   isLoading: boolean;
-  selectedDestinationType: PoiType | undefined;
+  selectedPoiTypeLabel: string | undefined;
 
   destinations: SearchResult[];
   selectedDestination: SearchResult | undefined;
@@ -66,7 +66,11 @@ export interface DestinationsStore {
 
 export interface NavSheetController {
   onBackClick(store: NavSheetStore): void;
-  onDestinationTypeClick(store: NavSheetStore, type: PoiType): void;
+  onDestinationTypeClick(
+    store: NavSheetStore,
+    type: PoiType,
+    label: string,
+  ): void;
 
   onDestinationHighlight(store: NavSheetStore, destination: SearchResult): void;
   onDestinationGoClick(store: NavSheetStore, destination: SearchResult): void;

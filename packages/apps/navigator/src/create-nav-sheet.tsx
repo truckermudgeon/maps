@@ -69,7 +69,9 @@ function createCurrentNavPage(opts: {
   const { store, controller } = opts;
   const TypesPage = () => (
     <DestinationTypes
-      onClick={action(type => controller.onDestinationTypeClick(store, type))}
+      onClick={action((type, label) =>
+        controller.onDestinationTypeClick(store, type, label),
+      )}
     />
   );
   const _DestinationList = withLoading(DestinationList);

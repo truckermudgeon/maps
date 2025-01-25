@@ -4,7 +4,6 @@ import type { PoiType } from '@truckermudgeon/navigation/constants';
 import { ScopeType } from '@truckermudgeon/navigation/constants';
 import type { Route, SearchResult } from '@truckermudgeon/navigation/types';
 import { action, makeAutoObservable, observable } from 'mobx';
-import { destinations } from '../components/DestinationTypes';
 import { NavPageKey } from './constants';
 import type { AppClient, NavSheetController, NavSheetStore } from './types';
 
@@ -17,7 +16,7 @@ export class NavSheetStoreImpl implements NavSheetStore {
   currentPageKey = defaultStore.currentPageKey;
 
   isLoading = false;
-  selectedDestinationType: PoiType | undefined = undefined;
+  selectedPoiTypeLabel: string | undefined = undefined;
 
   destinations: SearchResult[] = [];
   selectedDestination: SearchResult | undefined = undefined;
@@ -39,8 +38,7 @@ export class NavSheetStoreImpl implements NavSheetStore {
       case NavPageKey.CATEGORIES:
         return defaultStore.title;
       case NavPageKey.DESTINATIONS:
-        // TODO this doesn't feel right. Should it just be a label field?
-        return destinations[assertExists(this.selectedDestinationType)].label;
+        return assertExists(this.selectedPoiTypeLabel);
       case NavPageKey.ROUTES:
         return `Routes to ${assertExists(this.selectedDestination).name}`;
       default:
@@ -75,8 +73,8 @@ export class NavSheetControllerImpl implements NavSheetController {
     }
   }
 
-  onDestinationTypeClick(store: NavSheetStore, type: PoiType) {
-    store.selectedDestinationType = type;
+  onDestinationTypeClick(store: NavSheetStore, type: PoiType, label: string) {
+    store.selectedPoiTypeLabel = label;
     store.currentPageKey = NavPageKey.DESTINATIONS;
     store.isLoading = true;
 
@@ -140,7 +138,7 @@ export class NavSheetControllerImpl implements NavSheetController {
     store.currentPageKey = defaultStore.currentPageKey;
 
     store.isLoading = false;
-    store.selectedDestinationType = undefined;
+    store.selectedPoiTypeLabel = undefined;
 
     store.destinations = [];
     store.selectedDestination = undefined;
