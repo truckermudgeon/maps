@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import url from 'url';
 import { WebSocketServer } from 'ws';
+import zlib from 'zlib';
 import { publicProcedure, router } from './trpc.js';
 import type { TruckSimTelemetry } from './types';
 
@@ -43,11 +44,9 @@ async function main() {
   switch (telemetryMode) {
     case 'recorded': {
       console.log('using recorded telemetry');
-      const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-      const logFile = fs.readFileSync(
-        path.join(__dirname, 'recordings', 'socal-log.txt'),
-        'utf-8',
-      );
+      const dirname = path.dirname(url.fileURLToPath(import.meta.url));
+      const filepath = path.join(dirname, 'recordings', 'socal-log.txt.gz');
+      const logFile = zlib.unzipSync(fs.readFileSync(filepath)).toString();
       const fakeEntries = logFile
         .split('\n')
         .filter(l => l !== '')
