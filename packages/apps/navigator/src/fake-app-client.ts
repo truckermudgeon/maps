@@ -89,17 +89,20 @@ export const fakeAppClient: AppClient = {
   onPositionUpdate: {
     subscribe: (_, cb) => {
       let intervalCount = 0;
-      const intervalId = setInterval(
-        () =>
-          cb.onData?.({
-            bearing: 0,
-            position: [++intervalCount * 0.0002 + fakeLon, fakeLat],
-            scale: 0,
-            speedLimit: 30,
-            speedMph: 60,
-          }),
-        500,
-      );
+      //let bearing = -180;
+      const intervalId = setInterval(() => {
+        cb.onData?.({
+          bearing: 0,
+          position: [++intervalCount * 0.0002 + fakeLon, fakeLat],
+          scale: 0,
+          speedLimit: 30,
+          speedMph: 60,
+        });
+        //bearing -= 5;
+        //if (bearing < -180) {
+        //  bearing += 360;
+        //}
+      }, 500);
       return {
         unsubscribe: () => clearInterval(intervalId),
       };

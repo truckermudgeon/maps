@@ -21,6 +21,7 @@ export class AppStoreImpl implements AppStore {
     makeAutoObservable(this, {
       activeRoute: observable.ref,
       activeRouteDirection: observable.ref,
+      trailerPoint: observable.ref,
     });
   }
 }
@@ -115,7 +116,10 @@ export class AppControllerImpl implements AppController {
     });
 
     client.onPositionUpdate.subscribe(undefined, {
-      onData: gameState => {
+      // HACK wrap this in an `action`, even though no observable state is being
+      // written to, just to squash the mobx warnings about accessing observable
+      // `store` properties in a non-reactive context.
+      onData: action(gameState => {
         const { map, playerMarker } = this;
         if (!map || !playerMarker) {
           return;
@@ -143,23 +147,23 @@ export class AppControllerImpl implements AppController {
                   prevPosition[0] + t * (currPosition[0] - prevPosition[0]);
                 markerPosition[1] =
                   prevPosition[1] + t * (currPosition[1] - prevPosition[1]);
-                markerBearing = prevBearing + t * (currBearing - prevBearing);
+                markerBearing =
+                  prevBearing + t * calculateDelta(prevBearing, currBearing);
 
                 playerMarker.setLngLat(markerPosition);
-                playerMarker.setRotation(toRotation(markerBearing));
-
+                playerMarker.setRotation(markerBearing);
                 return t;
               },
             });
             break;
           case CameraMode.FREE:
             playerMarker.setLngLat(center);
-            playerMarker.setRotation(toRotation(bearing));
+            playerMarker.setRotation(bearing);
             break;
           default:
             throw new UnreachableError(store.cameraMode);
         }
-      },
+      }),
     });
 
     client.onTrailerUpdate.subscribe(undefined, {
@@ -268,13 +272,14 @@ function toFeatureCollection(route: Route): GeoJSON.FeatureCollection {
   };
 }
 
-// bearing is -180, 180. But it's better to set CSS rotation from 0, 360 so that
-// transitions are predictable.
-function toRotation(bearing: number): number {
-  if (bearing >= 0) {
-    return bearing;
+function calculateDelta(currBearing: number, nextBearing: number): number {
+  const normalizedCurr = currBearing % 360;
+  const normalizedNext = nextBearing > 0 ? nextBearing : nextBearing + 360;
+  let delta = normalizedNext - normalizedCurr;
+  if (delta > 180) {
+    delta -= 360;
   }
-  return 360 + bearing;
+  return delta;
 }
 
 function toCameraOptions(center: Position, bearing: number, speedMph: number) {
