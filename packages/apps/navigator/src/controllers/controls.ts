@@ -32,7 +32,6 @@ export class ControlsStoreImpl implements ControlsStore {
 
 export class ControlsControllerImpl implements ControlsController {
   startListening(store: ControlsStore, appClient: AppClient) {
-    // TODO keep returned Unsubscribable
     appClient.onPositionUpdate.subscribe(undefined, {
       onData: action(gameState => {
         store.direction = toCompassPoint(gameState.bearing);

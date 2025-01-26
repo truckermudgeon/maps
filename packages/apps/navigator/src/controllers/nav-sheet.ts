@@ -52,7 +52,7 @@ export class NavSheetControllerImpl implements NavSheetController {
   onBackClick(store: NavSheetStore) {
     switch (store.currentPageKey) {
       case NavPageKey.CATEGORIES:
-        // shouldn't be able to press 'Back' from the 'types' page.
+        // shouldn't be able to press 'Back' from the 'Categories' page.
         throw new Error();
       case NavPageKey.DESTINATIONS:
         this.reset(store);
