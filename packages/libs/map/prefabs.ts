@@ -37,7 +37,7 @@ export function toMapPosition(
   position: Position,
   prefabItem: Prefab,
   prefabDescription: PrefabDescription,
-  nodes: ReadonlyMap<string | bigint, Node>,
+  nodes: ReadonlyMap<bigint, Node>,
 ): Position {
   const prefabOrigin = prefabDescription.nodes[prefabItem.originNodeIndex];
   const originNode = assertExists(nodes.get(prefabItem.nodeUids[0]));

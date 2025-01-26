@@ -34,4 +34,19 @@ async function main() {
     .parse();
 }
 
+// Ensure `BigInt`s are `JSON.serialize`d as hex strings, so they can be
+// `JSON.parse`d without any data loss.
+//
+// Do this before calling `main()` (or executing any other code that might
+// involve serializing bigints to JSON).
+
+// eslint-disable-next-line
+interface BigIntWithToJSON extends BigInt {
+  toJSON(): string;
+}
+
+(BigInt.prototype as BigIntWithToJSON).toJSON = function () {
+  return this.toString(16);
+};
+
 await main();

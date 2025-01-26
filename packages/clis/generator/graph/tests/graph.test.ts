@@ -119,57 +119,57 @@ describe('generateGraph', () => {
     const fakeMapData = createFakeMapData(partialMapData);
 
     const res = generateGraph(fakeMapData);
-    expect(res.get('0')).toMatchObject({
+    expect(res.get(0n)).toMatchObject({
       forward: [
         expect.objectContaining({
-          nodeId: '1',
+          nodeUid: 1n,
           direction: 'forward',
         }),
       ],
       backward: [],
     });
-    expect(res.get('1')).toMatchObject({
+    expect(res.get(1n)).toMatchObject({
       forward: [
         expect.objectContaining({
-          nodeId: '2',
+          nodeUid: 2n,
           direction: 'forward',
         }),
         expect.objectContaining({
-          nodeId: '4',
+          nodeUid: 4n,
           direction: 'backward',
         }),
       ],
       backward: [],
     });
-    expect(res.get('2')).toMatchObject({
+    expect(res.get(2n)).toMatchObject({
       forward: [
         expect.objectContaining({
-          nodeId: '3',
+          nodeUid: 3n,
           direction: 'forward',
         }),
       ],
       backward: [],
     });
     // can't navigate _from_ node-3 (can only navigate _to_ node-3).
-    expect(res.get('3')).toBeUndefined();
-    expect(res.get('4')).toMatchObject({
+    expect(res.get(3n)).toBeUndefined();
+    expect(res.get(4n)).toMatchObject({
       forward: [
         expect.objectContaining({
-          nodeId: '2',
+          nodeUid: 2n,
           direction: 'forward',
         }),
       ],
       backward: [
         expect.objectContaining({
-          nodeId: '5',
+          nodeUid: 5n,
           direction: 'backward',
         }),
       ],
     });
-    expect(res.get('5')).toMatchObject({
+    expect(res.get(5n)).toMatchObject({
       forward: [
         expect.objectContaining({
-          nodeId: '4',
+          nodeUid: 4n,
           direction: 'forward',
         }),
       ],
@@ -179,7 +179,7 @@ describe('generateGraph', () => {
         // opposite direction ('backward', in this case). this edge is added
         // as a fudged, hacky dead-end edge.
         expect.objectContaining({
-          nodeId: '4',
+          nodeUid: 4n,
           direction: 'forward',
         }),
       ],
@@ -240,11 +240,11 @@ describe('generateGraph', () => {
     const fakeMapData = createFakeMapData(partialMapData);
     const res = generateGraph(fakeMapData);
     // node-3 should have a single edge to the company node.
-    expect(res.get('3')).toMatchObject({
+    expect(res.get(3n)).toMatchObject({
       forward: [
         expect.objectContaining({
           direction: 'forward',
-          nodeId: '6',
+          nodeUid: 6n,
         }),
       ],
       // TODO what if we arrived at node-3 in the backward direction?
@@ -257,18 +257,18 @@ describe('generateGraph', () => {
       res
         .values()
         .flatMap(ns => [
-          ...ns.forward.map(e => e.nodeId),
-          ...ns.backward.map(e => e.nodeId),
+          ...ns.forward.map(e => e.nodeUid),
+          ...ns.backward.map(e => e.nodeUid),
         ]),
     );
-    expect(allEdgeDestinations.has('7')).toBe(false);
+    expect(allEdgeDestinations.has(7n)).toBe(false);
 
     // but the graph contains an entry that connects it to the company node.
-    expect(res.get('7')).toMatchObject({
+    expect(res.get(7n)).toMatchObject({
       forward: [
         expect.objectContaining({
           direction: 'forward',
-          nodeId: '6',
+          nodeUid: 6n,
         }),
       ],
       backward: [],
@@ -341,22 +341,22 @@ describe('generateGraph', () => {
 
     const fakeMapData = createFakeMapData(partialMapData);
     const res = generateGraph(fakeMapData);
-    expect(res.get('3')).toMatchObject({
+    expect(res.get(3n)).toMatchObject({
       forward: [
         // back to start point of road-2, since road-2 is a two-way road in
         // this test.
         expect.objectContaining({
           direction: 'backward',
-          nodeId: '2',
+          nodeUid: 2n,
         }),
         // edges to company node.
         expect.objectContaining({
           direction: 'forward',
-          nodeId: '8',
+          nodeUid: 8n,
         }),
         expect.objectContaining({
           direction: 'backward',
-          nodeId: '8',
+          nodeUid: 8n,
         }),
       ],
       backward: [
@@ -364,34 +364,34 @@ describe('generateGraph', () => {
         // this test.
         expect.objectContaining({
           direction: 'backward',
-          nodeId: '2',
+          nodeUid: 2n,
         }),
         // edges to company node.
         expect.objectContaining({
           direction: 'forward',
-          nodeId: '8',
+          nodeUid: 8n,
         }),
         expect.objectContaining({
           direction: 'backward',
-          nodeId: '8',
+          nodeUid: 8n,
         }),
       ],
     });
 
     // "island" company prefab points aren't present (i.e., routeable) in graph.
-    expect(res.has('6')).toBe(false);
-    expect(res.has('7')).toBe(false);
+    expect(res.has(6n)).toBe(false);
+    expect(res.has(7n)).toBe(false);
 
-    expect(res.get('8')).toMatchObject({
+    expect(res.get(8n)).toMatchObject({
       forward: [
         // edges to nearest routeable node.
         expect.objectContaining({
           direction: 'forward',
-          nodeId: '3',
+          nodeUid: 3n,
         }),
         expect.objectContaining({
           direction: 'backward',
-          nodeId: '3',
+          nodeUid: 3n,
         }),
       ],
       backward: [],
@@ -547,10 +547,10 @@ function createFakeMapData(arrays: PartialMapData): MappedData<'usa'> {
 
   return {
     map: 'usa',
-    nodes: mapify(nodes, n => String(n.uid)),
-    roads: mapify(roads, r => String(r.uid)),
-    prefabs: mapify(prefabs, p => String(p.uid)),
-    companies: mapify(companies, c => String(c.uid)),
+    nodes: mapify(nodes, n => n.uid),
+    roads: mapify(roads, r => r.uid),
+    prefabs: mapify(prefabs, p => p.uid),
+    companies: mapify(companies, c => c.uid),
     prefabDescriptions: mapify(prefabDescriptions, p => String(p.token)),
     ferries: mapify(ferries, f => f.token),
     companyDefs: new Map(),
@@ -575,6 +575,6 @@ function createFakeMapData(arrays: PartialMapData): MappedData<'usa'> {
   };
 }
 
-function mapify<T>(arr: T[], k: (t: T) => string): Map<string, T> {
+function mapify<T, U>(arr: T[], k: (t: T) => U): Map<U, T> {
   return new Map(arr.map(item => [k(item), item]));
 }

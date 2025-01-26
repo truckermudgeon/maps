@@ -62,12 +62,70 @@ const MapDataKeys: Record<keyof MapData, void> = {
 };
 const mapJsonFiles = Object.freeze(Object.keys(MapDataKeys));
 
+type PickKey<
+  T extends keyof MapData,
+  U extends keyof MapData[T][0],
+> = MapData[T][0][U];
+
+//const mapDataKeyProps = {
+//  cities: 'token',
+//  companies: 'uid',
+//  companyDefs: 'token',
+//  countries: 'token',
+//  cutscenes: 'uid',
+//  dividers: 'uid',
+//  ferries: 'token',
+//  mapAreas: 'uid',
+//  mileageTargets: 'token',
+//  modelDescriptions: 'token',
+//  models: 'uid',
+//  nodes: 'uid',
+//  prefabDescriptions: 'token',
+//  prefabs: 'uid',
+//  roadLooks: 'token',
+//  roads: 'uid',
+//  routes: 'token',
+//  trajectories: 'uid',
+//  triggers: 'uid',
+//  achievements: 'token',
+//  pois: undefined,
+//  elevation: undefined,
+//} satisfies Record<keyof MapData, 'token' | 'uid' | undefined>;
+//
+//type KeyTypeFor<T extends keyof MapData> =
+//  MapData[T][0][(typeof mapDataKeyProps)[T]];
+
+interface MapDataKeyFields {
+  achievements: PickKey<'achievements', 'token'>;
+  cities: PickKey<'cities', 'token'>;
+  companies: PickKey<'companies', 'uid'>;
+  companyDefs: PickKey<'companyDefs', 'token'>;
+  countries: PickKey<'countries', 'token'>;
+  cutscenes: PickKey<'cutscenes', 'uid'>;
+  dividers: PickKey<'dividers', 'uid'>;
+  elevation: PickKey<'elevation', never>;
+  ferries: PickKey<'ferries', 'token'>;
+  mapAreas: PickKey<'mapAreas', 'uid'>;
+  mileageTargets: PickKey<'mileageTargets', 'token'>;
+  modelDescriptions: PickKey<'modelDescriptions', 'token'>;
+  models: PickKey<'models', 'uid'>;
+  nodes: PickKey<'nodes', 'uid'>;
+  pois: PickKey<'pois', never>;
+  prefabDescriptions: PickKey<'prefabDescriptions', 'token'>;
+  prefabs: PickKey<'prefabs', 'uid'>;
+  roadLooks: PickKey<'roadLooks', 'token'>;
+  roads: PickKey<'roads', 'uid'>;
+  routes: PickKey<'routes', 'token'>;
+  trajectories: PickKey<'trajectories', 'uid'>;
+  triggers: PickKey<'triggers', 'uid'>;
+}
+
 // Transforms MapData (a type containing all array properties) into a type with
-// all Map<string, ...> properties, _except_ for `pois` and `elevation` (which
-// are left alone as arrays).
+// all Map<string|bigint, ...> properties, _except_ for `pois` and `elevation`
+// (which are left alone as arrays).
 export type MappedData<T extends 'usa' | 'europe' = 'usa' | 'europe'> = Omit<
   {
-    [K in keyof MapData]: ReadonlyMap<string, MapData[K][0]>;
+    [K in keyof MapData]: ReadonlyMap<MapDataKeyFields[K], MapData[K][0]>;
   },
   'pois' | 'elevation'
 > & {
@@ -198,8 +256,8 @@ export function readMapData<T extends 'usa' | 'europe'>(
     toJsonFilePath('modelDescriptions.json'),
   );
 
-  const prefabsMap = mapify(prefabs, p => String(p.uid));
-  const nodesMap = mapify(nodes, n => String(n.uid));
+  const prefabsMap = mapify(prefabs, p => p.uid);
+  const nodesMap = mapify(nodes, n => n.uid);
   // companies may be linked to hidden prefabs or prefabs outside the focused range.
   // filter them out so `companies` array is consistent with prefabs.
   const companies = readArrayFile<CompanyItem>(
@@ -208,8 +266,8 @@ export function readMapData<T extends 'usa' | 'europe'>(
       if (!focusXY(company)) {
         return false;
       }
-      const prefabUid = String(company.prefabUid);
-      const nodeUid = String(company.nodeUid);
+      const prefabUid = company.prefabUid;
+      const nodeUid = company.nodeUid;
       if (!prefabsMap.has(prefabUid)) {
         // HACK side-effect in a .filter :grimacing:
         prefabsMap.delete(prefabUid);
@@ -235,18 +293,18 @@ export function readMapData<T extends 'usa' | 'europe'>(
 
   const mapped = {
     nodes: nodesMap,
-    roads: mapify(roads, r => String(r.uid)),
+    roads: mapify(roads, r => r.uid),
     ferries: mapify(ferries, f => f.token),
     prefabs: prefabsMap,
-    companies: mapify(companies, c => String(c.uid)),
-    models: mapify(models, p => String(p.uid)),
-    dividers: mapify(dividers, d => String(d.uid)),
-    mapAreas: mapify(mapAreas, a => String(a.uid)),
+    companies: mapify(companies, c => c.uid),
+    models: mapify(models, p => p.uid),
+    dividers: mapify(dividers, d => d.uid),
+    mapAreas: mapify(mapAreas, a => a.uid),
     countries: mapify(countries, c => c.token),
     cities: mapify(cities, c => c.token),
-    trajectories: mapify(trajectories, t => String(t.uid)),
-    cutscenes: mapify(cutscenes, c => String(c.uid)),
-    triggers: mapify(triggers, t => String(t.uid)),
+    trajectories: mapify(trajectories, t => t.uid),
+    cutscenes: mapify(cutscenes, c => c.uid),
+    triggers: mapify(triggers, t => t.uid),
     achievements: mapify(achievements, a => a.token),
     routes: mapify(routes, r => r.token),
     companyDefs: mapify(companyDefs, c => c.token),
@@ -268,7 +326,7 @@ export function readMapData<T extends 'usa' | 'europe'>(
   return { ...mapped, map };
 }
 
-function mapify<T>(arr: T[], k: (t: T) => string): Map<string, T> {
+function mapify<T, U>(arr: T[], k: (t: T) => U): Map<U, T> {
   return new Map(arr.map(item => [k(item), item]));
 }
 

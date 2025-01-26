@@ -14,14 +14,14 @@ import type {
 import type { MappedData } from '../mapped-data';
 
 export function toDemoGraph(
-  graph: Map<string, Neighbors>,
+  graph: Map<bigint, Neighbors>,
   tsMapData: MappedData,
 ): DemoRoutesData {
-  const allNodeUids = new Set<string>();
+  const allNodeUids = new Set<bigint>();
   for (const [nodeUid, neighbors] of graph.entries()) {
     allNodeUids.add(nodeUid);
     for (const neighbor of [...neighbors.forward, ...neighbors.backward]) {
-      allNodeUids.add(neighbor.nodeId);
+      allNodeUids.add(neighbor.nodeUid);
     }
   }
 
@@ -56,7 +56,7 @@ export function toDemoGraph(
 
   // * companies with re-mapped node uids, and node uids of other companies they can deliver to
   const eligibleCompanies = [...companies.values()].filter(c =>
-    allNodeUids.has(c.nodeUid.toString(16)),
+    allNodeUids.has(c.nodeUid),
   );
   const companyDefsByCargoIn = new Map<string, Company[]>();
   for (const company of eligibleCompanies) {
@@ -67,7 +67,7 @@ export function toDemoGraph(
   }
 
   const demoCompanies: DemoCompany[] = eligibleCompanies.map(company => ({
-    n: assertExists(nodeUidMap.get(company.nodeUid.toString(16))),
+    n: assertExists(nodeUidMap.get(company.nodeUid)),
     t: company.token,
     c: company.cityToken,
   }));
@@ -95,7 +95,7 @@ export function toDemoGraph(
 
 function toDemoNeighbors(
   neighbors: Neighbors,
-  nodeUidMap: Map<string, string>,
+  nodeUidMap: Map<bigint, string>,
 ): DemoNeighbors {
   const { forward, backward } = neighbors;
   const toNeighbor = (n: Neighbor): DemoNeighbor =>
@@ -108,10 +108,10 @@ function toDemoNeighbors(
 
 function toDemoNeighbor(
   neighbor: Neighbor,
-  nodeUidMap: Map<string, string>,
+  nodeUidMap: Map<bigint, string>,
 ): DemoNeighbor {
   return {
-    n: assertExists(nodeUidMap.get(neighbor.nodeId)),
+    n: assertExists(nodeUidMap.get(neighbor.nodeUid)),
     l: Math.round(neighbor.distance),
     o: neighbor.isOneLaneRoad,
     d: neighbor.direction[0] as 'f' | 'b',

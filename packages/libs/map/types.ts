@@ -723,7 +723,7 @@ export type ScopedCountryFeature = GeoJSON.Feature<
  */
 export interface Neighbor {
   /** The id of this Neighbor's node (not of the origin node). */
-  readonly nodeId: string; // hex form of a bigint
+  readonly nodeUid: bigint;
   /** The distance between the origin node and this Neighbor's node. */
   readonly distance: number;
   /** True if this Neighbor's edge represents a one-lane road. */
@@ -754,7 +754,7 @@ export type Neighbors = Readonly<{
 // Hacky, minimal versions of types needed for the fully-clientside "routes" demo page.
 
 export interface DemoNeighbor {
-  /** nodeId */
+  /** base36 node uid */
   n: string;
   /** distance */
   l: number;
@@ -772,7 +772,7 @@ export interface DemoNeighbors {
 }
 
 export interface DemoCompany {
-  /** node uid */
+  /** base36 node uid */
   n: string;
   /** token */
   t: string;

@@ -64,15 +64,14 @@ export function normalizeDlcGuards<T extends 'usa' | 'europe'>(
       unknownDlcGuards.add(dlcGuard);
       return;
     }
-    nodeUids = nodeUids.filter(nid => nodes.has(nid.toString(16)));
+    nodeUids = nodeUids.filter(nid => nodes.has(nid));
     if (nodeUids.length === 0) {
       return;
     }
 
     if (dlcGuard !== 0) {
       for (const nid of nodeUids) {
-        const nidString = nid.toString(16);
-        const node = assertExists(nodes.get(nidString));
+        const node = assertExists(nodes.get(nid));
         dlcGuardQuadTree.add({
           x: node.x,
           y: node.y,
@@ -98,7 +97,7 @@ export function normalizeDlcGuards<T extends 'usa' | 'europe'>(
     if (mostReferencedEntries.length === 0) {
       // no non-zero country IDs. Fallback to the dlc guard associated with the
       // closest node.
-      const node = assertExists(nodes.get(nodeUids[0].toString(16)));
+      const node = assertExists(nodes.get(nodeUids[0]));
       const closestNode = dlcGuardQuadTree.find(node.x, node.y);
       return closestNode?.dlcGuard;
     }
@@ -112,8 +111,7 @@ export function normalizeDlcGuards<T extends 'usa' | 'europe'>(
     }
 
     for (const nid of nodeUids) {
-      const nidString = nid.toString(16);
-      const node = assertExists(nodes.get(nidString));
+      const node = assertExists(nodes.get(nid));
       dlcGuardQuadTree.add({
         x: node.x,
         y: node.y,
@@ -124,7 +122,7 @@ export function normalizeDlcGuards<T extends 'usa' | 'europe'>(
   };
 
   const updateMap = <T extends { dlcGuard: number }>(
-    map: Map<string, T>,
+    map: Map<bigint, T>,
     getNodeUids: (t: T) => readonly bigint[],
   ) => {
     for (const [key, t] of map) {
@@ -174,9 +172,9 @@ export function normalizeDlcGuards<T extends 'usa' | 'europe'>(
 
 function getCountryIds(
   nodeUid: bigint,
-  nodes: ReadonlyMap<string, Node>,
+  nodes: ReadonlyMap<bigint, Node>,
 ): number[] {
-  const node = assertExists(nodes.get(nodeUid.toString(16)));
+  const node = assertExists(nodes.get(nodeUid));
   const { forwardCountryId, backwardCountryId } = node;
   if (forwardCountryId !== backwardCountryId) {
     logger.warn('country mismatch', forwardCountryId, backwardCountryId);
