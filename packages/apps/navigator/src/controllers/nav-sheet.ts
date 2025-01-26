@@ -7,13 +7,8 @@ import { action, makeAutoObservable, observable } from 'mobx';
 import { NavPageKey } from './constants';
 import type { AppClient, NavSheetController, NavSheetStore } from './types';
 
-const defaultStore = {
-  title: 'Choose destination',
-  currentPageKey: NavPageKey.CATEGORIES,
-};
-
 export class NavSheetStoreImpl implements NavSheetStore {
-  currentPageKey = defaultStore.currentPageKey;
+  currentPageKey = NavPageKey.CATEGORIES;
 
   isLoading = false;
   selectedPoiTypeLabel: string | undefined = undefined;
@@ -36,7 +31,7 @@ export class NavSheetStoreImpl implements NavSheetStore {
   get title(): string {
     switch (this.currentPageKey) {
       case NavPageKey.CATEGORIES:
-        return defaultStore.title;
+        return 'Choose destination';
       case NavPageKey.DESTINATIONS:
         return assertExists(this.selectedPoiTypeLabel);
       case NavPageKey.ROUTES:
@@ -135,7 +130,7 @@ export class NavSheetControllerImpl implements NavSheetController {
 
   reset(store: NavSheetStore) {
     console.log('nav sheet reset');
-    store.currentPageKey = defaultStore.currentPageKey;
+    store.currentPageKey = NavPageKey.CATEGORIES;
 
     store.isLoading = false;
     store.selectedPoiTypeLabel = undefined;

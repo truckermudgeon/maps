@@ -28,10 +28,10 @@ export interface AppController {
   startRouteFlow(store: AppStore): void;
 }
 
-export type Direction = 'N' | 'S' | 'E' | 'W' | 'NE' | 'NW' | 'SE' | 'SW';
+export type CompassPoint = 'N' | 'S' | 'E' | 'W' | 'NE' | 'NW' | 'SE' | 'SW';
 
 export interface ControlsStore {
-  direction: Direction;
+  direction: CompassPoint;
   limitMph: number;
   showRecenterFab: boolean;
   showRouteFab: boolean;
@@ -39,7 +39,7 @@ export interface ControlsStore {
 }
 
 export interface ControlsController {
-  startListening(store: ControlsStore, socket: AppClient): void;
+  startListening(store: ControlsStore, appClient: AppClient): void;
 }
 
 // TODO clean this data up. Some fields can probably be inferred.

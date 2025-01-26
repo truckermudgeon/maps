@@ -4,13 +4,13 @@ import { CameraMode } from './constants';
 import type {
   AppClient,
   AppStore,
+  CompassPoint,
   ControlsController,
   ControlsStore,
-  Direction,
 } from './types';
 
 export class ControlsStoreImpl implements ControlsStore {
-  direction: Direction = 'N';
+  direction: CompassPoint = 'N';
   limitMph = 0;
 
   constructor(private readonly appStore: AppStore) {
@@ -31,9 +31,9 @@ export class ControlsStoreImpl implements ControlsStore {
 }
 
 export class ControlsControllerImpl implements ControlsController {
-  startListening(store: ControlsStore, socket: AppClient) {
+  startListening(store: ControlsStore, appClient: AppClient) {
     // TODO keep returned Unsubscribable
-    socket.onPositionUpdate.subscribe(undefined, {
+    appClient.onPositionUpdate.subscribe(undefined, {
       onData: action(gameState => {
         store.direction = toCompassPoint(gameState.bearing);
         store.limitMph = gameState.speedLimit;

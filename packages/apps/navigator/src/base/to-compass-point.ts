@@ -1,6 +1,7 @@
 import { assert } from '@truckermudgeon/base/assert';
+import type { CompassPoint } from '../controllers/types';
 
-export function toCompassPoint(bearing: number) {
+export function toCompassPoint(bearing: number): CompassPoint {
   const azimuth = bearing >= 0 ? bearing : 360 + bearing;
   if (337.5 <= azimuth || azimuth < 22.5) {
     return 'N';
