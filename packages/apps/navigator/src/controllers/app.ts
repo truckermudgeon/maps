@@ -134,7 +134,6 @@ export class AppControllerImpl implements AppController {
         prevBearing = currBearing;
         currBearing = bearing;
 
-        // TODO do this in a reaction / observable context?
         switch (store.cameraMode) {
           case CameraMode.FOLLOW:
             map.easeTo({
