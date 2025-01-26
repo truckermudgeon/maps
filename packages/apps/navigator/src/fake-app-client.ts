@@ -10,7 +10,7 @@ const fakeRoute: [number, number][] = [
 
 export const fakeAppClient: AppClient = {
   setActiveRoute: {
-    mutate: () => Promise.resolve<never>(undefined as never),
+    mutate: () => Promise.resolve(undefined),
   },
   onRouteUpdate: {
     subscribe: (_, cb) => {
@@ -37,37 +37,52 @@ export const fakeAppClient: AppClient = {
   },
   onDirectionUpdate: {
     subscribe: (_, cb) => {
-      setTimeout(
+      const intervalId = setInterval(
         () =>
           cb.onData?.({
             direction:
               Math.random() > 0.5 ? BranchType.THROUGH : BranchType.LEFT,
             distanceMeters: Math.random() * 2000,
             laneHint: {
-              lanes: [
-                {
+              lanes: Array.from(
+                { length: Math.round(Math.random() * 4) },
+                () => ({
                   branches: Array.from(
-                    { length: Math.round(Math.random() * 4) },
+                    { length: Math.ceil(Math.random() * 3) },
                     () =>
                       Math.random() > 0.5
                         ? BranchType.THROUGH
                         : BranchType.LEFT,
                   ),
-                },
-              ],
+                  activeBranch:
+                    Math.random() > 0.5 ? BranchType.LEFT : BranchType.THROUGH,
+                }),
+              ),
             },
           }),
-        5_000,
+        2_000,
       );
       return {
-        unsubscribe: () => void 0,
+        unsubscribe: () => clearInterval(intervalId),
       };
     },
   },
   onTrailerUpdate: {
-    subscribe: () => {
+    subscribe: (_, cb) => {
+      const intervalId = setInterval(
+        () =>
+          cb.onData?.(
+            Math.random() < 0.5
+              ? {
+                  position: [fakeLon, fakeLat],
+                  attached: false,
+                }
+              : undefined,
+          ),
+        1_000,
+      );
       return {
-        unsubscribe: () => void 0,
+        unsubscribe: () => clearInterval(intervalId),
       };
     },
   },
