@@ -30,5 +30,12 @@ function bigintReviver(key: string, value: unknown): unknown {
     assert(typeof value === 'string' && /^[0-9a-f]+$/.test(value));
     return BigInt('0x' + (value as string));
   }
+  if (key.endsWith('Uids')) {
+    assert(Array.isArray(value));
+    return (value as string[]).map(v => {
+      assert(/^[0-9a-f]+$/.test(v));
+      return BigInt('0x' + v);
+    });
+  }
   return value;
 }
