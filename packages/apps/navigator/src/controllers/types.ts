@@ -43,7 +43,7 @@ export interface ControlsController {
 }
 
 // TODO clean this data up. Some fields can probably be inferred.
-export interface NavSheetStore extends DestinationsStore {
+export interface NavSheetStore {
   readonly title: string;
   currentPageKey: NavPageKey;
   readonly showBackButton: boolean;
@@ -56,12 +56,6 @@ export interface NavSheetStore extends DestinationsStore {
 
   routes: Route[];
   selectedRoute: Route | undefined;
-}
-
-export interface DestinationsStore {
-  destinations: SearchResult[];
-  selectedDestination: SearchResult | undefined;
-  currentPageKey: NavPageKey;
 }
 
 export interface NavSheetController {

@@ -2,7 +2,6 @@ import { assertExists } from '@truckermudgeon/base/assert';
 import type { Position } from '@truckermudgeon/base/geom';
 import { getExtent } from '@truckermudgeon/base/geom';
 import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
-import { fromAtsCoordsToWgs84 } from '@truckermudgeon/map/projections';
 import type { Route, RouteDirection } from '@truckermudgeon/navigation/types';
 import type { Marker } from 'maplibre-gl';
 import { action, makeAutoObservable, observable } from 'mobx';
@@ -165,10 +164,7 @@ export class AppControllerImpl implements AppController {
 
     client.onTrailerUpdate.subscribe(undefined, {
       onData: action(
-        maybeTrailerPos =>
-          (store.trailerPoint = maybeTrailerPos
-            ? fromAtsCoordsToWgs84([maybeTrailerPos.x, maybeTrailerPos.y])
-            : undefined),
+        maybeTrailerPos => (store.trailerPoint = maybeTrailerPos?.position),
       ),
     });
 
