@@ -40,9 +40,7 @@ const appRouter = router({
     }),
   setActiveRoute: publicProcedure
     .input(z.optional(z.array(z.string())))
-    .mutation(() => {
-      return;
-    }),
+    .mutation(() => void 0),
   onPositionUpdate: publicProcedure.subscription(() =>
     observable<GameState>(emit => {
       const onTelemetry = (telemetry: TruckSimTelemetry) =>

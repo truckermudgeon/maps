@@ -50,7 +50,7 @@ const destinations: Record<PoiType, Destination> = {
 };
 
 export const DestinationTypes = (props: {
-  onClick: (dest: PoiType) => void;
+  onClick: (dest: PoiType, label: string) => void;
 }) => (
   <Box display={'grid'} gridTemplateColumns={'repeat(3, 1fr)'} gap={2}>
     {Object.entries(destinations).map(([key, { Icon, label, color }]) => (
@@ -59,7 +59,7 @@ export const DestinationTypes = (props: {
         Icon={Icon}
         color={color}
         label={label}
-        onClick={() => props.onClick(Number(key))}
+        onClick={() => props.onClick(Number(key), label)}
       />
     ))}
   </Box>

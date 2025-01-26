@@ -51,13 +51,12 @@ export interface Route {
 
 export interface TrailerState {
   attached: false;
-  x: number;
-  y: number;
+  position: [lon: number, lat: number];
 }
 
 export interface GameState {
   speedMph: number;
-  position: [number, number];
+  position: [lon: number, lat: number];
   bearing: number;
   speedLimit: number;
   scale: number;
