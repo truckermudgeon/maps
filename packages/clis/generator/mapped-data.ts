@@ -67,34 +67,6 @@ type PickKey<
   U extends keyof MapData[T][0],
 > = MapData[T][0][U];
 
-//const mapDataKeyProps = {
-//  cities: 'token',
-//  companies: 'uid',
-//  companyDefs: 'token',
-//  countries: 'token',
-//  cutscenes: 'uid',
-//  dividers: 'uid',
-//  ferries: 'token',
-//  mapAreas: 'uid',
-//  mileageTargets: 'token',
-//  modelDescriptions: 'token',
-//  models: 'uid',
-//  nodes: 'uid',
-//  prefabDescriptions: 'token',
-//  prefabs: 'uid',
-//  roadLooks: 'token',
-//  roads: 'uid',
-//  routes: 'token',
-//  trajectories: 'uid',
-//  triggers: 'uid',
-//  achievements: 'token',
-//  pois: undefined,
-//  elevation: undefined,
-//} satisfies Record<keyof MapData, 'token' | 'uid' | undefined>;
-//
-//type KeyTypeFor<T extends keyof MapData> =
-//  MapData[T][0][(typeof mapDataKeyProps)[T]];
-
 interface MapDataKeyFields {
   achievements: PickKey<'achievements', 'token'>;
   cities: PickKey<'cities', 'token'>;
@@ -123,16 +95,17 @@ interface MapDataKeyFields {
 // Transforms MapData (a type containing all array properties) into a type with
 // all Map<string|bigint, ...> properties, _except_ for `pois` and `elevation`
 // (which are left alone as arrays).
-export type MappedData<T extends 'usa' | 'europe' = 'usa' | 'europe'> = Omit<
+export type MappedData<T extends 'usa' | 'europe' = 'usa' | 'europe'> = {
+  map: T;
+} & Omit<
   {
     [K in keyof MapData]: ReadonlyMap<MapDataKeyFields[K], MapData[K][0]>;
   },
   'pois' | 'elevation'
 > & {
-  map: T;
-  pois: Readonly<MapData['pois']>;
-  elevation: Readonly<MapData['elevation']>;
-};
+    pois: Readonly<MapData['pois']>;
+    elevation: Readonly<MapData['elevation']>;
+  };
 
 export type FocusOptions = { radiusMeters: number } & (
   | {
