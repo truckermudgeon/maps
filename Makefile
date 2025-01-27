@@ -49,7 +49,7 @@ MAP_FILES += $(GENERATOR_OUT_DIR)/ets2.pmtiles
 # Create ATS and ETS2 footprints pmtiles files
 $(GENERATOR_OUT_DIR)/ats-footprints.pmtiles: $(ATS_PARSER_JSON_FILES)
 	npx generator footprints -m usa -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR)
-$(GENERATOR_OUT_DIR)/ets2-footprints.pmtiles: $(ATS_PARSER_JSON_FILES)
+$(GENERATOR_OUT_DIR)/ets2-footprints.pmtiles: $(ETS2_PARSER_JSON_FILES)
 	npx generator footprints -m europe -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR)
 
 MAP_FILES += $(GENERATOR_OUT_DIR)/ats-footprints.pmtiles
@@ -59,7 +59,7 @@ MAP_FILES += $(GENERATOR_OUT_DIR)/ets2-footprints.pmtiles
 # Create ATS and ETS2 contours (aka elevations) pmtiles files
 $(GENERATOR_OUT_DIR)/ats-contours.pmtiles: $(ATS_PARSER_JSON_FILES)
 	npx generator contours -m usa -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR)
-$(GENERATOR_OUT_DIR)/ets2-contours.pmtiles: $(ATS_PARSER_JSON_FILES)
+$(GENERATOR_OUT_DIR)/ets2-contours.pmtiles: $(ETS2_PARSER_JSON_FILES)
 	npx generator contours -m europe -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR)
 
 MAP_FILES += $(GENERATOR_OUT_DIR)/ats-contours.pmtiles
@@ -78,7 +78,7 @@ MAP_FILES += $(GENERATOR_OUT_DIR)/cities.geojson
 # Create ATS and ETS2 achievements.geojson files
 $(GENERATOR_OUT_DIR)/ats-achievements.geojson: $(ATS_PARSER_JSON_FILES)
 	npx generator achievements -m usa -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR)
-$(GENERATOR_OUT_DIR)/ets2-achievements.pmtiles: $(ATS_PARSER_JSON_FILES)
+$(GENERATOR_OUT_DIR)/ets2-achievements.geojson: $(ETS2_PARSER_JSON_FILES)
 	npx generator achievements -m europe -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR)
 
 MAP_FILES += $(GENERATOR_OUT_DIR)/ats-achievements.geojson
