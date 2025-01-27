@@ -573,8 +573,8 @@ export type RoadFeature = GeoJSON.Feature<
     dlcGuard: number;
     // an undefined startNodeUid is expected from roads converted from prefabs;
     // signifies that a prefab road isn't connected to a prefab entry/exit node.
-    startNodeUid: string | undefined;
-    endNodeUid: string | undefined;
+    startNodeUid: bigint | undefined;
+    endNodeUid: bigint | undefined;
   }
 > & { id: string; symbol?: string };
 
@@ -668,7 +668,7 @@ export interface MapAreaProperties {
 
 export interface DebugProperties {
   type: 'debug';
-  [k: string]: string;
+  [k: string]: unknown;
 }
 
 export interface CityProperties {

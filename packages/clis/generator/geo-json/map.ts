@@ -187,8 +187,8 @@ export function convertToMapGeoJson(
     );
     const properties = {
       type: 'divider-' + d.type,
-      startNodeUid: d.startNodeUid.toString(16),
-      endNodeUid: d.endNodeUid.toString(16),
+      startNodeUid: d.startNodeUid,
+      endNodeUid: d.endNodeUid,
     };
     dividerFeatures.push({
       type: 'Feature',
@@ -561,9 +561,9 @@ export function convertToMapGeoJson(
         properties: {
           type: 'debug',
           name: 'node',
-          nodeId: n.uid.toString(16),
-          nodeForwardItemId: n.forwardItemUid.toString(16),
-          nodeBackwardItemId: n.backwardItemUid.toString(16),
+          nodeUid: n.uid,
+          nodeForwardItemUid: n.forwardItemUid,
+          nodeBackwardItemUid: n.backwardItemUid,
         },
         geometry: {
           type: 'Point',
@@ -624,8 +624,8 @@ function withDlcGuard<T extends CityFeature | PoiFeature>(
 function coalesceRoadFeatures(roadFeatures: RoadFeature[]): RoadFeature[] {
   logger.log('coalescing road features...');
 
-  const heads = new Map<string, RoadFeature[]>();
-  const tails = new Map<string, RoadFeature[]>();
+  const heads = new Map<bigint, RoadFeature[]>();
+  const tails = new Map<bigint, RoadFeature[]>();
   for (const f of roadFeatures) {
     if (f.properties.startNodeUid) {
       putIfAbsent(f.properties.startNodeUid, [], heads).push(f);
@@ -1149,8 +1149,8 @@ function prefabToFeatures(
           leftLanes: road.lanesLeft,
           rightLanes: road.lanesRight,
           hidden: !!prefab.hidden,
-          startNodeUid: findClosestNode(txPoints[0])?.uid.toString(16),
-          endNodeUid: findClosestNode(txPoints.at(-1)!)?.uid.toString(16),
+          startNodeUid: findClosestNode(txPoints[0])?.uid,
+          endNodeUid: findClosestNode(txPoints.at(-1)!)?.uid,
         },
         geometry: {
           type: 'LineString',
@@ -1184,8 +1184,8 @@ function roadToFeature(
     ...roadLookToProperties(roadLook, !!road.hidden),
     lookToken: road.roadLookToken,
     dlcGuard: road.dlcGuard,
-    startNodeUid: road.startNodeUid.toString(16),
-    endNodeUid: road.endNodeUid.toString(16),
+    startNodeUid: road.startNodeUid,
+    endNodeUid: road.endNodeUid,
   };
 
   // TODO look into splitting roads by dividers (a.k.a., "center kerbs").
@@ -1194,7 +1194,7 @@ function roadToFeature(
   //  // it may still be divided partway, though. check for that.
   //  const r: RoadFeature = {
   //    type: 'Feature',
-  //    id: road.uid.toString(),
+  //    id: road.uid.toString(16),
   //    properties,
   //    geometry: {
   //      type: 'LineString',

@@ -28,7 +28,7 @@ type Context = Pick<
   | 'ferries'
 > & {
   prefabConnections: Map<string, Map<number, number[]>>;
-  companiesByPrefabItemId: Map<string, CompanyItem>;
+  companiesByPrefabItemId: Map<bigint, CompanyItem>;
   getDlcGuard: (node: Node) => number;
 };
 
@@ -59,9 +59,7 @@ export function generateGraph(tsMapData: MappedData) {
     ),
   );
   const companiesByPrefabItemId = new Map(
-    companies
-      .values()
-      .map(companyItem => [companyItem.prefabUid.toString(16), companyItem]),
+    companies.values().map(companyItem => [companyItem.prefabUid, companyItem]),
   );
 
   for (const company of companies.values()) {
@@ -124,7 +122,7 @@ export function generateGraph(tsMapData: MappedData) {
         );
         nodesBySector.set(toSectorKey(prefab), otherNodesMinusPrefabNodes);
 
-        if (companiesByPrefabItemId.has(prefab.uid.toString(16))) {
+        if (companiesByPrefabItemId.has(prefab.uid)) {
           unconnectedCompanyPrefabs.push(prefab);
         }
       }
@@ -225,9 +223,7 @@ export function generateGraph(tsMapData: MappedData) {
   // sorta-fix unconnected companies (i.e., company nodes that haven't been connected to a prefab node
   // in prior graph-building steps).
   for (const prefab of unconnectedCompanyPrefabs) {
-    const company = assertExists(
-      companiesByPrefabItemId.get(prefab.uid.toString(16)),
-    );
+    const company = assertExists(companiesByPrefabItemId.get(prefab.uid));
     const companyNode = assertExists(nodes.get(company.nodeUid));
     assert(!graph.has(companyNode.uid));
     // at ths point, companyNodeUid is completely absent in the graph.
@@ -344,10 +340,7 @@ function updateGraphWithFerries(
     //   "token": "14004"
     //   "path": "prefab2/fork_temp/invis/invis_r1_fork_tmpl.ppd"
     // (navCurves data has empty nextLines and prevLines arrays)
-    if (
-      context.map === 'europe' &&
-      prefab.uid.toString(16) === '4cd14de4b6e67ccf'
-    ) {
+    if (context.map === 'europe' && prefab.uid === 0x4cd14de4b6e67ccfn) {
       continue;
     }
     const desc = assertExists(prefabDescriptions.get(prefab.token));
@@ -475,9 +468,7 @@ function getNeighborsInDirection(
     }
     case ItemType.Prefab: {
       const neighbors: Neighbor[] = [];
-      const companyItem = context.companiesByPrefabItemId.get(
-        item.uid.toString(16),
-      );
+      const companyItem = context.companiesByPrefabItemId.get(item.uid);
       if (companyItem) {
         const nextNode = assertExists(context.nodes.get(companyItem.nodeUid));
         neighbors.push(toNeighbor(nextNode));
@@ -537,8 +528,7 @@ function getNeighborsInDirection(
         .filter(
           node =>
             !(
-              node.forwardItemUid === prefab.uid &&
-              node.backwardItemUid.toString(16) === '0'
+              node.forwardItemUid === prefab.uid && node.backwardItemUid === 0n
             ),
         );
       return prefabNodes.flatMap(nextNode => [
