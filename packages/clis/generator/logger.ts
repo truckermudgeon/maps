@@ -13,6 +13,12 @@ export const logger = createConsola({
   reporters: [
     {
       log: log => {
+        log.args = log.args.map(arg =>
+          typeof arg === 'bigint'
+            ? colors.yellow(`0x${arg.toString(16)}`)
+            : (arg as unknown),
+        );
+
         if (log.level === LogLevels.warn) {
           return _logger.log(colors.yellow('⚠'), ...(log.args as unknown[]));
         } else if (log.level === LogLevels.error) {

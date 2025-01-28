@@ -69,23 +69,36 @@ export async function handler(args: BuilderArguments<typeof builder>) {
     ],
   });
 
-  const graph = generateGraph(tsMapData);
+  const res = generateGraph(tsMapData);
   if (args.check) {
-    await checkGraph(graph, tsMapData);
+    await checkGraph(res.graph, tsMapData);
   }
 
   if (!args.dryRun) {
     if (args.demo) {
       fs.writeFileSync(
         path.join(args.outputDir, `${args.map}-graph-demo.json`),
-        JSON.stringify(toDemoGraph(graph, tsMapData)),
+        JSON.stringify(toDemoGraph(res.graph, tsMapData)),
       );
     } else {
       fs.writeFileSync(
         path.join(args.outputDir, `${args.map}-graph.json`),
-        JSON.stringify([...graph.entries()], null, 2),
+        JSON.stringify(res, graphSerializer, 2),
       );
     }
   }
   logger.success('done.');
+}
+
+function graphSerializer(key: string, value: unknown) {
+  if (key === 'distance' && typeof value === 'number') {
+    return Number(value.toFixed(2));
+  }
+  if (value instanceof Set) {
+    return [...value] as unknown[];
+  }
+  if (value instanceof Map) {
+    return [...value.entries()] as unknown[];
+  }
+  return value;
 }

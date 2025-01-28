@@ -17,8 +17,8 @@ import { assert, assertExists } from '@truckermudgeon/base/assert';
 import type { Extent } from '@truckermudgeon/base/geom';
 import {
   center,
+  contains,
   distance as euclideanDistance,
-  withinExtent,
 } from '@truckermudgeon/base/geom';
 import { UnreachableError } from '@truckermudgeon/base/precon';
 import {
@@ -113,9 +113,9 @@ export const ContextMenu = () => {
       const { clientX, clientY } = e.originalEvent;
       const lngLat = e.lngLat.toArray();
       let xz: [number, number] | undefined;
-      if (withinExtent(lngLat, extents.ats)) {
+      if (contains(extents.ats, lngLat)) {
         xz = fromWgs84ToAtsCoords(lngLat);
-      } else if (withinExtent(lngLat, extents.ets2)) {
+      } else if (contains(extents.ets2, lngLat)) {
         xz = fromWgs84ToEts2Coords(lngLat);
       }
 
@@ -184,9 +184,9 @@ export const ContextMenu = () => {
         layers: ['measure-points'],
       });
       // UI indicator for clicking/hovering a point on the map
-      const inBounds = withinExtent(
-        e.lngLat.toArray(),
+      const inBounds = contains(
         measuring === 'ats' ? extents.ats : extents.ets2,
+        e.lngLat.toArray(),
       );
       map.getCanvas().style.cursor = inBounds
         ? features.length
@@ -196,9 +196,9 @@ export const ContextMenu = () => {
     };
 
     const addOrDeletePoint = (e: MapMouseEvent) => {
-      const inBounds = withinExtent(
-        e.lngLat.toArray(),
+      const inBounds = contains(
         measuring === 'ats' ? extents.ats : extents.ets2,
+        e.lngLat.toArray(),
       );
       if (!inBounds) {
         return;

@@ -1,15 +1,30 @@
+import { rotateRight } from '@truckermudgeon/base/array';
 import { assert, assertExists } from '@truckermudgeon/base/assert';
-import { distance } from '@truckermudgeon/base/geom';
+import type { Extent, Position } from '@truckermudgeon/base/geom';
+import { contains, distance, getExtent } from '@truckermudgeon/base/geom';
 import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
-import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
-import { ItemType } from '@truckermudgeon/map/constants';
-import { calculateNodeConnections } from '@truckermudgeon/map/prefabs';
+import { UnreachableError } from '@truckermudgeon/base/precon';
+import {
+  FacilitySpawnPointTypes,
+  ItemType,
+  toFacilityIcon,
+} from '@truckermudgeon/map/constants';
+import type { Lane } from '@truckermudgeon/map/prefabs';
+import { calculateLaneInfo, toMapPosition } from '@truckermudgeon/map/prefabs';
+import {
+  fromAtsCoordsToWgs84,
+  fromEts2CoordsToWgs84,
+} from '@truckermudgeon/map/projections';
 import type { Direction } from '@truckermudgeon/map/routing';
 import type {
   CompanyItem,
+  FacilityIcon,
+  MapArea,
   Neighbor,
   Node,
+  Poi,
   Prefab,
+  PrefabDescription,
 } from '@truckermudgeon/map/types';
 import { quadtree } from 'd3-quadtree';
 import { dlcGuardMapDataKeys, normalizeDlcGuards } from '../dlc-guards';
@@ -29,7 +44,7 @@ type GraphContextMappedData = MappedDataForKeys<
 >;
 
 type Context = GraphContextMappedData & {
-  prefabConnections: Map<string, Map<number, number[]>>;
+  prefabLanes: Map<string, Map<number, Lane[]>>;
   companiesByPrefabItemId: Map<bigint, CompanyItem>;
   getDlcGuard: (node: Node) => number;
 };
@@ -45,7 +60,18 @@ export const graphMapDataKeys = [
 
 type GraphMappedData = MappedDataForKeys<typeof graphMapDataKeys>;
 
-export function generateGraph(tsMapData: GraphMappedData) {
+export function generateGraph(tsMapData: GraphMappedData): {
+  graph: Map<bigint, { forward: Neighbor[]; backward: Neighbor[] }>;
+  serviceAreas: Map<
+    // node uid (appears as a key within `graph` map)
+    bigint,
+    {
+      facilities: Set<FacilityIcon>;
+      itemUid: bigint;
+      itemType: ItemType.Prefab | ItemType.MapArea;
+    }
+  >;
+} {
   const {
     map,
     nodes: _nodes,
@@ -53,12 +79,19 @@ export function generateGraph(tsMapData: GraphMappedData) {
     prefabs: _prefabs,
     companies: _companies,
     ferries,
+    pois,
+    mapAreas,
     prefabDescriptions,
     roadLooks,
     dlcGuardQuadTree,
   } = normalizeDlcGuards(tsMapData);
   const getDlcGuard = (node: Node): number =>
     dlcGuardQuadTree?.find(node.x, node.y)?.dlcGuard ?? -1;
+  const toNode = (nodeUid: bigint): Node => assertExists(nodes.get(nodeUid));
+
+  //
+  // Set up supporting data based on input data
+  //
 
   // Part of the pre-processing phase involves deleting entries from the nodes
   // and prefabs maps. Create mutable copies to allow for this.
@@ -72,18 +105,23 @@ export function generateGraph(tsMapData: GraphMappedData) {
     ),
   );
   const companiesByPrefabItemId = new Map(
-    companies.values().map(companyItem => [companyItem.prefabUid, companyItem]),
+    companies.values().map(company => {
+      const companyPrefabUid = company.prefabUid;
+      assert(prefabs.has(companyPrefabUid));
+      return [companyPrefabUid, company];
+    }),
   );
 
-  for (const company of companies.values()) {
-    if (!prefabs.has(company.prefabUid)) {
-      logger.warn(
-        'could not find prefab for company',
-        company.token,
-        company.cityToken,
+  const prefabsWithFacilities = new Set<Prefab>(
+    prefabs.values().filter(prefab => {
+      const prefabDesc = assertExists(prefabDescriptions.get(prefab.token));
+      return (
+        prefabDesc.spawnPoints.some(sp =>
+          FacilitySpawnPointTypes.has(sp.type),
+        ) || prefabDesc.triggerPoints.some(tp => tp.action === 'hud_parking')
       );
-    }
-  }
+    }),
+  );
 
   const toSectorKey = (o: { x: number; y: number }) =>
     `${Math.floor(o.x / 4000)},${Math.floor(o.y / 4000)}`;
@@ -98,49 +136,78 @@ export function generateGraph(tsMapData: GraphMappedData) {
     }
   }
 
-  // The graph around company nodes can be a bit weird. Remove some prefabs and their associated nodes in the hopes that
-  // the regular graph-building logic + fallback graph-building logic will produce connected routes for all companies.
-  const unconnectedCompanyPrefabs: Prefab[] = [];
+  //
+  // Pre-process data for islands, i.e., prefabs that aren't linked to other
+  // prefabs or roads via node forward/backward item references (e.g., the
+  // prefab used for gas station pumps):
+  // - collect references to islands
+  // - deletes references to islands from `nodes`, `nodesBySector`, `prefabs`,
+  //   and `prefabsWithFacilities`
+  //
+
+  // Search for company and facility prefab islands. Remove such prefabs and
+  // their associated nodes from our lookup tables, in the hopes that the
+  // regular graph-building logic + fallback graph-building logic will produce
+  // connected routes for all companies and facilities.
+  const islandCompanyPrefabs: Prefab[] = [];
+  // Note: this set may contain entries in islandCompanyPrefabs (the
+  // intersection of the sets seems to be made up of truck dealers, only).
+  const islandFacilityPrefabs = new Set<Prefab>();
+  let connectedFacilityPrefabsCount = 0;
   const allPrefabs = [...prefabs.values()];
   for (const prefab of allPrefabs) {
-    const prefabNodes = prefab.nodeUids.map(id => assertExists(nodes.get(id)));
-    if (
-      prefabNodes.every(
-        node =>
-          (node.forwardItemUid === prefab.uid &&
-            getRoadOrPrefab(node.backwardItemUid) == null) ||
-          (node.backwardItemUid === prefab.uid &&
-            getRoadOrPrefab(node.forwardItemUid) == null),
-      )
-    ) {
-      const otherNodes = assertExists(
-        nodesBySector.get(toSectorKey(prefab)),
-      ).filter(node => !prefabNodes.find(pfn => node.uid === pfn.uid));
-      const nodesLinkingToPrefab = otherNodes.filter(
-        n =>
-          (n.forwardItemUid === prefab.uid &&
-            getRoadOrPrefab(n.backwardItemUid) != null) ||
-          (n.backwardItemUid === prefab.uid &&
-            getRoadOrPrefab(n.forwardItemUid) != null),
-      );
+    const prefabNodes = prefab.nodeUids.map(toNode);
 
-      if (nodesLinkingToPrefab.length === 0) {
-        prefabs.delete(prefab.uid);
-        // delete prefab nodes from `nodes` map
-        prefab.nodeUids.forEach(id => nodes.delete(id));
-        // delete prefab nodes from `nodesBySector`
-        const prefabNodeUids = new Set(prefab.nodeUids);
-        const otherNodesMinusPrefabNodes = otherNodes.filter(
-          n => !prefabNodeUids.has(n.uid),
-        );
-        nodesBySector.set(toSectorKey(prefab), otherNodesMinusPrefabNodes);
-
-        if (companiesByPrefabItemId.has(prefab.uid)) {
-          unconnectedCompanyPrefabs.push(prefab);
-        }
+    // check if `prefab` is an "island" that is disconnected from any other
+    // roads / prefabs.
+    const isIsland = prefabNodes.every(
+      node =>
+        (node.forwardItemUid === prefab.uid &&
+          getRoadOrPrefab(node.backwardItemUid) == null) ||
+        (node.backwardItemUid === prefab.uid &&
+          getRoadOrPrefab(node.forwardItemUid) == null),
+    );
+    if (!isIsland) {
+      if (prefabsWithFacilities.has(prefab)) {
+        connectedFacilityPrefabsCount++;
       }
+      // this prefab is fine; it's connected to other roads / prefabs and should
+      // be reachable.
+      continue;
+    }
+
+    // delete the unreachable island prefab from the lookup tables, but mark it
+    // for later graph massaging if it's a company or contains facilities, since
+    // we want to be able to route to the company and/or facilities.
+
+    prefabs.delete(prefab.uid);
+    // delete prefab nodes from `nodes` map
+    prefab.nodeUids.forEach(id => nodes.delete(id));
+    // delete prefab nodes from `nodesBySector`
+    const prefabNodeUids = new Set(prefab.nodeUids);
+    const sectorKey = toSectorKey(prefab);
+    const otherNodes = assertExists(nodesBySector.get(sectorKey)).filter(
+      node => !prefabNodeUids.has(node.uid),
+    );
+    nodesBySector.set(sectorKey, otherNodes);
+
+    if (companiesByPrefabItemId.has(prefab.uid)) {
+      islandCompanyPrefabs.push(prefab);
+    }
+    if (prefabsWithFacilities.has(prefab)) {
+      islandFacilityPrefabs.add(prefab);
+      prefabsWithFacilities.delete(prefab);
     }
   }
+  logger.info('island company prefabs', islandCompanyPrefabs.length);
+  logger.info('island facility prefabs', islandFacilityPrefabs.size);
+  logger.info('connected facility prefabs', connectedFacilityPrefabsCount);
+
+  //
+  // Build the graph
+  //
+
+  logger.log('building graph...');
 
   const context: Context = {
     map,
@@ -149,16 +216,14 @@ export function generateGraph(tsMapData: GraphMappedData) {
     roadLooks,
     prefabs,
     prefabDescriptions,
-    prefabConnections: mapValues(prefabDescriptions, prefabDesc =>
-      calculateNodeConnections(prefabDesc),
+    prefabLanes: mapValues(prefabDescriptions, prefabDesc =>
+      calculateLaneInfo(prefabDesc),
     ),
     companies,
     companiesByPrefabItemId,
     ferries,
     getDlcGuard,
   };
-
-  logger.log('building graph...');
 
   // keyed by node uids
   const graph = new Map<
@@ -178,14 +243,19 @@ export function generateGraph(tsMapData: GraphMappedData) {
 
   updateGraphWithFerries(graph, context);
 
-  // massage graph to address problematic intersections. specifically:
-  // look for "dead end" nodes that can be exited in one direction, but can't be
-  // exited in the opposite direction. such dead-end nodes should be exit-able in
-  // any direction; e.g., if i start at a dead-end node, and there's
-  // a valid edge in the backward direction to node N, then i should be able to
-  // reach node N in the forward direction, too.
-  // establish an exit edge in the opposite direction to deal with "bad" intersections,
-  // like the one near the wallbert warehouse in sacramento.
+  //
+  // Post-process graph
+  //
+
+  // Problematic intersections.
+  //
+  // Look for "dead end" nodes that can be exited in one direction, but can't be
+  // exited in the opposite direction. such dead-end nodes should be exit-able
+  // in any direction; e.g., if i start at a dead-end node, and there's a valid
+  // edge in the backward direction to node N, then i should be able to reach
+  // node N in the forward direction, too.
+  // establish an exit edge in the opposite direction to deal with "bad"
+  // intersections, like the one near the Wallbert warehouse in sacramento.
   let fudged = 0;
   for (const [nodeId, edges] of graph.entries()) {
     const node = assertExists(nodes.get(nodeId));
@@ -233,9 +303,12 @@ export function generateGraph(tsMapData: GraphMappedData) {
   }
   logger.info(fudged, 'hacky dead-end edges added');
 
-  // sorta-fix unconnected companies (i.e., company nodes that haven't been connected to a prefab node
-  // in prior graph-building steps).
-  for (const prefab of unconnectedCompanyPrefabs) {
+  // Island companies.
+  //
+  // Deal with island companies (i.e., company nodes that haven't been
+  // connected to a prefab node in prior graph-building steps) by forcing a
+  // connection to the closest node.
+  for (const prefab of islandCompanyPrefabs) {
     const company = assertExists(companiesByPrefabItemId.get(prefab.uid));
     const companyNode = assertExists(nodes.get(company.nodeUid));
     assert(!graph.has(companyNode.uid));
@@ -294,13 +367,14 @@ export function generateGraph(tsMapData: GraphMappedData) {
     );
   }
 
-  logger.info(unconnectedCompanyPrefabs.length, 'hacky company edges added');
+  logger.info(islandCompanyPrefabs.length, 'hacky company edges added');
 
-  // HACK deal with the prefab intersection that enters the wal_mkt company in lamar.
-  // Connectivity says it can enter the wal_mkt, but it can never exit, so fudge an
-  // edge that says we _can_ exit.
-  // TODO write a general solution and search for all prefab intersections that lead into
-  // a company prefab one-way, then add fudged edges (similar to the dead-end fudging earlier).
+  // HACK deal with the prefab intersection that enters the wal_mkt company in
+  // Lamar, Colorado. Connectivity says it can enter the wal_mkt, but it can
+  // never exit, so fudge an edge that says we _can_ exit.
+  // TODO write a general solution and search for all prefab intersections that
+  //  lead into a company prefab one-way, then add fudged edges (similar to the
+  //  dead-end fudging earlier).
   if (map === 'usa' && graph.has(0x3301e888d4055f5en)) {
     const hackNeighbors = assertExists(graph.get(0x3301e888d4055f5en));
     hackNeighbors.forward.push({
@@ -320,11 +394,372 @@ export function generateGraph(tsMapData: GraphMappedData) {
     'edges',
   );
 
-  // TODO the graph currently being generated still includes disconnected sub-graphs
-  // (e.g., 4a3f975872850005). Figure out why, and either detect + exclude them or
-  // find the bug.
+  // TODO the graph currently being generated still includes disconnected
+  //  sub-graphs (e.g., 4a3f975872850005). Figure out why, and either detect +
+  //  exclude them or find the bug.
 
-  return graph;
+  // Facilities.
+
+  // notes:
+  // - "entry" nodes to prefabs are ones that either:
+  //    - link a road-prefab/road to a prefab referenced by a company
+  //    - link a road-prefab/road to 0, and are near a navigation mapArea
+  //      (which is assumed to overlap a larger mapArea containing facilities).
+
+  // Note: we're building these maps _now_ instead of _before_ the "delete
+  // island references from nodes and prefabs" step. Not sure if this is right.
+  const areafulPrefabsBySector = new Map<
+    string,
+    {
+      prefab: Prefab;
+      mbr: Extent;
+    }[]
+  >();
+  for (const prefab of prefabs.values()) {
+    const prefabDesc = assertExists(prefabDescriptions.get(prefab.token));
+    const polygonPoints = prefabDesc.mapPoints.filter(
+      mp => mp.type === 'polygon',
+    );
+    if (polygonPoints.length === 0) {
+      continue;
+    }
+
+    const tx = (pos: Position) => toMapPosition(pos, prefab, prefabDesc, nodes);
+    const mbr = getExtent(polygonPoints.map(pp => tx([pp.x, pp.y])));
+    const sectorKey = toSectorKey(prefab);
+    putIfAbsent(sectorKey, [], areafulPrefabsBySector).push({ prefab, mbr });
+  }
+
+  const mapAreasBySector = new Map<
+    string,
+    { mapArea: MapArea; mbr: Extent }[]
+  >();
+  for (const mapArea of mapAreas.values()) {
+    const mbr = getExtent(mapArea.nodeUids.map(toNode));
+    const sectorKey = toSectorKey(mapArea);
+    putIfAbsent(sectorKey, [], mapAreasBySector).push({ mapArea, mbr });
+  }
+
+  const facilityNodes = new Map<
+    // TODO should we include all of a prefab's node uids, instead of one?
+    bigint, // one of the containing prefab's prefab node ids
+    {
+      facilities: Set<FacilityIcon>;
+      itemUid: bigint;
+      itemType: ItemType.Prefab | ItemType.MapArea;
+    }
+  >();
+
+  // Connected facility prefabs
+  const knownGraphNodes = new Set(graph.keys());
+  for (const prefab of prefabsWithFacilities) {
+    assert(!islandFacilityPrefabs.has(prefab));
+    const { key, value } = getPrefabFacilitiesEntry(prefab, {
+      prefabDescriptions,
+      nodes,
+      knownGraphNodes,
+    });
+    assert(!facilityNodes.has(key));
+    facilityNodes.set(key, value);
+  }
+
+  // Island facility prefabs.
+  //
+  // Match island facility prefabs to larger, reachable prefabs (like a truck
+  // stop prefab or a company prefab) that contain them.
+  // Find the prefab node of those containing prefabs closest to a facility,
+  // then associate those prefab nodes with a facility entry.
+  const containingPrefabs = new Set<Prefab>();
+  logger.log(
+    'checking',
+    islandFacilityPrefabs.size,
+    'island facility prefabs for containing prefabs',
+  );
+  for (const islandPrefab of islandFacilityPrefabs) {
+    const otherPrefabs = getObjectsInSectorRange(
+      islandPrefab,
+      areafulPrefabsBySector,
+    ).filter(({ prefab }) => prefab.uid !== islandPrefab.uid);
+
+    const ipfns = islandPrefab.nodeUids.map(id =>
+      // note: must check original `_nodes` map, because `nodes` is guaranteed
+      // not to contain any of an island prefab's nodes :-/
+      assertExists(_nodes.get(id)),
+    );
+    const containingPrefab = otherPrefabs.find(p =>
+      ipfns.some(ipfn => contains(p.mbr, ipfn)),
+    )?.prefab;
+    if (!containingPrefab) {
+      // this island has no containing prefab. it might have a containing
+      // map area, or it might need special treatment.
+      continue;
+    }
+
+    const cpns = containingPrefab.nodeUids.map(id =>
+      assertExists(nodes.get(id)),
+    );
+    // assert containing prefab is connected and doesn't already contain another
+    // island prefab
+    assert(cpns.some(n => graph.has(n.uid)));
+    assert(!containingPrefabs.has(containingPrefab));
+    containingPrefabs.add(containingPrefab);
+
+    const { key, value } = getPrefabFacilitiesEntry(containingPrefab, {
+      prefabDescriptions,
+      nodes,
+      knownGraphNodes,
+    });
+    assert(!facilityNodes.has(key));
+    facilityNodes.set(key, {
+      ...value,
+      facilities: new Set([
+        // the facilities of `containingPrefab`
+        ...value.facilities,
+        // the facilities of `islandPrefab`
+        ...getFacilities(
+          assertExists(prefabDescriptions.get(islandPrefab.token)),
+        ),
+      ]),
+    });
+
+    logger.info(
+      'islandPrefab',
+      islandPrefab.token,
+      'contained by',
+      containingPrefab.token,
+    );
+    islandFacilityPrefabs.delete(islandPrefab);
+  }
+
+  logger.log(
+    'checking',
+    islandFacilityPrefabs.size,
+    'island facility prefabs for containing map areas',
+  );
+  const islandAreas = new Map<MapArea, Prefab[]>();
+  for (const islandPrefab of islandFacilityPrefabs) {
+    const mapAreas = getObjectsInSectorRange(islandPrefab, mapAreasBySector);
+    const ipfns = islandPrefab.nodeUids.map(id =>
+      // note: must check original `_nodes` map, because `nodes` is guaranteed
+      // not to contain any of an island prefab's nodes :-/
+      assertExists(_nodes.get(id)),
+    );
+    const containingMapArea = mapAreas
+      .filter(({ mbr }) => ipfns.some(ipfn => contains(mbr, ipfn)))
+      .sort((a, b) => largestFirstComparator(a.mbr, b.mbr))[0];
+    if (!containingMapArea) {
+      // island prefab isn't contained within a map area. ignore it for now;
+      // will be dealt with in final pass through `islandFacilityPrefabs`.
+      continue;
+    }
+
+    // find existing graph node within a map area node
+    // TODO find "entrance" map area and use node closest to that, if found.
+
+    const containedNodes = getObjectsInSectorRange(
+      containingMapArea.mapArea,
+      nodesBySector,
+    ).filter(
+      node => graph.has(node.uid) && contains(containingMapArea.mbr, node),
+    );
+    if (containedNodes.length === 0) {
+      // map area contains the island prefab, but can't reach the map area.
+      // Save them for later processing.
+      putIfAbsent(containingMapArea.mapArea, [], islandAreas).push(
+        islandPrefab,
+      );
+      islandFacilityPrefabs.delete(islandPrefab);
+      continue;
+    }
+
+    const prefabDesc = assertExists(prefabDescriptions.get(islandPrefab.token));
+    const tx = ({ x, y }: { x: number; y: number }) =>
+      toMapPosition([x, y], islandPrefab, prefabDesc, _nodes);
+    const { facilityPoints: fps, facilities: islandFacilities } =
+      getFacilitiesAndPoints(prefabDesc, tx);
+    const closestContainedNodeUid = containedNodes.sort((a, b) => {
+      const minDistA = Math.min(...fps.map(fp => distance(fp, a)));
+      const minDistB = Math.min(...fps.map(fp => distance(fp, b)));
+      return minDistA - minDistB;
+    })[0].uid;
+    const facility = putIfAbsent(
+      closestContainedNodeUid,
+      {
+        facilities: getFacilities(prefabDesc),
+        itemUid: containingMapArea.mapArea.uid,
+        itemType: ItemType.MapArea,
+      },
+      facilityNodes,
+    );
+    islandFacilities.forEach(f => facility.facilities.add(f));
+    islandFacilityPrefabs.delete(islandPrefab);
+  }
+
+  if (islandAreas.size > 0) {
+    logger.log(
+      'checking',
+      islandAreas.size,
+      'island prefab-containing map areas for nearest node',
+    );
+    // TODO prefer 'dead end' nodes (nodes with a forward or backward item id of
+    // 0), assuming that they're nodes for prefab intersections leading to map
+    // areas.
+  }
+
+  logger.info(
+    'checking',
+    islandFacilityPrefabs.size,
+    'island facility prefabs for nearest prefabs / map areas',
+  );
+
+  /*
+17
+prefab/service/service.ppd
+prefab/service/nm_service1.ppd
+prefab/gas/us_gas_gallonoil_car_2rows_roof_trigger.ppd
+prefab/truck_dealer/truck_dealer_kenworth.ppd
+prefab/garage/garage.ppd
+prefab/truck_dealer/truck_dealer_peterbilt.ppd
+   */
+
+  // // TODO find closest prefab-intersection / road node in graph to
+  // // prefab's "entry" point, which we'll define as the prefab
+  // // node point closest to the service / recruit / garage /
+  // // other facility point.
+  //const paths = new Set<string>();
+  //for (const island of islandFacilityPrefabs) {
+  //  paths.add(prefabDescriptions.get(island.token).path);
+  //}
+  //for (const p of paths) {
+  //  console.log(p);
+  //}
+
+  logger.info('service areas', facilityNodes.size);
+
+  // Parking.
+  // associate trigger- and overlay-based parking POIs with prefab or map area
+  let ignoredCount = 0;
+  let inPrefab = 0;
+  let inArea = 0;
+  const uncontainedParking: Poi[] = [];
+  for (const poi of pois) {
+    if (poi.type !== 'facility' || poi.icon !== 'parking_ico') {
+      continue;
+    }
+    const fromItemType = poi.fromItemType;
+    if (fromItemType !== 'trigger' && fromItemType !== 'mapOverlay') {
+      continue;
+    }
+
+    const prefabs = getObjectsInSectorRange(poi, areafulPrefabsBySector);
+    const containingPrefab = prefabs.find(p => contains(p.mbr, poi));
+    if (containingPrefab) {
+      const prefabDesc = assertExists(
+        prefabDescriptions.get(containingPrefab.prefab.token),
+      );
+      if (prefabDesc.triggerPoints.some(tp => tp.action === 'hud_parking')) {
+        // TODO: why are we ignoring this? is it because it's accounted for by
+        // whatever is calling `getFacilities`?
+        ignoredCount++;
+      } else {
+        inPrefab++;
+      }
+      continue;
+    }
+
+    const mapAreas = getObjectsInSectorRange(poi, mapAreasBySector);
+    const containingArea = mapAreas.find(a => contains(a.mbr, poi));
+    if (containingArea) {
+      // link
+      inArea++;
+      continue;
+    }
+
+    uncontainedParking.push(poi);
+  }
+  logger.info(inPrefab, inArea, ignoredCount, 'prefab, area, ignored');
+  // parking spots not present in a prefab, or a map area.
+  // list first 5.
+  // maybe they can be associated with nearby prefabs / map areas? e.g.,
+  // 35.640/-94.877 {
+  //   x: 5143.46484375,
+  //   y: 18881.69921875,
+  //   sectorX: 1,
+  //   sectorY: 4,
+  //   type: 'facility',
+  //   dlcGuard: 25,
+  //   itemNodeUids: [
+  //     '4e0e5570c351308a',
+  //     '4e0e55702711308b',
+  //     '4e0e55703691308c',
+  //     '4e0e5570c651308d',
+  //     '4e0e55706cd1308e',
+  //     '4e0e5570a811308f',
+  //     '4e0e55709bd13090'
+  //   ],
+  //   icon: 'parking_ico',
+  //   fromItemType: 'trigger'
+  // }
+  // is awfully close to a map area.
+  logger.info('uncontained parking', uncontainedParking.length);
+  if (uncontainedParking.length) {
+    const project =
+      map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
+    for (let i = 0; i < Math.min(5, uncontainedParking.length); i++) {
+      const poi = uncontainedParking[i];
+      console.log(
+        project([poi.x, poi.y])
+          .reverse()
+          .map(f => f.toFixed(3))
+          .join('/'),
+        poi,
+      );
+    }
+  }
+
+  const nodesWithEdgesTo = new Set<bigint>();
+  for (const neighbors of graph.values()) {
+    for (const n of neighbors.forward) {
+      nodesWithEdgesTo.add(n.nodeUid);
+    }
+    for (const n of neighbors.backward) {
+      nodesWithEdgesTo.add(n.nodeUid);
+    }
+  }
+
+  let noEdgeToCount = 0;
+  for (const [nodeUid, neighbors] of graph.entries()) {
+    if (neighbors.forward.length === 0 && neighbors.backward.length === 0) {
+      logger.warn('no edge _from_', nodeUid);
+    }
+    if (!nodesWithEdgesTo.has(nodeUid)) {
+      //logger.warn('no edge _to_', nodeUid);
+      noEdgeToCount++;
+    }
+  }
+  // maybe this is ok? e.g., one-way roads that dead-end somewhere?
+  // TODO look into these.
+  logger.info('no edges to', noEdgeToCount);
+
+  // verify facilityNodes have at least one edge _to_ them and at least one edge
+  // _from_ them.
+  for (const nodeUid of facilityNodes.keys()) {
+    const neighbors = assertExists(graph.get(nodeUid));
+    // verify facility node can be routed _from_
+    assert(neighbors.backward.length > 0 || neighbors.forward.length > 0);
+    // verify facility node can be routed _to_
+    if (!nodesWithEdgesTo.has(nodeUid)) {
+      logger.warn('cannot route to facility', nodeUid);
+    }
+  }
+
+  // TODO verify all nodes in graph have at least one edge _to_ them and at
+  //  least one edge _from_ them.
+
+  return {
+    graph,
+    serviceAreas: facilityNodes,
+  };
 }
 
 function updateGraphWithFerries(
@@ -497,35 +932,40 @@ function getNeighborsInDirection(
       const neighbors: Neighbor[] = [];
       const companyItem = context.companiesByPrefabItemId.get(item.uid);
       if (companyItem) {
+        // establish edge between `node` and the company node associated with
+        // `node`'s neighbor prefab item.
         const nextNode = assertExists(context.nodes.get(companyItem.nodeUid));
         neighbors.push(toNeighbor(nextNode));
       }
 
-      const connectionIndices = assertExists(
-        context.prefabConnections.get(item.token),
-      );
-      if (!connectionIndices.size) {
-        // prefab has no internal roads connecting its nodes,
-        // e.g., in company depots.
-        return neighbors;
-      }
+      const laneInfo = assertExists(context.prefabLanes.get(item.token));
+      assert(laneInfo.size > 0);
 
-      const connectionNodes = convertToNodeMap(
-        connectionIndices,
+      const connectionNodes = createConnectionsMap(
+        laneInfo,
         item,
         context.nodes,
       );
       const connections = connectionNodes.get(node);
-      if (!connections) {
-        // no connections for `node` in `direction` means that the prefab is one-way
+      if (connections == null) {
+        // `connectionNodes` may be missing `node` if `node` is one of those
+        // weird island unrouteable nodes that point to a prefab and nothing
+        // else, like node `61d14e464b25d87` in Carson City.
         return neighbors;
       }
-      assert(connections.length > 0);
-      return [
-        ...neighbors,
-        // TODO calculate lengths based on navCurves
-        ...connections.map(nextNode =>
+      if (connections.length === 0) {
+        // no connections for `node` in `direction` could mean that the prefab:
+        // - is one-way
+        // - has no internal roads connecting its nodes, e.g., in company
+        //   depots.
+        return neighbors;
+      }
+      neighbors.push(
+        // establish edges between `node` and the output nodes that the prefab
+        // connects it to.
+        ...connections.map(({ nextNode, distance }) =>
           toNeighbor(nextNode, {
+            distance,
             direction:
               getNeighborItemId(node) === getNeighborItemId(nextNode)
                 ? direction === 'forward'
@@ -534,12 +974,16 @@ function getNeighborsInDirection(
                 : direction,
           }),
         ),
-      ];
+      );
+      return neighbors;
     }
     case ItemType.Company: {
       assert(direction === 'forward');
       const prefab = context.prefabs.get(item.prefabUid);
       if (!prefab) {
+        // prefab is unknown because it was removed as an "island prefab" during
+        // graph pre-processing. assume that edges to the company item's node
+        // will be added later.
         // logger.warn(
         //   'unknown prefab',
         //   item.prefabUid,
@@ -568,33 +1012,59 @@ function getNeighborsInDirection(
   }
 }
 
-function convertToNodeMap(
-  connectionIndices: Map<number, number[]>,
+function createConnectionsMap(
+  laneInfo: Map<number, Lane[]>,
   item: Prefab,
   nodes: ReadonlyMap<bigint, Node>,
-): Map<Node, Node[]> {
-  const nodeMap = new Map<Node, Node[]>();
-  const destinationNodes = rotateRight(
+): Map<Node, { nextNode: Node; distance: number }[]> {
+  // a map of origin Nodes to a list of target Nodes
+  const connectionsMap = new Map<
+    Node,
+    { nextNode: Node; distance: number }[]
+  >();
+  const targetNodes = rotateRight(
     item.nodeUids.map(id => nodes.get(id)),
     item.originNodeIndex,
   );
-  for (const [nodeIdx, cnxIdxs] of connectionIndices) {
-    nodeMap.set(
-      assertExists(destinationNodes[nodeIdx]),
-      cnxIdxs.map(idx => assertExists(destinationNodes[idx])),
+  for (const [nodeIdx, lanes] of laneInfo) {
+    connectionsMap.set(
+      assertExists(targetNodes[nodeIdx]),
+      lanes.flatMap(({ branches }) =>
+        branches.map(({ curvePoints, targetNodeIndex }) => {
+          const nextNode = assertExists(targetNodes[targetNodeIndex]);
+          let totalCurveLength = 0;
+          let prevPoint = curvePoints[0];
+          for (let i = 1; i < curvePoints.length; i++) {
+            const curPoint = curvePoints[i];
+            totalCurveLength += distance(prevPoint, curPoint);
+            prevPoint = curPoint;
+          }
+          return {
+            nextNode,
+            distance: totalCurveLength,
+          };
+        }),
+      ),
     );
   }
 
-  return nodeMap;
-}
-
-function rotateRight<T>(arr: T[], count: number): T[] {
-  Preconditions.checkArgument(0 <= count && count < arr.length);
-  if (count === 0) {
-    return arr;
+  // a `connectionsMap` list may have multiple entries for the same
+  // Node, because `laneInfo` also has that property. graph generation doesn't
+  // care, though, so pick the entry with the shortest distance.
+  for (const list of connectionsMap.values()) {
+    list.sort((a, b) => a.distance - b.distance);
+    const seenNextNodes = new Set<Node>();
+    for (let i = 0; i < list.length; i++) {
+      const entry = list[i];
+      const { nextNode } = entry;
+      if (seenNextNodes.has(nextNode)) {
+        list.splice(i, 1); // 2nd parameter means remove one item only
+      }
+      seenNextNodes.add(nextNode);
+    }
   }
 
-  return arr.slice(-count, arr.length).concat(arr.slice(0, -count));
+  return connectionsMap;
 }
 
 function createNeighbor(
@@ -630,4 +1100,90 @@ function getObjectsInSectorRange<T>(
     ...(objectsBySector.get(toKey(sx + 0, sy + 1)) ?? []),
     ...(objectsBySector.get(toKey(sx + 1, sy + 1)) ?? []),
   ];
+}
+
+function getPrefabFacilitiesEntry(
+  prefab: Prefab,
+  context: {
+    prefabDescriptions: ReadonlyMap<string, PrefabDescription>;
+    nodes: ReadonlyMap<bigint, Node>;
+    knownGraphNodes: ReadonlySet<bigint>;
+  },
+): {
+  key: bigint;
+  value: {
+    facilities: Set<FacilityIcon>;
+    itemUid: bigint;
+    itemType: ItemType.Prefab | ItemType.MapArea;
+  };
+} {
+  const { prefabDescriptions, nodes } = context;
+  const pfns = prefab.nodeUids
+    .filter(id => context.knownGraphNodes.has(id))
+    .map(id => assertExists(nodes.get(id)));
+  assert(pfns.length > 0);
+  const prefabDesc = assertExists(prefabDescriptions.get(prefab.token));
+  const tx = ({ x, y }: { x: number; y: number }) =>
+    toMapPosition([x, y], prefab, prefabDesc, nodes);
+  const { facilityPoints, facilities } = getFacilitiesAndPoints(prefabDesc, tx);
+
+  const closestPfnUid = pfns.sort((a, b) => {
+    const minDistA = Math.min(...facilityPoints.map(fp => distance(fp, a)));
+    const minDistB = Math.min(...facilityPoints.map(fp => distance(fp, b)));
+    return minDistA - minDistB;
+  })[0].uid;
+  return {
+    key: closestPfnUid,
+    value: {
+      facilities,
+      itemUid: prefab.uid,
+      itemType: ItemType.Prefab,
+    },
+  };
+}
+
+function getFacilities(prefabDesc: PrefabDescription): Set<FacilityIcon> {
+  const facilities = new Set<FacilityIcon>();
+  for (const sp of prefabDesc.spawnPoints) {
+    if (FacilitySpawnPointTypes.has(sp.type)) {
+      facilities.add(toFacilityIcon(sp.type));
+    }
+  }
+  for (const tp of prefabDesc.triggerPoints) {
+    if (tp.action === 'hud_parking') {
+      facilities.add('parking_ico');
+    }
+  }
+  return facilities;
+}
+
+function getFacilitiesAndPoints(
+  prefabDesc: PrefabDescription,
+  tx: ({ x, y }: { x: number; y: number }) => [number, number],
+): { facilities: Set<FacilityIcon>; facilityPoints: Position[] } {
+  const facilities = new Set<FacilityIcon>();
+  const facilityPoints: Position[] = [];
+  for (const sp of prefabDesc.spawnPoints) {
+    if (FacilitySpawnPointTypes.has(sp.type)) {
+      facilities.add(toFacilityIcon(sp.type));
+      facilityPoints.push(tx(sp));
+    }
+  }
+  for (const tp of prefabDesc.triggerPoints) {
+    if (tp.action === 'hud_parking') {
+      facilities.add('parking_ico');
+      facilityPoints.push(tx(tp));
+    }
+  }
+  return { facilities, facilityPoints };
+}
+
+function largestFirstComparator(a: Extent, b: Extent) {
+  const [aMinX, aMinY, aMaxX, aMaxY] = a;
+  const [bMinX, bMinY, bMaxX, bMaxY] = b;
+  const widthA = aMaxX - aMinX;
+  const heightA = aMaxY - aMinY;
+  const widthB = bMaxX - bMinX;
+  const heightB = bMaxY - bMinY;
+  return widthB * heightB - widthA * heightA;
 }
