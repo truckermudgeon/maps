@@ -34,4 +34,10 @@ export const Default: Story = {
     longitude: fakeLon,
     latitude: fakeLat,
   },
+  render: (args, context) => (
+    <PlayerMarker
+      {...args}
+      mode={context.globals['theme'] as 'light' | 'dark'}
+    />
+  ),
 };

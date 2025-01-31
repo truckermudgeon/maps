@@ -4,6 +4,10 @@ import type { Marker as MapLibreGLMarker } from 'maplibre-gl';
 import { forwardRef } from 'react';
 import { Marker } from 'react-map-gl/maplibre';
 
+interface PlayerMarkerProps {
+  mode?: 'light' | 'dark';
+}
+
 /**
  * Setting these props should only be done in storybooks, because callers of
  * PlayerMarker should be using the Marker ref to set its position / rotation.
@@ -13,8 +17,24 @@ interface PropsForTestingOnly {
   latitude?: number;
 }
 
-export const PlayerMarker = forwardRef<MapLibreGLMarker, PropsForTestingOnly>(
-  (props: PropsForTestingOnly, ref) => (
+const colors = {
+  ['light']: {
+    background: 'rgba(255,255,255,0.8)',
+    fill: 'hsl(204,100%,50%)',
+  },
+  ['dark']: {
+    background: 'hsl(204,100%,50%)',
+    fill: 'rgba(255,255,255,1)',
+  },
+};
+
+export const PlayerMarker = forwardRef<
+  MapLibreGLMarker,
+  PlayerMarkerProps & PropsForTestingOnly
+>((props: PlayerMarkerProps & PropsForTestingOnly, ref) => {
+  const { mode = 'light' } = props;
+  const { background, fill } = colors[mode];
+  return (
     <Marker
       ref={ref}
       longitude={props.longitude ?? 0}
@@ -29,13 +49,18 @@ export const PlayerMarker = forwardRef<MapLibreGLMarker, PropsForTestingOnly>(
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          background: 'rgba(255,255,255,0.8)',
+          background,
           borderRadius: '50%',
           boxShadow: '0 1px 1px 1px rgba(128,128,128,.2)',
         }}
       >
-        <Navigation sx={{ transform: 'scale(4)', fill: '#09f' }} />
+        <Navigation
+          sx={{
+            transform: 'scale(4)',
+            fill,
+          }}
+        />
       </Box>
     </Marker>
-  ),
-);
+  );
+});

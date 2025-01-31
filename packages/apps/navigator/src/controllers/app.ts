@@ -11,6 +11,7 @@ import { CameraMode } from './constants';
 import type { AppClient, AppController, AppStore } from './types';
 
 export class AppStoreImpl implements AppStore {
+  mode: 'light' | 'dark' = 'light';
   cameraMode: CameraMode = CameraMode.FOLLOW;
   activeRoute: Route | undefined = undefined;
   activeRouteDirection: RouteDirection | undefined;

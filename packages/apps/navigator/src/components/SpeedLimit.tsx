@@ -9,8 +9,19 @@ export const SpeedLimit = forwardRef((props: { limitMph: number }, ref) => (
     sx={{ backgroundColor: 'white' }}
     ref={ref}
   >
-    <Box border={2} padding={0.5} paddingBottom={0} borderRadius={4}>
-      <Typography textAlign={'center'} lineHeight={1.2} level={'body-xs'}>
+    <Box
+      border={2}
+      borderColor={'common.black'}
+      padding={0.5}
+      paddingBottom={0}
+      borderRadius={4}
+    >
+      <Typography
+        textAlign={'center'}
+        lineHeight={1.2}
+        level={'body-xs'}
+        sx={{ color: 'common.black' }}
+      >
         SPEED
         <br />
         LIMIT
@@ -21,6 +32,7 @@ export const SpeedLimit = forwardRef((props: { limitMph: number }, ref) => (
         fontSize={'xl2'}
         fontWeight={'bold'}
         sx={{
+          color: 'common.black',
           WebkitTextStroke: 1.25,
         }}
       >
