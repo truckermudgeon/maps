@@ -12,8 +12,14 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Primary: Story = {
+export const MPH: Story = {
   args: {
     limitMph: 50,
+  },
+};
+
+export const KPH: Story = {
+  args: {
+    limitKph: 50,
   },
 };
