@@ -80,7 +80,7 @@ export function convertToAchievementsGeoJson(tsMapData: MappedData) {
     if (!company) {
       return;
     }
-    const node = assertExists(nodes.get(company.nodeUid.toString(16)));
+    const node = assertExists(nodes.get(company.nodeUid));
     return {
       coordinates: node,
       dlcGuard: getDlcGuard(node),
@@ -165,7 +165,7 @@ export function convertToAchievementsGeoJson(tsMapData: MappedData) {
       // TODO use other points in Trigger to draw a circle or polygon
       const firstNodeUid =
         item.type === ItemType.Trigger ? item.nodeUids[0] : item.nodeUid;
-      const node = assertExists(nodes.get(firstNodeUid.toString(16)));
+      const node = assertExists(nodes.get(firstNodeUid));
       return {
         coordinates: node,
         dlcGuard: getDlcGuard(item),

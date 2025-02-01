@@ -100,7 +100,7 @@ export function convertToMapGeoJson(
   let lutSize = 0;
   const prefabNodeUids = new Set<bigint>(
     prefabs.values().flatMap(p => {
-      assert(p.nodeUids.every(uid => nodes.has(uid.toString())));
+      assert(p.nodeUids.every(uid => nodes.has(uid)));
       return p.nodeUids;
     }),
   );
@@ -173,12 +173,8 @@ export function convertToMapGeoJson(
   logger.log('creating dividers...');
   const dividerFeatures: GeoJSON.Feature<GeoJSON.LineString>[] = [];
   for (const d of dividers.values()) {
-    const startNode = Preconditions.checkExists(
-      nodes.get(d.startNodeUid.toString(16)),
-    );
-    const endNode = Preconditions.checkExists(
-      nodes.get(d.endNodeUid.toString(16)),
-    );
+    const startNode = Preconditions.checkExists(nodes.get(d.startNodeUid));
+    const endNode = Preconditions.checkExists(nodes.get(d.endNodeUid));
     const points = toSplinePoints(
       {
         position: [startNode.x, startNode.y],
@@ -191,12 +187,12 @@ export function convertToMapGeoJson(
     );
     const properties = {
       type: 'divider-' + d.type,
-      startNodeUid: d.startNodeUid.toString(16),
-      endNodeUid: d.endNodeUid.toString(16),
+      startNodeUid: d.startNodeUid,
+      endNodeUid: d.endNodeUid,
     };
     dividerFeatures.push({
       type: 'Feature',
-      id: d.uid.toString(),
+      id: d.uid.toString(16),
       properties,
       geometry: {
         type: 'LineString',
@@ -394,14 +390,14 @@ export function convertToMapGeoJson(
         if (roadA == null) {
           logger.error(
             'could not find road to fuse for prefab start',
-            p.uid.toString(),
+            p.uid.toString(16),
           );
           continue;
         }
         if (roadB == null) {
           logger.error(
             'could not find road to fuse for prefab end',
-            p.uid.toString(),
+            p.uid.toString(16),
           );
           continue;
         }
@@ -565,9 +561,9 @@ export function convertToMapGeoJson(
         properties: {
           type: 'debug',
           name: 'node',
-          nodeId: n.uid.toString(16),
-          nodeForwardItemId: n.forwardItemUid.toString(16),
-          nodeBackwardItemId: n.backwardItemUid.toString(16),
+          nodeUid: n.uid,
+          nodeForwardItemUid: n.forwardItemUid,
+          nodeBackwardItemUid: n.backwardItemUid,
         },
         geometry: {
           type: 'Point',
@@ -628,8 +624,8 @@ function withDlcGuard<T extends CityFeature | PoiFeature>(
 function coalesceRoadFeatures(roadFeatures: RoadFeature[]): RoadFeature[] {
   logger.log('coalescing road features...');
 
-  const heads = new Map<string, RoadFeature[]>();
-  const tails = new Map<string, RoadFeature[]>();
+  const heads = new Map<bigint, RoadFeature[]>();
+  const tails = new Map<bigint, RoadFeature[]>();
   for (const f of roadFeatures) {
     if (f.properties.startNodeUid) {
       putIfAbsent(f.properties.startNodeUid, [], heads).push(f);
@@ -790,7 +786,7 @@ function coalesceRoadFeatures(roadFeatures: RoadFeature[]): RoadFeature[] {
 
 function areaToFeature(
   area: MapArea,
-  nodeMap: ReadonlyMap<string | bigint, Node>,
+  nodeMap: ReadonlyMap<bigint, Node>,
 ): MapAreaFeature {
   const points = area.nodeUids.map(id => {
     const node = assertExists(nodeMap.get(id));
@@ -800,7 +796,7 @@ function areaToFeature(
   points.push(points[0]);
   return {
     type: 'Feature',
-    id: area.uid.toString(),
+    id: area.uid.toString(16),
     properties: {
       type: 'mapArea',
       dlcGuard: area.dlcGuard,
@@ -1030,9 +1026,9 @@ function prefabToFeatures(
     polygons: Polygon[];
     roadStrings: RoadString[];
   },
-  nodes: ReadonlyMap<string | bigint, Node>,
+  nodes: ReadonlyMap<bigint, Node>,
   // TODO make use of this to better position roads within a prefab
-  _roadMap: ReadonlyMap<string, Road>,
+  _roadMap: ReadonlyMap<bigint, Road>,
   roadLookMap: ReadonlyMap<string, RoadLook>,
   roadQuadTree: Quadtree<{ x: number; y: number; roadLookToken: string }>,
   opts: {
@@ -1153,8 +1149,8 @@ function prefabToFeatures(
           leftLanes: road.lanesLeft,
           rightLanes: road.lanesRight,
           hidden: !!prefab.hidden,
-          startNodeUid: findClosestNode(txPoints[0])?.uid.toString(16),
-          endNodeUid: findClosestNode(txPoints.at(-1)!)?.uid.toString(16),
+          startNodeUid: findClosestNode(txPoints[0])?.uid,
+          endNodeUid: findClosestNode(txPoints.at(-1)!)?.uid,
         },
         geometry: {
           type: 'LineString',
@@ -1168,7 +1164,7 @@ function prefabToFeatures(
 function roadToFeature(
   road: Road,
   roadLook: RoadLook,
-  nodes: ReadonlyMap<bigint | string, Node>,
+  nodes: ReadonlyMap<bigint, Node>,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _dividerFeatures: GeoJSON.Feature<GeoJSON.LineString>[],
 ): RoadFeature[] {
@@ -1188,8 +1184,8 @@ function roadToFeature(
     ...roadLookToProperties(roadLook, !!road.hidden),
     lookToken: road.roadLookToken,
     dlcGuard: road.dlcGuard,
-    startNodeUid: road.startNodeUid.toString(16),
-    endNodeUid: road.endNodeUid.toString(16),
+    startNodeUid: road.startNodeUid,
+    endNodeUid: road.endNodeUid,
   };
 
   // TODO look into splitting roads by dividers (a.k.a., "center kerbs").
@@ -1198,7 +1194,7 @@ function roadToFeature(
   //  // it may still be divided partway, though. check for that.
   //  const r: RoadFeature = {
   //    type: 'Feature',
-  //    id: road.uid.toString(),
+  //    id: road.uid.toString(16),
   //    properties,
   //    geometry: {
   //      type: 'LineString',
@@ -1231,7 +1227,7 @@ function roadToFeature(
     return [
       {
         type: 'Feature',
-        id: road.uid.toString(),
+        id: road.uid.toString(16),
         properties: {
           ...properties,
           //maybeDivided: road.maybeDivided === true,
@@ -1261,7 +1257,7 @@ function roadToFeature(
   return [
     {
       type: 'Feature',
-      id: road.uid.toString(),
+      id: road.uid.toString(16),
       properties: {
         ...properties,
         leftLanes: 0,
@@ -1274,7 +1270,7 @@ function roadToFeature(
     },
     {
       type: 'Feature',
-      id: road.uid.toString(),
+      id: road.uid.toString(16),
       properties: {
         ...properties,
         rightLanes: 0,

@@ -62,7 +62,7 @@ export function convertToPrefabCurvesGeoJson(
       properties: {
         type: 'debug',
         debugType: 'lanes',
-        prefabId: p.uid.toString(16),
+        prefabUid: p.uid,
         prefabToken: p.token,
       },
       geometry: {

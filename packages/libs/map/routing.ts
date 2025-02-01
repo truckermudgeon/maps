@@ -25,14 +25,14 @@ export type Route = {
 
 export type PartialNode = Pick<Node, 'x' | 'y'>;
 export interface Context {
-  nodeLUT: Map<string, PartialNode>;
-  graph: Map<string, Neighbors>;
+  nodeLUT: Map<bigint, PartialNode>;
+  graph: Map<bigint, Neighbors>;
   enabledDlcGuards: Set<number>;
 }
 
 export function findRoute(
-  startNodeUid: string,
-  endNodeUid: string,
+  startNodeUid: bigint,
+  endNodeUid: bigint,
   direction: Direction,
   mode: Mode,
   context: Context,
@@ -53,7 +53,7 @@ export function findRoute(
     },
   });
   const startAsNeighbor: Neighbor = {
-    nodeId: startNodeUid,
+    nodeUid: startNodeUid,
     distance: 0,
     direction,
     dlcGuard: -1, // this value shouldn't be read.
@@ -83,7 +83,7 @@ export function findRoute(
   while (!openSet.isEmpty()) {
     numIters++;
     const current = openSet.pop();
-    if (current.nodeId === endNodeUid) {
+    if (current.nodeUid === endNodeUid) {
       return {
         success: true,
         key,
@@ -92,7 +92,7 @@ export function findRoute(
       };
     }
 
-    const neighbors = graph.get(current.nodeId);
+    const neighbors = graph.get(current.nodeUid);
     if (!neighbors) {
       // this situation should be ok; happens with hidden roads/prefabs.
       //console.log(
@@ -116,7 +116,7 @@ export function findRoute(
         gScore.set(neighbor, tentativeScore);
         fScore.set(
           neighbor,
-          tentativeScore + h(assertExists(nodeLUT.get(neighbor.nodeId))),
+          tentativeScore + h(assertExists(nodeLUT.get(neighbor.nodeUid))),
         );
         if (!openSet.has(neighbor)) {
           openSet.push(neighbor);

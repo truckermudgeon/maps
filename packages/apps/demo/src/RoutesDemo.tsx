@@ -172,7 +172,7 @@ export interface CompanyOption {
   label: string;
   // city token
   city: string;
-  // node uid
+  // base36 node uid
   value: string;
 }
 
@@ -238,7 +238,7 @@ const RouteControl = (props: { dlcs: ReadonlySet<AtsSelectableDlc> }) => {
 
       if (matchingCompany) {
         const matchingNode = assertExists(
-          context.nodeLUT.get(matchingCompany.n),
+          context.nodeLUT.get(BigInt(parseInt(matchingCompany.n, 36))),
         );
         map.flyTo({
           curve: 1,
@@ -310,6 +310,7 @@ const RouteControl = (props: { dlcs: ReadonlySet<AtsSelectableDlc> }) => {
     );
   };
 
+  // base36 node UID to dlc guard
   const dlcGuards = new Map<string, number>();
   if (demoData) {
     for (const [, neighbors] of demoData.demoGraph) {
@@ -395,16 +396,16 @@ function formatGroupLabel(params: AutocompleteRenderGroupParams) {
 }
 
 function toContext(data: DemoRoutesData): Omit<Context, 'enabledDlcGuards'> {
-  const graph = new Map<string, Neighbors>();
-  const nodeLUT = new Map<string, PartialNode>();
+  const graph = new Map<bigint, Neighbors>();
+  const nodeLUT = new Map<bigint, PartialNode>();
   for (const [id, dns] of data.demoGraph) {
-    graph.set(id, {
+    graph.set(BigInt(parseInt(id, 36)), {
       forward: (dns.f ?? []).map(toNeighbor),
       backward: (dns.b ?? []).map(toNeighbor),
     });
   }
   for (const [id, pos] of data.demoNodes) {
-    nodeLUT.set(id, { x: pos[0], y: pos[1] });
+    nodeLUT.set(BigInt(parseInt(id, 36)), { x: pos[0], y: pos[1] });
   }
 
   return {
@@ -415,7 +416,7 @@ function toContext(data: DemoRoutesData): Omit<Context, 'enabledDlcGuards'> {
 
 function toNeighbor(demoNeighbor: DemoNeighbor): Neighbor {
   return {
-    nodeId: demoNeighbor.n,
+    nodeUid: BigInt(parseInt(demoNeighbor.n, 36)),
     distance: demoNeighbor.l,
     isOneLaneRoad: demoNeighbor.o,
     direction: demoNeighbor.d === 'f' ? 'forward' : 'backward',
@@ -438,7 +439,13 @@ function fakeFind(
   context: Context,
 ): Promise<GeoJSON.Feature | undefined> {
   return new Promise(resolve => {
-    const route = findRoute(startNodeUid, endNodeUid, 'forward', mode, context);
+    const route = findRoute(
+      BigInt(parseInt(startNodeUid, 36)),
+      BigInt(parseInt(endNodeUid, 36)),
+      'forward',
+      mode,
+      context,
+    );
     if (!route.success) {
       resolve(undefined);
       return;
@@ -449,7 +456,7 @@ function fakeFind(
       geometry: {
         type: 'LineString',
         coordinates: route.route.map(neighbor => {
-          const node = assertExists(context.nodeLUT.get(neighbor.nodeId));
+          const node = assertExists(context.nodeLUT.get(neighbor.nodeUid));
           return [node.x, node.y];
         }),
       },
