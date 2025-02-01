@@ -6,11 +6,7 @@ import {
   SceneryTownSource,
 } from '@truckermudgeon/ui';
 import type { Marker as MapLibreGLMarker } from 'maplibre-gl';
-import type {
-  ForwardRefExoticComponent,
-  ReactElement,
-  RefAttributes,
-} from 'react';
+import type { ForwardRefExoticComponent, ReactElement } from 'react';
 import { useRef } from 'react';
 import type { MapRef } from 'react-map-gl/maplibre';
 import MapGl, {
@@ -18,6 +14,7 @@ import MapGl, {
   Layer,
   Source,
 } from 'react-map-gl/maplibre';
+import type { PlayerMarkerProps } from './PlayerMarker';
 import './SlippyMap.css';
 
 export const SlippyMap = (props: {
@@ -27,7 +24,7 @@ export const SlippyMap = (props: {
   onDragStart(): void;
   Destinations: () => ReactElement;
   TrailerOrWaypointMarkers: () => ReactElement;
-  PlayerMarker: ForwardRefExoticComponent<RefAttributes<MapLibreGLMarker>>;
+  PlayerMarker: ForwardRefExoticComponent<PlayerMarkerProps>;
 }) => {
   console.log('render slippy map');
   const {
@@ -121,7 +118,7 @@ export const SlippyMap = (props: {
       ))}
       <Destinations />
       <TrailerOrWaypointMarkers />
-      <PlayerMarker ref={playerMarkerRef} />
+      <PlayerMarker mode={props.mode} ref={playerMarkerRef} />
       <AttributionControl
         compact={true}
         style={{

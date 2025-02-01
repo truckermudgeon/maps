@@ -148,15 +148,16 @@ export function createApp({
       activeRoute={store.activeRoute}
     />
   ));
-  const _SlippyMap = () => (
+  const _SlippyMap = observer(() => (
     <SlippyMap
+      mode={store.themeMode}
       onLoad={onMapLoad}
       onDragStart={action(() => controller.onMapDragStart(store))}
       Destinations={_Destinations}
       TrailerOrWaypointMarkers={_TrailerOrWaypointMarkers}
       PlayerMarker={PlayerMarker}
     />
-  );
+  ));
 
   const _Directions = observer(() =>
     store.activeRouteDirection ? (

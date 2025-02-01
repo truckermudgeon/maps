@@ -54,6 +54,11 @@ const appRouter = router({
       return () => void 0;
     }),
   ),
+  onThemeModeUpdate: publicProcedure.subscription(() =>
+    observable<'light' | 'dark'>(() => {
+      return () => void 0;
+    }),
+  ),
   onDirectionUpdate: publicProcedure.subscription(() =>
     observable<RouteDirection | undefined>(() => {
       return () => void 0;

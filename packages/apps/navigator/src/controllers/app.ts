@@ -11,7 +11,7 @@ import { CameraMode } from './constants';
 import type { AppClient, AppController, AppStore } from './types';
 
 export class AppStoreImpl implements AppStore {
-  mode: 'light' | 'dark' = 'light';
+  themeMode: 'light' | 'dark' = 'light';
   cameraMode: CameraMode = CameraMode.FOLLOW;
   activeRoute: Route | undefined = undefined;
   activeRouteDirection: RouteDirection | undefined;
@@ -172,18 +172,14 @@ export class AppControllerImpl implements AppController {
       ),
     });
 
-    client.onDirectionUpdate.subscribe(undefined, {
-      onData: action(maybeDir => {
-        if (maybeDir) {
-          console.log('distance to', maybeDir.distanceMeters);
-          if (maybeDir.distanceMeters === 0) {
-            console.log(maybeDir);
-          }
-        }
-        if (maybeDir && maybeDir.distanceMeters >= 500) {
-          maybeDir = { ...maybeDir, laneHint: undefined };
-        }
-        store.activeRouteDirection = maybeDir;
+    client.onThemeModeUpdate.subscribe(undefined, {
+      onData: action(themeMode => {
+        store.themeMode = themeMode;
+        // HACK is this the best way to change theme mode, outside of a React
+        // component?
+        const htmlElement = document.documentElement;
+        htmlElement.setAttribute('data-joy-color-scheme', themeMode);
+        htmlElement.setAttribute('data-mui-color-scheme', themeMode);
       }),
     });
   }

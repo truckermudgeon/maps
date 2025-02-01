@@ -7,6 +7,7 @@ const fakeRoute: [number, number][] = [
   [fakeLon, fakeLat],
   [fakeLon + 1, fakeLat + 1],
 ];
+let mode: 'light' | 'dark' = 'light';
 
 export const fakeAppClient: AppClient = {
   setActiveRoute: {
@@ -62,6 +63,17 @@ export const fakeAppClient: AppClient = {
           }),
         2_000,
       );
+      return {
+        unsubscribe: () => clearInterval(intervalId),
+      };
+    },
+  },
+  onThemeModeUpdate: {
+    subscribe: (_, cb) => {
+      const intervalId = setInterval(() => {
+        cb.onData?.(mode);
+        mode = mode === 'light' ? 'dark' : 'light';
+      }, 5_000);
       return {
         unsubscribe: () => clearInterval(intervalId),
       };

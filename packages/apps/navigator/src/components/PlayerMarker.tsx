@@ -1,10 +1,11 @@
 import { Navigation } from '@mui/icons-material';
 import { Box } from '@mui/joy';
 import type { Marker as MapLibreGLMarker } from 'maplibre-gl';
+import type { RefAttributes } from 'react';
 import { forwardRef } from 'react';
 import { Marker } from 'react-map-gl/maplibre';
 
-interface PlayerMarkerProps {
+export interface PlayerMarkerProps extends RefAttributes<MapLibreGLMarker> {
   mode?: 'light' | 'dark';
 }
 

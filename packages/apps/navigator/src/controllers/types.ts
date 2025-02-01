@@ -13,6 +13,7 @@ import type { CameraMode, NavPageKey } from './constants';
 export type AppClient = CreateTRPCProxyClient<AppRouter>;
 
 export interface AppStore {
+  themeMode: 'light' | 'dark';
   cameraMode: CameraMode;
   activeRoute: Route | undefined;
   activeRouteDirection: RouteDirection | undefined;
