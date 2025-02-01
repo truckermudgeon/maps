@@ -28,14 +28,17 @@ const materialTheme = materialExtendTheme();
 const container = document.getElementById('root')!;
 const root = createRoot(container);
 
-const appClient = window.location.search.includes('fake')
+const params = new URLSearchParams(window.location.search);
+const fake = params.has('fake');
+const host = params.get('host') ?? 'localhost';
+const port = params.get('port') ?? 62840;
+const appClient = fake
   ? fakeAppClient
   : createTRPCProxyClient<AppRouter>({
       links: [
         wsLink({
           client: createWSClient({
-            //url: 'ws://192.168.0.219:3000',
-            url: 'ws://localhost:3000',
+            url: `ws://${host}:${port}`,
           }),
         }),
       ],
