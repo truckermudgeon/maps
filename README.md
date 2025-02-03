@@ -103,6 +103,13 @@ are slowly being made.
 #
 # as the output directory.
 #
+# Then run the following to generate the world map base layer:
+#
+#   tippecanoe -Z4 -z8 -b 10 -X -o packages/apps/demo/public/world.pmtiles \
+#       clis/generator/resources/countries.geojson \
+#       clis/generator/resources/states.geojson \
+#       clis/generator/resources/water.geojson
+#
 # Then run the following to start the web server:
 npm start --workspace=packages/apps/demo
 ```
