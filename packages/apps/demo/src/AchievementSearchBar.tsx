@@ -31,6 +31,13 @@ export interface AchievementOption {
   }[];
 }
 
+// The files ats-achievements.json and ets2-achievements.json can be created by
+// visiting the SteamDB achievement stats page for each game and executing a JS
+// command. The result is the `data` array in the AchievementsJson interface.
+// ATS:  https://steamdb.info/app/270880/stats/
+// ETS2: https://steamdb.info/app/227300/stats/
+// $$('tr[id|=achievement]').map(tr=>{const[id,titleAndDesc,imgs]=$$('td',tr);const[title,desc]=titleAndDesc.textContent.trim().split('\\n\\n');return{id:id.textContent,title,desc,imgUrl:$('img',imgs).src}});
+
 export interface AchievementsJson {
   data: {
     id: string;

@@ -72,6 +72,9 @@ npx generator footprints -m usa -m europe -i dirWithParserOutput -o dirToWriteFi
 # generate spritesheet files
 npx generator spritesheet -i dirWithParserOutput -o dirToWriteFilesTo
 
+# generate villages geojson file
+npx generator ets2-villages -o dirToWriteFileTo
+
 # generate ATS and ETS2 contours (aka elevations) pmtiles files
 npx generator contours -m usa -m europe -i dirWithParserOutput -o dirToWriteFilesTo
 
@@ -103,6 +106,10 @@ are slowly being made.
 # Then run the following to start the web server:
 npm start --workspace=packages/apps/demo
 ```
+
+The achievements search feature additionally requires the `achievements.json`
+file for each game (as described in [AchievementSearchBar.tsx](packages/apps/demo/src/AchievementSearchBar.tsx)).
+You can download these files from [truckermudgeon.github.io](https://github.com/truckermudgeon/truckermudgeon.github.io).
 
 ### prefabs-app
 
