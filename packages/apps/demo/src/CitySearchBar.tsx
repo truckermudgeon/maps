@@ -172,6 +172,7 @@ function createSortedCityOptions(
   }
 
   return cities
+    .filter(city => countryCodeToName.has(city.properties.countryCode))
     .map(({ properties, geometry }) => ({
       map: properties.map,
       state: assertExists(countryCodeToName.get(properties.countryCode)),
