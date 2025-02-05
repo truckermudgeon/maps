@@ -16,14 +16,28 @@ const untildify = (path: string) =>
 
 function main() {
   const args = yargs(hideBin(process.argv))
-    .usage('Parses ATS/ETS2 game data and outputs map JSON and PNG files.\n')
-    .usage('Usage: $0 -i <dir> -o <dir>')
-    .option('inputDir', {
-      alias: 'i',
+    .usage(
+      'Parses ATS/ETS2 game data and mod data and outputs map JSON and PNG files.\n',
+    )
+    .usage('Usage: $0 -g <dir> -m <dir> -o <dir>')
+    .option('gameDir', {
+      alias: 'g',
       describe: 'Path to ATS/ETS2 game dir (the one with all the .scs files)',
       type: 'string',
       coerce: untildify,
       demandOption: true,
+    })
+    .option('modDir', {
+      alias: 'm',
+      describe: 'Path to ATS/ETS2 mod dir (the one with all the mod files)',
+      type: 'string',
+      coerce: untildify,
+    })
+    .option('gameLog', {
+      alias: 'l',
+      describe: 'Path to game log file (game.log.txt)',
+      type: 'string',
+      coerce: untildify,
     })
     .option('outputDir', {
       alias: 'o',
@@ -47,14 +61,22 @@ function main() {
       type: 'boolean',
       default: false,
     })
+    .option('debug', {
+      describe: 'Set debug mode to print more message',
+      type: 'boolean',
+      default: false,
+    })
     .parseSync();
 
-  const scsFilePaths = fs
-    .readdirSync(args.inputDir, { withFileTypes: true })
-    .filter(e => e.isFile() && e.name.endsWith('.scs'))
-    .map(e => path.join(args.inputDir, e.name));
+  if (args.debug) logger.level = 4;
 
-  const { map, ...result } = parseMapFiles(scsFilePaths, args);
+  const gameFilePaths = fs
+    .readdirSync(args.gameDir, { withFileTypes: true })
+    .filter(e => e.isFile() && e.name.endsWith('.scs'))
+    .map(e => path.join(args.gameDir, e.name));
+
+  const { map, ...result } = parseMapFiles(gameFilePaths, args);
+
   if (args.dryRun) {
     logger.success('dry run complete.');
     return;
