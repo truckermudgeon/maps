@@ -41,8 +41,21 @@ The TruckSim Maps repo contains the following projects:
 PNG files.
 
 ```shell
-npx parser -i pathToGameDirectory -o dirToWriteFilesTo
+npx parser -g pathToGameDirectory -m pathToModDirectory -l pathToGameLogFile -o dirToWriteFilesTo
 ```
+
+#### Options
+
+| Short option    | Long option  | Default value | Description                                                       |
+| --------------- | ------------ | ------------- | ----------------------------------------------------------------- |
+| -g              | --gameDir    | None          | Path to ATS/ETS2 game dir (the one with all the .scs files)       |
+| -m              | --modDir     | None          | Path to ATS/ETS2 mod dir (the one with all the mod files)         |
+| -l              | --gameLog    | None          | Path to game log file (game.log.txt), used to read mod load order |
+| -o              | --outputDir  | None          | Path to dir JSON files should be written to                       |
+| (Not available) | --includeDlc | True          | Whether include DLC files or not                                  |
+| (Not available) | --onlyDefs   | False         | Parse data from /def files, only                                  |
+| (Not available) | --dryRun     | False         | Don't write out any files                                         |
+| (Not available) | --debug      | False         | Set to debug mode to print more messages                          |
 
 Parsing can take a couple of minutes, depending on the machine and the installed map DLCs.
 
@@ -116,11 +129,13 @@ npm start --workspace=packages/apps/demo
 
 The achievements search feature additionally requires the `achievements.json`
 file for each game (as described in [AchievementSearchBar.tsx](packages/apps/demo/src/AchievementSearchBar.tsx)).
-You can download these files from [truckermudgeon.github.io](https://github.com/truckermudgeon/truckermudgeon.github.io).
+You can download these files
+from [truckermudgeon.github.io](https://github.com/truckermudgeon/truckermudgeon.github.io).
 
 ### prefabs-app
 
-`prefabs-app` is a React app that helps visualize and debug how PrefabDescriptions are converted into LineStrings and Polygons.
+`prefabs-app` is a React app that helps visualize and debug how PrefabDescriptions are converted into LineStrings and
+Polygons.
 
 ![prefabs-screenshot](https://raw.githubusercontent.com/truckermudgeon/maps/main/packages/apps/prefabs/screenshot.png)
 
