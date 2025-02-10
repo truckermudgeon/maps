@@ -11,7 +11,7 @@ import type { Node } from '@truckermudgeon/map/types';
 import type { Quadtree } from 'd3-quadtree';
 import { quadtree } from 'd3-quadtree';
 import { logger } from './logger';
-import type { MappedData } from './mapped-data';
+import type { MappedDataForKeys } from './mapped-data';
 
 interface QtDlcGuardEntry {
   x: number;
@@ -20,6 +20,20 @@ interface QtDlcGuardEntry {
 }
 
 export type DlcGuardQuadTree = Quadtree<QtDlcGuardEntry>;
+
+export const dlcGuardMappedDataKeys = [
+  'nodes',
+  'roads',
+  'prefabs',
+  'mapAreas',
+  'triggers',
+  'cutscenes',
+  'pois',
+] as const;
+
+export type DlcGuardMappedData = MappedDataForKeys<
+  typeof dlcGuardMappedDataKeys
+>;
 
 /**
  * Returns a copy of `tsMapData`, where the items in the collections have
@@ -31,9 +45,9 @@ export type DlcGuardQuadTree = Quadtree<QtDlcGuardEntry>;
  * case, 0-values are normalized based on the country IDs of the Nodes
  * associated with the item.
  */
-export function normalizeDlcGuards<T extends 'usa' | 'europe'>(
-  tsMapData: MappedData<T>,
-): MappedData<T> & { dlcGuardQuadTree?: DlcGuardQuadTree } {
+export function normalizeDlcGuards<T extends DlcGuardMappedData>(
+  tsMapData: T,
+): T & { dlcGuardQuadTree?: DlcGuardQuadTree } {
   const { map } = tsMapData;
   if (map === 'europe') {
     logger.error('ets2 dlc guard normalization is not yet supported.');

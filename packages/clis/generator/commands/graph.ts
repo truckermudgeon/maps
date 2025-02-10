@@ -3,7 +3,7 @@ import path from 'path';
 import type { Argv, BuilderArguments } from 'yargs';
 import { checkGraph } from '../graph/check-graph';
 import { toDemoGraph } from '../graph/demo-graph';
-import { generateGraph } from '../graph/graph';
+import { generateGraph, graphMappedDataKeys } from '../graph/graph';
 import { logger } from '../logger';
 import { readMapData } from '../mapped-data';
 import { maybeEnsureOutputDir, untildify } from './path-helpers';
@@ -64,6 +64,11 @@ export async function handler(args: BuilderArguments<typeof builder>) {
   // TODO read only the files necessary
   const tsMapData = readMapData(args.inputDir, args.map, {
     includeHidden: false,
+    mapDataKeys: [
+      ...graphMappedDataKeys,
+      // required for demo graph
+      'companyDefs',
+    ],
   });
 
   const graph = generateGraph(tsMapData);
