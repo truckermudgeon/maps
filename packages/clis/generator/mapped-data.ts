@@ -197,7 +197,8 @@ export function readMapData<
   const countryTokens = new Set(cities.map(c => c.countryToken));
 
   const mapData: Partial<Omit<MappedData<T>, 'map'>> = {};
-  for (const key of options.mapDataKeys) {
+  const uniqueKeys = new Set(options.mapDataKeys);
+  for (const key of uniqueKeys) {
     switch (key) {
       case 'nodes': {
         mapData.nodes = mapify(
@@ -362,7 +363,7 @@ export function readMapData<
     }
   }
 
-  for (const k of options.mapDataKeys) {
+  for (const k of uniqueKeys) {
     // verify `mapData` contains entries for all keys in `options.mapDataKeys`
     const mapOrArray = assertExists(mapData[k]);
     if (Array.isArray(mapOrArray)) {
