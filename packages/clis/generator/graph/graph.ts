@@ -12,22 +12,20 @@ import type {
   Prefab,
 } from '@truckermudgeon/map/types';
 import { quadtree } from 'd3-quadtree';
-import { dlcGuardMappedDataKeys, normalizeDlcGuards } from '../dlc-guards';
+import { dlcGuardMapDataKeys, normalizeDlcGuards } from '../dlc-guards';
 import { logger } from '../logger';
-import type { MappedDataForKeys } from '../mapped-data';
-
-const graphContextMappedDataKeys = [
-  'nodes',
-  'roads',
-  'roadLooks',
-  'prefabs',
-  'prefabDescriptions',
-  'companies',
-  'ferries',
-] as const;
+import type { MapDataKeys, MappedDataForKeys } from '../mapped-data';
 
 type GraphContextMappedData = MappedDataForKeys<
-  typeof graphContextMappedDataKeys
+  [
+    'nodes',
+    'roads',
+    'roadLooks',
+    'prefabs',
+    'prefabDescriptions',
+    'companies',
+    'ferries',
+  ]
 >;
 
 type Context = GraphContextMappedData & {
@@ -36,16 +34,16 @@ type Context = GraphContextMappedData & {
   getDlcGuard: (node: Node) => number;
 };
 
-export const graphMappedDataKeys = [
-  ...dlcGuardMappedDataKeys,
+export const graphMapDataKeys = [
+  ...dlcGuardMapDataKeys,
   'companies',
   'ferries',
   'prefabDescriptions',
   'roadLooks',
   'cities',
-] as const;
+] satisfies MapDataKeys;
 
-type GraphMappedData = MappedDataForKeys<typeof graphMappedDataKeys>;
+type GraphMappedData = MappedDataForKeys<typeof graphMapDataKeys>;
 
 export function generateGraph(tsMapData: GraphMappedData) {
   const {

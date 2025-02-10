@@ -13,9 +13,9 @@ import type {
 } from '@truckermudgeon/map/types';
 import type { MappedDataForKeys } from '../mapped-data';
 
-const demoGraphMappedDataKeys = ['nodes', 'companies', 'companyDefs'] as const;
-
-type DemoGraphMappedData = MappedDataForKeys<typeof demoGraphMappedDataKeys>;
+type DemoGraphMappedData = MappedDataForKeys<
+  ['nodes', 'companies', 'companyDefs']
+>;
 
 export function toDemoGraph(
   graph: Map<bigint, Neighbors>,

@@ -11,7 +11,7 @@ import type { Node } from '@truckermudgeon/map/types';
 import type { Quadtree } from 'd3-quadtree';
 import { quadtree } from 'd3-quadtree';
 import { logger } from './logger';
-import type { MappedDataForKeys } from './mapped-data';
+import type { MapDataKeys, MappedDataForKeys } from './mapped-data';
 
 interface QtDlcGuardEntry {
   x: number;
@@ -21,7 +21,7 @@ interface QtDlcGuardEntry {
 
 export type DlcGuardQuadTree = Quadtree<QtDlcGuardEntry>;
 
-export const dlcGuardMappedDataKeys = [
+export const dlcGuardMapDataKeys = [
   'nodes',
   'roads',
   'prefabs',
@@ -29,11 +29,9 @@ export const dlcGuardMappedDataKeys = [
   'triggers',
   'cutscenes',
   'pois',
-] as const;
+] satisfies MapDataKeys;
 
-export type DlcGuardMappedData = MappedDataForKeys<
-  typeof dlcGuardMappedDataKeys
->;
+export type DlcGuardMappedData = MappedDataForKeys<typeof dlcGuardMapDataKeys>;
 
 /**
  * Returns a copy of `tsMapData`, where the items in the collections have

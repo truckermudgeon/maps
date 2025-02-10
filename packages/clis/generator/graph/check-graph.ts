@@ -25,14 +25,9 @@ interface Unrouteable {
   end: CompanySummary;
 }
 
-const checkGraphMappedDataKeys = [
-  'nodes',
-  'companies',
-  'prefabs',
-  'cities',
-] as const;
-
-type CheckGraphMappedData = MappedDataForKeys<typeof checkGraphMappedDataKeys>;
+type CheckGraphMappedData = MappedDataForKeys<
+  ['nodes', 'companies', 'prefabs', 'cities']
+>;
 
 export async function checkGraph(
   graph: Map<bigint, Neighbors>,

@@ -3,7 +3,7 @@ import path from 'path';
 import type { Argv, BuilderArguments } from 'yargs';
 import { checkGraph } from '../graph/check-graph';
 import { toDemoGraph } from '../graph/demo-graph';
-import { generateGraph, graphMappedDataKeys } from '../graph/graph';
+import { generateGraph, graphMapDataKeys } from '../graph/graph';
 import { logger } from '../logger';
 import { readMapData } from '../mapped-data';
 import { maybeEnsureOutputDir, untildify } from './path-helpers';
@@ -65,7 +65,7 @@ export async function handler(args: BuilderArguments<typeof builder>) {
   const tsMapData = readMapData(args.inputDir, args.map, {
     includeHidden: false,
     mapDataKeys: [
-      ...graphMappedDataKeys,
+      ...graphMapDataKeys,
       // required for demo graph
       'companyDefs',
     ],

@@ -1,3 +1,4 @@
+import { assertExists } from '@truckermudgeon/base/assert';
 import { distance } from '@truckermudgeon/base/geom';
 import { UnreachableError } from '@truckermudgeon/base/precon';
 import {
@@ -35,7 +36,7 @@ import process from 'process';
 import { logger } from './logger';
 import { readArrayFile } from './read-array-file';
 
-const MapDataKeys: Record<keyof MapData, void> = {
+const mapDataKeys: Record<keyof MapData, void> = {
   achievements: undefined,
   cities: undefined,
   companies: undefined,
@@ -59,9 +60,8 @@ const MapDataKeys: Record<keyof MapData, void> = {
   cutscenes: undefined,
   routes: undefined,
 };
-const allMapDataKeys = Object.freeze(
-  Object.keys(MapDataKeys) as unknown as keyof MapData[],
-) as unknown as readonly (keyof MapData)[];
+const allMapDataKeys = Object.freeze(Object.keys(mapDataKeys));
+export type MapDataKeys = (keyof typeof mapDataKeys)[];
 
 type PickKey<
   T extends keyof MapData,
@@ -108,7 +108,7 @@ export type MappedData<T extends 'usa' | 'europe' = 'usa' | 'europe'> = {
     elevation: Readonly<MapData['elevation']>;
   };
 
-export type MappedDataForKeys<T extends readonly (keyof MappedData)[]> = Pick<
+export type MappedDataForKeys<T extends readonly (keyof MapData)[]> = Pick<
   MappedData,
   'map' | T[number]
 >;
@@ -347,6 +347,7 @@ export function readMapData<
     mapData.companies != null &&
     (mapData.prefabs != null || mapData.nodes != null)
   ) {
+    // the following casts are required so we can mutate the maps.
     const companiesMap = mapData.companies as Map<bigint, unknown>;
     const prefabsMap = (mapData.prefabs ?? new Map()) as Map<bigint, unknown>;
     const nodesMap = (mapData.nodes ?? new Map()) as Map<bigint, unknown>;
@@ -361,14 +362,16 @@ export function readMapData<
     }
   }
 
-  for (const k of Object.keys(mapData)) {
-    const mapOrArray = mapData[k as keyof typeof mapData]!;
+  for (const k of options.mapDataKeys) {
+    // verify `mapData` contains entries for all keys in `options.mapDataKeys`
+    const mapOrArray = assertExists(mapData[k]);
     if (Array.isArray(mapOrArray)) {
       logger.info(mapOrArray.length, k);
     } else {
       logger.info((mapOrArray as ReadonlyMap<unknown, unknown>).size, k);
     }
   }
+  // this cast should be safe because `mapData` contains all keys K.
   return { ...mapData, map } as Pick<MappedData<T>, 'map' | K>;
 }
 

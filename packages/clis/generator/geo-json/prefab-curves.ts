@@ -4,18 +4,16 @@ import { toSplinePoints } from '@truckermudgeon/base/geom';
 import { toMapPosition } from '@truckermudgeon/map/prefabs';
 import type { DebugFeature } from '@truckermudgeon/map/types';
 import type { GeoJSON } from 'geojson';
-import type { MappedDataForKeys } from '../mapped-data';
+import type { MapDataKeys, MappedDataForKeys } from '../mapped-data';
 import { createNormalizeFeature } from './normalize';
 
-export const prefabCurveMappedDataKeys = [
+export const prefabCurveMapDataKeys = [
   'nodes',
   'prefabs',
   'prefabDescriptions',
-] as const;
+] satisfies MapDataKeys;
 
-type PrefabCurveMappedData = MappedDataForKeys<
-  typeof prefabCurveMappedDataKeys
->;
+type PrefabCurveMappedData = MappedDataForKeys<typeof prefabCurveMapDataKeys>;
 
 export function convertToPrefabCurvesGeoJson(
   tsMapData: PrefabCurveMappedData,

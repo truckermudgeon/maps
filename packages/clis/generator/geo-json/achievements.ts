@@ -17,7 +17,7 @@ import type {
 } from '@truckermudgeon/map/types';
 import { normalizeDlcGuards } from '../dlc-guards';
 import { logger } from '../logger';
-import type { MappedDataForKeys } from '../mapped-data';
+import type { MapDataKeys, MappedDataForKeys } from '../mapped-data';
 import { createNormalizeFeature } from './normalize';
 
 interface Point {
@@ -40,7 +40,7 @@ export const achievementsMapDataKeys = [
   'routes',
   'trajectories',
   'triggers',
-] as const;
+] satisfies MapDataKeys;
 
 type AchievementsMapData = MappedDataForKeys<typeof achievementsMapDataKeys>;
 

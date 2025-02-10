@@ -2,7 +2,7 @@ import path from 'path';
 import type { Argv, BuilderArguments } from 'yargs';
 import {
   convertToPrefabCurvesGeoJson,
-  prefabCurveMappedDataKeys,
+  prefabCurveMapDataKeys,
 } from '../geo-json/prefab-curves';
 import { logger } from '../logger';
 import type { FocusOptions } from '../mapped-data';
@@ -92,7 +92,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
   const tsMapData = readMapData(args.inputDir, args.map, {
     includeHidden: false,
     focus: focusOptions,
-    mapDataKeys: prefabCurveMappedDataKeys,
+    mapDataKeys: prefabCurveMapDataKeys,
   });
 
   writeGeojsonFile(
