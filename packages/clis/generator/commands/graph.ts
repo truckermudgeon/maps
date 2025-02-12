@@ -61,7 +61,6 @@ export const builder = (yargs: Argv) =>
     });
 
 export async function handler(args: BuilderArguments<typeof builder>) {
-  // TODO read only the files necessary
   const tsMapData = readMapData(args.inputDir, args.map, {
     mapDataKeys: [
       ...graphMapDataKeys,
