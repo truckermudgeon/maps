@@ -1,6 +1,6 @@
 import { assertExists } from '@truckermudgeon/base/assert';
 import { distance } from '@truckermudgeon/base/geom';
-import { UnreachableError } from '@truckermudgeon/base/precon';
+import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
 import {
   fromAtsCoordsToWgs84,
   fromEts2CoordsToWgs84,
@@ -19,6 +19,7 @@ import type {
   MapData,
   MileageTarget,
   Model,
+  ModelDescription,
   Node,
   Poi,
   Prefab,
@@ -36,32 +37,7 @@ import process from 'process';
 import { logger } from './logger';
 import { readArrayFile } from './read-array-file';
 
-const mapDataKeys: Record<keyof MapData, void> = {
-  achievements: undefined,
-  cities: undefined,
-  companies: undefined,
-  companyDefs: undefined,
-  countries: undefined,
-  dividers: undefined,
-  ferries: undefined,
-  mapAreas: undefined,
-  mileageTargets: undefined,
-  modelDescriptions: undefined,
-  models: undefined,
-  nodes: undefined,
-  elevation: undefined,
-  pois: undefined,
-  prefabDescriptions: undefined,
-  prefabs: undefined,
-  roadLooks: undefined,
-  roads: undefined,
-  trajectories: undefined,
-  triggers: undefined,
-  cutscenes: undefined,
-  routes: undefined,
-};
-const allMapDataKeys = Object.freeze(Object.keys(mapDataKeys));
-export type MapDataKeys = (keyof typeof mapDataKeys)[];
+export type MapDataKeys = (keyof MapData)[];
 
 type PickKey<
   T extends keyof MapData,
@@ -126,7 +102,15 @@ export type FocusOptions = { radiusMeters: number } & (
 
 interface Options<K extends keyof MapData> {
   mapDataKeys: readonly K[];
-  includeHidden: boolean;
+  /**
+   * if `true`, then the `roads` and `prefabs` maps returned will include
+   * entries for roads/prefabs that are hidden-from-the-game's-ui-map (i.e.,
+   * unreachable).
+   *
+   * This option is only meaningful if `mapDataKeys` includes `'roads'` and/or
+   * `'prefabs'`.
+   */
+  includeHiddenRoadsAndPrefabs?: boolean;
   focus?: FocusOptions;
 }
 
@@ -138,10 +122,11 @@ export function readMapData<
   map: T,
   options: Options<K>,
 ): Pick<MappedData<T>, 'map' | K> {
-  checkJsonFilesPresent(inputDir, map);
+  Preconditions.checkArgument(options.mapDataKeys.length > 0);
+  checkJsonFilesPresent(inputDir, map, new Set(options.mapDataKeys));
   const toJsonFilePath = (key: string) =>
     path.join(inputDir, map + '-' + key + '.json');
-  const { includeHidden, focus: focusOptions } = options;
+  const { includeHiddenRoadsAndPrefabs = false, focus: focusOptions } = options;
 
   const allCities = readArrayFile<City>(toJsonFilePath('cities'));
   let focusCoords: [number, number] | undefined;
@@ -211,7 +196,8 @@ export function readMapData<
         mapData.roads = mapify(
           readArrayFile<Road>(
             toJsonFilePath(key),
-            r => (includeHidden ? true : !r.hidden) && focusXY(r),
+            r =>
+              (includeHiddenRoadsAndPrefabs ? true : !r.hidden) && focusXY(r),
           ),
           r => r.uid,
         );
@@ -226,7 +212,8 @@ export function readMapData<
         mapData.prefabs = mapify(
           readArrayFile<Prefab>(
             toJsonFilePath(key),
-            p => (includeHidden ? true : !p.hidden) && focusXY(p),
+            p =>
+              (includeHiddenRoadsAndPrefabs ? true : !p.hidden) && focusXY(p),
           ),
           p => p.uid,
         );
@@ -288,6 +275,10 @@ export function readMapData<
         );
         break;
       case 'modelDescriptions':
+        mapData.modelDescriptions = mapify(
+          readArrayFile<WithToken<ModelDescription>>(toJsonFilePath(key)),
+          m => m.token,
+        );
         break;
       // N.B.: the following data is always included in its entirety, regardless
       // of focus options.
@@ -380,9 +371,12 @@ function mapify<T, U>(arr: T[], k: (t: T) => U): Map<U, T> {
   return new Map(arr.map(item => [k(item), item]));
 }
 
-function checkJsonFilesPresent(inputDir: string, map: 'usa' | 'europe') {
-  logger.log('checking for required JSON files...');
-  const missingJsonFiles = allMapDataKeys.filter(
+function checkJsonFilesPresent(
+  inputDir: string,
+  map: string,
+  keys: Set<string>,
+) {
+  const missingJsonFiles = [...keys].filter(
     fn => !fs.existsSync(path.join(inputDir, map + '-' + fn + '.json')),
   );
   if (missingJsonFiles.length) {

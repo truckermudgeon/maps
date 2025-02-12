@@ -1,12 +1,14 @@
-import type { Model, ModelDescription, Node } from '@truckermudgeon/map/types';
 import { execSync } from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import type { Argv, BuilderArguments } from 'yargs';
-import { convertToFootprintsGeoJson } from '../geo-json/footprints';
+import {
+  convertToFootprintsGeoJson,
+  footprintsMapDataKeys,
+} from '../geo-json/footprints';
 import { logger } from '../logger';
-import { readArrayFile } from '../read-array-file';
+import { readMapData } from '../mapped-data';
 import { writeGeojsonFile } from '../write-geojson-file';
 import { maybeEnsureOutputDir, untildify } from './path-helpers';
 
@@ -55,21 +57,11 @@ export const builder = (yargs: Argv) =>
     .check(maybeEnsureOutputDir);
 
 export function handler(args: BuilderArguments<typeof builder>) {
-  const toJsonPath = (map: 'usa' | 'europe', suffix: string) =>
-    path.join(args.inputDir, `${map}-${suffix}.json`);
-
   for (const map of [args.map].flat()) {
-    const nodes = readArrayFile<Node>(toJsonPath(map, 'nodes'));
-    const models = readArrayFile<Model>(toJsonPath(map, 'models'));
-    const modelDescriptions = readArrayFile<
-      ModelDescription & { token: string }
-    >(toJsonPath(map, 'modelDescriptions'));
-    const geoJson = convertToFootprintsGeoJson({
-      map,
-      nodes,
-      models,
-      modelDescriptions,
+    const tsMapData = readMapData(args.inputDir, map, {
+      mapDataKeys: footprintsMapDataKeys,
     });
+    const geoJson = convertToFootprintsGeoJson(tsMapData);
 
     let geoJsonPath: string | undefined;
     const gamePrefix = map === 'usa' ? 'ats' : 'ets2';

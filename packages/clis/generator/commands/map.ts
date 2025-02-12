@@ -130,7 +130,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
   }
 
   const tsMapData = readMapData(args.inputDir, args.map, {
-    includeHidden: args.includeHidden,
+    includeHiddenRoadsAndPrefabs: args.includeHidden,
     focus: focusOptions,
     mapDataKeys: geoJsonMapDataKeys,
   });

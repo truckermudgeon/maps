@@ -90,7 +90,6 @@ export function handler(args: BuilderArguments<typeof builder>) {
   }
 
   const tsMapData = readMapData(args.inputDir, args.map, {
-    includeHidden: false,
     focus: focusOptions,
     mapDataKeys: prefabCurveMapDataKeys,
   });

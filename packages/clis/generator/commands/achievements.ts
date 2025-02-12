@@ -47,7 +47,6 @@ export const builder = (yargs: Argv) =>
 export function handler(args: BuilderArguments<typeof builder>) {
   for (const map of [args.map].flat()) {
     const tsMapData = readMapData(args.inputDir, map, {
-      includeHidden: false,
       mapDataKeys: achievementsMapDataKeys,
     });
     const geoJson = convertToAchievementsGeoJson(tsMapData);

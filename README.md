@@ -70,7 +70,7 @@ npx generator cities -m usa -m europe -i dirWithParserOutput -o dirToWriteFilesT
 npx generator footprints -m usa -m europe -i dirWithParserOutput -o dirToWriteFilesTo
 
 # generate spritesheet files
-npx generator spritesheet -i dirWithParserOutput -o dirToWriteFilesTo
+npx generator spritesheet -m usa -m europe -i dirWithParserOutput -o dirToWriteFilesTo
 
 # generate villages geojson file
 npx generator ets2-villages -o dirToWriteFileTo

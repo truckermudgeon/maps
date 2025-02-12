@@ -1,4 +1,5 @@
 import { assertExists } from '@truckermudgeon/base/assert';
+import { mapValues } from '@truckermudgeon/base/map';
 import type {
   City,
   Country,
@@ -10,7 +11,7 @@ import type { Argv, BuilderArguments } from 'yargs';
 import { createNormalizeFeature } from '../geo-json/normalize';
 import { createIsoA2Map } from '../geo-json/populated-places';
 import { logger } from '../logger';
-import { readArrayFile } from '../read-array-file';
+import { readMapData } from '../mapped-data';
 import { writeGeojsonFile } from '../write-geojson-file';
 import { maybeEnsureOutputDir, untildify } from './path-helpers';
 
@@ -46,9 +47,6 @@ export const builder = (yargs: Argv) =>
 export function handler(args: BuilderArguments<typeof builder>) {
   logger.log('creating cities.geojson...');
 
-  const toJsonPath = (map: 'usa' | 'europe', suffix: string) =>
-    path.join(args.inputDir, `${map}-${suffix}.json`);
-
   const countryIsoA2 = createIsoA2Map();
   const withIsoA2Code = (c: Country) => ({
     ...c,
@@ -56,13 +54,14 @@ export function handler(args: BuilderArguments<typeof builder>) {
   });
 
   const cityAndCountryFeatures = [args.map].flat().flatMap(map => {
-    const countries = readArrayFile<Country>(toJsonPath(map, 'countries')).map(
-      c => (map === 'europe' ? withIsoA2Code(c) : c),
+    const { countries: _countries, cities } = readMapData(args.inputDir, map, {
+      mapDataKeys: ['countries', 'cities'],
+    });
+    const countries = mapValues(_countries, c =>
+      map === 'europe' ? withIsoA2Code(c) : c,
     );
-    const countriesByToken = new Map(countries.map(c => [c.token, c]));
-    const cities = readArrayFile<City>(toJsonPath(map, 'cities'));
 
-    const cityFeatures = cities.map(city => {
+    const cityFeatures = cities.values().map(city => {
       if (city.countryToken.toLowerCase() !== city.countryToken) {
         logger.warn(
           'country token',
@@ -72,15 +71,15 @@ export function handler(args: BuilderArguments<typeof builder>) {
           "isn't completely lowercase",
         );
       }
-      const country = countriesByToken.get(city.countryToken.toLowerCase());
+      const country = countries.get(city.countryToken.toLowerCase());
       if (!country) {
         throw new Error(`no country found for token ${city.countryToken}`);
       }
       return toCityFeature(map, country.code, city);
     });
-    const countryFeatures = countries.map(country =>
-      toCountryFeature(map, country),
-    );
+    const countryFeatures = countries
+      .values()
+      .map(country => toCountryFeature(map, country));
 
     const normalizeFeature = createNormalizeFeature(map, 4);
     return [...cityFeatures, ...countryFeatures].map(normalizeFeature);
