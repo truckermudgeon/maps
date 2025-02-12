@@ -8,7 +8,7 @@ import path from 'path';
 import Spritesmith from 'spritesmith';
 import type { Argv, BuilderArguments } from 'yargs';
 import { logger } from '../logger';
-import { readArrayFile } from '../read-array-file';
+import { readMapData } from '../mapped-data';
 import { maybeEnsureOutputDir, resourcesDir, untildify } from './path-helpers';
 
 export const command = 'spritesheet';
@@ -17,6 +17,14 @@ export const describe =
 
 export const builder = (yargs: Argv) =>
   yargs
+    .option('map', {
+      alias: 'm',
+      describe:
+        'Source map.\nSpecify multiple source maps with multiple -m arguments.',
+      choices: ['usa', 'europe'] as const,
+      default: ['usa'] as ('usa' | 'europe')[],
+      defaultDescription: 'usa',
+    })
     .option('inputDir', {
       alias: 'i',
       describe:
@@ -33,35 +41,40 @@ export const builder = (yargs: Argv) =>
       coerce: untildify,
       demandOption: true,
     })
+    .option('dryRun', {
+      describe: "Don't write out any files.",
+      type: 'boolean',
+      default: false,
+    })
     .check(maybeEnsureOutputDir);
 
 export async function handler(args: BuilderArguments<typeof builder>) {
   logger.log('creating overlays spritesheet...');
-  const poiJsons = fs
-    .readdirSync(args.inputDir, { withFileTypes: true })
-    .filter(f => !f.isDirectory() && f.name.endsWith('-pois.json'))
-    .map(f => path.join(args.inputDir, f.name));
-  if (poiJsons.length === 0) {
-    throw new Error('no -pois.json files found!');
-  }
-  const pois = poiJsons.flatMap(p => readArrayFile<Poi>(p));
+  const pois: Poi[] = [args.map].flat().flatMap(
+    map =>
+      readMapData(args.inputDir, map, {
+        mapDataKeys: ['pois'],
+      }).pois,
+  );
   const { image, coordinates } = await createSpritesheet(
     pois,
     args.inputDir,
     resourcesDir,
   );
-  logger.log('writing sprites(@2x).{json,png}...');
-  // TODO downscale png to make a proper 1x spritesheet.
-  fs.writeFileSync(path.join(args.outputDir, 'sprites.png'), image);
-  fs.writeFileSync(path.join(args.outputDir, 'sprites@2x.png'), image);
-  fs.writeFileSync(
-    path.join(args.outputDir, 'sprites.json'),
-    JSON.stringify(coordinates, null, 2),
-  );
-  fs.writeFileSync(
-    path.join(args.outputDir, 'sprites@2x.json'),
-    JSON.stringify(coordinates, null, 2),
-  );
+  if (!args.dryRun) {
+    logger.log('writing sprites(@2x).{json,png}...');
+    // TODO downscale png to make a proper 1x spritesheet.
+    fs.writeFileSync(path.join(args.outputDir, 'sprites.png'), image);
+    fs.writeFileSync(path.join(args.outputDir, 'sprites@2x.png'), image);
+    fs.writeFileSync(
+      path.join(args.outputDir, 'sprites.json'),
+      JSON.stringify(coordinates, null, 2),
+    );
+    fs.writeFileSync(
+      path.join(args.outputDir, 'sprites@2x.json'),
+      JSON.stringify(coordinates, null, 2),
+    );
+  }
   logger.success('done.');
 }
 

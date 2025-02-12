@@ -5,7 +5,7 @@ import path from 'path';
 import type { Argv, BuilderArguments } from 'yargs';
 import { convertToContoursGeoJson } from '../geo-json/contours';
 import { logger } from '../logger';
-import { readArrayFile } from '../read-array-file';
+import { readMapData } from '../mapped-data';
 import { writeGeojsonFile } from '../write-geojson-file';
 import { maybeEnsureOutputDir, untildify } from './path-helpers';
 
@@ -52,13 +52,10 @@ export const builder = (yargs: Argv) =>
     .check(maybeEnsureOutputDir);
 
 export function handler(args: BuilderArguments<typeof builder>) {
-  const toJsonPath = (map: 'usa' | 'europe', suffix: string) =>
-    path.join(args.inputDir, `${map}-${suffix}.json`);
-
   for (const map of [args.map].flat()) {
-    const points = readArrayFile<[number, number, number]>(
-      toJsonPath(map, 'elevation'),
-    );
+    const { elevation: points } = readMapData(args.inputDir, map, {
+      mapDataKeys: ['elevation'],
+    });
     const geoJson = convertToContoursGeoJson({ map, points });
     if (args.dryRun) {
       continue;

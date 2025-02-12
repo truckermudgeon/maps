@@ -3,7 +3,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import type { Argv, BuilderArguments } from 'yargs';
-import { convertToMapGeoJson } from '../geo-json/map';
+import { convertToMapGeoJson, geoJsonMapDataKeys } from '../geo-json/map';
 import { logger } from '../logger';
 import type { FocusOptions } from '../mapped-data';
 import { readMapData } from '../mapped-data';
@@ -130,8 +130,9 @@ export function handler(args: BuilderArguments<typeof builder>) {
   }
 
   const tsMapData = readMapData(args.inputDir, args.map, {
-    includeHidden: args.includeHidden,
+    includeHiddenRoadsAndPrefabs: args.includeHidden,
     focus: focusOptions,
+    mapDataKeys: geoJsonMapDataKeys,
   });
 
   logger.log('converting parsed map data to GeoJSON...');

@@ -114,7 +114,7 @@ MAP_FILES += $(GENERATOR_OUT_DIR)/usa-graph-demo.json
 # Create spritesheet files
 SPRITESHEET_FILES := $(addprefix $(GENERATOR_OUT_DIR)/,sprites.png sprites.json sprites@2x.png sprites@2x.json)
 $(SPRITESHEET_FILES): $(ATS_PARSER_JSON_FILES) $(ETS2_PARSER_JSON_FILES)
-	npx generator spritesheet -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR)
+	npx generator spritesheet -m usa -m europe -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR)
 
 MAP_FILES += $(SPRITESHEET_FILES)
 

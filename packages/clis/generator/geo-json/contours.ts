@@ -11,7 +11,7 @@ export function convertToContoursGeoJson({
   points,
 }: {
   map: 'usa' | 'europe';
-  points: [number, number, number][];
+  points: readonly [number, number, number][];
 }) {
   const normalizeCoordinates = createNormalizeFeature(map, 4);
   let min = Infinity;
@@ -76,7 +76,7 @@ export function convertToContoursGeoJson({
 
   const features: ContourFeature[] = [];
   tric.thresholds(Array.from({ length: levels }, (_, i) => i + min));
-  for (const c of tric.contours(points)) {
+  for (const c of tric.contours(points.slice())) {
     const { value, type, coordinates } = c;
     const intersection = polygonclipping.intersection(
       sectorUnion,

@@ -12,27 +12,40 @@ import type {
   Prefab,
 } from '@truckermudgeon/map/types';
 import { quadtree } from 'd3-quadtree';
-import { normalizeDlcGuards } from '../dlc-guards';
+import { dlcGuardMapDataKeys, normalizeDlcGuards } from '../dlc-guards';
 import { logger } from '../logger';
-import type { MappedData } from '../mapped-data';
+import type { MapDataKeys, MappedDataForKeys } from '../mapped-data';
 
-type Context = Pick<
-  MappedData,
-  | 'map'
-  | 'nodes'
-  | 'roads'
-  | 'roadLooks'
-  | 'prefabs'
-  | 'prefabDescriptions'
-  | 'companies'
-  | 'ferries'
-> & {
+type GraphContextMappedData = MappedDataForKeys<
+  [
+    'nodes',
+    'roads',
+    'roadLooks',
+    'prefabs',
+    'prefabDescriptions',
+    'companies',
+    'ferries',
+  ]
+>;
+
+type Context = GraphContextMappedData & {
   prefabConnections: Map<string, Map<number, number[]>>;
   companiesByPrefabItemId: Map<bigint, CompanyItem>;
   getDlcGuard: (node: Node) => number;
 };
 
-export function generateGraph(tsMapData: MappedData) {
+export const graphMapDataKeys = [
+  ...dlcGuardMapDataKeys,
+  'companies',
+  'ferries',
+  'prefabDescriptions',
+  'roadLooks',
+  'cities',
+] satisfies MapDataKeys;
+
+type GraphMappedData = MappedDataForKeys<typeof graphMapDataKeys>;
+
+export function generateGraph(tsMapData: GraphMappedData) {
   const {
     map,
     nodes: _nodes,

@@ -4,36 +4,31 @@ import { add, nonUniformScale, rotate } from '@truckermudgeon/base/geom';
 import type {
   FootprintFeature,
   FootprintProperties,
-  Model,
-  ModelDescription,
-  Node,
 } from '@truckermudgeon/map/types';
 import type { GeoJSON } from 'geojson';
+import type { MapDataKeys, MappedDataForKeys } from '../mapped-data';
 import { createNormalizeFeature } from './normalize';
 
-export function convertToFootprintsGeoJson({
-  map,
-  nodes,
-  models,
-  modelDescriptions,
-}: {
-  map: 'usa' | 'europe';
-  nodes: Node[];
-  models: Model[];
-  modelDescriptions: (ModelDescription & {
-    token: string;
-  })[];
-}): GeoJSON.FeatureCollection<GeoJSON.Polygon, FootprintProperties> {
-  const nodesByUid = new Map(nodes.map(n => [n.uid, n]));
-  const modelDescs = new Map(modelDescriptions.map(m => [m.token, m]));
+export const footprintsMapDataKeys = [
+  'nodes',
+  'models',
+  'modelDescriptions',
+] satisfies MapDataKeys;
+
+type FootprintsMappedData = MappedDataForKeys<typeof footprintsMapDataKeys>;
+
+export function convertToFootprintsGeoJson(
+  tsMapData: FootprintsMappedData,
+): GeoJSON.FeatureCollection<GeoJSON.Polygon, FootprintProperties> {
+  const { map, nodes, models, modelDescriptions } = tsMapData;
   const normalizeCoordinates = createNormalizeFeature(map);
 
   return {
     type: 'FeatureCollection',
-    features: models
+    features: [...models.values()]
       .map(m => {
-        const node = assertExists(nodesByUid.get(m.nodeUid));
-        const md = assertExists(modelDescs.get(m.token));
+        const node = assertExists(nodes.get(m.nodeUid));
+        const md = assertExists(modelDescriptions.get(m.token));
         const o: Position = [node.x + md.center.x, node.y + md.center.y];
         let tl: Position = add([md.start.x, md.start.y], o);
         let tr: Position = add([md.end.x, md.start.y], o);

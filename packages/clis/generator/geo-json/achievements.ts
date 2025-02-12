@@ -17,7 +17,7 @@ import type {
 } from '@truckermudgeon/map/types';
 import { normalizeDlcGuards } from '../dlc-guards';
 import { logger } from '../logger';
-import type { MappedData } from '../mapped-data';
+import type { MapDataKeys, MappedDataForKeys } from '../mapped-data';
 import { createNormalizeFeature } from './normalize';
 
 interface Point {
@@ -25,7 +25,26 @@ interface Point {
   dlcGuard: number;
 }
 
-export function convertToAchievementsGeoJson(tsMapData: MappedData) {
+export const achievementsMapDataKeys = [
+  'achievements',
+  'cities',
+  'companies',
+  'countries',
+  'cutscenes',
+  'ferries',
+  'mapAreas',
+  'nodes',
+  'pois',
+  'prefabs',
+  'roads',
+  'routes',
+  'trajectories',
+  'triggers',
+] satisfies MapDataKeys;
+
+type AchievementsMapData = MappedDataForKeys<typeof achievementsMapDataKeys>;
+
+export function convertToAchievementsGeoJson(tsMapData: AchievementsMapData) {
   const {
     map,
     nodes,

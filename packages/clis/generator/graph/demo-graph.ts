@@ -11,11 +11,15 @@ import type {
   Neighbor,
   Neighbors,
 } from '@truckermudgeon/map/types';
-import type { MappedData } from '../mapped-data';
+import type { MappedDataForKeys } from '../mapped-data';
+
+type DemoGraphMappedData = MappedDataForKeys<
+  ['nodes', 'companies', 'companyDefs']
+>;
 
 export function toDemoGraph(
   graph: Map<bigint, Neighbors>,
-  tsMapData: MappedData,
+  tsMapData: DemoGraphMappedData,
 ): DemoRoutesData {
   const allNodeUids = new Set<bigint>();
   for (const [nodeUid, neighbors] of graph.entries()) {

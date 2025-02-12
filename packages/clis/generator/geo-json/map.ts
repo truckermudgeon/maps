@@ -38,9 +38,9 @@ import lineOffset from '@turf/line-offset';
 import type { Quadtree } from 'd3-quadtree';
 import { quadtree } from 'd3-quadtree';
 import type { GeoJSON } from 'geojson';
-import { normalizeDlcGuards } from '../dlc-guards';
+import { dlcGuardMapDataKeys, normalizeDlcGuards } from '../dlc-guards';
 import { logger } from '../logger';
-import type { MappedData } from '../mapped-data';
+import type { MapDataKeys, MappedDataForKeys } from '../mapped-data';
 import { createNormalizeFeature } from './normalize';
 import { ets2IsoA2, getCitiesByCountryIsoA2 } from './populated-places';
 
@@ -58,11 +58,28 @@ interface QtRoadEntry {
 }
 type RoadQuadTree = Quadtree<QtRoadEntry>;
 
+export const geoJsonMapDataKeys = [
+  ...dlcGuardMapDataKeys,
+  'nodes',
+  'roads',
+  'ferries',
+  'prefabs',
+  'mapAreas',
+  'dividers',
+  'pois',
+  'cities',
+  'countries',
+  'roadLooks',
+  'prefabDescriptions',
+] satisfies MapDataKeys;
+
+type GeoJsonMappedData = MappedDataForKeys<typeof geoJsonMapDataKeys>;
+
 /**
  * Converts TSMapData into a GeoJSON FeatureCollection.
  */
 export function convertToMapGeoJson(
-  tsMapData: MappedData,
+  tsMapData: GeoJsonMappedData,
   options: {
     includeDebug: boolean;
     skipCoalescing: boolean;
