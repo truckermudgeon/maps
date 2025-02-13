@@ -501,8 +501,6 @@ function postProcess(
         const prefabMeta = {
           prefabUid: item.uid,
           prefabPath: prefabDescription.path,
-          sectorX: item.sectorX,
-          sectorY: item.sectorY,
         };
         for (const sp of prefabDescription.spawnPoints) {
           const [x, y] = toMapPosition(
@@ -592,8 +590,8 @@ function postProcess(
         break;
       }
       case ItemType.MapOverlay: {
-        const { x, y, sectorX, sectorY } = item;
-        const pos = { x, y, sectorX, sectorY };
+        const { x, y } = item;
+        const pos = { x, y };
         switch (item.overlayType) {
           case MapOverlayType.Road:
             if (item.token === '') {
@@ -679,8 +677,6 @@ function postProcess(
         );
         let x: number;
         let y: number;
-        let sectorX: number;
-        let sectorY: number;
         if (companySpawnPos) {
           [x, y] = toMapPosition(
             [companySpawnPos.x, companySpawnPos.y],
@@ -688,22 +684,19 @@ function postProcess(
             prefabDescription,
             nodesByUid,
           );
-          ({ sectorX, sectorY } = item);
         } else {
           fallbackPoiCompanies.push({
             token: item.token,
             itemUid: item.uid,
             nodeUid: item.nodeUid,
           });
-          ({ x, y, sectorX, sectorY } = assertExists(
-            nodesByUid.get(item.nodeUid),
-          ));
+          ({ x, y } = assertExists(nodesByUid.get(item.nodeUid)));
         }
         const companyName = defData.companies.get(item.token)?.name;
         if (companyName == null) {
           logger.warn('unknown company name for token', item.token);
         }
-        const pos = { x, y, sectorX, sectorY };
+        const pos = { x, y };
         pois.push({
           ...pos,
           type: 'company',
@@ -718,10 +711,8 @@ function postProcess(
         break;
       }
       case ItemType.Ferry: {
-        const { x, y, sectorX, sectorY } = assertExists(
-          nodesByUid.get(item.nodeUid),
-        );
-        const pos = { x, y, sectorX, sectorY };
+        const { x, y } = assertExists(nodesByUid.get(item.nodeUid));
+        const pos = { x, y };
         const ferry = assertExists(defData.ferries.get(item.token));
         const label = ferry.nameLocalized
           ? assertExists(l10n.get(ferry.nameLocalized.replaceAll('@', '')))
@@ -745,8 +736,8 @@ function postProcess(
         if (label == null) {
           logger.warn('missing viewpoint info for item', item.uid.toString(16));
         }
-        const { x, y, sectorX, sectorY } = item;
-        const pos = { x, y, sectorX, sectorY };
+        const { x, y } = item;
+        const pos = { x, y };
         pois.push({
           ...pos,
           type: 'viewpoint',
@@ -756,8 +747,8 @@ function postProcess(
         break;
       }
       case ItemType.Trigger: {
-        const { x, y, sectorX, sectorY } = item;
-        const pos = { x, y, sectorX, sectorY };
+        const { x, y } = item;
+        const pos = { x, y };
         if (item.actions.find(([key]) => key === 'hud_parking')) {
           pois.push({
             ...pos,

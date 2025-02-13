@@ -20,8 +20,6 @@ export type Node = Readonly<{
   rotationQuat: [number, number, number, number];
   forwardItemUid: bigint;
   backwardItemUid: bigint;
-  sectorX: number;
-  sectorY: number;
   forwardCountryId: number;
   backwardCountryId: number;
 }>;
@@ -119,8 +117,6 @@ export type MileageTarget = Readonly<{
 type BasePoi = Readonly<{
   x: number;
   y: number;
-  sectorX: number;
-  sectorY: number;
   icon: string;
 }>;
 
@@ -270,8 +266,6 @@ export type BaseItem = Readonly<{
   type: ItemType;
   x: number;
   y: number;
-  sectorX: number;
-  sectorY: number;
 }>;
 
 export type Road = BaseItem &
