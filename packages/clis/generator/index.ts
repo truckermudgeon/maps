@@ -15,6 +15,7 @@ import * as spritesheet from './commands/spritesheet';
 
 async function main() {
   await yargs(hideBin(process.argv))
+    .wrap(yargs().terminalWidth()) // Use full width of wide terminals.
     .command(map)
     .command(prefabCurves)
     .command(cities)
