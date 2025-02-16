@@ -2,6 +2,30 @@ import { parseSii } from '../sii-parser';
 import { jsonConverter } from '../sii-visitors';
 
 describe('JsonConverterVisitor', () => {
+  it('parses escaped UTF-8', () => {
+    const text = `
+utf8 : escaped {
+ ascii: "\\x7e\\x00"
+ two_bytes: "\\xC4\\x80\\xd5\\xBf"
+ three_bytes: "\\xe7\\xa6\\x85"
+ four_bytes: "\\xf0\\x9f\\x98\\x80"
+ invalid: "\\x80"
+}
+    `;
+    const res = parseSii(text);
+    expect(jsonConverter.convert(res.cst)).toEqual({
+      utf8: {
+        escaped: {
+          ascii: '~\0',
+          twoBytes: 'Āտ',
+          threeBytes: '禅',
+          fourBytes: '😀',
+          invalid: '�',
+        },
+      },
+    });
+  });
+
   it('parses icon mat files with SDF data', () => {
     const text = `
 effect : "ui.sdf.rfx" {
@@ -41,7 +65,7 @@ effect : "ui.sdf.rfx" {
     });
   });
 
-  it.skip('parses mileage target se_malmo', () => {
+  it('parses mileage target se_malmo', () => {
     const text = `
 SiiNunit
 {
