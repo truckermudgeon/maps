@@ -1182,7 +1182,6 @@ function roadToFeature(
   road: Road,
   roadLook: RoadLook,
   nodes: ReadonlyMap<bigint, Node>,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _dividerFeatures: GeoJSON.Feature<GeoJSON.LineString>[],
 ): RoadFeature[] {
   const startNode = Preconditions.checkExists(nodes.get(road.startNodeUid));
