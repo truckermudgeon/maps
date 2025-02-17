@@ -69,9 +69,13 @@ export const SceneryTownSource = (props: SceneryTownSourceProps) => {
   const filter: ExpressionSpecification =
     game === 'ats'
       ? [
-          'in',
-          ['get', 'state'],
-          ['literal', [...(props.enabledStates ?? allStates)]],
+          'all',
+          ['boolean', ['get', 'show'], true],
+          [
+            'in',
+            ['slice', ['get', 'country'], -2],
+            ['literal', [...(props.enabledStates ?? allStates)]],
+          ],
         ]
       : ['boolean', true];
   const colors = modeColors[mode];
@@ -84,7 +88,7 @@ export const SceneryTownSource = (props: SceneryTownSourceProps) => {
         filter={filter}
         layout={{
           ...baseTextLayout,
-          'text-field': '{name}',
+          'text-field': '{text}',
           'text-allow-overlap': !enableAutoHide,
           'text-variable-anchor': textVariableAnchor,
           'text-size': 10.5,
