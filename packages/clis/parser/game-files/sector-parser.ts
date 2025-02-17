@@ -558,7 +558,10 @@ const Sector = new r.Struct({
 
 const versionWarnings = new Set<number>();
 
-export function parseSector(buffer: Buffer) {
+export function parseSector(
+  buffer: Buffer,
+  ignoreNodeUids: ReadonlySet<bigint>,
+) {
   const version = buffer.readUint32LE();
   if (version !== 901) {
     if (!versionWarnings.has(version)) {
@@ -615,7 +618,12 @@ export function parseSector(buffer: Buffer) {
         }
       })
       .filter(i => i != null),
-    nodes: sector.nodes.map(toNode),
+    nodes: sector.nodes.reduce<Node[]>((acc, n) => {
+      if (!ignoreNodeUids.has(n.uid)) {
+        acc.push(toNode(n));
+      }
+      return acc;
+    }, []),
   };
   const moreItems: typeof simples.items = [];
   const moreNodes: Node[] = [];
