@@ -41,8 +41,7 @@ export class LabelProducer {
    *     The metadata records to use for augmenting the labels generated from
    *     mileage targets in the game data. Optional.
    *
-   * @see {@link clis/generator/mapped-data!readMapData}
-   * @see {@link readMapData}
+   * @see {@link LabelProducer.readMapData}
    * @see {@link readMetas}
    */
   constructor(
@@ -70,6 +69,8 @@ export class LabelProducer {
    * @param region - `'europe' | 'usa'`
    *
    * @returns The game map data, restricted to just the properties needed here.
+   *
+   * @see {@link clis/generator/mapped-data!readMapData}
    */
   static readMapData(
     dir: string,
@@ -83,6 +84,8 @@ export class LabelProducer {
    * @param jsonPath - The path of the metadata file. Only JSON is implemented.
    *
    * @returns An array of metadata records.
+   *
+   * @see {@link LabelDataProvider.readMetas}
    */
   static readMetas(jsonPath: string): LabelMeta[] {
   }
@@ -392,6 +395,11 @@ export interface TargetAnalysis {
  * This class gives access to parser results and to the metadata table.
  * It offers utility methods for easily querying particular aspects
  * needed for mileage target analysis.
+ *
+ * Metadata records with `country` attributes that don't match the
+ * game region of the loaded parser results are ignored. As a result,
+ * - one metadata file can apply to multiple regions, and
+ * - multiple metadata files can apply to a single region.
  */
 export class LabelDataProvider {
   // This class is somewhat inefficient, with nested sequential searches.
@@ -420,11 +428,9 @@ export class LabelDataProvider {
    *     The game map data to use as a primary source.
    * @param metas
    *     The metadata records to use for augmenting the labels generated from
-   *     mileage targets in the game data. Records with `country` attributes
-   *     that don't match the `gameData`'s region are ignored.
+   *     mileage targets in the game data.
    *
    * @see {@link clis/generator/mapped-data!readMapData}
-   * @see {@link readMapData}
    * @see {@link readMetas}
    */
   constructor(
@@ -541,21 +547,6 @@ export class LabelDataProvider {
    * @returns `'europe' | 'usa'`
    */
   region(): RegionName {
-  }
-
-  /**
-   * Reads game data from the parser output into memory.
-   * Suitable for feeding into the {@link LabelDataProvider} constructor.
-   *
-   * @param dir    - The path of the dir containing the parser output.
-   * @param region - `'europe' | 'usa'`
-   *
-   * @returns The game map data, restricted to just the properties needed here.
-   */
-  static readMapData(
-    dir: string,
-    region: RegionName,
-  ): MappedDataForKeys<['cities', 'countries', 'mileageTargets']> {
   }
 
   /**
