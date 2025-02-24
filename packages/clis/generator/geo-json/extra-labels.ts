@@ -153,13 +153,13 @@ export abstract class TargetLabel extends GenericLabel {
    * The original {@link MileageTarget} that this label was generated from.
    * @internal
    */
-  readonly target;
+  readonly target: MileageTarget;
 
   /**
    * Details on the mileage target analysis results.
    * @internal
    */
-  readonly analysis;
+  readonly analysis: TargetAnalysis;
 
   /**
    * @param target - The {@link MileageTarget} to generate a label for.
@@ -274,7 +274,7 @@ export class LabelDataProvider {
   /**
    * The full list of {@link MileageTarget} objects read from the parser output.
    */
-  readonly mileageTargets;
+  readonly mileageTargets: readonly MileageTarget[];
 
   /**
    * Function to transform game coordinates to geographic coordinates.
@@ -286,7 +286,11 @@ export class LabelDataProvider {
    *
    * @see {@link clis/generator/geo-json/normalize!createNormalizeFeature}
    */
-  readonly normalizeFeature;
+  readonly normalizeFeature: <
+    T extends GeoJSON.Feature<GeoJSON.Point, LabelMeta>,
+  >(
+    feature: T,
+  ) => T;
 
 
   /**
