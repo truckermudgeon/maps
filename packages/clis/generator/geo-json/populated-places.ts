@@ -12,6 +12,8 @@ const __dirname = path.dirname(__filename);
  * Maps ETS2 {@link Country} `code` values to ISO 3166-1 alpha-2 codes.
  * If an entry isn't listed here, then `Country::code` is assumed to
  * be an ISO 3166-1 alpha-2 code.
+ *
+ * @see {@link https://en.wikipedia.org/wiki/International_vehicle_registration_code}
  */
 export const ets2IsoA2 = new Map([
   ['A', 'AT'],

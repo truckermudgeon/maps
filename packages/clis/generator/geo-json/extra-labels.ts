@@ -113,7 +113,7 @@ export interface Label {
   readonly isValid: boolean;
 
   /**
-   * @returns The metadata for the map label as a shallow copy of this object.
+   * The metadata for the map label.
    *
    * @see https://github.com/nautofon/ats-towns/blob/main/label-metadata.md
    */
@@ -183,7 +183,8 @@ export class AtsLabel extends TargetLabel {
 /**
  * Map label generated from Euro Truck Simulator 2 mileage targets.
  *
- * Contains heuristics for ETS2 `editorName` practice and the ISO country code.
+ * Contains heuristics for ETS2 `editorName` practice, exclusion of "unnamed"
+ * country border targets, and the ISO country code.
  */
 export class Ets2Label extends TargetLabel {
 }
@@ -235,7 +236,8 @@ export interface TargetAnalysis {
   cityTokenEditorName?: string;
 
   /**
-   * True if the mileage target seems to be for an unnamed state line crossing.
+   * True if the mileage target seems to be for an unnamed state line
+   * or country border crossing.
    */
   excludeBorder?: boolean;
 
@@ -278,7 +280,6 @@ export class LabelDataProvider {
 
   /**
    * Function to transform game coordinates to geographic coordinates.
-   * Uses the precision given by {@link geographicCoordinatePrecision}.
    *
    * @param feature - A GeoJSON.Feature with (projected) game coordinates.
    *
@@ -371,7 +372,7 @@ export class LabelDataProvider {
    *
    * Country codes in mileage target tokens mostly follow ISO 3166
    * (but UK is used for Great Britain and XK for Kosovo).
-   * In the game data, ATS uses ISO subdivisions for country codes, while
+   * In the game's country data, codes used for ATS are ISO subdivisions, while
    * ETS2 uses the Distinguishing Sign of Vehicles in International Traffic.
    *
    * @param code - The mileage target country code to look up.
@@ -407,8 +408,6 @@ export class LabelDataProvider {
    * - `true` if the metadata record's country is in this game region.
    * - `false` if the metadata record's country is in another game region.
    * - `undefined` if the metadata record doesn't identify a country.
-   *
-   * @see {@link clis/generator/geo-json/populated-places!ets2IsoA2}
    */
   isInRegion(meta: LabelMeta): boolean | undefined {
   }
