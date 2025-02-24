@@ -98,13 +98,8 @@ export class LabelProducer {
 
 /**
  * Map label.
- *
- * In addition to the metadata attributes (which all are optional), this
- * interface defines methods that all map labels should have available.
- *
- * @see https://github.com/nautofon/ats-towns/blob/main/label-metadata.md
  */
-export interface Label extends LabelMeta {
+export interface Label {
   /**
    * True if the map label is considered valid for display.
    *
@@ -119,8 +114,10 @@ export interface Label extends LabelMeta {
 
   /**
    * @returns The metadata for the map label as a shallow copy of this object.
+   *
+   * @see https://github.com/nautofon/ats-towns/blob/main/label-metadata.md
    */
-  meta(): LabelMeta;
+  readonly meta: LabelMeta;
 
   /**
    * @returns The map label as a GeoJSON point feature.
@@ -134,25 +131,8 @@ export interface Label extends LabelMeta {
 
 /**
  * Map label base class.
- *
- * @see https://github.com/nautofon/ats-towns/blob/main/label-metadata.md
  */
 export class GenericLabel implements Label {
-
-  token: string | undefined;
-  text: string | undefined;
-  easting: number | undefined;
-  southing: number | undefined;
-  kind: string | undefined;
-  signed: 'all' | 'most' | 'some' | 'remote' | undefined;
-  access: boolean | undefined;
-  industry: boolean | undefined;
-  city: string | undefined;
-  country: string | undefined;
-  show: boolean | undefined;
-  checked: string | undefined;
-  remark: string | undefined;
-
   /**
    * @param data - The game data provider for the label's region.
    */
