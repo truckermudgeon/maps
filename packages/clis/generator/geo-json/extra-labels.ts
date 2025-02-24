@@ -18,7 +18,7 @@ type RegionName = 'usa' | 'europe';
  * ```ts
  * const producer = new LabelProducer({
  *   gameData: LabelProducer.readMapData('path/to/parser-output', 'usa'),
- *   metaData: LabelProducer.readMetaData('path/to/meta.json'),
+ *   metas: LabelProducer.readMetas('path/to/meta.json'),
  * });
  * const labels   = producer.makeLabels();
  * const features = labels
@@ -37,20 +37,20 @@ export class LabelProducer {
   /**
    * @param __namedParameters.gameData
    *     The game map data to use as a primary source.
-   * @param __namedParameters.metaData
-   *     The metadata table to use for augmenting the labels generated from
+   * @param __namedParameters.metas
+   *     The metadata records to use for augmenting the labels generated from
    *     mileage targets in the game data. Optional.
    *
    * @see {@link clis/generator/mapped-data!readMapData}
    * @see {@link readMapData}
-   * @see {@link readMetaData}
+   * @see {@link readMetas}
    */
   constructor({
     gameData,
-    metaData = [],
+    metas = [],
   }: {
     gameData: MappedDataForKeys<['cities', 'countries', 'mileageTargets']>;
-    metaData?: LabelMeta[];
+    metas?: LabelMeta[];
   }) {
   }
 
@@ -89,13 +89,13 @@ export class LabelProducer {
   }
 
   /**
-   * Reads the metadata table from a file into memory.
+   * Reads metadata records from disk into memory.
    *
    * @param jsonPath - The path of the metadata file. Only JSON is implemented.
    *
-   * @returns The metadata table as array.
+   * @returns An array of metadata records.
    */
-  static readMetaData(jsonPath: string): LabelMeta[] {
+  static readMetas(jsonPath: string): LabelMeta[] {
   }
 }
 
@@ -429,18 +429,18 @@ export class LabelDataProvider {
   /**
    * @param gameData
    *     The game map data to use as a primary source.
-   * @param metaData
-   *     The metadata table to use for augmenting the labels generated from
+   * @param metas
+   *     The metadata records to use for augmenting the labels generated from
    *     mileage targets in the game data. Records with `country` attributes
    *     that don't match the `gameData`'s region are ignored.
    *
    * @see {@link clis/generator/mapped-data!readMapData}
    * @see {@link readMapData}
-   * @see {@link readMetaData}
+   * @see {@link readMetas}
    */
   constructor(
     gameData: MappedDataForKeys<['cities', 'countries', 'mileageTargets']>,
-    metaData: LabelMeta[],
+    metas: LabelMeta[],
   ) {
   }
 
@@ -570,12 +570,12 @@ export class LabelDataProvider {
   }
 
   /**
-   * Reads the metadata table from a file into memory.
+   * Reads metadata records from disk into memory.
    *
    * @param jsonPath - The path of the metadata file. Only JSON is implemented.
    *
-   * @returns The metadata table as array.
+   * @returns An array of metadata records.
    */
-  static readMetaData(jsonPath: string): LabelMeta[] {
+  static readMetas(jsonPath: string): LabelMeta[] {
   }
 }
