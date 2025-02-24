@@ -4,7 +4,12 @@
  * @author nautofon
  */
 
-import type { City, Country, MileageTarget } from '@truckermudgeon/map/types';
+import type {
+  City,
+  Country,
+  LabelMeta,
+  MileageTarget,
+} from '@truckermudgeon/map/types';
 import type { GeoJSON } from 'geojson';
 import type { MappedDataForKeys } from '../mapped-data';
 
@@ -92,124 +97,6 @@ export class LabelProducer {
 }
 
 /**
- * Metadata attributes for a map label.
- *
- * All attributes are optional. When applying metadata to labels generated
- * from mileage targets, an __undefined__ attribute (`null`) should cause
- * that attribute to be undefined in the result as well, whereas a
- * __missing__ attribute should cause the result to use the mileage target
- * data for that particular attribute.
- *
- * @see https://github.com/nautofon/ats-towns/blob/main/label-metadata.md
- */
-export interface LabelMeta {
-  // Meant for JSON, thus this interface must use null rather than undefined.
-
-  /**
-   * The token identifying the mileage target to apply the label attributes to.
-   *
-   * If missing or undefined, this object describes a new label instead.
-   */
-  token?: string | null;
-
-  /**
-   * The label text / feature name.
-   */
-  text?: string | null;
-
-  /**
-   * The adjusted easting, if any.
-   *
-   * Label metadata attributes use the terms easting and {@link southing} to
-   * refer to `x` / `y` coordinates. These more verbose terms avoid ambiguity
-   * of the coordinates' axis order and orientation. In the software project
-   * "Web-based maps for ATS and ETS2", only this interface {@link LabelMeta}
-   * and its implementers use these terms, in order to match the data files.
-   *
-   * The attributes easting and southing may be missing in metadata if the
-   * position read from mileage target data is already adequate.
-   */
-  easting?: number | null;
-
-  /**
-   * The adjusted southing, if any.
-   *
-   * @see {@link easting}
-   */
-  southing?: number | null;
-
-  /**
-   * The kind of location this label is for.
-   *
-   * Possible values include `city`, `town`, `unnamed`, and several others.
-   * Missing for most labels generated from new unassessed mileage targets;
-   * for such labels, the best value to assume as default is probably `town`.
-   *
-   * Label objects of the kind `unnamed` are not suitable for map display.
-   */
-  kind?: string | null;
-
-  /**
-   * Describes how the name is signed at a location in the game.
-   *
-   * Possible values are:
-   * - `all`:    Name well visible, no matter which direction you arrive from.
-   * - `most`:   Name visible when arriving from a clear majority of directions.
-   * - `some`:   Name visible in _some_ way, but it may not be very obvious.
-   * - `remote`: Name _not_ visible on site, but it appears on distance or
-   *             direction signs elsewhere.
-   */
-  signed?: 'all' | 'most' | 'some' | 'remote' | null;
-
-  /**
-   * True if a core part of the named location is accessible during regular
-   * gameplay.
-   */
-  access?: boolean | null;
-
-  /**
-   * True if the label is for a game location with deliverable industry, for
-   * example a scenery town with company depots (sometimes called a "suburb").
-   */
-  industry?: boolean | null;
-
-  /**
-   * The SCS token of the marked city this label can be proven to be associated
-   * with, if any.
-   */
-  city?: string | null;
-
-  /**
-   * The ISO 3166 code of the country / state / province the labeled feature
-   * is located in, for example `CZ` (Czechia) or `US-NV` (Nevada).
-   */
-  country?: string | null;
-
-  /**
-   * True (or missing) if it's recommended to show this label on the map
-   * by default. The value of this attribute is largely subjective.
-   */
-  show?: boolean | null;
-
-  /**
-   * The ISO 8601 date of the last time this location was checked in the game
-   * (usually `YYYY-MM`).
-   */
-  checked?: string | null;
-
-  /**
-   * Note or comment about the label or its attributes.
-   */
-  remark?: string | null;
-
-  /**
-   * Reference to real-life information about the labeled entity.
-   * Not currently used; reserved for future expansion.
-   */
-  ref?: unknown;
-}
-
-/**
  * Map label.
  *
  * In addition to the metadata attributes (which all are optional), this
@@ -265,7 +152,6 @@ export class GenericLabel implements Label {
   show: boolean | undefined;
   checked: string | undefined;
   remark: string | undefined;
-  ref: unknown;
 
   /**
    * @param data - The game data provider for the label's region.
