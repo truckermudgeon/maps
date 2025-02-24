@@ -63,14 +63,6 @@ export class LabelProducer {
   }
 
   /**
-   * Like {@link makeLabels}, but additionally filters out all invalid labels.
-   *
-   * @returns All _valid_ map labels for the provided game data and metadata.
-   */
-  makeValidLabels(): Label[] {
-  }
-
-  /**
    * Reads game data from the parser output into memory.
    * Suitable for feeding into the {@link LabelProducer} constructor.
    *
