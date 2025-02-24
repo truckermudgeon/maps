@@ -384,15 +384,17 @@ export class LabelDataProvider {
   }
 
   /**
-   * Search for a country in the game data by ISO 3166-1 or ISO 3166-2 code.
+   * Check whether a metadata record has an ISO 3166-1 or ISO 3166-2 code
+   * that matches a country in the provided game data.
    *
-   * @param isoCode - The country or country and subdivision code to look up.
+   * @param meta - The metadata record for which to look up the country /
+   *               country and subdivision ISO code.
    *
    * @returns True if the given code identifies a country in the game data.
    *
    * @see {@link clis/generator/geo-json/populated-places!ets2IsoA2}
    */
-  isValidCountry(isoCode: string): boolean {
+  hasKnownCountryCode(meta: LabelMeta): boolean {
   }
 
   /**
