@@ -122,7 +122,7 @@ export interface Label {
   /**
    * @returns The map label as a GeoJSON point feature.
    *
-   * @throws ReferenceError if no coordinates are available.
+   * @throws Error if no coordinates are available.
    *
    * @see {@link isValid}
    */
