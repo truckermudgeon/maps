@@ -16,10 +16,10 @@ type RegionName = 'usa' | 'europe';
  *
  * @example
  * ```ts
- * const producer = new LabelProducer({
- *   gameData: LabelProducer.readMapData('path/to/parser-output', 'usa'),
- *   metas: LabelProducer.readMetas('path/to/meta.json'),
- * });
+ * const producer = new LabelProducer(
+ *   LabelProducer.readMapData('path/to/parser-output', 'usa'),
+ *   LabelProducer.readMetas('path/to/meta.json'),
+ * );
  * const labels   = producer.makeLabels();
  * const features = labels
  *   .filter( label => label.isValid() )
@@ -35,9 +35,9 @@ export class LabelProducer {
   readonly dataProvider: LabelDataProvider;
 
   /**
-   * @param __namedParameters.gameData
+   * @param gameData
    *     The game map data to use as a primary source.
-   * @param __namedParameters.metas
+   * @param metas
    *     The metadata records to use for augmenting the labels generated from
    *     mileage targets in the game data. Optional.
    *
@@ -45,13 +45,10 @@ export class LabelProducer {
    * @see {@link readMapData}
    * @see {@link readMetas}
    */
-  constructor({
-    gameData,
-    metas = [],
-  }: {
-    gameData: MappedDataForKeys<['cities', 'countries', 'mileageTargets']>;
-    metas?: LabelMeta[];
-  }) {
+  constructor(
+    gameData: MappedDataForKeys<['cities', 'countries', 'mileageTargets']>,
+    metas?: LabelMeta[],
+  ) {
   }
 
   /**
