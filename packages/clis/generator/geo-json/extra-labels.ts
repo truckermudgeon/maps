@@ -27,7 +27,7 @@ type RegionName = 'usa' | 'europe';
  * );
  * const labels   = producer.makeLabels();
  * const features = labels
- *   .filter( label => label.isValid() )
+ *   .filter( label => label.isValid )
  *   .map( label => label.toGeoJsonFeature() );
  * ```
  *
@@ -106,7 +106,7 @@ export class LabelProducer {
  */
 export interface Label extends LabelMeta {
   /**
-   * @returns True if the map label is considered valid for display.
+   * True if the map label is considered valid for display.
    *
    * Examples for map labels that aren't valid:
    * - No coordinates are available.
@@ -115,7 +115,7 @@ export interface Label extends LabelMeta {
    *      for a location in a DLC that hasn't been released, or that it's
    *      located in a different game).
    */
-  isValid(): boolean;
+  readonly isValid: boolean;
 
   /**
    * @returns The metadata for the map label as a shallow copy of this object.
@@ -428,11 +428,10 @@ export class LabelDataProvider {
   }
 
   /**
-   * The name of the region for which game data is provided.
-   *
-   * @returns `'europe' | 'usa'`
+   * The name of the region for which game data is provided
+   * (`'europe'` or `'usa'`).
    */
-  region(): RegionName {
+  get region(): RegionName {
   }
 
   /**
