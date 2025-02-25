@@ -10,8 +10,13 @@ import type {
   LabelMeta,
   MileageTarget,
 } from '@truckermudgeon/map/types';
+import fs from 'fs';
 import type { GeoJSON } from 'geojson';
+import { logger } from '../logger';
 import type { MappedDataForKeys } from '../mapped-data';
+import { readMapData } from '../mapped-data';
+import { createNormalizeFeature } from './normalize';
+import { ets2IsoA2 } from './populated-places';
 
 type RegionName = 'usa' | 'europe';
 
@@ -39,6 +44,8 @@ export class LabelProducer {
    */
   readonly dataProvider: LabelDataProvider;
 
+  private readonly hasMeta: boolean;
+
   /**
    * @param gameData
    *     The game map data to use as a primary source.
@@ -53,6 +60,9 @@ export class LabelProducer {
     gameData: MappedDataForKeys<['cities', 'countries', 'mileageTargets']>,
     metas?: LabelMeta[],
   ) {
+    metas ??= [];
+    this.dataProvider = new LabelDataProvider(gameData, metas);
+    this.hasMeta = metas.length > 0;
   }
 
   /**
@@ -64,6 +74,20 @@ export class LabelProducer {
    * @returns All map labels for the provided game data and metadata.
    */
   makeLabels(): Label[] {
+    const labelClass = {
+      usa: AtsLabel,
+      europe: Ets2Label,
+    }[this.dataProvider.region];
+    let labels: Label[] = this.dataProvider.mileageTargets.map(
+      target => new labelClass(target, this.dataProvider),
+    );
+
+    if (this.hasMeta) {
+      labels.forEach(label => this.dataProvider.assignMeta(label));
+      labels = labels.concat(this.dataProvider.missingLabels(labels));
+    }
+
+    return labels;
   }
 
   /**
@@ -81,6 +105,9 @@ export class LabelProducer {
     dir: string,
     region: RegionName,
   ): MappedDataForKeys<['cities', 'countries', 'mileageTargets']> {
+    return readMapData(dir, region, {
+      mapDataKeys: ['cities', 'countries', 'mileageTargets'],
+    });
   }
 
   /**
@@ -93,6 +120,7 @@ export class LabelProducer {
    * @see {@link LabelDataProvider.readMetas}
    */
   static readMetas(jsonPath: string): LabelMeta[] {
+    return LabelDataProvider.readMetas(jsonPath);
   }
 }
 
@@ -133,10 +161,41 @@ export interface Label {
  * Map label base class.
  */
 export class GenericLabel implements Label {
+  protected readonly data: LabelDataProvider;
+  readonly meta: LabelMeta;
+
   /**
    * @param data - The game data provider for the label's region.
    */
   constructor(data: LabelDataProvider) {
+    this.data = data;
+    this.meta = {};
+  }
+
+  get isValid(): boolean {
+    return (
+      this.meta.kind != 'unnamed' &&
+      this.data.hasKnownCountryCode(this.meta) &&
+      this.meta.text != null &&
+      this.meta.easting != null &&
+      this.meta.southing != null
+    );
+  }
+
+  toGeoJsonFeature(): GeoJSON.Feature<GeoJSON.Point, LabelMeta> {
+    const { easting, southing, ...meta } = this.meta;
+    const position = [easting, southing];
+    if (!position.every(v => v != null)) {
+      throw new ReferenceError('toGeoJsonFeature(): coordinates not defined');
+    }
+    return this.data.normalizeFeature({
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: position,
+      },
+      properties: meta,
+    });
   }
 }
 
@@ -166,8 +225,121 @@ export abstract class TargetLabel extends GenericLabel {
    * @param data   - The game data provider for the target's region.
    */
   constructor(target: MileageTarget, data: LabelDataProvider) {
+    super(data);
+    this.target = target;
+    this.analysis = this.targetAnalysis();
   }
 
+  protected targetAnalysis(): TargetAnalysis {
+    const analysis = {
+      // Placeholder value, to be substituted with something better suited
+      // by following the template below.
+      tidyName: this.target.defaultName,
+    };
+
+    this.determineCountry(analysis);
+    this.determineLabelText(analysis); // Label text is needed for city search.
+    this.determineCity(analysis);
+    this.determineLabelText(analysis); // Refine label text based on found city.
+    this.determineExclusionReasons(analysis);
+    this.determineAccessDistance(analysis);
+    this.applyResults(analysis);
+    if (!this.isValid) {
+      // If clients choose not to filter out non-valid labels, those should
+      // at least be hidden by default.
+      this.meta.show = false;
+    }
+    return analysis;
+  }
+
+  protected determineCountry(analysis: TargetAnalysis): void {
+    // Mileage target tokens generally begin with a two-letter country code.
+    // This step should perhaps involve a spatial analysis, but there are only
+    // five known cases where the token-based heuristic fails (all in Croatia).
+    // These exceptions might be better handled through metadata.
+    const countryMatch = /^([a-z]{2})[a-z_]/i.exec(this.target.token);
+    if (countryMatch) {
+      analysis.countryCode = countryMatch[1].toUpperCase();
+      analysis.country = this.data.countryFromCode(analysis.countryCode);
+    }
+  }
+
+  protected determineCity(analysis: TargetAnalysis): void {
+    // Mileage targets referring to a city can often be identified by
+    // searching for a city of the same name. But mileage target names
+    // tend to use varying spellings, so we need to check them all.
+    analysis.city = [
+      this.target.defaultName,
+      ...this.target.nameVariants,
+      analysis.tidyName,
+    ]
+      .map(name => this.data.cityFromName(name, analysis.country))
+      .find(city => !!city);
+
+    analysis.cityToken = analysis.city?.token;
+  }
+
+  protected determineLabelText(analysis: TargetAnalysis): void {
+    // The mileage target default name is the most reliable source overall.
+    // But for cities, the name from the city dataset is actually better.
+    let tidyName = (analysis.city?.name ?? this.target.defaultName)
+      // Drop all html-like tags. Only use first line of multi-line names.
+      .replace(/<br>.*/i, '')
+      .replace(/<.*?>/g, '');
+
+    // All upper case or all lower case: change to title case.
+    if (
+      /^\P{Lowercase_Letter}+$/u.test(tidyName) ||
+      /^\P{Uppercase_Letter}+$/u.test(tidyName)
+    ) {
+      // JavaScript regexes don't have Unicode-aware boundary assertions;
+      // (?<=^|\P{Letter}) works more or less like \b, but for Unicode text.
+      tidyName = tidyName.replace(
+        /(?<=^|\P{Letter})(\p{Letter})(\p{Letter}*)/gu,
+        (_, first, remaining) =>
+          (first as string).toUpperCase() + (remaining as string).toLowerCase(),
+      );
+    }
+    analysis.tidyName = tidyName;
+  }
+
+  protected determineExclusionReasons(analysis: TargetAnalysis): void {
+    // Some mileage targets just refer to unnamed highway junctions.
+    analysis.excludeJunction = this.target.editorName.includes(' x ');
+  }
+
+  protected determineAccessDistance(analysis: TargetAnalysis): void {
+    // A limit of 20 is high, but at least avoids some pathological cases.
+    analysis.tooMuchDistance = this.target.distanceOffset > 20;
+  }
+
+  protected applyResults(analysis: TargetAnalysis): void {
+    this.meta.token = this.target.token;
+    this.meta.text = analysis.tidyName;
+    this.meta.easting = this.target.x;
+    this.meta.southing = this.target.y;
+
+    if (analysis.country) {
+      this.meta.country = analysis.countryCode;
+    }
+    if (analysis.city) {
+      this.meta.kind = 'city';
+      this.meta.city = analysis.city.token;
+      this.meta.show = false;
+    }
+    if (
+      analysis.excludeBorder ||
+      analysis.excludeJunction ||
+      analysis.excludeNumber
+    ) {
+      this.meta.kind = 'unnamed';
+      this.meta.text = this.target.editorName;
+    }
+    if (analysis.tooMuchDistance) {
+      this.meta.access = false;
+      this.meta.show = false;
+    }
+  }
 }
 
 /**
@@ -178,6 +350,76 @@ export abstract class TargetLabel extends GenericLabel {
  * and road number targets, distance offset limit, and the ISO state code.
  */
 export class AtsLabel extends TargetLabel {
+  protected override determineCity(analysis: TargetAnalysis): void {
+    super.determineCity(analysis);
+
+    // In ATS, the mileage target editor name of cities is usually exactly
+    // the city name with the state abbreviation in front of it.
+    const cityByEditorName = this.data.cityFromName(
+      this.target.editorName.replace(
+        new RegExp(`^${analysis.countryCode} `),
+        '',
+      ),
+      analysis.country,
+    );
+
+    if (cityByEditorName) {
+      analysis.city = cityByEditorName;
+      analysis.cityTokenEditorName = cityByEditorName.token;
+    }
+  }
+
+  protected override determineLabelText(analysis: TargetAnalysis): void {
+    super.determineLabelText(analysis);
+
+    // If signs in the game world abbreviate a name, but the name can reasonably
+    // be spelled out in full, the `text` should also be spelled out in full.
+    analysis.tidyName = analysis.tidyName
+      .replace(/ Ck$/, ' Creek')
+      .replace(/^Ft\.? /, 'Fort ')
+      .replace(/ Jct$/, ' Junction')
+      .replace(/ Mtn$/, ' Mountain')
+      .replace(/^St\.? /, 'Saint ')
+      .replace(/^So /, 'South ')
+      .replace(/ Spgs$| Sprs\.$/, ' Springs');
+  }
+
+  protected override determineExclusionReasons(analysis: TargetAnalysis): void {
+    super.determineExclusionReasons(analysis);
+
+    // In ATS, some mileage targets just refer to the border between states.
+    const re = new RegExp(`^(?:${analysis.countryCode} )?State Line$`);
+    analysis.excludeBorder = this.target.nameVariants.reduce(
+      (prev, name) => prev || re.test(name),
+      /\bState Line$/.test(this.target.defaultName),
+    );
+
+    // In ATS, some mileage targets just refer to other highways.
+    // This rule also catches regular names that happen to include route
+    // numbers. Many such cases should be excluded, but there are exceptions,
+    // e.g. Ritzville, WA. These must be fixed manually through metadata.
+    analysis.excludeNumber = new RegExp(
+      `\\b(?:US|I|Hwy|${analysis.countryCode})[- ]?[1-9][0-9]*[ENSW]?\\b`,
+    ).test(this.target.editorName);
+  }
+
+  protected override determineAccessDistance(analysis: TargetAnalysis): void {
+    // A large distance offset means that the target is far away from the town
+    // it's referring to, often so far away that the town doesn't exist in the
+    // game world at all. In ATS, experience suggests that this is the case
+    // for all offsets > 7 and _not_ the case for most offsets < 5.
+    analysis.tooMuchDistance = this.target.distanceOffset > 6;
+  }
+
+  protected override applyResults(analysis: TargetAnalysis): void {
+    super.applyResults(analysis);
+
+    if (analysis.country) {
+      // The United States are currently the only country in ATS.
+      // The "country code" actually identifies the state.
+      this.meta.country = 'US-' + analysis.country.code;
+    }
+  }
 }
 
 /**
@@ -187,6 +429,37 @@ export class AtsLabel extends TargetLabel {
  * country border targets, and the ISO country code.
  */
 export class Ets2Label extends TargetLabel {
+  protected override determineCity(analysis: TargetAnalysis): void {
+    super.determineCity(analysis);
+
+    // In ETS2, the mileage target editor name of cities is usually exactly
+    // the city token.
+    const cityByEditorName = this.data.cityFromToken(
+      this.target.editorName,
+      analysis.country,
+    );
+
+    if (cityByEditorName) {
+      analysis.city = cityByEditorName;
+      analysis.cityTokenEditorName = cityByEditorName.token;
+    }
+  }
+
+  protected override determineExclusionReasons(analysis: TargetAnalysis): void {
+    super.determineExclusionReasons(analysis);
+
+    // In ETS2, some mileage targets just refer to the border between countries.
+    analysis.excludeBorder = /^[a-z]{2}_bord(?:er)?_/.test(this.target.token);
+  }
+
+  protected override applyResults(analysis: TargetAnalysis): void {
+    super.applyResults(analysis);
+
+    // Mileage target tokens use UK, but the ISO code is GB.
+    if (this.meta.country == 'UK') {
+      this.meta.country = 'GB';
+    }
+  }
 }
 
 /**
@@ -293,6 +566,11 @@ export class LabelDataProvider {
     feature: T,
   ) => T;
 
+  protected readonly gameData: MappedDataForKeys<
+    ['cities', 'countries', 'mileageTargets']
+  >;
+  protected readonly metas: LabelMeta[];
+  protected readonly metaByToken: Map<string, LabelMeta>;
 
   /**
    * @param gameData
@@ -308,6 +586,20 @@ export class LabelDataProvider {
     gameData: MappedDataForKeys<['cities', 'countries', 'mileageTargets']>,
     metas: LabelMeta[],
   ) {
+    this.gameData = gameData;
+
+    // Metadata records with no country attribute might still be assignable via
+    // the token, thus we don't filter on an `undefined` region check result.
+    this.metas = metas.filter(meta => this.isInRegion(meta) !== false);
+
+    this.metaByToken = new Map(this.metas.map(x => [x.token ?? '', x]));
+    this.metaByToken.delete('');
+
+    this.mileageTargets = Array.from(this.gameData.mileageTargets.values());
+
+    // Four decimal places = meter-level precision in the scaled game world.
+    const precision = 4;
+    this.normalizeFeature = createNormalizeFeature(this.region, precision);
   }
 
   /**
@@ -324,6 +616,10 @@ export class LabelDataProvider {
    * @see {@link LabelMeta}
    */
   assignMeta(label: Label): void {
+    const meta = this.metaByToken.get(label.meta.token ?? '');
+    if (meta) {
+      Object.assign(label.meta, meta);
+    }
   }
 
   /**
@@ -337,6 +633,22 @@ export class LabelDataProvider {
    *     metadata table.
    */
   missingLabels(existing: Label[]): Label[] {
+    const existingByToken = new Map(
+      existing.map(label => [label.meta.token, label]),
+    );
+    const missingMeta = this.metas.filter(
+      meta => !existingByToken.has(meta.token),
+    );
+    return missingMeta.map(meta => {
+      const label = new GenericLabel(this);
+      Object.assign(label.meta, meta);
+      if (meta.token && this.isInRegion(meta)) {
+        logger.warn(
+          `Can't assign metadata for target ${meta.token} unknown in ${this.region}${label.isValid ? ' (label valid)' : ''}`,
+        );
+      }
+      return label;
+    });
   }
 
   /**
@@ -353,6 +665,14 @@ export class LabelDataProvider {
    *     `country` was given.
    */
   cityFromName(name: string, country: Country | undefined): City | undefined {
+    return Array.from(this.gameData.cities.values()).find(
+      city =>
+        country?.token == city.countryToken &&
+        city.name.localeCompare(name, undefined, {
+          usage: 'search',
+          sensitivity: 'accent',
+        }) == 0,
+    );
   }
 
   /**
@@ -365,6 +685,10 @@ export class LabelDataProvider {
    *     `country` was given.
    */
   cityFromToken(token: string, country: Country | undefined): City | undefined {
+    const city = this.gameData.cities.get(token);
+
+    // Verify the country as a sanity check.
+    return country?.token == city?.countryToken ? city : undefined;
   }
 
   /**
@@ -382,6 +706,13 @@ export class LabelDataProvider {
    * @see {@link clis/generator/geo-json/populated-places!ets2IsoA2}
    */
   countryFromCode(code: string): Country | undefined {
+    return Array.from(this.gameData.countries.values()).find(
+      country =>
+        ets2IsoA2.get(country.code) == code ||
+        country.code == code ||
+        // The ISO and DSIT codes are GB, but mileage target tokens use UK.
+        (country.code == 'GB' && code == 'UK'),
+    );
   }
 
   /**
@@ -396,6 +727,11 @@ export class LabelDataProvider {
    * @see {@link clis/generator/geo-json/populated-places!ets2IsoA2}
    */
   hasKnownCountryCode(meta: LabelMeta): boolean {
+    return !!(
+      meta.country != null &&
+      this.isInRegion(meta) &&
+      this.countryFromCode(meta.country.replace(/^(?:CA|MX|US)-/, ''))
+    );
   }
 
   /**
@@ -410,6 +746,10 @@ export class LabelDataProvider {
    * - `undefined` if the metadata record doesn't identify a country.
    */
   isInRegion(meta: LabelMeta): boolean | undefined {
+    if (!meta.country) {
+      return undefined;
+    }
+    return /^(?:CA|MX|US)/.test(meta.country) == (this.region == 'usa');
   }
 
   /**
@@ -417,6 +757,7 @@ export class LabelDataProvider {
    * (`'europe'` or `'usa'`).
    */
   get region(): RegionName {
+    return this.gameData.map;
   }
 
   /**
@@ -427,5 +768,6 @@ export class LabelDataProvider {
    * @returns An array of metadata records.
    */
   static readMetas(jsonPath: string): LabelMeta[] {
+    return JSON.parse(fs.readFileSync(jsonPath, 'utf-8')) as LabelMeta[];
   }
 }
