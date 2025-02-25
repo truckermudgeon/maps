@@ -322,19 +322,27 @@ export abstract class TargetLabel extends GenericLabel {
     if (analysis.country) {
       this.meta.country = analysis.countryCode;
     }
+
     if (analysis.city) {
       this.meta.kind = 'city';
       this.meta.city = analysis.city.token;
       this.meta.show = false;
     }
+
     if (
       analysis.excludeBorder ||
       analysis.excludeJunction ||
       analysis.excludeNumber
     ) {
       this.meta.kind = 'unnamed';
-      this.meta.text = this.target.editorName;
+
+      // Mention all mileage target name variants for excluded labels,
+      // to assist manual analysis.
+      const target = this.target;
+      this.meta.remark = [target.defaultName, ...target.nameVariants].join(';');
+      this.meta.text = target.editorName;
     }
+
     if (analysis.tooMuchDistance) {
       this.meta.access = false;
       this.meta.show = false;

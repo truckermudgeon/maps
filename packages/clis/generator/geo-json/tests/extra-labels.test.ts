@@ -270,6 +270,7 @@ describe('filter unnamed locations', () => {
       token: 'ca_us6x395',
       kind: 'unnamed',
       show: false,
+      remark: 'Jct',
     });
     expect((label as TargetLabel).analysis).toMatchObject({
       excludeBorder: false,
@@ -287,6 +288,7 @@ describe('filter unnamed locations', () => {
       kind: 'unnamed',
       city: 'sidney',
       show: false,
+      remark: 'Sidney',
     });
     expect((label as TargetLabel).analysis).toMatchObject({
       excludeBorder: false,
@@ -303,6 +305,7 @@ describe('filter unnamed locations', () => {
       token: 'wa_ritzvill2',
       kind: 'unnamed',
       show: false,
+      remark: 'Ritzville',
     });
     expect((label as TargetLabel).analysis).toMatchObject({
       excludeBorder: false,
@@ -319,6 +322,7 @@ describe('filter unnamed locations', () => {
       token: 'ca_nv_sl_',
       kind: 'unnamed',
       show: false,
+      remark: 'Nevada State Line;Topaz Lake',
     });
     expect((label as TargetLabel).analysis).toMatchObject({
       excludeBorder: true,
