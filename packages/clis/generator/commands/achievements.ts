@@ -1,6 +1,9 @@
 import path from 'path';
 import type { Argv, BuilderArguments } from 'yargs';
-import { convertToAchievementsGeoJson } from '../geo-json/achievements';
+import {
+  achievementsMapDataKeys,
+  convertToAchievementsGeoJson,
+} from '../geo-json/achievements';
 import { logger } from '../logger';
 import { readMapData } from '../mapped-data';
 import { writeGeojsonFile } from '../write-geojson-file';
@@ -43,8 +46,9 @@ export const builder = (yargs: Argv) =>
 
 export function handler(args: BuilderArguments<typeof builder>) {
   for (const map of [args.map].flat()) {
-    // TODO read only the files necessary
-    const tsMapData = readMapData(args.inputDir, map, { includeHidden: false });
+    const tsMapData = readMapData(args.inputDir, map, {
+      mapDataKeys: achievementsMapDataKeys,
+    });
     const geoJson = convertToAchievementsGeoJson(tsMapData);
     if (args.dryRun) {
       continue;

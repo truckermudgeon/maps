@@ -1,5 +1,6 @@
+import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { distance } from '@truckermudgeon/base/geom';
-import { UnreachableError } from '@truckermudgeon/base/precon';
+import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
 import {
   fromAtsCoordsToWgs84,
   fromEts2CoordsToWgs84,
@@ -34,33 +35,8 @@ import fs from 'fs';
 import path from 'path';
 import process from 'process';
 import { logger } from './logger';
-import { readArrayFile } from './read-array-file';
 
-const MapDataKeys: Record<keyof MapData, void> = {
-  achievements: undefined,
-  cities: undefined,
-  companies: undefined,
-  companyDefs: undefined,
-  countries: undefined,
-  dividers: undefined,
-  ferries: undefined,
-  mapAreas: undefined,
-  mileageTargets: undefined,
-  modelDescriptions: undefined,
-  models: undefined,
-  nodes: undefined,
-  elevation: undefined,
-  pois: undefined,
-  prefabDescriptions: undefined,
-  prefabs: undefined,
-  roadLooks: undefined,
-  roads: undefined,
-  trajectories: undefined,
-  triggers: undefined,
-  cutscenes: undefined,
-  routes: undefined,
-};
-const mapJsonFiles = Object.freeze(Object.keys(MapDataKeys));
+export type MapDataKeys = (keyof MapData)[];
 
 type PickKey<
   T extends keyof MapData,
@@ -107,6 +83,11 @@ export type MappedData<T extends 'usa' | 'europe' = 'usa' | 'europe'> = {
     elevation: Readonly<MapData['elevation']>;
   };
 
+export type MappedDataForKeys<T extends readonly (keyof MapData)[]> = Pick<
+  MappedData,
+  'map' | T[number]
+>;
+
 export type FocusOptions = { radiusMeters: number } & (
   | {
       type: 'city';
@@ -118,21 +99,35 @@ export type FocusOptions = { radiusMeters: number } & (
     }
 );
 
-interface Options {
-  includeHidden: boolean;
+interface Options<K extends keyof MapData> {
+  mapDataKeys: readonly K[];
+  /**
+   * if `true`, then the `roads` and `prefabs` maps returned will include
+   * entries for roads/prefabs that are hidden-from-the-game's-ui-map (i.e.,
+   * unreachable).
+   *
+   * This option is only meaningful if `mapDataKeys` includes `'roads'` and/or
+   * `'prefabs'`.
+   */
+  includeHiddenRoadsAndPrefabs?: boolean;
   focus?: FocusOptions;
 }
 
-export function readMapData<T extends 'usa' | 'europe'>(
+export function readMapData<
+  T extends 'usa' | 'europe',
+  K extends keyof MapData,
+>(
   inputDir: string,
   map: T,
-  options: Options,
-): MappedData<T> {
-  checkJsonFilesPresent(inputDir, map);
-  const toJsonFilePath = (fn: string) => path.join(inputDir, map + '-' + fn);
-  const { includeHidden, focus: focusOptions } = options;
+  options: Options<K>,
+): Pick<MappedData<T>, 'map' | K> {
+  Preconditions.checkArgument(options.mapDataKeys.length > 0);
+  checkJsonFilesPresent(inputDir, map, new Set(options.mapDataKeys));
+  const toJsonFilePath = (key: string) =>
+    path.join(inputDir, map + '-' + key + '.json');
+  const { includeHiddenRoadsAndPrefabs = false, focus: focusOptions } = options;
 
-  const allCities = readArrayFile<City>(toJsonFilePath('cities.json'));
+  const allCities = readArrayFile<City>(toJsonFilePath('cities'));
   let focusCoords: [number, number] | undefined;
   if (focusOptions) {
     switch (focusOptions.type) {
@@ -184,128 +179,203 @@ export function readMapData<T extends 'usa' | 'europe'>(
   const cities = allCities.filter(focusXY);
   const cityTokens = new Set(cities.map(c => c.token));
   const countryTokens = new Set(cities.map(c => c.countryToken));
-  const companyDefs = readArrayFile<WithToken<Company>>(
-    toJsonFilePath('companyDefs.json'),
-    company => company.cityTokens.some(token => cityTokens.has(token)),
-  );
-  const countries = readArrayFile<Country>(
-    toJsonFilePath('countries.json'),
-    country => countryTokens.has(country.token),
-  );
-  const nodes = readArrayFile<Node>(
-    toJsonFilePath('nodes.json'),
-    focusXYPlus(1000),
-  );
-  const roads = readArrayFile<Road>(
-    toJsonFilePath('roads.json'),
-    r => (includeHidden ? true : !r.hidden) && focusXY(r),
-  );
-  const ferries = readArrayFile<Ferry>(toJsonFilePath('ferries.json'), focusXY);
-  const prefabs = readArrayFile<Prefab>(
-    toJsonFilePath('prefabs.json'),
-    p => (includeHidden ? true : !p.hidden) && focusXY(p),
-  );
-  const models = readArrayFile<Model>(toJsonFilePath('models.json'), focusXY);
-  const dividers = readArrayFile<Building | Curve>(
-    toJsonFilePath('dividers.json'),
-    focusXY,
-  );
-  const mapAreas = readArrayFile<MapArea>(
-    toJsonFilePath('mapAreas.json'),
-    focusXYPlus(200),
-  );
-  const pois = readArrayFile<Poi>(toJsonFilePath('pois.json'), focusXY);
-  const elevation = readArrayFile<[number, number, number]>(
-    toJsonFilePath('elevation.json'),
-    focusXYArray,
-  );
-  const roadLooks = readArrayFile<WithToken<RoadLook>>(
-    toJsonFilePath('roadLooks.json'),
-  );
-  const prefabDescriptions = readArrayFile<WithToken<PrefabDescription>>(
-    toJsonFilePath('prefabDescriptions.json'),
-  );
-  const modelDescriptions = readArrayFile<WithToken<ModelDescription>>(
-    toJsonFilePath('modelDescriptions.json'),
-  );
 
-  const prefabsMap = mapify(prefabs, p => p.uid);
-  const nodesMap = mapify(nodes, n => n.uid);
+  const mapData: Partial<Omit<MappedData<T>, 'map'>> = {};
+  const uniqueKeys = new Set(options.mapDataKeys);
+  for (const key of uniqueKeys) {
+    switch (key) {
+      case 'nodes': {
+        mapData.nodes = mapify(
+          readArrayFile<Node>(toJsonFilePath(key), focusXYPlus(1000)),
+          n => n.uid,
+        );
+        break;
+      }
+      case 'roads':
+        mapData.roads = mapify(
+          readArrayFile<Road>(
+            toJsonFilePath(key),
+            r =>
+              (includeHiddenRoadsAndPrefabs ? true : !r.hidden) && focusXY(r),
+          ),
+          r => r.uid,
+        );
+        break;
+      case 'ferries':
+        mapData.ferries = mapify(
+          readArrayFile<Ferry>(toJsonFilePath(key), focusXY),
+          f => f.token,
+        );
+        break;
+      case 'prefabs':
+        mapData.prefabs = mapify(
+          readArrayFile<Prefab>(
+            toJsonFilePath(key),
+            p =>
+              (includeHiddenRoadsAndPrefabs ? true : !p.hidden) && focusXY(p),
+          ),
+          p => p.uid,
+        );
+        break;
+      case 'companies':
+        mapData.companies = mapify(
+          readArrayFile<CompanyItem>(toJsonFilePath(key), focusXY),
+          c => c.uid,
+        );
+        break;
+      case 'models':
+        mapData.models = mapify(
+          readArrayFile<Model>(toJsonFilePath(key), focusXY),
+          m => m.uid,
+        );
+        break;
+      case 'mapAreas':
+        mapData.mapAreas = mapify(
+          readArrayFile<MapArea>(toJsonFilePath(key), focusXYPlus(200)),
+          m => m.uid,
+        );
+        break;
+      case 'dividers':
+        mapData.dividers = mapify(
+          readArrayFile<Building | Curve>(toJsonFilePath(key), focusXY),
+          d => d.uid,
+        );
+        break;
+      case 'cities':
+        mapData.cities = mapify(allCities.filter(focusXY), c => c.token);
+        break;
+      case 'countries':
+        mapData.countries = mapify(
+          readArrayFile<Country>(toJsonFilePath(key), country =>
+            countryTokens.has(country.token),
+          ),
+          c => c.token,
+        );
+
+        break;
+      case 'companyDefs':
+        mapData.companyDefs = mapify(
+          readArrayFile<WithToken<Company>>(toJsonFilePath(key), company =>
+            company.cityTokens.some(token => cityTokens.has(token)),
+          ),
+          c => c.token,
+        );
+        break;
+      case 'roadLooks':
+        mapData.roadLooks = mapify(
+          readArrayFile<WithToken<RoadLook>>(toJsonFilePath(key)),
+          r => r.token,
+        );
+        break;
+      case 'prefabDescriptions':
+        mapData.prefabDescriptions = mapify(
+          readArrayFile<WithToken<PrefabDescription>>(toJsonFilePath(key)),
+          p => p.token,
+        );
+        break;
+      case 'modelDescriptions':
+        mapData.modelDescriptions = mapify(
+          readArrayFile<WithToken<ModelDescription>>(toJsonFilePath(key)),
+          m => m.token,
+        );
+        break;
+      // N.B.: the following data is always included in its entirety, regardless
+      // of focus options.
+      case 'achievements':
+        mapData.achievements = mapify(
+          readArrayFile<WithToken<Achievement>>(toJsonFilePath(key)),
+          a => a.token,
+        );
+        break;
+      case 'trajectories':
+        mapData.trajectories = mapify(
+          readArrayFile<TrajectoryItem>(toJsonFilePath(key)),
+          t => t.uid,
+        );
+        break;
+      case 'triggers':
+        mapData.triggers = mapify(
+          readArrayFile<Trigger>(toJsonFilePath(key)),
+          t => t.uid,
+        );
+        break;
+      case 'cutscenes':
+        mapData.cutscenes = mapify(
+          readArrayFile<Cutscene>(toJsonFilePath(key)),
+          c => c.uid,
+        );
+        break;
+      case 'routes':
+        mapData.routes = mapify(
+          readArrayFile<WithToken<Route>>(toJsonFilePath(key)),
+          r => r.token,
+        );
+        break;
+      case 'mileageTargets':
+        mapData.mileageTargets = mapify(
+          readArrayFile<WithToken<MileageTarget>>(toJsonFilePath(key)),
+          t => t.token,
+        );
+        break;
+      // N.B.: the following data is always in array form.
+      case 'pois':
+        mapData.pois = readArrayFile<Poi>(toJsonFilePath(key), focusXY);
+        break;
+      case 'elevation':
+        mapData.elevation = readArrayFile<[number, number, number]>(
+          toJsonFilePath(key),
+          focusXYArray,
+        );
+        break;
+      default:
+        throw new UnreachableError(key);
+    }
+  }
+
   // companies may be linked to hidden prefabs or prefabs outside the focused range.
   // filter them out so `companies` array is consistent with prefabs.
-  const companies = readArrayFile<CompanyItem>(
-    toJsonFilePath('companies.json'),
-    company => {
-      if (!focusXY(company)) {
-        return false;
-      }
+  if (
+    mapData.companies != null &&
+    (mapData.prefabs != null || mapData.nodes != null)
+  ) {
+    // the following casts are required so we can mutate the maps.
+    const companiesMap = mapData.companies as Map<bigint, unknown>;
+    const prefabsMap = (mapData.prefabs ?? new Map()) as Map<bigint, unknown>;
+    const nodesMap = (mapData.nodes ?? new Map()) as Map<bigint, unknown>;
+    for (const company of mapData.companies.values()) {
       const prefabUid = company.prefabUid;
       const nodeUid = company.nodeUid;
       if (!prefabsMap.has(prefabUid)) {
-        // HACK side-effect in a .filter :grimacing:
         prefabsMap.delete(prefabUid);
         nodesMap.delete(nodeUid);
-        return false;
+        companiesMap.delete(company.uid);
       }
-      return true;
-    },
-  );
+    }
+  }
 
-  const achievements = readArrayFile<WithToken<Achievement>>(
-    toJsonFilePath('achievements.json'),
-  );
-  const trajectories = readArrayFile<TrajectoryItem>(
-    toJsonFilePath('trajectories.json'),
-  );
-  const cutscenes = readArrayFile<Cutscene>(toJsonFilePath('cutscenes.json'));
-  const triggers = readArrayFile<Trigger>(toJsonFilePath('triggers.json'));
-  const routes = readArrayFile<WithToken<Route>>(toJsonFilePath('routes.json'));
-  const mileageTargets = readArrayFile<WithToken<MileageTarget>>(
-    toJsonFilePath('mileageTargets.json'),
-  );
-
-  const mapped = {
-    nodes: nodesMap,
-    roads: mapify(roads, r => r.uid),
-    ferries: mapify(ferries, f => f.token),
-    prefabs: prefabsMap,
-    companies: mapify(companies, c => c.uid),
-    models: mapify(models, p => p.uid),
-    dividers: mapify(dividers, d => d.uid),
-    mapAreas: mapify(mapAreas, a => a.uid),
-    countries: mapify(countries, c => c.token),
-    cities: mapify(cities, c => c.token),
-    trajectories: mapify(trajectories, t => t.uid),
-    cutscenes: mapify(cutscenes, c => c.uid),
-    triggers: mapify(triggers, t => t.uid),
-    achievements: mapify(achievements, a => a.token),
-    routes: mapify(routes, r => r.token),
-    companyDefs: mapify(companyDefs, c => c.token),
-    roadLooks: mapify(roadLooks, r => r.token),
-    prefabDescriptions: mapify(prefabDescriptions, p => p.token),
-    modelDescriptions: mapify(modelDescriptions, p => p.token),
-    mileageTargets: mapify(mileageTargets, t => t.token),
-    pois,
-    elevation,
-  };
-  for (const k of Object.keys(mapped)) {
-    const mapOrArray = mapped[k as keyof typeof mapped];
+  for (const k of uniqueKeys) {
+    // verify `mapData` contains entries for all keys in `options.mapDataKeys`
+    const mapOrArray = assertExists(mapData[k]);
     if (Array.isArray(mapOrArray)) {
       logger.info(mapOrArray.length, k);
     } else {
-      logger.info(mapOrArray.size, k);
+      logger.info((mapOrArray as ReadonlyMap<unknown, unknown>).size, k);
     }
   }
-  return { ...mapped, map };
+  // this cast should be safe because `mapData` contains all keys K.
+  return { ...mapData, map } as Pick<MappedData<T>, 'map' | K>;
 }
 
 function mapify<T, U>(arr: T[], k: (t: T) => U): Map<U, T> {
   return new Map(arr.map(item => [k(item), item]));
 }
 
-function checkJsonFilesPresent(inputDir: string, map: 'usa' | 'europe') {
-  logger.log('checking for required JSON files...');
-  const missingJsonFiles = mapJsonFiles.filter(
+function checkJsonFilesPresent(
+  inputDir: string,
+  map: string,
+  keys: Set<string>,
+) {
+  const missingJsonFiles = [...keys].filter(
     fn => !fs.existsSync(path.join(inputDir, map + '-' + fn + '.json')),
   );
   if (missingJsonFiles.length) {
@@ -318,4 +388,53 @@ function checkJsonFilesPresent(inputDir: string, map: 'usa' | 'europe') {
     );
     process.exit(1);
   }
+}
+
+/**
+ * Reads the contents of a serialized JSON array. Transforms:
+ * - string properties named `uid` or ending in `Uid` into bigints
+ * - string array properties with key name ending in `Uids` into bigint arrays
+ */
+function readArrayFile<T>(filepath: string, filter?: (t: T) => boolean): T[] {
+  const basename = path.basename(filepath, '.json');
+  const start = Date.now();
+  const reviver =
+    basename.endsWith('elevation') ||
+    basename.endsWith('prefabDescriptions') ||
+    basename.endsWith('nodes')
+      ? undefined
+      : bigintReviver;
+  const results: unknown = JSON.parse(
+    fs.readFileSync(filepath, 'utf-8'),
+    reviver,
+  );
+  if (!Array.isArray(results)) {
+    throw new Error();
+  }
+  const filtered = filter ? (results as T[]).filter(filter) : (results as T[]);
+  if (basename.endsWith('nodes')) {
+    for (const t of filtered) {
+      const node = t as { -readonly [K in keyof Node]: Node[K] };
+      node.uid = BigInt('0x' + node.uid);
+      node.forwardItemUid = BigInt('0x' + node.forwardItemUid);
+      node.backwardItemUid = BigInt('0x' + node.backwardItemUid);
+    }
+  }
+  logger.debug((Date.now() - start) / 1000, 'seconds:', basename);
+  return filtered;
+}
+
+function bigintReviver(key: string, value: unknown): unknown {
+  if (key === 'uid' || key.endsWith('Uid')) {
+    return toBigInt(value);
+  } else if (key.endsWith('Uids')) {
+    assert(Array.isArray(value));
+    return (value as unknown[]).map(toBigInt);
+  }
+  return value;
+}
+
+function toBigInt(v: unknown): bigint {
+  assert(typeof v === 'string' && /^[0-9a-f]+$/.test(v));
+  return BigInt('0x' + (v as string));
 }

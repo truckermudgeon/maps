@@ -54,7 +54,15 @@ export default [
 
     rules: {
       '@typescript-eslint/consistent-type-imports': 'error',
-      '@typescript-eslint/no-unused-vars': 'warn',
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        {
+          args: 'all',
+          argsIgnorePattern: '^_',
+          ignoreRestSiblings: true,
+          reportUsedIgnorePattern: true,
+        },
+      ],
     },
   },
 ];

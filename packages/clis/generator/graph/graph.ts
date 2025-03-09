@@ -12,27 +12,40 @@ import type {
   Prefab,
 } from '@truckermudgeon/map/types';
 import { quadtree } from 'd3-quadtree';
-import { normalizeDlcGuards } from '../dlc-guards';
+import { dlcGuardMapDataKeys, normalizeDlcGuards } from '../dlc-guards';
 import { logger } from '../logger';
-import type { MappedData } from '../mapped-data';
+import type { MapDataKeys, MappedDataForKeys } from '../mapped-data';
 
-type Context = Pick<
-  MappedData,
-  | 'map'
-  | 'nodes'
-  | 'roads'
-  | 'roadLooks'
-  | 'prefabs'
-  | 'prefabDescriptions'
-  | 'companies'
-  | 'ferries'
-> & {
+type GraphContextMappedData = MappedDataForKeys<
+  [
+    'nodes',
+    'roads',
+    'roadLooks',
+    'prefabs',
+    'prefabDescriptions',
+    'companies',
+    'ferries',
+  ]
+>;
+
+type Context = GraphContextMappedData & {
   prefabConnections: Map<string, Map<number, number[]>>;
   companiesByPrefabItemId: Map<bigint, CompanyItem>;
   getDlcGuard: (node: Node) => number;
 };
 
-export function generateGraph(tsMapData: MappedData) {
+export const graphMapDataKeys = [
+  ...dlcGuardMapDataKeys,
+  'companies',
+  'ferries',
+  'prefabDescriptions',
+  'roadLooks',
+  'cities',
+] satisfies MapDataKeys;
+
+type GraphMappedData = MappedDataForKeys<typeof graphMapDataKeys>;
+
+export function generateGraph(tsMapData: GraphMappedData) {
   const {
     map,
     nodes: _nodes,
@@ -72,8 +85,8 @@ export function generateGraph(tsMapData: MappedData) {
     }
   }
 
-  const toSectorKey = (o: { sectorX: number; sectorY: number }) =>
-    `${o.sectorX},${o.sectorY}`;
+  const toSectorKey = (o: { x: number; y: number }) =>
+    `${Math.floor(o.x / 4000)},${Math.floor(o.y / 4000)}`;
   const nodesBySector = new Map<string, Node[]>();
   const getRoadOrPrefab = (id: bigint) => roads.get(id) ?? prefabs.get(id);
   for (const node of nodes.values()) {
@@ -584,17 +597,18 @@ function createNeighbor(
   };
 }
 
-function toSectorKey(o: { sectorX: number; sectorY: number }) {
-  return `${o.sectorX},${o.sectorY}`;
+function toSectorKey(o: { x: number; y: number }) {
+  return `${Math.floor(o.x / 4000)},${Math.floor(o.y / 4000)}`;
 }
 
 function getObjectsInSectorRange<T>(
-  sectorKey: { sectorX: number; sectorY: number },
+  pos: { x: number; y: number },
   objectsBySector: Map<string, T[]>,
 ): T[] {
-  const toKey = (sectorX: number, sectorY: number) =>
-    toSectorKey({ sectorX, sectorY });
-  const { sectorX: sx, sectorY: sy } = sectorKey;
+  const toKey = (x: number, y: number) => toSectorKey({ x, y });
+  let { x: sx, y: sy } = pos;
+  sx = Math.floor(sx / 4000);
+  sy = Math.floor(sy / 4000);
   return [
     ...(objectsBySector.get(toKey(sx - 1, sy - 1)) ?? []),
     ...(objectsBySector.get(toKey(sx + 0, sy - 1)) ?? []),

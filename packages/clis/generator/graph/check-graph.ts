@@ -11,7 +11,7 @@ import type { CompanyItem, Neighbors } from '@truckermudgeon/map/types';
 import * as cliProgress from 'cli-progress';
 import Tinypool from 'tinypool';
 import { logger } from '../logger';
-import type { MappedData } from '../mapped-data';
+import type { MappedDataForKeys } from '../mapped-data';
 
 interface CompanySummary {
   company: string;
@@ -25,9 +25,13 @@ interface Unrouteable {
   end: CompanySummary;
 }
 
+type CheckGraphMappedData = MappedDataForKeys<
+  ['nodes', 'companies', 'prefabs', 'cities']
+>;
+
 export async function checkGraph(
   graph: Map<bigint, Neighbors>,
-  tsMapData: MappedData,
+  tsMapData: CheckGraphMappedData,
 ) {
   const { map, nodes, companies, prefabs, cities } = tsMapData;
 

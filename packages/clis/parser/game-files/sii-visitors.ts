@@ -154,9 +154,17 @@ function snakeToCamel(str: string) {
   return str.replace(/(_[a-z0-9])/g, g => g.substring(1).toUpperCase());
 }
 
+const utf8 = new TextDecoder();
+
 function quotedStringToString(str: string) {
   Preconditions.checkArgument(str.startsWith('"') && str.endsWith('"'));
-  return str.slice(1, -1).replace(/\\"/g, '"');
+  return str
+    .slice(1, -1)
+    .replace(/\\"/g, '"')
+    .replace(/(?:\\x[0-9A-Fa-f]{2})+/g, match => {
+      const hexBytes = match.slice(2).split('\\x');
+      return utf8.decode(new Uint8Array(hexBytes.map(b => parseInt(b, 16))));
+    });
 }
 
 function stringToNumber(str: string) {

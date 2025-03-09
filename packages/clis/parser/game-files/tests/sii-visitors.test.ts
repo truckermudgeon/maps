@@ -2,6 +2,30 @@ import { parseSii } from '../sii-parser';
 import { jsonConverter } from '../sii-visitors';
 
 describe('JsonConverterVisitor', () => {
+  it('parses escaped UTF-8', () => {
+    const text = `
+utf8 : escaped {
+ ascii: "\\x7e\\x00"
+ two_bytes: "\\xC4\\x80\\xd5\\xBf"
+ three_bytes: "\\xe7\\xa6\\x85"
+ four_bytes: "\\xf0\\x9f\\x98\\x80"
+ invalid: "\\x80"
+}
+    `;
+    const res = parseSii(text);
+    expect(jsonConverter.convert(res.cst)).toEqual({
+      utf8: {
+        escaped: {
+          ascii: '~\0',
+          twoBytes: 'Āտ',
+          threeBytes: '禅',
+          fourBytes: '😀',
+          invalid: '�',
+        },
+      },
+    });
+  });
+
   it('parses icon mat files with SDF data', () => {
     const text = `
 effect : "ui.sdf.rfx" {
@@ -41,23 +65,23 @@ effect : "ui.sdf.rfx" {
     });
   });
 
-  it('parses mileage target ok_oklacity', () => {
+  it('parses mileage target se_malmo', () => {
     const text = `
 SiiNunit
 {
-mileage_target : mileage.ok_oklacity {
- editor_name: "OK Oklahoma City"
- default_name: "Oklahoma City"
+mileage_target : mileage.se_malmo {
+ editor_name: malmo
+ default_name: "MALM\\xc3\\x96"
  variants: 1
- variants[0]: okla_city
+ variants[0]: dk_malmo
  names: 1
- names[0]: "Okla. City"
+ names[0]: "Malm\\xc3\\xb8"
  image_atlas_paths: 0
  image_atlas_indices: 0
- distance_offset: 2
+ distance_offset: 0
  node_uid: nil
- position: (&c5e2cc07, &41ac8cd9, &46985370)
- search_radius: 50
+ position: (&46279880, &40e7cdb1, &c6d74b34)
+ search_radius: 500
 }
 }
     `;
@@ -65,17 +89,17 @@ mileage_target : mileage.ok_oklacity {
     const res = parseSii(text);
     expect(jsonConverter.convert(res.cst)).toEqual({
       mileageTarget: {
-        'mileage.ok_oklacity': {
-          editorName: 'OK Oklahoma City',
-          defaultName: 'Oklahoma City',
-          distanceOffset: 2,
+        'mileage.se_malmo': {
+          editorName: 'malmo',
+          defaultName: 'MALMÖ',
+          distanceOffset: 0,
           imageAtlasIndices: 0,
           imageAtlasPaths: 0,
-          names: ['Okla. City'],
+          names: ['Malmø'],
           nodeUid: undefined,
-          position: [-7257.50341796875, 21.56877326965332, 19497.71875],
-          searchRadius: 50,
-          variants: ['okla_city'],
+          position: [10726.125, 7.243858814239501953125, -27557.6015625],
+          searchRadius: 500,
+          variants: ['dk_malmo'],
         },
       },
     });

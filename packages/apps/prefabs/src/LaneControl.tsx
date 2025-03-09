@@ -22,7 +22,7 @@ export const LaneControl = ({ prefab }: { prefab: PrefabDescription }) => {
                     return (
                       <ListItem>
                         <div>Lane {laneIndex}</div>
-                        {lane.branches.map((branch, _branchIndex) => {
+                        {lane.branches.map(branch => {
                           return (
                             <Stack>
                               <div>To Node {branch.targetNodeIndex}</div>
