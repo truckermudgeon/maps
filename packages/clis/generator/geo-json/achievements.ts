@@ -194,31 +194,37 @@ export function convertToAchievementsGeoJson(tsMapData: AchievementsMapData) {
   const ferryAchievementToPoints = (
     achievement: Achievement & { type: 'ferryData' },
   ): Point[] => {
-    const aFerry = ferries.get(achievement.endpointA);
-    const bFerry = ferries.get(achievement.endpointB);
-    if (aFerry == null || bFerry == null) {
-      return [];
-    }
+    switch (achievement.ferryType) {
+      case 'all': {
+        const aFerry = ferries.get(achievement.endpointA);
+        const bFerry = ferries.get(achievement.endpointB);
+        if (aFerry == null || bFerry == null) {
+          return [];
+        }
 
-    const aDlcGuard = getDlcGuard(aFerry);
-    const bDlcGuard = getDlcGuard(bFerry);
-    const dlcGuard = calcDlcGuard(aDlcGuard, bDlcGuard);
-    return [
-      { coordinates: aFerry, dlcGuard },
-      { coordinates: bFerry, dlcGuard },
-    ];
+        const aDlcGuard = getDlcGuard(aFerry);
+        const bDlcGuard = getDlcGuard(bFerry);
+        const dlcGuard = calcDlcGuard(aDlcGuard, bDlcGuard);
+        return [
+          { coordinates: aFerry, dlcGuard },
+          { coordinates: bFerry, dlcGuard },
+        ];
+      }
+      case 'ferry':
+      case 'train': {
+        const ferriesByType = [...ferries.values()].filter(
+          f => f.train === (achievement.ferryType === 'train'),
+        );
+        return ferriesByType.map(f => ({
+          coordinates: f,
+          dlcGuard: getDlcGuard(f),
+        }));
+      }
+      default:
+        throw new UnreachableError(achievement);
+    }
   };
-  const ferryByTypeAchievementToPoints = (
-    achievement: Achievement & { type: 'ferryDataByType' },
-  ): Point[] => {
-    const ferriesByType = [...ferries.values()].filter(
-      f => f.train === (achievement.ferryType === 'train'),
-    );
-    return ferriesByType.map(f => ({
-      coordinates: f,
-      dlcGuard: getDlcGuard(f),
-    }));
-  };
+
   const deliveryPointAchievementToPoints = (
     achievement: Achievement & { type: 'eachDeliveryPoint' },
   ): Point[] => {
@@ -359,9 +365,6 @@ export function convertToAchievementsGeoJson(tsMapData: AchievementsMapData) {
         }
         case 'ferryData':
           points.push(...ferryAchievementToPoints(a));
-          break;
-        case 'ferryDataByType':
-          points.push(...ferryByTypeAchievementToPoints(a));
           break;
         case 'eachDeliveryPoint': {
           const deliverPoints = deliveryPointAchievementToPoints(a);
