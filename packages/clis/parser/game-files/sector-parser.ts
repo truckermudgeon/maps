@@ -99,6 +99,7 @@ const SimpleItemStruct = {
     node0Offset: float3,
     node1Offset: float3,
     length: r.floatle,
+    previousLength: r.floatle,
     randomSeed: r.uint32le,
     railings: new r.Array(
       new r.Struct({
@@ -223,9 +224,9 @@ const SimpleItemStruct = {
     terrainRot: r.floatle,
   },
   [ItemType.Company]: {
-    overlayName: token64,
     cityName: token64,
     prefabUid: uint64le,
+    overlayName: token64,
     nodeUid: uint64le,
     nodes: new r.Array(
       new r.Struct({
@@ -563,7 +564,7 @@ export function parseSector(
   ignoreNodeUids: ReadonlySet<bigint>,
 ) {
   const version = buffer.readUint32LE();
-  if (version !== 901) {
+  if (version !== 903) {
     if (!versionWarnings.has(version)) {
       logger.warn('unknown .base file version', version);
       logger.warn('errors may come up, and parse results may be inaccurate.');
