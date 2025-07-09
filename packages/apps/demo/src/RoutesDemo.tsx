@@ -31,9 +31,9 @@ import {
   allIcons,
   defaultMapStyle,
 } from '@truckermudgeon/ui';
+import type { GeoJSONSource } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useCallback, useEffect, useState } from 'react';
-import type { GeoJSONSource } from 'react-map-gl';
 import type { MapRef } from 'react-map-gl/maplibre';
 import MapGl, {
   AttributionControl,
@@ -227,7 +227,7 @@ const RouteControl = (props: { dlcs: ReadonlySet<AtsSelectableDlc> }) => {
       }
       if (end != null) {
         const routeSource = assertExists(
-          map.getSource('route1') as GeoJSONSource | undefined,
+          map.getSource<GeoJSONSource>('route1'),
         );
         routeSource.setData({
           type: 'FeatureCollection',
@@ -275,7 +275,7 @@ const RouteControl = (props: { dlcs: ReadonlySet<AtsSelectableDlc> }) => {
     ]).then(
       maybeLineStrings => {
         const routeSource = assertExists(
-          map.getSource('route1') as GeoJSONSource | undefined,
+          map.getSource<GeoJSONSource>('route1'),
         );
         if (maybeLineStrings.some(s => s == null)) {
           alert('Cannot calculate a route 🙁');
