@@ -245,12 +245,26 @@ export function generateGraph(tsMapData: GraphMappedData) {
       companyNode,
       nodesBySector,
     );
-    const closest = nodesInSectorRange
+    let closest = nodesInSectorRange
       .sort((a, b) => distance(a, companyNode) - distance(b, companyNode))
       .find(n => n.uid !== companyNode.uid);
     if (!closest) {
       logger.error('no eligible nodes for', company.token, company.cityToken);
       throw new Error();
+    }
+    const closestInGraph = nodesInSectorRange
+      .sort((a, b) => distance(a, companyNode) - distance(b, companyNode))
+      .find(n => n.uid !== companyNode.uid && graph.has(n.uid));
+    if (closestInGraph && closest.uid !== closestInGraph.uid) {
+      logger.warn(
+        `${company.cityToken}.${company.token} ${company.uid.toString(16)}:`,
+        `graph does not contain entry for node ${closest.uid.toString(16)};`,
+        `using ${closestInGraph.uid.toString(16)} instead.`,
+        distance(closest, companyNode),
+        'vs',
+        distance(closestInGraph, companyNode),
+      );
+      closest = closestInGraph;
     }
     assert(graph.has(closest.uid));
     //logger.info(
@@ -597,15 +611,11 @@ function createNeighbor(
   };
 }
 
-function toSectorKey(o: { x: number; y: number }) {
-  return `${Math.floor(o.x / 4000)},${Math.floor(o.y / 4000)}`;
-}
-
 function getObjectsInSectorRange<T>(
   pos: { x: number; y: number },
   objectsBySector: Map<string, T[]>,
 ): T[] {
-  const toKey = (x: number, y: number) => toSectorKey({ x, y });
+  const toKey = (x: number, y: number) => `${x},${y}`;
   let { x: sx, y: sy } = pos;
   sx = Math.floor(sx / 4000);
   sy = Math.floor(sy / 4000);
