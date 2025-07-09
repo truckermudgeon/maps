@@ -334,7 +334,23 @@ function createEntry(
     return createTobjEntry(fd, header, metadataMap);
   }
 
-  // assert(header.metadataCount === 1);
+  if (header.metadataCount === 2) {
+    const metas = [
+      assertExists(metadataMap.get(header.metadataIndex)),
+      assertExists(metadataMap.get(header.metadataIndex + 1)),
+    ];
+    assert(metas[0].version === MetadataType.PLAIN);
+    // the only entries expected to have two pieces of metadata are PMA and PMG
+    // entries info. don't do anything with the metadata for now... treat PMx
+    // entries as regular files.
+    assert(
+      metas[1].version === MetadataType.PMA_INFO ||
+        metas[1].version === MetadataType.PMG_INFO,
+    );
+  } else {
+    assert(header.metadataCount === 1);
+  }
+
   const assocMetadata = assertExists(metadataMap.get(header.metadataIndex));
   if (header.flags.isDirectory) {
     assert(
