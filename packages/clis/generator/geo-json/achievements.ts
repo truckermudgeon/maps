@@ -195,6 +195,7 @@ export function convertToAchievementsGeoJson(tsMapData: AchievementsMapData) {
     achievement: Achievement & { type: 'ferryData' },
   ): Point[] => {
     switch (achievement.ferryType) {
+      case undefined:
       case 'all': {
         const aFerry = ferries.get(achievement.endpointA);
         const bFerry = ferries.get(achievement.endpointB);
