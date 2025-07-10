@@ -81,6 +81,7 @@ const RoutesDemo = () => {
         [-84, 54], // northeast corner (lon, lat)
       ]}
       mapStyle={defaultMapStyle}
+      attributionControl={false}
       // start off in vegas
       initialViewState={{
         longitude: -115,

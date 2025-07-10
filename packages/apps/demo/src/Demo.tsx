@@ -70,6 +70,7 @@ const Demo = () => {
       minZoom={4}
       maxZoom={15}
       mapStyle={defaultMapStyle}
+      attributionControl={false}
       initialViewState={{
         longitude,
         latitude,
