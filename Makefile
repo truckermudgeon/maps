@@ -38,9 +38,9 @@ MAP_FILES += $(GENERATOR_OUT_DIR)/world.pmtiles
 
 # Create ATS and ETS2 pmtiles files
 $(GENERATOR_OUT_DIR)/ats.pmtiles: $(ATS_PARSER_JSON_FILES)
-	npx generator map -m usa -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR)
+	npx generator map -h -m usa -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR)
 $(GENERATOR_OUT_DIR)/ets2.pmtiles: $(ETS2_PARSER_JSON_FILES)
-	npx generator map -m europe -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR)
+	npx generator map -h -m europe -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR)
 
 MAP_FILES += $(GENERATOR_OUT_DIR)/ats.pmtiles
 MAP_FILES += $(GENERATOR_OUT_DIR)/ets2.pmtiles
