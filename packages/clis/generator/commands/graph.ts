@@ -10,7 +10,7 @@ import { maybeEnsureOutputDir, untildify } from './path-helpers';
 
 export const command = 'graph';
 export const describe =
-  'Generates achievements.geojson from map-parser JSON files';
+  'Generates routing graph data from map-parser JSON files';
 
 export const builder = (yargs: Argv) =>
   yargs

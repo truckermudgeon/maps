@@ -7,8 +7,9 @@ import { logger } from '../logger';
 import { float3, float4, token64 } from './restructure-helpers';
 
 // based on:
-// https://github.com/dariowouters/ts-map/blob/master/docs/structures/ppd-template.bt
+// https://github.com/mwl4/ConverterPIX/commit/603261a589fff64620ad07080754c4422bb40b7e
 // https://github.com/SCSSoftware/BlenderTools/blob/master/addon/io_scs_tools/consts.py
+// https://github.com/dariowouters/ts-map/blob/master/docs/structures/ppd-template.bt
 
 const Prefab = new r.Struct({
   version: r.uint32le,
@@ -95,7 +96,8 @@ const Prefab = new r.Struct({
         intervals: float4,
         cycle: r.floatle,
         profile: token64,
-        unknown: new r.Reserved(r.uint32le),
+        unknown1: new r.Reserved(r.uint32le),
+        unknown2: new r.Array(new r.Reserved(r.uint32le), 4),
       }),
       'numSemaphores',
     ),
@@ -280,7 +282,7 @@ const roadOffsetToOffset = {
 
 export function parsePrefabPpd(buffer: Buffer): PrefabDescription {
   const version = buffer.readUint32LE();
-  if (version !== 24) {
+  if (version !== 25) {
     logger.error('unknown .ppd file version', version);
     throw new Error();
   }

@@ -1,668 +1,734 @@
 {
   "meta": {
     "url": "https://steamdb.info/app/270880/stats/",
-    "cmd": "$$('tr[id|=achievement]').map(tr=>{const[id,titleAndDesc,imgs]=$$('td',tr);const[title,desc]=titleAndDesc.textContent.trim().split('\\n\\n');return{id:id.textContent,title,desc,imgUrl:$('img',imgs).src}});"
+    "cmd": "$$('div.achievement').map(div=>({id:div.id.split('-')[1],title:$('.achievement_name',div).textContent, desc:$('.achievement_desc',div).textContent.trim(),imgUrl:$('img',div).src})).sort((a,b) => a.id.localeCompare(b.id));"
   },
   "data": [
     {
-      "id": "ca_visit_cities",
-      "title": "California Dreamin'",
-      "desc": "Discover every city in California",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/a4a513b0a9e67b7fe3fb6421b356871ab1ba41ad.jpg"
-    },
-    {
-      "id": "ca_sea_ports",
-      "title": "Sea Dog",
-      "desc": "Deliver cargo to a port in Oakland and a port in San Francisco",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/cacdcf36fa50b5182578e985f740d0e4407cff94.jpg"
-    },
-    {
-      "id": "ca_country",
-      "title": "Cheers!",
-      "desc": "Deliver cargo from all 4 vineyards in California",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/509e01efbf6ad5fa531fb15cec9ba772fa4c1566.jpg"
-    },
-    {
-      "id": "drive_10k",
-      "title": "Warming Up",
-      "desc": "Drive 10,000 miles during deliveries",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/52947e2b9f3853c761222fb28fcd4ae8e9dd5787.jpg"
-    },
-    {
-      "id": "buy_truck",
-      "title": "Rig Master",
-      "desc": "Buy your own truck",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/1cc928408e395c825f3b85fc4db0d4935b556d9c.jpg"
-    },
-    {
-      "id": "jobs15comp",
-      "title": "Company Collector",
-      "desc": "Perform deliveries for at least 15 different companies",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/272f23f11f8f4bca063867a17721454ccd330a6d.jpg"
-    },
-    {
-      "id": "perf_job",
-      "title": "High Five",
-      "desc": "Complete a perfect delivery (no damage, no fines, in-time) for a job that is at least 600 miles",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/a5a27c5aa3643b7cddbe67701cb51a481e417920.jpg"
-    },
-    {
-      "id": "money_100k",
-      "title": "Cha-Ching",
-      "desc": "Earn $100,000 delivering cargos",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/a18ac34fff9b1fc8d47f3daec51931c900882f3f.jpg"
-    },
-    {
-      "id": "maxed_garage",
-      "title": "Final Makeover",
-      "desc": "Fully upgrade one of your garages",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/fd493779325b6a7c222ef7b12c3ad134fe67d844.jpg"
-    },
-    {
-      "id": "no_autopark",
-      "title": "Not a Problem",
-      "desc": "Successfully park a trailer at a delivery point",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/ac235ad30e3cff5de45346e953de41b4d619fcb1.jpg"
-    },
-    {
-      "id": "harddifficlt",
-      "title": "Like a Boss",
-      "desc": "Successfully park a trailer at a hard delivery point",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/5980159ce91ec179c0347110c6e1a4d8a0704e12.jpg"
-    },
-    {
-      "id": "finish50jobs",
-      "title": "I Think I Like It",
-      "desc": "Finish 50 deliveries",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/8b5aefc6fd556bbe403763823d790f49b818e4af.jpg"
-    },
-    {
-      "id": "custompj",
-      "title": "Pimp My Truck",
-      "desc": "Buy and apply a custom paintjob",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/fde47fd7e90c0194af86a21dcc141d48fe85dd02.jpg"
-    },
-    {
-      "id": "use_weigh_stat",
-      "title": "What's Your BMI?",
-      "desc": "Use a weigh station",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/8c66d108fa079d9f930780d69b1559272668e8a6.jpg"
-    },
-    {
-      "id": "use_gas_stat",
-      "title": "Gas Guzzler",
-      "desc": "Use a gas station",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/cecb4f6889a22c35ef97bcff158d107416fae8a7.jpg"
-    },
-    {
-      "id": "nv_visit_cities",
-      "title": "Silver State",
-      "desc": "Discover every city in Nevada",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/feec047d2337dbab8dc096843c9f34c740413de9.jpg"
-    },
-    {
-      "id": "nv_quarries",
-      "title": "Gold Fever",
-      "desc": "Deliver cargo to both quarries in Nevada",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/f15a5c4c4a8e1eda663c2d96d698adb163711444.jpg"
-    },
-    {
-      "id": "az_visit_cities",
-      "title": "Copper State",
-      "desc": "Discover every city in Arizona",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/ba20f2537fbec9f2d5330edc2e2436cae4d83f5a.jpg"
-    },
-    {
-      "id": "az_phx_aport",
-      "title": "Sky Harbor",
-      "desc": "Deliver cargo to the Phoenix Airport",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/a0c80ebfa722800b9a7540af3f59a7fdbb29719f.jpg"
-    },
-    {
-      "id": "az_racetrack",
-      "title": "Start Your Engine!",
-      "desc": "Get on the start of the Truck Racing circuit",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/88f2f8553febe898c5a58510f1063014a86ce303.jpg"
-    },
-    {
-      "id": "az_colorado",
-      "title": "Powell's Trail",
-      "desc": "Visit the Colorado River sights",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/f4b5735602f6392f08671626011487866cef145a.jpg"
-    },
-    {
-      "id": "hc_firstjob",
-      "title": "Time for Big Hauling",
-      "desc": "Deliver first Heavy Cargo Pack job (requires Heavy Cargo Pack DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/998c41c07056d691e6f720a663804eb170af2d28.jpg"
-    },
-    {
-      "id": "hc_weigh170k",
-      "title": "How Heavy Am I?!",
-      "desc": "Use truck scale or weigh station with gross vehicle weight of at least 175,000 lbs (requires Heavy Cargo Pack DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/7f527a507155b2d47ca481f63a0cc368d248135c.jpg"
-    },
-    {
-      "id": "hc_perf_job",
-      "title": "Heavy, but Not Bull in a China Shop!",
-      "desc": "Complete a perfect delivery (no damage, no fine, in-time) of a cargo from the Heavy Cargo Pack which is at least 1,000 miles long (requires Heavy Cargo Pack DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/53c88b2a0405659d2c0787708098b784885b4214.jpg"
-    },
-    {
-      "id": "hc_100k5jobs",
-      "title": "Bigger Cargo, Bigger Profit",
-      "desc": "Earn $100,000 on 5 consecutive Heavy Cargo Pack deliveries (requires Heavy Cargo Pack DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/585f89738344ee0150f400786348e42434c5bd64.jpg"
-    },
-    {
-      "id": "hc_allcargos",
-      "title": "I Thought This Should Be Heavy?!",
-      "desc": "Complete a delivery of all heavy cargoes in American Truck Simulator (requires Heavy Cargo Pack DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/a6a557af0c5d8447bb26d0b84ffc9708d3933445.jpg"
-    },
-    {
-      "id": "nm_visit_cities",
-      "title": "The Land of Enchantment",
-      "desc": "Discover every city in New Mexico (requires New Mexico DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/8160cbc6d4c2f17d0d1dfe7f274537f5ab677664.jpg"
-    },
-    {
-      "id": "nm_truckstops",
-      "title": "Truck Stop Tour",
-      "desc": "Visit all large truck stops and rest stops in New Mexico (requires New Mexico DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/305560b728fe014fb4ec70912a34dfeb950b036b.jpg"
-    },
-    {
-      "id": "nm_shortcut",
-      "title": "Forest Shortcut",
-      "desc": "Discover shortcut through the forest (requires New Mexico DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/211afeb40f76c7a769d6c47761aa3e816332fc9c.jpg"
-    },
-    {
-      "id": "nm_museum",
-      "title": "1881",
-      "desc": "Drive by the Billy The Kid Museum (requires New Mexico DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/bfd3fb463e45c5438819031651c2064c21a0d1c0.jpg"
-    },
-    {
-      "id": "nm_an_124",
-      "title": "Sky Delivery",
-      "desc": "Deliver cargo to An-124 depot (requires New Mexico DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/4167b0f7f2b9959eb50913571c4563b87e43e951.jpg"
-    },
-    {
-      "id": "st_perf_job",
-      "title": "Size Matters",
-      "desc": "Successfully deliver a Special Transport DLC mission with no damage and on time (requires Special Transport DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/c0f2bef6df2b06f377c08b4947b144c75f5b9c7b.jpg"
-    },
-    {
-      "id": "st_all_routes",
-      "title": "Go Big or Go Home",
-      "desc": "Complete deliveries on all oversize routes in current map (requires Special Transport DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/0e40386f17e413ae94c9d070f1d297bef3719315.jpg"
-    },
-    {
-      "id": "st_helicopter",
-      "title": "Get (to) the Chopper!",
-      "desc": "Successfully deliver a Helicopter Special Transport DLC mission with no damage and on time (requires Special Transport DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/3df358c3365505592d192444f485fb96ed3c7c08.jpg"
-    },
-    {
-      "id": "st_aircondition",
-      "title": "One, Two, Three - Breathe!",
-      "desc": "Successfully deliver an Air Conditioning Complex Special Transport DLC mission with no damage and on time (requires Special Transport DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/ff7625878c523d36de2e358e9daec18e7361626a.jpg"
-    },
-    {
-      "id": "st_all_cargos",
-      "title": "Big in America!",
-      "desc": "Make at least 10 unique deliveries of oversize cargoes (requires Special Transport DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/696b3f22600bdc38ab80af7e69cbdc2f7d960b5c.jpg"
-    },
-    {
-      "id": "st_mutt_part",
-      "title": "Your Dumper Has Arrived!",
-      "desc": "Deliver all three parts of a disassembled dumper: Haul Truck Hull, Huge Tyres, Haul Truck Chassis (requires Special Transport DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/25abe9d0e92d07160543eceafbdcce3ea74d5359.jpg"
-    },
-    {
-      "id": "st_house",
-      "title": "Home Sweet Home",
-      "desc": "Successfully deliver a Turnkey House Special Transport DLC mission with no damage and on time (requires Special Transport DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/0506cde8173d9b1103b230712add4133bcdf7122.jpg"
-    },
-    {
-      "id": "or_visit_cities",
-      "title": "The Beaver State",
-      "desc": "Discover every city in Oregon (requires Oregon DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/aa1b0d2aa8882486e2ca92655bc265b89c318faa.jpg"
-    },
-    {
-      "id": "or_drawbridge",
-      "title": "Uplifting",
-      "desc": "Travel across the New Youngs Bay Bridge (requires Oregon DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/45f74565e87aa9b0b8f3b6d08b85b3f7824242ec.jpg"
-    },
-    {
-      "id": "or_timber_harvest",
-      "title": "Lumberjack",
-      "desc": "Deliver cargo from all timber harvest sites in Oregon (requires Oregon DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/4f4c85b178d36a38a9f7f348bef35845eef9dc3b.jpg"
-    },
-    {
-      "id": "or_landmarks",
-      "title": "Travel Oregon",
-      "desc": "Discover following landmarks of Oregon: Crater Lake, Crooked River Gorge, Thor's Well and Yaquina Head Lighthouse (requires Oregon DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/4811b821b653309e862d9eeab5f135312b710dd0.jpg"
-    },
-    {
-      "id": "or_cabbage_hill",
-      "title": "Cabbage to Cabbage",
-      "desc": "Complete a delivery of vegetables over Cabbage Hill (requires Oregon DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/aed4e643cbae55b974a09452fed008e303947c10.jpg"
-    },
-    {
-      "id": "wa_visit_cities",
-      "title": "The Evergreen State",
-      "desc": "Discover every city in Washington (requires Washington DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/239ae179522389a05800545a1b3911212e985a9d.jpg"
-    },
-    {
-      "id": "wa_aerospace",
-      "title": "Steel Wings",
-      "desc": "Deliver a cargo to an aerospace company in Washington (requires Washington DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/5acf68f6edeb0da233524f8dcfd5316fc450a7b8.jpg"
-    },
-    {
-      "id": "wa_marina",
-      "title": "Keep Sailing",
-      "desc": "Deliver a boat to a marina in Washington (requires Washington DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/e18058d2e16b841d46da3c4a6d1fe1a53e685f1d.jpg"
-    },
-    {
-      "id": "wa_terminal",
-      "title": "Terminal Terminus",
-      "desc": "Deliver a cargo to both port terminals in Washington (requires Washington DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/1d8913128c12e24218f57d7d6eb6593739166c48.jpg"
-    },
-    {
-      "id": "wa_tunnels",
-      "title": "Seattle Mole",
-      "desc": "Drive through both Seattle tunnels (requires Washington DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/33cab6d393cb3cb37b6348d8705c435d793eb953.jpg"
-    },
-    {
-      "id": "wa_use_ferry",
-      "title": "Ferry Tales",
-      "desc": "Use a ferry to cross the water (requires Washington DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/1a3599027217e29bbbc65b87c4ba7b12d0d314a0.jpg"
-    },
-    {
-      "id": "wa_forest",
-      "title": "Over the Top",
-      "desc": "Drive through the forest road to timber harvest in Bellingham (requires Washington DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/71e4d61de66e9738ab0285c8294818f90722b6c9.jpg"
-    },
-    {
-      "id": "wa_landmarks",
-      "title": "Travel Washington",
-      "desc": "Visit Mount St. Helens, Grand Coulee Dam, Mount Rainier (requires Washington DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/8f74c80a7a6d843fbbd0f971c70fea5f2e34783d.jpg"
-    },
-    {
-      "id": "fm_all_cargos",
-      "title": "Logged-In",
-      "desc": "Complete delivery of all Forest Machinery DLC cargoes (requires Forest Machinery DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/8f37acf0296dc3aba7bebd34fc9f1ec91e18fe0e.jpg"
-    },
-    {
-      "id": "fm_3_perfect",
-      "title": "Leave No Branch Behind!",
-      "desc": "Complete a perfect delivery (no damage, no fines, in-time) of at least 3 Forest Machinery DLC jobs (requires Forest Machinery DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/346de2769eda8ab54780a13568f54f393b7d3267.jpg"
-    },
-    {
-      "id": "ut_visit_cities",
-      "title": "Beehive State",
-      "desc": "Discover every city in Utah (requires Utah DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/f07e448274f5506c4933dd970538057e97953ca7.jpg"
-    },
-    {
-      "id": "ut_mines",
-      "title": "This One Is Mine!",
-      "desc": "Visit all mines & quarries in Utah (requires Utah DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/38409d5283a9a55b9cd93e69c2ae2dae72f7ca52.jpg"
-    },
-    {
-      "id": "ut_sign",
-      "title": "It's Something",
-      "desc": "Find a sign that says \"nothing\" (requires Utah DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/2f2ecc3e9e96bc5791d3be9f09975e5ab9e8e538.jpg"
-    },
-    {
-      "id": "ut_salt_lake_companies",
-      "title": "Some Like It Salty",
-      "desc": "Take a job from each branch of each company located in Salt Lake City (requires Utah DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/6a9a30e677a6ae4b27e090f269b626beddc8c2e7.jpg"
-    },
-    {
-      "id": "ut_frac_tank",
-      "title": "Pump It Up",
-      "desc": "Deliver 5 frac tank trailers to any oil drilling site in Utah (requires Utah DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/00acf9ebf50aaf765a596575a372a084efbf1289.jpg"
-    },
-    {
-      "id": "id_visit_cities",
-      "title": "Gem State",
-      "desc": "Discover every city in Idaho (requires Idaho DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/7cfb739d3ad71195bb94f2afba1b1ece0b8ec683.jpg"
-    },
-    {
-      "id": "id_potatoes",
-      "title": "Grown in Idaho",
-      "desc": "Complete five deliveries of potatoes from Idaho farms (requires Idaho DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/024277ced9b81b2fd665bed729d3f0b55678dc39.jpg"
-    },
-    {
-      "id": "id_snake_river",
-      "title": "Along the Snake River",
-      "desc": "Complete perfect deliveries (no damage, no fines, on time) between the following cities: Kennewick - Lewiston; Boise - Twin Falls; Twin Falls - Pocatello; Pocatello - Idaho Falls. Any order or direction counts (requires Washington and Idaho DLCs)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/1b6d807c3b2a134cd905d0db4d8a7e0b714c0222.jpg"
-    },
-    {
-      "id": "id_cutscenes",
-      "title": "The Director",
-      "desc": "View cutscenes from all viewpoints in Idaho (requires Idaho DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/ec9cdcecdc9c790e641bf88191868d6b2d681a23.jpg"
-    },
-    {
-      "id": "id_45th_parallel",
-      "title": "45th Parallel",
-      "desc": "Visit 45th parallel in Idaho - a halfway between the Equator and the North Pole (requires Idaho DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/f89f652734b4a051ea8bd545a08c6d74cc1d93db.jpg"
-    },
-    {
-      "id": "co_visit_cities",
-      "title": "The Centennial State",
-      "desc": "Discover every city in Colorado (requires Colorado DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/539f401a6722259593a7a92a9ed0a9205461e203.jpg"
-    },
-    {
-      "id": "co_us550",
-      "title": "Million Dollar Highway",
-      "desc": "Drive along this famously scenic and thrilling section of the U.S. 550 in Colorado (requires Colorado DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/d69e9fc0016b9fd399676b8adb919a501e26629e.jpg"
-    },
-    {
-      "id": "co_tunnels",
-      "title": "Cruising High Below",
-      "desc": "Drive through the Eisenhower-Johnson Memorial Tunnel, the highest point on the US Interstate Highway System, in both directions (requires Colorado DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/6bb74882b0f309f20ab878be86d106cc1c6915fc.jpg"
-    },
-    {
-      "id": "co_wind_turbine",
-      "title": "Energy From Above",
-      "desc": "Deliver a Tower and Nacelle to both Vitas Power wind turbine construction sites in Colorado (requires Colorado DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/707ec0751cca190fe136272d6dfdebcc95b9620e.jpg"
-    },
-    {
-      "id": "co_gold_mine",
-      "title": "Gold Rush",
-      "desc": "Deliver 10 loads to or from the NAMIQ company at the gold mine in Colorado (requires Colorado DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/4a5dbbc4bb4ad893c93a6bbee85cd5c21cfb37b1.jpg"
-    },
-    {
-      "id": "co_denver_airport",
-      "title": "Up and Away",
-      "desc": "Complete 10 deliveries to Denver Airport (requires Colorado DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/37b491b31cba2a743ee3f4cfda97e82d87cce678.jpg"
-    },
-    {
-      "id": "co_four_corners",
-      "title": "Four Corners",
-      "desc": "Visit the famous Four Corners Monument that marks where the states of Arizona, Colorado, New Mexico, and Utah meet (requires Colorado DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/510468f28b7c87426f2ff8ce3fa83110b5cbd10e.jpg"
-    },
-    {
-      "id": "wy_visit_cities",
-      "title": "The Equality State",
-      "desc": "Discover every city in Wyoming (requires Wyoming DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/f66878f83d72591ec6f96cfdfe773040dfdcc743.jpg"
-    },
-    {
-      "id": "wy_cutscenes",
-      "title": "Over Plains and Mountains",
-      "desc": "View cutscenes from all viewpoints in Wyoming (requires Wyoming DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/a866bcde7a8cbeb1c2853e15067a3d35e1e4dd6c.jpg"
-    },
-    {
-      "id": "wy_buford",
-      "title": "Population 1",
-      "desc": "Discover and visit the town of Buford (requires Wyoming DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/088182ab603ef06644538b965f2e26adb78786c3.jpg"
-    },
-    {
-      "id": "wy_train",
-      "title": "Big Boy",
-      "desc": "Deliver Train Axles, Tamping Machine and Rails to or from the rail yard in Cheyenne (requires Wyoming DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/ffd7f92653bb254842108f49e6863b890ccb6abc.jpg"
-    },
-    {
-      "id": "wy_cattle",
-      "title": "Buffalo Bill",
-      "desc": "Complete 10 perfect cattle deliveries (no damage, no fines, in-time) to livestock auctions in Wyoming (requires Wyoming DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/f6dd3099d1553c8c3e86cf71935b9d931e94a16f.jpg"
-    },
-    {
-      "id": "mt_visit_cities",
-      "title": "The Last Best Place",
-      "desc": "Discover every city in Montana (requires Montana DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/535d5147808b5685f2a68b4231a307e03d37e3da.jpg"
-    },
-    {
-      "id": "mt_cutscenes",
-      "title": "Big Sky Country",
-      "desc": "View cutscenes from all viewpoints in Montana (requires Montana DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/10497c35031f527f8e00a57b7d9138fd4b34da22.jpg"
-    },
-    {
-      "id": "mt_waste",
-      "title": "Zero Waste",
-      "desc": "Show your support for zero waste by completing a total of 10 deliveries of the Dumpster Bins and Waste Paper cargoes to the Waste Transfer Stations in Montana, and at least one Garbage Truck cargo to or from anywhere in Montana (requires Montana DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/127bc17cb60aa5ab92faf7108027758bb4da5c41.jpg"
-    },
-    {
-      "id": "mt_electric",
-      "title": "Power On!",
-      "desc": "Spark up Montana and support the power network by delivering a Circuit Breakers cargo and a Utility Poles cargo to the electric substations in each of the following cities: Butte, Glasgow and Havre (requires Montana DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/d477d1618d00fbf220ac183662b93653990183ae.jpg"
-    },
-    {
-      "id": "mt_miner",
-      "title": "Major Miner",
-      "desc": "Complete a perfect delivery (no damage, no fines, in-time) of any machinery equipment to the Bull Mountains coal mine, Silane from the silane gas factory and Talc Powder from the talc factory (requires Montana DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/7278f7b7f2a2115425d24b893b7ba1e571da87f3.jpg"
-    },
-    {
-      "id": "unload_difficulty",
-      "title": "Parking Challenge",
-      "desc": "Complete 20 deliveries choosing the trailer delivery option which requires reversing",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/7c5b73849e037039c14008685873260470ae2762.jpg"
-    },
-    {
-      "id": "tx_visit_cities",
-      "title": "The Lone Star State",
-      "desc": "Discover every city in Texas (requires Texas DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/c9b6ad0d80c1f35ef8f4a313be0ee4471b73edd5.jpg"
-    },
-    {
-      "id": "tx_cutscenes",
-      "title": "Big Country Views",
-      "desc": "View cutscenes from at least 25 viewpoints in Texas (requires Texas DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/20122dc67f690d85fd1e9b92d61057930e7600f2.jpg"
-    },
-    {
-      "id": "tx_markers",
-      "title": "Avid Historian",
-      "desc": "Discover at least 30 historical markers in Texas (requires Texas DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/f8b78b7aedc312904b0f63e7a0839bc40e1d21a9.jpg"
-    },
-    {
-      "id": "tx_shipyards_ports",
-      "title": "Shoreside Delivery",
-      "desc": "Deliver cargo to or from all shipyards and cargo ports in Texas (requires Texas DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/85f1547d3713dbed95e48802bd7fc1afed772669.jpg"
-    },
-    {
-      "id": "tx_farms_auction_houses",
-      "title": "Farm Away",
-      "desc": "Deliver cargo to or from all farms and livestock auctions in Texas (requires Texas DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/6916bf651ee631e641bd06240be6089834c9d677.jpg"
-    },
-    {
-      "id": "tx_cotton",
-      "title": "Cotton Bloom",
-      "desc": "Complete 10 deliveries of at least one Cotton Lint, Cotton Seed and Cotton Harvester within Texas (requires Texas and Heavy Cargo Pack DLCs)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/dce70e9a111cbd0d6b8698a39784cd5570ce4a41.jpg"
-    },
-    {
-      "id": "ok_visit_cities",
-      "title": "The Sooner State",
-      "desc": "Discover every city in Oklahoma (requires Oklahoma DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/334c72bd22cff2e9d3c7cb55742271e1a827cfab.jpg"
-    },
-    {
-      "id": "ok_cutscenes",
-      "title": "Can Do!",
-      "desc": "View cutscenes from all viewpoints in Oklahoma (requires Oklahoma DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/fc334cb772d029e1c09990f5a1950e451731789a.jpg"
-    },
-    {
-      "id": "ok_bus_factory",
-      "title": "School Bus Capital",
-      "desc": "Deliver 5 Bus Hood cargoes to and 5 School Bus cargoes from the bus factory in Tulsa (requires Oklahoma DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/56ab6be01c213f6c04ea9787415e2b3cd8916ed6.jpg"
-    },
-    {
-      "id": "ok_big_tyres",
-      "title": "Big Wheels Keep On Turning",
-      "desc": "Complete 3 deliveries of Big Tyres cargo from both tyre factories in Lawton and Ardmore (requires Oklahoma DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/f687a6b70aa86c682dd8cd5eb306091d404de7b1.jpg"
-    },
-    {
-      "id": "ks_visit_cities",
-      "title": "The Sunflower State",
-      "desc": "Discover every city in Kansas (requires Kansas DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/94102ddc84918372a9a48385f79e9efb9dfccca6.jpg"
-    },
-    {
-      "id": "ks_cutscenes",
-      "title": "Wheat State Explorer",
-      "desc": "View cutscenes from all viewpoints in Kansas (requires Kansas DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/111d648e8d4e79c8016ca75f93569f917f5fe533.jpg"
-    },
-    {
-      "id": "ks_engine_wing",
-      "title": "Air Capital of the World",
-      "desc": "Deliver an Aircraft Wing and Jet Engine Inlets to or from every aviation depot in Wichita (requires Kansas DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/cf0c82895308bbe9f1aedef09e62b0dd8b2acfe7.jpg"
-    },
-    {
-      "id": "ks_secret_roads",
-      "title": "Can you Keep a Secret?",
-      "desc": "Discover at least 3 unmarked roads in Kansas (requires Kansas DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/d17b3c40f42ea123cf42d0964eefeb8b8083b2b8.jpg"
-    },
-    {
-      "id": "ks_salt_food",
-      "title": "Grain of Salt",
-      "desc": "Complete 6 deliveries from the Hutchinson Salt Mine in Kansas. At least 2 deliveries must be to a Food Factory (requires Kansas DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/b1e1d2c39c57d4c3a88b3eed2771c3eca34dec79.jpg"
-    },
-    {
-      "id": "ne_visit_cities",
-      "title": "Cornhusker State",
-      "desc": "Discover every city in Nebraska (requires Nebraska DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/a34a637d0bd452f617062aa7fe0d7f0e2b697184.jpg"
-    },
-    {
-      "id": "ne_cutscenes",
-      "title": "Nebraska Explorer",
-      "desc": "View cutscenes from all viewpoints in Nebraska (requires Nebraska DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/f8ad15f38b40c910fa17aa485f970f258dfddfa0.jpg"
-    },
-    {
-      "id": "ne_out_car_pln",
-      "title": "Vehicle Dealer",
-      "desc": "Complete 3 deliveries from the Utility Vehicle Factory in Lincoln to each of the RV dealers in Omaha, Norfolk, and Columbus (requires Nebraska DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/6e672945a396e6199244dda5f34375a53f854d1d.jpg"
-    },
-    {
-      "id": "ne_agriculture",
-      "title": "Agriculture Expert",
-      "desc": "Complete one delivery of corn, grain, potatoes and soybean from or within Nebraska (requires Nebraska DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/f47251ace0ccd291af14e6d496228b78096dfccb.jpg"
-    },
-    {
-      "id": "ar_visit_cities",
-      "title": "The Natural State",
-      "desc": "Discover at least 8 cities in Arkansas (requires Arkansas DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/e9d2c29493127c75b8044570137f118d1fd06477.jpg"
-    },
-    {
-      "id": "ar_cutscenes",
-      "title": "I Saw Arkansas",
-      "desc": "View cutscenes from at least 8 viewpoints in Arkansas (requires Arkansas DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/6b55226ceb4729e725a73997ad0e576cbe58d2d9.jpg"
-    },
-    {
-      "id": "ar_paper",
-      "title": "Paper Trail",
-      "desc": "Complete 3 deliveries of Logs to Chuck & Jack's, and 3 deliveries of Wood Shavings to Page & Price Paper, within Arkansas (requires Arkansas DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/ac3f89fffb0ed6753c8f8ed60ba72aaa5d700f53.jpg"
-    },
-    {
-      "id": "ar_hot_springs",
-      "title": "Spa City",
-      "desc": "Complete a delivery to 5 different companies in Hot Springs (requires Arkansas DLC)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/b97969c8cbb27ce906edf6715511d7152fc60619.jpg"
+      "id": "aca_consecutive",
+      "title": "Failure Is Not an Option",
+      "desc": "Complete any 5 scenarios in a row without failure from the third or fourth chapter in Truck Driving Basics (Driving Academy)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/551f77e942d440702384a1a9cb19da696a1933f9.jpg"
     },
     {
       "id": "aca_first",
       "title": "Get the Ball Rollin'",
       "desc": "Complete the first scenario of the first chapter in Truck Driving Basics (Driving Academy)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/f111d20de9f50d680a7b636597eaf3f22944eb27.jpg"
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/a071f7e21f0779276e2f50be075bb06443e0ad3c.jpg"
     },
     {
       "id": "aca_interior",
       "title": "Professional Driver",
       "desc": "Complete at least 6 scenarios in the fourth chapter of Truck Driving Basics while using only the interior camera (Driving Academy)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/6649089537ee4a8a5df43f56eb8d81f558b70a5c.jpg"
-    },
-    {
-      "id": "aca_truck_driving",
-      "title": "Dedicated Student",
-      "desc": "Complete at least 28 scenarios in Truck Driving Basics including the final exams (Driving Academy)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/e594e13fb10fb783c674f8239052b250173baf14.jpg"
-    },
-    {
-      "id": "aca_no_forward",
-      "title": "One-Shottin' It",
-      "desc": "Complete any scenario in fourth chapter of Truck Driving Basics in one attempt without correcting by driving forward (Driving Academy)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/29739caf46d433d4e85e15479a58ba904660ea50.jpg"
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/5bb214f65a3fa78869980cf1fcec23efc382c462.jpg"
     },
     {
       "id": "aca_manual_transmission",
       "title": "Rowing Through the Gears",
       "desc": "Complete 20 scenarios in chapters two, three or four of Truck Driving Basics using an H-shifter or sequential transmission (Driving Academy)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/2946ab452f17cd51c84cdd3e39683c2b3ee1a2af.jpg"
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/9297481d4bf4a199ae90ad5da2d2a888f34329ed.jpg"
     },
     {
-      "id": "aca_consecutive",
-      "title": "Failure Is Not an Option",
-      "desc": "Complete any 5 scenarios in a row without failure from the third or fourth chapter in Truck Driving Basics (Driving Academy)",
-      "imgUrl": "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/270880/42c8d23894c6cb67a505c56b4b8b255b11d715d3.jpg"
+      "id": "aca_no_forward",
+      "title": "One-Shottin' It",
+      "desc": "Complete any scenario in fourth chapter of Truck Driving Basics in one attempt without correcting by driving forward (Driving Academy)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/7d0969f34c94dcee78d60e999379a19071ec2456.jpg"
+    },
+    {
+      "id": "aca_pass_conditions",
+      "title": "Advanced Student",
+      "desc": "Complete the pass conditions in at least 23 scenarios in Truck Driving Proficiency (Driving Academy)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/b0a9787a6813bfe5802d2d574769f657efcee1e1.jpg"
+    },
+    {
+      "id": "aca_stars",
+      "title": "Nerd of the Road",
+      "desc": "Obtain 3 stars in at least 23 scenarios in Truck Driving Proficiency (Driving Academy)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/7bddb27a90a14d064c94da2558adf40d4344d140.jpg"
+    },
+    {
+      "id": "aca_stars_consecutive",
+      "title": "Shining Star",
+      "desc": "Obtain 3 stars in any 3 scenarios played in a row in Truck Driving Proficiency (Driving Academy)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/ceddcf49386495ba21ea1ab2ab0a0f451122af8d.jpg"
+    },
+    {
+      "id": "aca_truck_driving",
+      "title": "Dedicated Student",
+      "desc": "Complete at least 28 scenarios in Truck Driving Basics including the final exams (Driving Academy)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/4e1ee32857584b0f4928319482ee341d61423f3e.jpg"
+    },
+    {
+      "id": "ar_cutscenes",
+      "title": "I Saw Arkansas",
+      "desc": "View cutscenes from at least 8 viewpoints in Arkansas (requires Arkansas DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/81a4f1c5872ca7a50be66b0bd0633b5af99da937.jpg"
+    },
+    {
+      "id": "ar_hot_springs",
+      "title": "Spa City",
+      "desc": "Complete a delivery to 5 different companies in Hot Springs (requires Arkansas DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/7196b6b78627541f94ab0a702ce2c2fed3c13163.jpg"
+    },
+    {
+      "id": "ar_paper",
+      "title": "Paper Trail",
+      "desc": "Complete 3 deliveries of Logs to Chuck & Jack's, and 3 deliveries of Wood Shavings to Page & Price Paper, within Arkansas (requires Arkansas DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/3f4cbae3996490f073c04f9a020fa2d53a299be3.jpg"
+    },
+    {
+      "id": "ar_visit_cities",
+      "title": "The Natural State",
+      "desc": "Discover at least 8 cities in Arkansas (requires Arkansas DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/d3fa8147ff1d9d1f59b9d21c8c9ac76162208d62.jpg"
+    },
+    {
+      "id": "az_colorado",
+      "title": "Powell's Trail",
+      "desc": "Visit at least 4 Colorado River sights",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/bb6f3137cdb0fc402d444152531111bcb5179f9b.jpg"
+    },
+    {
+      "id": "az_phx_aport",
+      "title": "Sky Harbor",
+      "desc": "Deliver cargo to the Phoenix Airport",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/3c95a001bf48703dbb76cb285167e4ff5e5aae56.jpg"
+    },
+    {
+      "id": "az_racetrack",
+      "title": "Start Your Engine!",
+      "desc": "Get on the start of the Truck Racing circuit",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/476de67da3357b2da94dea6bf38eb5dce5a9654b.jpg"
+    },
+    {
+      "id": "az_visit_cities",
+      "title": "Copper State",
+      "desc": "Discover at least 12 cities in Arizona",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/3ec2e4a8e8021bddd264824b9ffe4af4d3ea1b2b.jpg"
+    },
+    {
+      "id": "buy_truck",
+      "title": "Rig Master",
+      "desc": "Buy your own truck",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/2c9e1c05b191f4f1d55c70402c8d07a4bb28d651.jpg"
+    },
+    {
+      "id": "ca_country",
+      "title": "Cheers!",
+      "desc": "Deliver cargo from at least 3 vineyards in California",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/677877262b510597b2035e079cb3b07022854007.jpg"
+    },
+    {
+      "id": "ca_sea_ports",
+      "title": "Sea Dog",
+      "desc": "Deliver cargo to a port in Oakland and a port in San Francisco",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/34770b7621c71a97aac87bcd959ff946a998dd78.jpg"
+    },
+    {
+      "id": "ca_visit_cities",
+      "title": "California Dreamin'",
+      "desc": "Discover at least 15 cities in California",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/ea2b13349401f2302b0827d23b1debb77e9b5c87.jpg"
+    },
+    {
+      "id": "co_denver_airport",
+      "title": "Up and Away",
+      "desc": "Complete 10 deliveries to Denver Airport (requires Colorado DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/48aa54f73696c7042d10783c4af8d672bc8f44b1.jpg"
+    },
+    {
+      "id": "co_four_corners",
+      "title": "Four Corners",
+      "desc": "Visit the famous Four Corners Monument that marks where the states of Arizona, Colorado, New Mexico, and Utah meet (requires Colorado DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/0f3007e65c49cd12834e2b5854314dca2121fcec.jpg"
+    },
+    {
+      "id": "co_gold_mine",
+      "title": "Gold Rush",
+      "desc": "Deliver 10 loads to or from the NAMIQ company at the gold mine in Colorado (requires Colorado DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/5fc2fd2ef2fbe077e009c3f67b39891d5fb10080.jpg"
+    },
+    {
+      "id": "co_tunnels",
+      "title": "Cruising High Below",
+      "desc": "Drive through the Eisenhower-Johnson Memorial Tunnel, the highest point on the US Interstate Highway System, in both directions (requires Colorado DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/7509603f102bb924f3e150cde2683f0ef7993d1e.jpg"
+    },
+    {
+      "id": "co_us550",
+      "title": "Million Dollar Highway",
+      "desc": "Drive along this famously scenic and thrilling section of the U.S. 550 in Colorado (requires Colorado DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/ea0059c3d650b24505c85fabe2f9ea35ed64cd79.jpg"
+    },
+    {
+      "id": "co_visit_cities",
+      "title": "The Centennial State",
+      "desc": "Discover at least 10 cities in Colorado (requires Colorado DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/7a47bf96f1739a44f188a4dddda07db639d9990e.jpg"
+    },
+    {
+      "id": "co_wind_turbine",
+      "title": "Energy From Above",
+      "desc": "Deliver a Tower and Nacelle to at least 1 Vitas Power wind turbine construction site in Colorado (requires Colorado DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/1f30f2209d388188ae88f3bab75d006d97d46f6a.jpg"
+    },
+    {
+      "id": "custompj",
+      "title": "Pimp My Truck",
+      "desc": "Buy, design and apply a custom paintjob",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/ffe4b04d82ae1b0ae27cb3688daf84da9fe06659.jpg"
+    },
+    {
+      "id": "drive_10k",
+      "title": "Warming Up",
+      "desc": "Drive 10,000 miles during deliveries",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/a580279ab2fa89adb45c9c78114cd9e630cb1dda.jpg"
+    },
+    {
+      "id": "finish50jobs",
+      "title": "I Think I Like It",
+      "desc": "Finish 50 deliveries",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/686dc47536cb1c8e8b985d80b64b010c4471ca5c.jpg"
+    },
+    {
+      "id": "fm_3_perfect",
+      "title": "Leave No Branch Behind!",
+      "desc": "Complete a perfect delivery (no damage, no fines, in-time) of at least 3 Forest Machinery DLC jobs (requires Forest Machinery DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/1c490dc0b73f846ebfb34b1c50b8d344a1874332.jpg"
+    },
+    {
+      "id": "fm_all_cargos",
+      "title": "Logged-In",
+      "desc": "Complete delivery of at least 4 Forest Machinery DLC cargoes (requires Forest Machinery DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/3717ac7570d4b0e3cd37ec0095ad0ccde2c18881.jpg"
+    },
+    {
+      "id": "harddifficlt",
+      "title": "Like a Boss",
+      "desc": "Successfully park a trailer at a hard delivery point",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/dadb9af94bcf62cbc2742d0e01a8e0c9c7f1bacf.jpg"
+    },
+    {
+      "id": "hc_100k5jobs",
+      "title": "Bigger Cargo, Bigger Profit",
+      "desc": "Earn $100,000 on 5 consecutive Heavy Cargo Pack deliveries (requires Heavy Cargo Pack DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/014799d661e04d188a9b08026ee9094519c2f7a4.jpg"
+    },
+    {
+      "id": "hc_allcargos",
+      "title": "I Thought This Should Be Heavy?!",
+      "desc": "Complete a delivery of at least 8 unique cargoes from the Heavy Cargo Pack (requires Heavy Cargo Pack DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/968aa6006a2413d83823da79c9415a6aaa4eec74.jpg"
+    },
+    {
+      "id": "hc_firstjob",
+      "title": "Time for Big Hauling",
+      "desc": "Deliver first Heavy Cargo Pack job (requires Heavy Cargo Pack DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/e3014b36f6a91c631b3a0bf5b2e9f92bd6542881.jpg"
+    },
+    {
+      "id": "hc_perf_job",
+      "title": "Heavy, but Not Bull in a China Shop!",
+      "desc": "Complete excellent delivery of a cargo from the Heavy Cargo Pack which is at least 1,000 miles long (requires Heavy Cargo Pack DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/c225fe58a7254e173142bcaeb613e0d292bf0eb5.jpg"
+    },
+    {
+      "id": "hc_weigh170k",
+      "title": "How Heavy Am I?!",
+      "desc": "Use truck scale or weigh station with gross vehicle weight of at least 175,000 lbs (requires Heavy Cargo Pack DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/4ce453861d3a50691e239aaf03e28dd060a86469.jpg"
+    },
+    {
+      "id": "ia_bridge",
+      "title": "Madison County Bridge",
+      "desc": "Cross the iconic bridge in Iowa (requires Iowa DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/acb9d72f371cdfb7acc8b4ff5138ed5f10fa2e5d.jpg"
+    },
+    {
+      "id": "ia_cutscenes",
+      "title": "Golden Acres Explorer",
+      "desc": "View cutscenes from at least 8 viewpoints in Iowa (requires Iowa DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/fa9b498aac2c89db9d86b7a8e69433285fbcfc04.jpg"
+    },
+    {
+      "id": "ia_live_pigs",
+      "title": "Piggy Express",
+      "desc": "Complete a live pigs cargo delivery from two livestock farms in Iowa (requires Iowa DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/53925021f7ab29f250ae047b6b5ec27621c96c54.jpg"
+    },
+    {
+      "id": "ia_visit_cities",
+      "title": "The Hawkeye State",
+      "desc": "Discover at least 8 cities in Iowa (requires Iowa DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/9f0bcff719d72efd841dab31efeb5499e86f7924.jpg"
+    },
+    {
+      "id": "id_45th_parallel",
+      "title": "45th Parallel",
+      "desc": "Visit 45th parallel in Idaho - a halfway between the Equator and the North Pole (requires Idaho DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/eae497b8c7ca81ced470d948c92a1af3a0c651f3.jpg"
+    },
+    {
+      "id": "id_cutscenes",
+      "title": "The Director",
+      "desc": "View cutscenes from at least 8 viewpoints in Idaho (requires Idaho DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/506e186636b56925e4572e0661bf16269d8d0c4b.jpg"
+    },
+    {
+      "id": "id_potatoes",
+      "title": "Grown in Idaho",
+      "desc": "Complete five deliveries of potatoes from Idaho farms (requires Idaho DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/52df0e3d64b3ee9162375b03f93c6e0630fff98e.jpg"
+    },
+    {
+      "id": "id_snake_river",
+      "title": "Along the Snake River",
+      "desc": "Complete perfect deliveries (no damage, no fines, on time) between the following cities: Kennewick - Lewiston; Boise - Twin Falls; Twin Falls - Pocatello; Pocatello - Idaho Falls. Any order or direction counts (requires Washington and Idaho DLCs)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/0a5c973d75ddfefa98e2af0907f8323456e2b4ed.jpg"
+    },
+    {
+      "id": "id_visit_cities",
+      "title": "Gem State",
+      "desc": "Discover at least 8 cities in Idaho (requires Idaho DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/ac3f17abb2b6a354345a1d17c2e61fbba3aef7e0.jpg"
+    },
+    {
+      "id": "jobs15comp",
+      "title": "Company Collector",
+      "desc": "Perform deliveries for at least 15 different companies",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/ca5505f53276487c5d068f86576cd379b984b220.jpg"
+    },
+    {
+      "id": "ks_cutscenes",
+      "title": "Wheat State Explorer",
+      "desc": "View cutscenes from at least 7 viewpoints in Kansas (requires Kansas DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/3bb9fac68e21820b8a227492387c5ae90cbca8b6.jpg"
+    },
+    {
+      "id": "ks_engine_wing",
+      "title": "Air Capital of the World",
+      "desc": "Deliver an Aircraft Wing and Jet Engine Inlets to or from at least 2 aviation depots in Wichita (requires Kansas DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/393b2282ad2c961a940ad096f34079e1826d6468.jpg"
+    },
+    {
+      "id": "ks_salt_food",
+      "title": "Grain of Salt",
+      "desc": "Complete 6 deliveries from the Hutchinson Salt Mine in Kansas. At least 2 deliveries must be to a Food Factory (requires Kansas DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/280a8f3e9ee0cc7c4675b4d09daa8488b8e891a5.jpg"
+    },
+    {
+      "id": "ks_secret_roads",
+      "title": "Can you Keep a Secret?",
+      "desc": "Discover at least 3 unmarked roads in Kansas (requires Kansas DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/39de98eff478b590980fc5365ecf2917be6528a0.jpg"
+    },
+    {
+      "id": "ks_visit_cities",
+      "title": "The Sunflower State",
+      "desc": "Discover at least 10 cities in Kansas (requires Kansas DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/fe8657d0097727ae451273e12dbb41e0fff8107b.jpg"
+    },
+    {
+      "id": "maxed_garage",
+      "title": "Final Makeover",
+      "desc": "Fully upgrade one of your garages",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/5174a41a590aa6a55ea1fa5e2fc25436da8fa301.jpg"
+    },
+    {
+      "id": "mo_cutscenes",
+      "title": "Ozark Explorer",
+      "desc": "View cutscenes from at least 12 viewpoints in Missouri (requires Missouri DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/2a7862a33d1452148ca2d66a0b08d0b76e7f9504.jpg"
+    },
+    {
+      "id": "mo_dynamite",
+      "title": "What a Blast!",
+      "desc": "Deliver ammonia and sulphuric acid to Namiq in Joplin, then complete a dynamite delivery from it (requires Missouri DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/f8811182f8fe9e2c3def0b312ffea6910e9c3ea4.jpg"
+    },
+    {
+      "id": "mo_trs_whs",
+      "title": "Subterranean",
+      "desc": "Complete a delivery to at least 2 underground Terrastore warehouses (requires Missouri DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/5bb7985f9d128e24a078c1f5bb0ae4386ce2de4c.jpg"
+    },
+    {
+      "id": "mo_visit_cities",
+      "title": "Show-Me State!",
+      "desc": "Discover at least 10 cities in Missouri (requires Missouri DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/24e936c61c493b3465f11327c0923b213ed214ab.jpg"
+    },
+    {
+      "id": "money_100k",
+      "title": "Cha-Ching",
+      "desc": "Earn $100,000 delivering cargos",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/58019b55fa59255fb49cd4bc3c72777d49866ec6.jpg"
+    },
+    {
+      "id": "mt_cutscenes",
+      "title": "Big Sky Country",
+      "desc": "View cutscenes from at least 10 viewpoints in Montana (requires Montana DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/27f43abb08cade8465dfabbe0fb42bd90e76b606.jpg"
+    },
+    {
+      "id": "mt_electric",
+      "title": "Power On!",
+      "desc": "Spark up Montana and support the power network by delivering a Circuit Breakers cargo and a Utility Poles cargo to the electric substations in each of the following cities: Butte, Glasgow and Havre (requires Montana DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/e2857410eb71fadd146b32ca18094f8f71ae6fc5.jpg"
+    },
+    {
+      "id": "mt_miner",
+      "title": "Major Miner",
+      "desc": "Complete excellent delivery of any machinery equipment to the Bull Mountains coal mine, Silane from the silane gas factory and Talc Powder from the talc factory (requires Montana DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/c67a24239b31bda156ff8c321ddad4e6593a1ceb.jpg"
+    },
+    {
+      "id": "mt_visit_cities",
+      "title": "The Last Best Place",
+      "desc": "Discover at least 12 cities in Montana (requires Montana DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/22cdcfc70a1481fc2ae29f5ab0da6b52929e498f.jpg"
+    },
+    {
+      "id": "mt_waste",
+      "title": "Zero Waste",
+      "desc": "Show your support for zero waste by completing a total of 10 deliveries of the Dumpster Bins and Waste Paper cargoes to the Waste Transfer Stations in Montana, and at least one Garbage Truck cargo to or from anywhere in Montana (requires Montana DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/2d1d3714e23e8f2f3848e1dd42623ce22ca74df6.jpg"
+    },
+    {
+      "id": "ne_agriculture",
+      "title": "Agriculture Expert",
+      "desc": "Complete one delivery of corn, grain, potatoes and soybean from or within Nebraska (requires Nebraska DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/31884f975e4b7d3e16d7171aa59a39a08c919298.jpg"
+    },
+    {
+      "id": "ne_cutscenes",
+      "title": "Nebraska Explorer",
+      "desc": "View cutscenes from at least 6 viewpoints in Nebraska (requires Nebraska DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/01f201c914ff256615db30583320b4d3922c5c55.jpg"
+    },
+    {
+      "id": "ne_out_car_pln",
+      "title": "Vehicle Dealer",
+      "desc": "Complete 3 deliveries from the Utility Vehicle Factory in Lincoln to RV dealers in Omaha, Norfolk, and Columbus (requires Nebraska DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/932b076ead00f740ec88a86f7041231360db9f5d.jpg"
+    },
+    {
+      "id": "ne_visit_cities",
+      "title": "Cornhusker State",
+      "desc": "Discover at least 10 cities in Nebraska (requires Nebraska DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/adca60dd2e49d5313cafb5fd3857a732a94f0f2d.jpg"
+    },
+    {
+      "id": "nm_an_124",
+      "title": "Sky Delivery",
+      "desc": "Deliver cargo to An-124 depot (requires New Mexico DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/090d5aeaeb507fd3953cf3a6a8329ce9fffb9ce5.jpg"
+    },
+    {
+      "id": "nm_museum",
+      "title": "1881",
+      "desc": "Drive by the Billy The Kid Museum (requires New Mexico DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/a48877b424abfa4a614b4786571ee4ffd26e3244.jpg"
+    },
+    {
+      "id": "nm_shortcut",
+      "title": "Forest Shortcut",
+      "desc": "Discover shortcut through the forest (requires New Mexico DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/82325a44b67908f940ec0062aab6a7c7896aa493.jpg"
+    },
+    {
+      "id": "nm_truckstops",
+      "title": "Truck Stop Tour",
+      "desc": "Visit at least 18 large truck stops and rest stops in New Mexico (requires New Mexico DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/d8a91eac87ef47ea39c4b60fa3aa7813f634f8f7.jpg"
+    },
+    {
+      "id": "nm_visit_cities",
+      "title": "The Land of Enchantment",
+      "desc": "Discover at least 10 cities in New Mexico (requires New Mexico DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/1e2a38f1f2c6bc2c07400c3bb7cc1a81ed2106dc.jpg"
+    },
+    {
+      "id": "no_autopark",
+      "title": "Not a Problem",
+      "desc": "Successfully park a trailer at a delivery point",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/38f04f60f2075168c48eceb565d5367aef427e91.jpg"
+    },
+    {
+      "id": "nv_quarries",
+      "title": "Gold Fever",
+      "desc": "Deliver cargo to at least 1 quarry in Nevada",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/c7273828f436ed49befbf13e006054749d51e2b5.jpg"
+    },
+    {
+      "id": "nv_visit_cities",
+      "title": "Silver State",
+      "desc": "Discover at least 8 cities in Nevada",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/c5ec1bc9fbce3c59641fedfa47e4d64ca8937278.jpg"
+    },
+    {
+      "id": "ok_big_tyres",
+      "title": "Big Wheels Keep On Turning",
+      "desc": "Complete 3 deliveries of Big Tyres cargo from at least 1 tyre factory in Lawton or Ardmore (requires Oklahoma DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/01e2bba84e3b7817b4eefc8ca94106d05739b564.jpg"
+    },
+    {
+      "id": "ok_bus_factory",
+      "title": "School Bus Capital",
+      "desc": "Deliver 5 Bus Hood cargoes to and 5 School Bus cargoes from the bus factory in Tulsa (requires Oklahoma DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/af8186d2edf97fdd0f4c65bf9d80a37b658b75be.jpg"
+    },
+    {
+      "id": "ok_cutscenes",
+      "title": "Can Do!",
+      "desc": "View cutscenes from at least 6 viewpoints in Oklahoma (requires Oklahoma DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/c6bde028aae5f112e9b7a21c15f2713352fde94f.jpg"
+    },
+    {
+      "id": "ok_visit_cities",
+      "title": "The Sooner State",
+      "desc": "Discover at least 8 cities in Oklahoma (requires Oklahoma DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/cdd5b612844aeb63961bc6e2b2ec68da4ba69b51.jpg"
+    },
+    {
+      "id": "or_cabbage_hill",
+      "title": "Cabbage to Cabbage",
+      "desc": "Complete a delivery of vegetables over Cabbage Hill (requires Oregon DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/c30be2c6cda30215aeb6ee82fe622882c1a44445.jpg"
+    },
+    {
+      "id": "or_drawbridge",
+      "title": "Uplifting",
+      "desc": "Travel across the New Youngs Bay Bridge (requires Oregon DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/c6fa2979f8b546fe28b54a0e86cc909e3c2bb9c5.jpg"
+    },
+    {
+      "id": "or_landmarks",
+      "title": "Travel Oregon",
+      "desc": "Discover following landmarks of Oregon: Crater Lake, Crooked River Gorge, Thor's Well and Yaquina Head Lighthouse (requires Oregon DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/8fee9dcd05be279619e3939ce06d20848c39a36e.jpg"
+    },
+    {
+      "id": "or_timber_harvest",
+      "title": "Lumberjack",
+      "desc": "Deliver cargo from at least 4 timber harvest sites in Oregon (requires Oregon DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/2ebd1d7b19ed11238fb5b15ce26627c1e7e445f2.jpg"
+    },
+    {
+      "id": "or_visit_cities",
+      "title": "The Beaver State",
+      "desc": "Discover at least 10 cities in Oregon (requires Oregon DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/df8842f124aeb9ae197d79e71fd185853cdec214.jpg"
+    },
+    {
+      "id": "perf_job",
+      "title": "High Five",
+      "desc": "Complete a perfect delivery (no damage, no fines, in-time) for a job that is at least 600 miles",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/dfe45331b607ad77c1dd3eb3d1b675b3c26e3b73.jpg"
+    },
+    {
+      "id": "st_aircondition",
+      "title": "One, Two, Three - Breathe!",
+      "desc": "Successfully deliver an Air Conditioning Complex Special Transport DLC mission with no damage and on time (requires Special Transport DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/6e46382ace0bd50d296896a41eee7f3d93051e8b.jpg"
+    },
+    {
+      "id": "st_all_cargos",
+      "title": "Big in America!",
+      "desc": "Complete at least 10 unique deliveries of oversize cargoes (requires Special Transport DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/ed29fad7040f51c4bf5d700c3e5c8a05a8c14b47.jpg"
+    },
+    {
+      "id": "st_all_routes",
+      "title": "Go Big or Go Home",
+      "desc": "Complete deliveries on at least 10 oversize routes in base game (requires Special Transport DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/c1c17f8736fa431def9d25d4254b5e4ae2e1e6f7.jpg"
+    },
+    {
+      "id": "st_helicopter",
+      "title": "Get (to) the Chopper!",
+      "desc": "Successfully deliver a Helicopter Special Transport DLC mission with no damage and on time (requires Special Transport DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/c7b3da8322f8f31f75d2f37b2e93c9336f96c6f3.jpg"
+    },
+    {
+      "id": "st_house",
+      "title": "Home Sweet Home",
+      "desc": "Successfully deliver a Turnkey House Special Transport DLC mission with no damage and on time (requires Special Transport DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/a0c05b00f59f9af4cae8423f2d896a3b024193f6.jpg"
+    },
+    {
+      "id": "st_mutt_part",
+      "title": "Your Dumper Has Arrived!",
+      "desc": "Deliver all three parts of a disassembled dumper: Haul Truck Hull, Huge Tyres, Haul Truck Chassis (requires Special Transport DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/eee395fcf775f8b70b229ebb3361b988c24df239.jpg"
+    },
+    {
+      "id": "st_perf_job",
+      "title": "Size Matters",
+      "desc": "Successfully deliver a Special Transport DLC mission with no damage and on time (requires Special Transport DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/9694bc7b9c6778d207a99d9a88d6bbd2b57e4440.jpg"
+    },
+    {
+      "id": "tx_cotton",
+      "title": "Cotton Bloom",
+      "desc": "Complete 10 deliveries of at least one Cotton Lint, Cotton Seed and Cotton Harvester within Texas (requires Texas and Heavy Cargo Pack DLCs)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/e7321dd79ca264cab3a2b0b645f596146db80d11.jpg"
+    },
+    {
+      "id": "tx_cutscenes",
+      "title": "Big Country Views",
+      "desc": "View cutscenes from at least 25 viewpoints in Texas (requires Texas DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/b6a43e26a2fd1f5d7f1425d360a0ab8eaa91757d.jpg"
+    },
+    {
+      "id": "tx_farms_auction_houses",
+      "title": "Farm Away",
+      "desc": "Deliver cargo to or from at least 5 farms and 2 livestock auctions in Texas (requires Texas DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/c19d140a084a2a63bde94ef4d26dcda60a41ca37.jpg"
+    },
+    {
+      "id": "tx_markers",
+      "title": "Avid Historian",
+      "desc": "Discover at least 30 historical markers in Texas (requires Texas DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/c426f5daff72180bbd8477a32bc347e45839f6a6.jpg"
+    },
+    {
+      "id": "tx_shipyards_ports",
+      "title": "Shoreside Delivery",
+      "desc": "Deliver cargo to or from at least 2 shipyards and 4 cargo ports in Texas (requires Texas DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/2ba9cc81d6e924fccda88ec86a2050d4a8000683.jpg"
+    },
+    {
+      "id": "tx_visit_cities",
+      "title": "The Lone Star State",
+      "desc": "Discover at least 20 cities in Texas (requires Texas DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/d0a1b553ef4c27f14666e544edd056a207e5dc2a.jpg"
+    },
+    {
+      "id": "unload_difficulty",
+      "title": "Parking Challenge",
+      "desc": "Complete 20 deliveries choosing the trailer delivery option which requires reversing",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/dd641b9ed44ff1e951c99ab3b797e31fae33142a.jpg"
+    },
+    {
+      "id": "use_gas_stat",
+      "title": "Gas Guzzler",
+      "desc": "Use a gas station",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/f21c971d14807a56cb4c9d86d104bb3d03e51751.jpg"
+    },
+    {
+      "id": "use_weigh_stat",
+      "title": "What's Your BMI?",
+      "desc": "Use a weigh station",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/175070af94c89fdefc0301e43a9f7c53c4d663a7.jpg"
+    },
+    {
+      "id": "ut_frac_tank",
+      "title": "Pump It Up",
+      "desc": "Deliver frac tank trailer to at least 5 oil drilling sites in Utah (requires Utah DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/0f50eceea6070796b4cf65b0e83a5e3b6a52e243.jpg"
+    },
+    {
+      "id": "ut_mines",
+      "title": "This One Is Mine!",
+      "desc": "Visit at least 2 mines and quarries in Utah (requires Utah DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/d5635b5b8380b4f85b8ea73f587974cbc3f1a7fa.jpg"
+    },
+    {
+      "id": "ut_salt_lake_companies",
+      "title": "Some Like It Salty",
+      "desc": "Take a job from each branch of at least 6 companies located in Salt Lake City (requires Utah DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/18910ac54aa6fca3b5ac0372acb976b3f531f269.jpg"
+    },
+    {
+      "id": "ut_sign",
+      "title": "It's Something",
+      "desc": "Find a sign that says \"nothing\" (requires Utah DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/c73bef3e44fdc6bfe72478261cb23275838355ac.jpg"
+    },
+    {
+      "id": "ut_visit_cities",
+      "title": "Beehive State",
+      "desc": "Discover at least 8 cities in Utah (requires Utah DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/fc13526c1bcbead4e4ce3e49eaf2a6f9607e874b.jpg"
+    },
+    {
+      "id": "wa_aerospace",
+      "title": "Steel Wings",
+      "desc": "Deliver cargo to an aerospace company in Washington (requires Washington DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/9f988e9e3c6d57c09198960178555f500ea2f675.jpg"
+    },
+    {
+      "id": "wa_forest",
+      "title": "Over the Top",
+      "desc": "Drive through the forest road to timber harvest in Bellingham (requires Washington DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/ab21e0c075a1674a49111761e8290cb4b35bc00a.jpg"
+    },
+    {
+      "id": "wa_landmarks",
+      "title": "Travel Washington",
+      "desc": "Visit Mount St. Helens, Grand Coulee Dam, Mount Rainier (requires Washington DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/f07a96f1c91dfb5c1ce94879faba818a032adff8.jpg"
+    },
+    {
+      "id": "wa_marina",
+      "title": "Keep Sailing",
+      "desc": "Deliver a boat to a marina in Washington (requires Washington DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/aac8174c77e488bf2abf2fdbce41f7a76b146155.jpg"
+    },
+    {
+      "id": "wa_terminal",
+      "title": "Terminal Terminus",
+      "desc": "Deliver cargo to at least 1 port terminal in Washington (requires Washington DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/bdabff39a619ed9d2936f19afda58d1b8892e34f.jpg"
+    },
+    {
+      "id": "wa_tunnels",
+      "title": "Seattle Mole",
+      "desc": "Drive through both Seattle tunnels (requires Washington DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/64265c8f97b78718c19bfcf516bb1066ae472e61.jpg"
+    },
+    {
+      "id": "wa_use_ferry",
+      "title": "Ferry Tales",
+      "desc": "Use a ferry to cross the water (requires Washington DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/b925c9af7f93df77d1c2238fb89cf5141ccdd09a.jpg"
+    },
+    {
+      "id": "wa_visit_cities",
+      "title": "The Evergreen State",
+      "desc": "Discover at least 12 cities in Washington (requires Washington DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/4b0cbd42efe35d9ff686d83b2daa2624e69cb497.jpg"
+    },
+    {
+      "id": "wy_buford",
+      "title": "Population 1",
+      "desc": "Discover and visit the town of Buford (requires Wyoming DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/a19bb05f358f6d850856fa5c47d67fae0c11e6c4.jpg"
+    },
+    {
+      "id": "wy_cattle",
+      "title": "Buffalo Bill",
+      "desc": "Complete 10 excellent cattle deliveries to livestock auctions in Wyoming (requires Wyoming DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/ee58cc48b0a6cfb1fc481b8977c558c4f43acf25.jpg"
+    },
+    {
+      "id": "wy_cutscenes",
+      "title": "Over Plains and Mountains",
+      "desc": "View cutscenes from at least 8 viewpoints in Wyoming (requires Wyoming DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/fc005bdc7ebfcf7dd92bdc84a7ce010f997e338d.jpg"
+    },
+    {
+      "id": "wy_train",
+      "title": "Big Boy",
+      "desc": "Deliver Train Axles, Tamping Machine and Rails to or from the rail yard in Cheyenne (requires Wyoming DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/37e1550f0f497491d8abd353e243d4bac6089d3d.jpg"
+    },
+    {
+      "id": "wy_visit_cities",
+      "title": "The Equality State",
+      "desc": "Discover at least 8 cities in Wyoming (requires Wyoming DLC)",
+      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/270880/b8267b6c4fc365133948f8127250680b4a977829.jpg"
     }
   ]
 }

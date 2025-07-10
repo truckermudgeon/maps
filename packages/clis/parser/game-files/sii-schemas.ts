@@ -152,15 +152,15 @@ export const RouteSiiSchema: JSONSchemaType<RouteSii> = object({
   }),
 });
 
-export interface BaseAchievementsSii {
-  achievementVisitCityData: Record<
+export interface AchievementsSii {
+  achievementVisitCityData?: Record<
     string,
     {
-      cities: string[];
+      cities?: string[];
       achievementName: string;
     }
   >;
-  achievementDeliveryLogData: Record<
+  achievementDeliveryLogData?: Record<
     string,
     {
       // one of the following combinations of string[] fields:
@@ -176,7 +176,7 @@ export interface BaseAchievementsSii {
       achievementName: string;
     }
   >;
-  achievementDelivery: Record<
+  achievementDelivery?: Record<
     string,
     {
       // e.g., `.ca_country.condition` and `.unload_diff.condition`.
@@ -192,7 +192,7 @@ export interface BaseAchievementsSii {
       achievementName: string;
     }
   >;
-  achievementDeliveryCompany: Record<
+  achievementDeliveryCompany?: Record<
     string,
     {
       companyName: string;
@@ -202,7 +202,7 @@ export interface BaseAchievementsSii {
       countryName?: string;
     }
   >;
-  achievementEachCompanyData: Record<
+  achievementEachCompanyData?: Record<
     string,
     {
       // only one of `targets` or `sources` are expected to be present
@@ -211,7 +211,7 @@ export interface BaseAchievementsSii {
       achievementName: string;
     }
   >;
-  achievementTriggerData: Record<
+  achievementTriggerData?: Record<
     string,
     {
       triggerParam: string;
@@ -219,20 +219,20 @@ export interface BaseAchievementsSii {
       achievementName: string;
     }
   >;
-  achievementOversizeRoutesData: Record<
+  achievementOversizeRoutesData?: Record<
     string,
     {
       achievementName: string;
     }
   >;
-  achievementDeliverCargoData: Record<
+  achievementDeliverCargoData?: Record<
     string,
     {
       targets: string[];
       achievementName: string;
     }
   >;
-  achievementEachDeliveryPoint: Record<
+  achievementEachDeliveryPoint?: Record<
     string,
     {
       // grab second tokens of strings in both arrays; the resulting set is a
@@ -261,107 +261,30 @@ export interface BaseAchievementsSii {
       achievementName: string;
     }
   >;
-}
-const baseAchievementsProperties = {
-  achievementVisitCityData: patternRecord(
-    /^\.achievement\.[a-z]{2}_visit_[a-z]{3}$/,
-    {
-      cities: stringArray,
-      achievementName: string,
-    },
-  ),
-  achievementDeliveryLogData: patternRecord(
-    /^\.achievement\.[0-9a-z_]{1,12}$/,
-    {
-      sourceCompanies: nullable(stringArray),
-      cargos: nullable(stringArray),
-      sourceCities: nullable(stringArray),
-      targetCities: nullable(stringArray),
-      achievementName: string,
-    },
-    ['achievementName'],
-  ),
-  achievementDelivery: patternRecord(/^\.achievement\.[0-9a-z_]{1,12}$/, {
-    condition: stringPattern(/^\.[0-9a-z_]{1,12}\.condition$/),
-    target: integer,
-    achievementName: string,
-  }),
-  achievementDeliveryCompany: patternRecord(
-    /^(\.[0-9a-z_]{1,12}){2,4}$/,
-    {
-      companyName: token,
-      cityName: nullable(token),
-      countryName: nullable(token),
-    },
-    ['companyName'],
-  ),
-  achievementEachCompanyData: patternRecord(
-    /^\.achievement\.[0-9a-z_]{1,12}$/,
-    {
-      targets: nullable(stringArray),
-      sources: nullable(stringArray),
-      achievementName: string,
-    },
-    ['achievementName'],
-  ),
-  achievementTriggerData: patternRecord(/^\.achievement\.[0-9a-z_]{1,12}$/, {
-    triggerParam: string,
-    target: integer,
-    achievementName: string,
-  }),
-  achievementOversizeRoutesData: patternRecord(
-    /^\.achievement\.[0-9a-z_]{1,12}$/,
-    { achievementName: string },
-  ),
-  achievementDeliverCargoData: patternRecord(
-    /^\.achievement\.[0-9a-z_]{1,12}$/,
-    {
-      targets: stringArray,
-      achievementName: string,
-    },
-  ),
-  achievementEachDeliveryPoint: patternRecord(
-    /^\.achievement\.[0-9a-z_]{1,12}$/,
-    {
-      sources: stringArray,
-      targets: stringArray,
-      achievementName: string,
-    },
-  ),
-};
-export interface AtsAchievementsSii extends BaseAchievementsSii {
-  achievementFerryData: Record<
+  achievementFerryData?: Record<
     string,
     {
       achievementName: string;
-      endpointA: string;
-      endpointB: string;
-    }
-  >;
-}
-export interface Ets2AchievementsSii extends BaseAchievementsSii {
-  achievementFerryData: Record<
-    string,
-    {
-      achievementName: string;
-      ferryType: 'train' | 'ferry';
+      ferryType: 'all' | 'train' | 'ferry';
+      endpointA?: string;
+      endpointB?: string;
     }
   >;
   // referenced by achievementDelivery, e.g. ib_a_coruna
-  achievementDeliveryPointCity: Record<
+  achievementDeliveryPointCity?: Record<
     string,
     {
       role: 'source' | 'target';
       cityName: string;
     }
   >;
-  achievementCompareData: Record<
+  achievementCompareData?: Record<
     string,
     {
       achievementName: string;
     }
   >;
-  achievementVisitPrefabData: Record<
+  achievementVisitPrefabData?: Record<
     string,
     {
       prefab: string;
@@ -369,37 +292,118 @@ export interface Ets2AchievementsSii extends BaseAchievementsSii {
     }
   >;
 }
-export const AtsAchievementsSiiSchema: JSONSchemaType<AtsAchievementsSii> =
-  object({
-    ...baseAchievementsProperties,
-    achievementFerryData: patternRecord(/^\.achievement\.[0-9a-z_]{1,12}$/, {
-      endpointA: token,
-      endpointB: token,
-      achievementName: string,
-    }),
-  });
-export const Ets2AchievementsSiiSchema: JSONSchemaType<Ets2AchievementsSii> =
-  object({
-    ...baseAchievementsProperties,
-    achievementFerryData: patternRecord(/^\.achievement\.[0-9a-z_]{1,12}$/, {
-      ferryType: stringEnum('ferry', 'train'),
-      achievementName: string,
-    }),
-    achievementDeliveryPointCity: patternRecord(/^(\.[0-9a-z_]{1,12}){3,4}$/, {
-      role: stringEnum('source', 'target'),
-      cityName: token,
-    }),
-    achievementCompareData: patternRecord(/^\.achievement\.[0-9a-z_]{1,12}$/, {
-      achievementName: string,
-    }),
-    achievementVisitPrefabData: patternRecord(
-      /^\.achievement\.[0-9a-z_]{1,12}$/,
-      {
+
+export const AchievementsSiiSchema: JSONSchemaType<AchievementsSii> = object(
+  {
+    achievementVisitCityData: nullable(
+      patternRecord(
+        /^\.achievement\.[a-z]{2}_visit_[a-z]{3}$/,
+        {
+          cities: nullable(stringArray), // Iowa pre-release data has missing `cities` field.
+          achievementName: string,
+        },
+        ['achievementName'],
+      ),
+    ),
+    achievementDeliveryLogData: nullable(
+      patternRecord(
+        /^\.achievement\.[0-9a-z_]{1,12}$/,
+        {
+          sourceCompanies: nullable(stringArray),
+          cargos: nullable(stringArray),
+          sourceCities: nullable(stringArray),
+          targetCities: nullable(stringArray),
+          achievementName: string,
+        },
+        ['achievementName'],
+      ),
+    ),
+    achievementDelivery: nullable(
+      patternRecord(/^\.achievement\.[0-9a-z_]{1,12}$/, {
+        condition: stringPattern(/^\.[0-9a-z_]{1,12}\.condition$/),
+        target: integer,
+        achievementName: string,
+      }),
+    ),
+    achievementDeliveryCompany: nullable(
+      patternRecord(
+        /^(\.[0-9a-z_]{1,12}){2,4}$/,
+        {
+          companyName: token,
+          cityName: nullable(token),
+          countryName: nullable(token),
+        },
+        ['companyName'],
+      ),
+    ),
+    achievementEachCompanyData: nullable(
+      patternRecord(
+        /^\.achievement\.[0-9a-z_]{1,12}$/,
+        {
+          targets: nullable(stringArray),
+          sources: nullable(stringArray),
+          achievementName: string,
+        },
+        ['achievementName'],
+      ),
+    ),
+    achievementTriggerData: nullable(
+      patternRecord(/^\.achievement\.[0-9a-z_]{1,12}$/, {
+        triggerParam: string,
+        target: integer,
+        achievementName: string,
+      }),
+    ),
+    achievementOversizeRoutesData: nullable(
+      patternRecord(/^\.achievement\.[0-9a-z_]{1,12}$/, {
+        achievementName: string,
+      }),
+    ),
+    achievementDeliverCargoData: nullable(
+      patternRecord(/^\.achievement\.[0-9a-z_]{1,12}$/, {
+        targets: stringArray,
+        achievementName: string,
+      }),
+    ),
+    achievementEachDeliveryPoint: nullable(
+      patternRecord(/^\.achievement\.[0-9a-z_]{1,12}$/, {
+        sources: stringArray,
+        targets: stringArray,
+        achievementName: string,
+      }),
+    ),
+    achievementFerryData: nullable(
+      patternRecord(
+        /^\.achievement\.[0-9a-z_]{1,12}$/,
+        {
+          endpointA: nullable(token),
+          endpointB: nullable(token),
+          achievementName: string,
+          ferryType: stringEnum('all', 'ferry', 'train'),
+        },
+        ['achievementName'],
+      ),
+    ),
+    achievementDeliveryPointCity: nullable(
+      patternRecord(/^(\.[0-9a-z_]{1,12}){3,4}$/, {
+        role: stringEnum('source', 'target'),
+        cityName: token,
+      }),
+    ),
+    achievementCompareData: nullable(
+      patternRecord(/^\.achievement\.[0-9a-z_]{1,12}$/, {
+        achievementName: string,
+      }),
+    ),
+    achievementVisitPrefabData: nullable(
+      patternRecord(/^\.achievement\.[0-9a-z_]{1,12}$/, {
         prefab: token,
         achievementName: string,
-      },
+      }),
     ),
-  });
+  },
+  [],
+);
 
 /** Only one of `effect` or `material` are expected to be present. */
 export interface IconMat {

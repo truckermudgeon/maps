@@ -212,15 +212,18 @@ export type Achievement = Readonly<
       param: string;
       count: number;
     }
-  | {
+  | ({
       type: 'ferryData';
-      endpointA: string;
-      endpointB: string;
-    }
-  | {
-      type: 'ferryDataByType';
-      ferryType: 'ferry' | 'train';
-    }
+    } & (
+      | {
+          ferryType: 'all';
+          endpointA: string;
+          endpointB: string;
+        }
+      | {
+          ferryType: 'ferry' | 'train';
+        }
+    ))
   | {
       type: 'eachDeliveryPoint';
       sources: string[]; // e.g., .id_snake_riv.kennewick.lewiston.source

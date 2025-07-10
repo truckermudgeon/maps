@@ -3,9 +3,8 @@ import type { Position } from '@truckermudgeon/base/geom';
 import { getExtent } from '@truckermudgeon/base/geom';
 import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
 import type { Route, RouteDirection } from '@truckermudgeon/navigation/types';
-import type { Marker } from 'maplibre-gl';
+import type { GeoJSONSource, Marker } from 'maplibre-gl';
 import { action, makeAutoObservable, observable } from 'mobx';
-import type { GeoJSONSource } from 'react-map-gl';
 import type { MapRef } from 'react-map-gl/maplibre';
 import { CameraMode } from './constants';
 import type { AppClient, AppController, AppStore } from './types';
@@ -192,7 +191,7 @@ export class AppControllerImpl implements AppController {
     }
 
     const routeSource = assertExists(
-      map.getSource('activeRoute') as GeoJSONSource | undefined,
+      map.getSource<GeoJSONSource>('activeRoute'),
     );
     if (!maybeRoute) {
       routeSource.setData(emptyFeatureCollection);
@@ -223,9 +222,7 @@ export class AppControllerImpl implements AppController {
 
     console.log('rendering route preview');
     const routeSource = assertExists(
-      map.getSource(`previewRoute-${options.index}`) as
-        | GeoJSONSource
-        | undefined,
+      map.getSource<GeoJSONSource>(`previewRoute-${options.index}`),
     );
     if (!maybeRoute) {
       routeSource.setData(emptyFeatureCollection);
