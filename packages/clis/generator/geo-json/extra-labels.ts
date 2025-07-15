@@ -643,11 +643,9 @@ export class LabelDataProvider {
    *     metadata table.
    */
   missingLabels(existing: Label[]): Label[] {
-    const existingByToken = new Map(
-      existing.map(label => [label.meta.token, label]),
-    );
+    const existingTokens = new Set(existing.map(label => label.meta.token));
     const missingMeta = this.metas.filter(
-      meta => !existingByToken.has(meta.token),
+      meta => !existingTokens.has(meta.token),
     );
     return missingMeta.map(meta => {
       const label = new GenericLabel(this);
