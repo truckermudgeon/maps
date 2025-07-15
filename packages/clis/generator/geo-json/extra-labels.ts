@@ -675,7 +675,7 @@ export class LabelDataProvider {
    *     `country` was given.
    */
   cityFromName(name: string, country: Country | undefined): City | undefined {
-    return Array.from(this.gameData.cities.values()).find(
+    return this.gameData.cities.values().find(
       city =>
         country?.token === city.countryToken &&
         city.name.localeCompare(name, undefined, {
@@ -716,7 +716,7 @@ export class LabelDataProvider {
    * @see {@link clis/generator/geo-json/populated-places!ets2IsoA2}
    */
   countryFromCode(code: string): Country | undefined {
-    return Array.from(this.gameData.countries.values()).find(
+    return this.gameData.countries.values().find(
       country =>
         ets2IsoA2.get(country.code) === code ||
         country.code === code ||
