@@ -4,6 +4,7 @@
  * @author nautofon
  */
 
+import { Preconditions } from '@truckermudgeon/base/precon';
 import type {
   City,
   Country,
@@ -185,9 +186,10 @@ export class GenericLabel implements Label {
   toGeoJsonFeature(): GeoJSON.Feature<GeoJSON.Point, LabelMeta> {
     const { easting, southing, ...meta } = this.meta;
     const position = [easting, southing];
-    if (!position.every(v => v != null)) {
-      throw new ReferenceError('toGeoJsonFeature(): coordinates not defined');
-    }
+    Preconditions.checkState(
+      position.every(v => v != null),
+      'toGeoJsonFeature(): coordinates not defined',
+    );
     return this.data.normalizeFeature({
       type: 'Feature',
       geometry: {
