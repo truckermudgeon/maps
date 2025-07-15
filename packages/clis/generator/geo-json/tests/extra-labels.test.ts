@@ -25,7 +25,7 @@ function makeLabel(
   game: MyMappedData,
   metas?: LabelMeta[],
 ): Label {
-  if (targets?.size != 1 && !metas) {
+  if (targets?.size !== 1 && !metas) {
     throw new Error(
       `makeLabel() needs a Map with exactly 1 MileageTarget, but got ${targets?.size}`,
     );

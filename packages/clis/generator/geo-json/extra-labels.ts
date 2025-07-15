@@ -174,7 +174,7 @@ export class GenericLabel implements Label {
 
   get isValid(): boolean {
     return (
-      this.meta.kind != 'unnamed' &&
+      this.meta.kind !== 'unnamed' &&
       this.data.hasKnownCountryCode(this.meta) &&
       this.meta.text != null &&
       this.meta.easting != null &&
@@ -258,7 +258,7 @@ export abstract class TargetLabel extends GenericLabel {
     // five known cases where the token-based heuristic fails (all in Croatia).
     // These exceptions might be better handled through metadata.
     const countryMatch = /^([a-z]{2})[a-z_]/i.exec(this.target.token);
-    if (countryMatch) {
+    if (countryMatch != null) {
       analysis.countryCode = countryMatch[1].toUpperCase();
       analysis.country = this.data.countryFromCode(analysis.countryCode);
     }
@@ -274,7 +274,7 @@ export abstract class TargetLabel extends GenericLabel {
       analysis.tidyName,
     ]
       .map(name => this.data.cityFromName(name, analysis.country))
-      .find(city => !!city);
+      .find(city => city != null);
 
     analysis.cityToken = analysis.city?.token;
   }
@@ -319,11 +319,11 @@ export abstract class TargetLabel extends GenericLabel {
     this.meta.easting = this.target.x;
     this.meta.southing = this.target.y;
 
-    if (analysis.country) {
+    if (analysis.country != null) {
       this.meta.country = analysis.countryCode;
     }
 
-    if (analysis.city) {
+    if (analysis.city != null) {
       this.meta.kind = 'city';
       this.meta.city = analysis.city.token;
       this.meta.show = false;
@@ -371,7 +371,7 @@ export class AtsLabel extends TargetLabel {
       analysis.country,
     );
 
-    if (cityByEditorName) {
+    if (cityByEditorName != null) {
       analysis.city = cityByEditorName;
       analysis.cityTokenEditorName = cityByEditorName.token;
     }
@@ -422,7 +422,7 @@ export class AtsLabel extends TargetLabel {
   protected override applyResults(analysis: TargetAnalysis): void {
     super.applyResults(analysis);
 
-    if (analysis.country) {
+    if (analysis.country != null) {
       // The United States are currently the only country in ATS.
       // The "country code" actually identifies the state.
       this.meta.country = 'US-' + analysis.country.code;
@@ -447,7 +447,7 @@ export class Ets2Label extends TargetLabel {
       analysis.country,
     );
 
-    if (cityByEditorName) {
+    if (cityByEditorName != null) {
       analysis.city = cityByEditorName;
       analysis.cityTokenEditorName = cityByEditorName.token;
     }
@@ -464,7 +464,7 @@ export class Ets2Label extends TargetLabel {
     super.applyResults(analysis);
 
     // Mileage target tokens use UK, but the ISO code is GB.
-    if (this.meta.country == 'UK') {
+    if (this.meta.country === 'UK') {
       this.meta.country = 'GB';
     }
   }
@@ -625,7 +625,7 @@ export class LabelDataProvider {
    */
   assignMeta(label: Label): void {
     const meta = this.metaByToken.get(label.meta.token ?? '');
-    if (meta) {
+    if (meta != null) {
       Object.assign(label.meta, meta);
     }
   }
@@ -650,7 +650,7 @@ export class LabelDataProvider {
     return missingMeta.map(meta => {
       const label = new GenericLabel(this);
       Object.assign(label.meta, meta);
-      if (meta.token && this.isInRegion(meta)) {
+      if (meta.token != null && this.isInRegion(meta)) {
         logger.warn(
           `Can't assign metadata for target ${meta.token} unknown in ${this.region}${label.isValid ? ' (label valid)' : ''}`,
         );
@@ -675,11 +675,11 @@ export class LabelDataProvider {
   cityFromName(name: string, country: Country | undefined): City | undefined {
     return Array.from(this.gameData.cities.values()).find(
       city =>
-        country?.token == city.countryToken &&
+        country?.token === city.countryToken &&
         city.name.localeCompare(name, undefined, {
           usage: 'search',
           sensitivity: 'accent',
-        }) == 0,
+        }) === 0,
     );
   }
 
@@ -696,7 +696,7 @@ export class LabelDataProvider {
     const city = this.gameData.cities.get(token);
 
     // Verify the country as a sanity check.
-    return country?.token == city?.countryToken ? city : undefined;
+    return country?.token === city?.countryToken ? city : undefined;
   }
 
   /**
@@ -716,10 +716,10 @@ export class LabelDataProvider {
   countryFromCode(code: string): Country | undefined {
     return Array.from(this.gameData.countries.values()).find(
       country =>
-        ets2IsoA2.get(country.code) == code ||
-        country.code == code ||
+        ets2IsoA2.get(country.code) === code ||
+        country.code === code ||
         // The ISO and DSIT codes are GB, but mileage target tokens use UK.
-        (country.code == 'GB' && code == 'UK'),
+        (country.code === 'GB' && code === 'UK'),
     );
   }
 
@@ -754,10 +754,10 @@ export class LabelDataProvider {
    * - `undefined` if the metadata record doesn't identify a country.
    */
   isInRegion(meta: LabelMeta): boolean | undefined {
-    if (!meta.country) {
+    if (meta.country == null || meta.country === '') {
       return undefined;
     }
-    return /^(?:CA|MX|US)/.test(meta.country) == (this.region == 'usa');
+    return /^(?:CA|MX|US)/.test(meta.country) === (this.region === 'usa');
   }
 
   /**
