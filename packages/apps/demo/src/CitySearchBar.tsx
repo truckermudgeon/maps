@@ -151,8 +151,8 @@ function createSortedCityOptions(
   }
   for (const label of atsLabels.features) {
     if (
-      label.properties.show === false ||
-      label.properties.kind == 'city' || // avoid duplicate labels
+      label.properties.show === false || // don't skip labels with undefined `show`
+      label.properties.kind === 'city' || // avoid duplicate labels
       label.properties.country == null ||
       label.properties.text == null
     ) {
