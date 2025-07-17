@@ -85,13 +85,13 @@ export function handler(args: BuilderArguments<typeof builder>) {
   const metaPaths: string[] = args.meta ?? [];
 
   // Metadata default paths
-  if (metaPaths.length == 0 && !args['no-meta'] && !args.json) {
+  if (metaPaths.length === 0 && !args['no-meta'] && !args.json) {
     const metaDefaultsExisting = metaDefaults
       .map(d => path.resolve(resourcesDir, d))
       .filter(p => fs.existsSync(p));
     metaDefaultsExisting.forEach(p => metaPaths.push(p));
 
-    if (metaDefaults.length == metaDefaultsExisting.length) {
+    if (metaDefaults.length === metaDefaultsExisting.length) {
       logger.debug(
         `Argument "meta" not given; using ${metaDefaults.join(' and ')}`,
       );
@@ -107,6 +107,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
     const mappedData = LabelProducer.readMapData(args.inputDir, region);
     const producer = new LabelProducer(mappedData, metas);
     logger.info(
+      // Count labels where isInRegion() is either true or undefined
       metas.filter(m => producer.dataProvider.isInRegion(m) !== false).length,
       `metadata records for ${region} read from resources dir`,
     );
@@ -116,7 +117,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
 
   if (args.token != null) {
     // The label might not be a TargetLabel. But this works for debug output.
-    const label = labels.find(l => l.meta.token == args.token) as TargetLabel;
+    const label = labels.find(l => l.meta.token === args.token) as TargetLabel;
     const debug = {
       target: label?.target,
       analysis: label?.analysis,
@@ -170,10 +171,10 @@ export function handler(args: BuilderArguments<typeof builder>) {
 
 function cmpLabelFineTuning(a: LabelMeta, b: LabelMeta): number {
   return a.country && b.country
-    ? ((a.kind ?? '') == 'unnamed') == ((b.kind ?? '') == 'unnamed')
+    ? ((a.kind ?? '') === 'unnamed') === ((b.kind ?? '') === 'unnamed')
       ? 0
       : // Within each country section, gather `kind`: 'unnamed' at the bottom
-        (a.kind ?? '') == 'unnamed'
+        (a.kind ?? '') === 'unnamed'
         ? 1
         : -1
     : // Gather records without country code at the bottom
