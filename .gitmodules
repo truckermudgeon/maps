@@ -1,3 +1,6 @@
 [submodule "packages/clis/parser/gdeflate/libdeflate"]
 	path = packages/clis/parser/gdeflate/libdeflate
 	url = https://github.com/NVIDIA/libdeflate/
+[submodule "packages/clis/generator/resources/extra-labels"]
+	path = packages/clis/generator/resources/extra-labels
+	url = https://github.com/nautofon/ats-towns

@@ -85,6 +85,20 @@ MAP_FILES += $(GENERATOR_OUT_DIR)/ats-achievements.geojson
 MAP_FILES += $(GENERATOR_OUT_DIR)/ets2-achievements.geojson
 
 
+# Create ATS extra-labels.geojson file
+$(RESOURCES_DIR)/usa-labels-meta.json: \
+		$(RESOURCES_DIR)/extra-labels/script/csv2json.pl \
+		$(RESOURCES_DIR)/extra-labels/US \
+		$(RESOURCES_DIR)/extra-labels/US/*.csv
+	$(RESOURCES_DIR)/extra-labels/script/csv2json.pl \
+		$(RESOURCES_DIR)/extra-labels/US/*.csv \
+		-o $(RESOURCES_DIR)/usa-labels-meta.json
+$(GENERATOR_OUT_DIR)/extra-labels.geojson: $(ATS_PARSER_JSON_FILES) $(RESOURCES_DIR)/usa-labels-meta.json
+	npx generator extra-labels -m usa -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR)
+
+MAP_FILES += $(GENERATOR_OUT_DIR)/extra-labels.geojson
+
+
 # Create ETS2 villages.geojson file
 $(GENERATOR_OUT_DIR)/ets2-villages.geojson: $(RESOURCES_DIR)/villages-in-ets2.csv
 	npx generator ets2-villages -o $(GENERATOR_OUT_DIR)
@@ -144,6 +158,7 @@ clean: ## deletes all parser and generator outputs
 	@rm -f $(ATS_PARSER_JSON_FILES) $(ETS2_PARSER_JSON_FILES)
 	@rm -rf $(PARSER_OUT_DIR)/icons
 	@rm -f $(MAP_FILES)
+	@rm -f $(RESOURCES_DIR)/usa-labels-meta.json
 
 # generated `help` target
 # https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
