@@ -497,6 +497,7 @@ describe('command-line interface', () => {
     );
     expect(fs.existsSync(metaOutPath)).toBeFalsy();
     expect(fs.existsSync(geojsonPath)).toBeFalsy();
+    loggerFail.mockRestore();
   });
 
   test('metadata in, geojson out', () => {
