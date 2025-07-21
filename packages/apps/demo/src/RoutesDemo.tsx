@@ -47,7 +47,8 @@ import { Legend, createListProps } from './Legend';
 import { ModeControl } from './ModeControl';
 import { toStateCodes } from './state-codes';
 
-const RoutesDemo = () => {
+const RoutesDemo = (props: { tileRootUrl: string }) => {
+  const { tileRootUrl } = props;
   const { mode: _maybeMode, systemMode } = useColorScheme();
   const mode = _maybeMode === 'system' ? systemMode : _maybeMode;
   const [autoHide, setAutoHide] = useState(true);
@@ -89,10 +90,15 @@ const RoutesDemo = () => {
         zoom: 9,
       }}
     >
-      <BaseMapStyle mode={mode}>
-        <ContoursStyle game={'ats'} showContours={showContours} />
+      <BaseMapStyle tileRootUrl={tileRootUrl} mode={mode}>
+        <ContoursStyle
+          tileRootUrl={tileRootUrl}
+          game={'ats'}
+          showContours={showContours}
+        />
       </BaseMapStyle>
       <GameMapStyle
+        tileRootUrl={tileRootUrl}
         game={'ats'}
         mode={mode}
         enableIconAutoHide={autoHide}

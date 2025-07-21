@@ -34,6 +34,10 @@ export const SlippyMap = (props: {
     center = [0, 0],
     mode = 'light',
   } = props;
+  // HACK hardcode tileRootUrl so that it uses the `navigator`'s webserver root,
+  // because it's still under development and no public-facing hosted version
+  // exists yet.
+  const tileRootUrl = '';
   const mapRef = useRef<MapRef>(null);
   const playerMarkerRef = useRef<MapLibreGLMarker>(null);
   return (
@@ -68,9 +72,9 @@ export const SlippyMap = (props: {
       maxZoom={15}
       mapStyle={defaultMapStyle}
     >
-      <BaseMapStyle mode={mode} />
-      <GameMapStyle mode={mode} game={'ats'} />
-      <GameMapStyle mode={mode} game={'ets2'} />
+      <BaseMapStyle tileRootUrl={tileRootUrl} mode={mode} />
+      <GameMapStyle tileRootUrl={tileRootUrl} mode={mode} game={'ats'} />
+      <GameMapStyle tileRootUrl={tileRootUrl} mode={mode} game={'ets2'} />
       <SceneryTownSource mode={mode} game={'ats'} />
       <SceneryTownSource mode={mode} game={'ets2'} />
       <Source
