@@ -89,7 +89,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
     const metaDefaultsExisting = metaDefaults
       .map(d => path.resolve(resourcesDir, d))
       .filter(p => fs.existsSync(p));
-    metaDefaultsExisting.forEach(p => metaPaths.push(p));
+    metaPaths.push(...metaDefaultsExisting);
 
     if (metaDefaults.length === metaDefaultsExisting.length) {
       logger.debug(
@@ -116,15 +116,16 @@ export function handler(args: BuilderArguments<typeof builder>) {
   logger.log('consolidated map labels:', labels.length);
 
   if (args.token != null) {
-    // The label might not be a TargetLabel. But this works for debug output.
-    const label = labels.find(l => l.meta.token === args.token) as TargetLabel;
-    const debug = {
-      target: label?.target,
-      analysis: label?.analysis,
-      result: label?.meta,
-    };
-    console.log(JSON.stringify(debug, null, 2));
+    const label = labels.find(l => l.meta.token === args.token);
     if (label) {
+      // The label might not be a TargetLabel. But this works for debug output.
+      const targetLabel = label as TargetLabel;
+      const debug = {
+        target: targetLabel.target,
+        analysis: targetLabel.analysis,
+        result: targetLabel.meta,
+      };
+      logger.log(JSON.stringify(debug, null, 2));
       logger.success(`wrote debug output for mileage target "${args.token}"`);
     } else {
       logger.error(`mileage target token "${args.token}" not found`);
@@ -152,7 +153,9 @@ export function handler(args: BuilderArguments<typeof builder>) {
   } else {
     file = path.join(args.outputDir, `${outFile}.geojson`);
 
-    // For GeoJSON output, skip labels with incomplete data and 'unnamed' labels
+    // For GeoJSON output, skip labels not considered "valid", which are those
+    // with certain attributes missing or with a `kind` attribute of "unnamed".
+    // Optionally (with --all), output everything we have coordinates for.
     const json: GeoJSON.FeatureCollection = {
       type: 'FeatureCollection',
       features: labels
