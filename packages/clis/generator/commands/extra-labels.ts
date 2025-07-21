@@ -14,7 +14,7 @@ export const command = 'extra-labels';
 export const describe =
   'Generates map labels GeoJSON from parser output and optional metadata';
 
-const metaDefaults = ['usa-labels-meta.json'];
+const metaDefaults = ['usa-labels-meta.json'] as const;
 const outFile = command;
 
 export const builder = (yargs: Argv) =>
