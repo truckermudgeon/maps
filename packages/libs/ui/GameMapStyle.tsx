@@ -52,6 +52,11 @@ export const allIcons: ReadonlySet<MapIcon> = new Set<MapIcon>(
 );
 
 export type GameMapStyleProps = {
+  /**
+   * URL where .pmtiles are stored, without the trailing `/`, e.g.,
+   * `https://truckermudgeon.github.io`
+   */
+  tileRootUrl: string;
   /** Defaults to all MapIcons */
   visibleIcons?: ReadonlySet<MapIcon>;
   /** Defaults to true */
@@ -74,6 +79,7 @@ export type GameMapStyleProps = {
 export const GameMapStyle = (props: GameMapStyleProps) => {
   const {
     game,
+    tileRootUrl,
     visibleIcons = allIcons,
     enableIconAutoHide = true,
     mode = 'light',
@@ -87,7 +93,11 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
   return (
     // N.B.: {ats,ets2}.pmtiles each have one layer named 'ats' or 'ets2'
     // (layer names are set when running tippecanoe).
-    <Source id={game} type={'vector'} url={`pmtiles:///${game}.pmtiles`}>
+    <Source
+      id={game}
+      type={'vector'}
+      url={`pmtiles://${tileRootUrl}/${game}.pmtiles`}
+    >
       <Layer
         id={game + 'mapAreas'}
         source-layer={game}
@@ -128,7 +138,12 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           'fill-color': mapAreaColor(mode),
         }}
       />
-      <FootprintsSource game={game} mode={mode} color={colors.footprint} />
+      <FootprintsSource
+        game={game}
+        tileRootUrl={tileRootUrl}
+        mode={mode}
+        color={colors.footprint}
+      />
       <Layer
         id={game + 'hidden-roads'}
         source-layer={game}
@@ -629,17 +644,19 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
 
 const FootprintsSource = ({
   game,
+  tileRootUrl,
   color,
   mode,
 }: {
   game: 'ats' | 'ets2';
+  tileRootUrl: string;
   color: string;
   mode: Mode;
 }) => (
   <Source
     id={game + 'footprints'}
     type={'vector'}
-    url={`pmtiles:///${game}-footprints.pmtiles`}
+    url={`pmtiles://${tileRootUrl}/${game}-footprints.pmtiles`}
   >
     <Layer
       id={game + 'footprints'}

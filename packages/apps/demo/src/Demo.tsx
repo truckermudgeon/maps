@@ -28,7 +28,8 @@ import { toStateCodes } from './state-codes';
 const inRange = (n: number, [min, max]: [number, number]) =>
   !isNaN(n) && min <= n && n <= max;
 
-const Demo = () => {
+const Demo = (props: { tileRootUrl: string }) => {
+  const { tileRootUrl } = props;
   const { mode: _maybeMode, systemMode } = useColorScheme();
   const mode = _maybeMode === 'system' ? systemMode : _maybeMode;
   const { longitude, latitude } =
@@ -80,11 +81,20 @@ const Demo = () => {
       {markerPos && (
         <Marker longitude={markerPos.lon} latitude={markerPos.lat} />
       )}
-      <BaseMapStyle mode={mode}>
-        <ContoursStyle game={'ats'} showContours={showContours} />
-        <ContoursStyle game={'ets2'} showContours={showContours} />
+      <BaseMapStyle tileRootUrl={tileRootUrl} mode={mode}>
+        <ContoursStyle
+          tileRootUrl={tileRootUrl}
+          game={'ats'}
+          showContours={showContours}
+        />
+        <ContoursStyle
+          tileRootUrl={tileRootUrl}
+          game={'ets2'}
+          showContours={showContours}
+        />
       </BaseMapStyle>
       <GameMapStyle
+        tileRootUrl={tileRootUrl}
         game={'ats'}
         mode={mode}
         enableIconAutoHide={autoHide}
@@ -92,6 +102,7 @@ const Demo = () => {
         dlcs={visibleAtsDlcs}
       />
       <GameMapStyle
+        tileRootUrl={tileRootUrl}
         game={'ets2'}
         mode={mode}
         enableIconAutoHide={autoHide}

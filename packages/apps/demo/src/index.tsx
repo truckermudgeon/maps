@@ -11,10 +11,12 @@ import Demo from './Demo';
 import RoutesDemo from './RoutesDemo';
 import './index.css';
 
+const tileRootUrl = import.meta.env.VITE_TILE_ROOT_URL;
+
 const router = createBrowserRouter(
   createRoutesFromElements([
-    <Route path="/" element={<Demo />} />,
-    <Route path="routes" element={<RoutesDemo />} />,
+    <Route path="/" element={<Demo tileRootUrl={tileRootUrl} />} />,
+    <Route path="routes" element={<RoutesDemo tileRootUrl={tileRootUrl} />} />,
   ]),
 );
 
