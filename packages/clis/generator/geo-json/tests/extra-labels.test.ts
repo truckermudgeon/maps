@@ -3,7 +3,7 @@ import fs from 'fs';
 import type { GeoJSON } from 'geojson';
 import os from 'os';
 import path from 'path';
-import { describe, expect, test, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import yargs from 'yargs';
 import * as extraLabels from '../../commands/extra-labels';
 import { logger } from '../../logger';
@@ -443,12 +443,12 @@ describe('error checks', () => {
 });
 
 describe('command-line interface', () => {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vitest-maps-'));
-  const metaInPath = path.join(tmpDir, 'meta.json');
-  const metaOutPath = path.join(tmpDir, 'extra-labels.json');
-  const geojsonPath = path.join(tmpDir, 'extra-labels.geojson');
+  let cli: yargs.Argv;
+  let tmpDir: string;
+  let metaInPath: string;
+  let metaOutPath: string;
+  let geojsonPath: string;
 
-  console.log(tmpDir);
   const mileageTargets = [
     ...Array.from(fixtures.mt_stregis.values()),
     ...Array.from(fixtures.ca_napa.values()),
@@ -462,21 +462,32 @@ describe('command-line interface', () => {
     // game cities, so in order to add a new label here, we need to give it
     // a country code that matches one of the cities in fixtures.citiesAts.
   };
-  fs.writeFileSync(
-    path.join(tmpDir, 'usa-cities.json'),
-    JSON.stringify(Array.from(fixtures.citiesAts.values())),
-  );
-  fs.writeFileSync(
-    path.join(tmpDir, 'usa-countries.json'),
-    JSON.stringify(Array.from(fixtures.countriesAts.values())),
-  );
-  fs.writeFileSync(
-    path.join(tmpDir, 'usa-mileageTargets.json'),
-    JSON.stringify(mileageTargets),
-  );
-  fs.writeFileSync(metaInPath, JSON.stringify([meta]));
 
-  const cli = yargs().command(extraLabels);
+  beforeAll(() => {
+    cli = yargs().command(extraLabels);
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vitest-maps-'));
+    metaInPath = path.join(tmpDir, 'meta.json');
+    metaOutPath = path.join(tmpDir, 'extra-labels.json');
+    geojsonPath = path.join(tmpDir, 'extra-labels.geojson');
+
+    fs.writeFileSync(
+      path.join(tmpDir, 'usa-cities.json'),
+      JSON.stringify(Array.from(fixtures.citiesAts.values())),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'usa-countries.json'),
+      JSON.stringify(Array.from(fixtures.countriesAts.values())),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'usa-mileageTargets.json'),
+      JSON.stringify(mileageTargets),
+    );
+    fs.writeFileSync(metaInPath, JSON.stringify([meta]));
+  });
+
+  afterAll(() => {
+    fs.rmSync(tmpDir, { recursive: true });
+  });
 
   test('dry run on no output dir', () => {
     const loggerFail = vi.spyOn(logger, 'fail');
@@ -526,10 +537,5 @@ describe('command-line interface', () => {
       southing: -53983.75,
       country: 'US-MT',
     });
-  });
-
-  test('clean up temp files', () => {
-    fs.rmSync(tmpDir, { recursive: true });
-    expect(fs.existsSync(tmpDir)).toBeFalsy();
   });
 });
