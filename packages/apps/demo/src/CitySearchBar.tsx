@@ -8,6 +8,7 @@ import {
 import type { AutocompleteRenderGroupParams } from '@mui/joy/Autocomplete/AutocompleteProps';
 import { assertExists } from '@truckermudgeon/base/assert';
 import type {
+  LabelMeta,
   ScopedCityFeature,
   ScopedCountryFeature,
 } from '@truckermudgeon/map/types';
@@ -43,6 +44,8 @@ type CityFC = GeoJSON.FeatureCollection<
   { state: string; name: string }
 >;
 
+type LabelFC = GeoJSON.FeatureCollection<GeoJSON.Point, LabelMeta>;
+
 type SearchBarProps = {
   selectDecorator: ReactElement;
   onSelect: (option: CityOption) => void;
@@ -62,12 +65,12 @@ export const CitySearchBar = (props: SearchBarProps) => {
   useEffect(() => {
     Promise.all([
       fetch('cities.geojson').then(r => r.json() as Promise<CityAndCountryFC>),
-      fetch(atsSceneryTownsUrl).then(r => r.json() as Promise<CityFC>),
+      fetch(atsSceneryTownsUrl).then(r => r.json() as Promise<LabelFC>),
       fetch(ets2SceneryTownsUrl).then(r => r.json() as Promise<CityFC>),
     ]).then(
-      ([citiesAndCountries, atsTowns, etsTowns]) => {
+      ([citiesAndCountries, atsLabels, etsTowns]) => {
         setSortedCities(
-          createSortedCityOptions(citiesAndCountries, atsTowns, etsTowns),
+          createSortedCityOptions(citiesAndCountries, atsLabels, etsTowns),
         );
       },
       () => console.error('could not load cities/towns geojson.'),
@@ -129,7 +132,7 @@ function formatGroupLabel(params: AutocompleteRenderGroupParams) {
 /** Sorts cities by state/country, then by city name. */
 function createSortedCityOptions(
   citiesAndCountries: CityAndCountryFC,
-  atsTowns: CityFC,
+  atsLabels: LabelFC,
   etsTowns: CityFC,
 ): CityOption[] {
   const cities: ScopedCityFeature[] = [];
@@ -146,15 +149,23 @@ function createSortedCityOptions(
       throw new Error();
     }
   }
-  for (const town of atsTowns.features) {
+  for (const label of atsLabels.features) {
+    if (
+      label.properties.show === false || // don't skip labels with undefined `show`
+      label.properties.kind === 'city' || // avoid duplicate labels
+      label.properties.country == null ||
+      label.properties.text == null
+    ) {
+      continue;
+    }
     cities.push({
       type: 'Feature',
-      geometry: town.geometry,
+      geometry: label.geometry,
       properties: {
         type: 'city',
         map: 'usa',
-        countryCode: town.properties.state,
-        name: town.properties.name,
+        countryCode: label.properties.country.replace(/^..-/, ''),
+        name: label.properties.text,
       },
     });
   }

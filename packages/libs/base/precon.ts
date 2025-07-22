@@ -7,19 +7,13 @@ export class UnreachableError extends Error {
 }
 
 export class Preconditions {
-  static checkArgument(
-    condition: boolean,
-    msg?: string,
-  ): asserts condition is true {
+  static checkArgument(condition: boolean, msg?: string): asserts condition {
     if (!condition) {
       throw new Error(msg);
     }
   }
 
-  static checkState(
-    condition: boolean,
-    msg?: string,
-  ): asserts condition is true {
+  static checkState(condition: boolean, msg?: string): asserts condition {
     if (!condition) {
       throw new Error(msg);
     }

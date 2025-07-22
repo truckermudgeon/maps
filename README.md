@@ -72,7 +72,11 @@ npx generator footprints -m usa -m europe -i dirWithParserOutput -o dirToWriteFi
 # generate spritesheet files
 npx generator spritesheet -m usa -m europe -i dirWithParserOutput -o dirToWriteFilesTo
 
-# generate villages geojson file
+# generate geojson files with map labels for scenery towns and villages
+packages/clis/generator/resources/extra-labels/script/csv2json.pl \
+  packages/clis/generator/resources/extra-labels/US/*.csv \
+  -o packages/clis/generator/resources/usa-labels-meta.json
+npx generator extra-labels -m usa -i dirWithParserOutput -o dirToWriteFilesTo
 npx generator ets2-villages -o dirToWriteFileTo
 
 # generate ATS and ETS2 contours (aka elevations) pmtiles files

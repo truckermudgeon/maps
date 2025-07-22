@@ -7,6 +7,7 @@ import * as achievements from './commands/achievements';
 import * as cities from './commands/cities';
 import * as contours from './commands/contours';
 import * as ets2Villages from './commands/ets2-villages';
+import * as extraLabels from './commands/extra-labels';
 import * as footprints from './commands/footprints';
 import * as graph from './commands/graph';
 import * as map from './commands/map';
@@ -20,6 +21,7 @@ async function main() {
     .command(prefabCurves)
     .command(cities)
     .command(ets2Villages)
+    .command(extraLabels)
     .command(footprints)
     .command(contours)
     .command(achievements)
