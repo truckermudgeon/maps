@@ -382,9 +382,9 @@ function checkJsonFilesPresent(
     logger.error(
       'missing JSON files in directory',
       inputDir,
-      '\n  ',
-      missingJsonFiles.map(f => `${f}.json`).join(', '),
-      '\nre-export JSON files using parser and try again.',
+      '\n\n  ',
+      missingJsonFiles.map(f => `${map}-${f}.json`).join(', '),
+      '\n\nre-export JSON files using parser and try again.',
     );
     process.exit(1);
   }
