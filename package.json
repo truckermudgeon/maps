@@ -30,6 +30,10 @@
     "test": "npm run --workspaces --if-present test -- --run",
     "coverage": "npm run --workspaces --if-present test -- --run --coverage"
   },
+  "engines": {
+    "node": ">=22.9.0",
+    "npm": ">=10.9.0"
+  },
   "lint-staged": {
     "**/*.ts": [
       "eslint --fix",
