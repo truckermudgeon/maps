@@ -128,10 +128,11 @@ const PmgInfoMeta = new r.Struct({
 
 // MetadataEntryHeader::type & MetadataType.PLAIN
 const PlainMeta = new r.Struct({
-  compressedSize: r.uint24le,
-  compression: new MappedNumber(r.uint8, n => toCompression(n >> 4)),
-  size: r.uint24le,
-  _padding: new r.Reserved(r.uint8, 1),
+  packedCompressionInfo: new MappedNumber(r.uint32le, n => ({
+    compressedSize: n & 0x0f_ff_ff_ff,
+    compression: toCompression((n & 0xf0_00_00_00) >> 28),
+  })),
+  size: new MappedNumber(r.uint32le, n => n & 0x0f_ff_ff_ff),
   _unknown: new r.Reserved(r.uint32le, 1),
   offset: new MappedNumber(r.uint32le, n => BigInt(n) * 16n),
 }); // 16 bytes
@@ -367,9 +368,9 @@ function createEntry(
   const metadata = {
     hash: header.hash,
     offset: plainMeta.offset,
-    compressedSize: plainMeta.compressedSize,
+    compressedSize: plainMeta.packedCompressionInfo.compressedSize,
     uncompressedSize: plainMeta.size,
-    compression: plainMeta.compression,
+    compression: plainMeta.packedCompressionInfo.compression,
     isDirectory: header.flags.isDirectory,
   };
 
@@ -407,9 +408,9 @@ function createTobjEntry(
     {
       hash: header.hash,
       offset: plainMeta.offset,
-      compressedSize: plainMeta.compressedSize,
+      compressedSize: plainMeta.packedCompressionInfo.compressedSize,
       uncompressedSize: plainMeta.size,
-      compression: plainMeta.compression,
+      compression: plainMeta.packedCompressionInfo.compression,
       isDirectory: header.flags.isDirectory,
     },
     imageMeta,
@@ -463,13 +464,34 @@ abstract class ScsArchiveEntry {
       case Compression.ZLIB:
         return zlib.inflateSync(rawData);
       case Compression.GDEFLATE: {
-        const outputBuffer = Buffer.alloc(this.metadata.uncompressedSize);
-        const result = gdeflate(
-          rawData.buffer.slice(TileStreamHeader.size()),
-          outputBuffer.buffer,
+        const tileStreamHeader = TileStreamHeader.decode(
+          new r.DecodeStream(rawData),
         );
-        if (result !== 0) {
-          throw new Error(`gdeflate error: ${result}`);
+        const tileOffsets = new Uint32Array(
+          rawData.buffer,
+          TileStreamHeader.size(),
+          tileStreamHeader.numTiles - 1,
+        );
+        const tilesData = rawData.buffer.slice(
+          TileStreamHeader.size() + tileOffsets.byteLength,
+        );
+
+        const kDefaultTileSize = 64 * 1024;
+        const outputBuffer = Buffer.alloc(this.metadata.uncompressedSize);
+        for (
+          let tileIndex = 0, outputOffset = 0;
+          tileIndex < tileStreamHeader.numTiles;
+          tileIndex++, outputOffset += kDefaultTileSize
+        ) {
+          const tileData = tilesData.slice(
+            tileIndex === 0 ? 0 : tileOffsets[tileIndex - 1],
+          );
+          const outputTileBuffer = Buffer.alloc(kDefaultTileSize);
+          const result = gdeflate(tileData, outputTileBuffer.buffer);
+          if (result !== 0) {
+            throw new Error(`gdeflate error: ${result}`);
+          }
+          outputTileBuffer.copy(outputBuffer, outputOffset);
         }
         return outputBuffer;
       }
