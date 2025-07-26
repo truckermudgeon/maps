@@ -1,15 +1,17 @@
-import { EmojiEvents, LocationCity } from '@mui/icons-material';
+import { EmojiEvents, LocationCity, Pallet } from '@mui/icons-material';
 import { List, ListItem, Option, Select, Stack, Typography } from '@mui/joy';
 import { assertExists } from '@truckermudgeon/base/assert';
 import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
 import groupBy from 'object.groupby';
+
+type SearchTypes = 'cities' | 'companies' | 'achievements';
 
 export type SearchOption = Readonly<
   {
     label: string;
     value: {
       map: 'usa' | 'europe';
-      search: 'cities' | 'achievements';
+      search: SearchTypes;
     };
   } & { __brand: never }
 >;
@@ -21,11 +23,19 @@ const options: readonly SearchOption[] = [
   },
   {
     label: 'ATS',
+    value: { map: 'usa', search: 'companies' },
+  },
+  {
+    label: 'ATS',
     value: { map: 'usa', search: 'achievements' },
   },
   {
     label: 'ETS2',
     value: { map: 'europe', search: 'cities' },
+  },
+  {
+    label: 'ETS2',
+    value: { map: 'europe', search: 'companies' },
   },
   {
     label: 'ETS2',
@@ -35,7 +45,7 @@ const options: readonly SearchOption[] = [
 
 export const getSearchOption = (
   map: 'usa' | 'europe',
-  search: 'cities' | 'achievements',
+  search: SearchTypes,
 ): SearchOption =>
   Preconditions.checkExists(
     options.find(
@@ -44,7 +54,10 @@ export const getSearchOption = (
   );
 
 interface SearchSelectProps {
-  selected: { map: 'usa' | 'europe'; search: 'cities' | 'achievements' };
+  selected: {
+    map: 'usa' | 'europe';
+    search: SearchTypes;
+  };
   onSelect: (option: SearchOption) => void;
 }
 
@@ -72,11 +85,7 @@ export const SearchSelect = ({ selected, onSelect }: SearchSelectProps) => {
             <Typography level={'body-xs'} fontWeight={'lg'}>
               {selected.value.map === 'usa' ? 'ATS' : 'ETS2'}
             </Typography>
-            {selected.value.search === 'cities' ? (
-              <LocationCity />
-            ) : (
-              <EmojiEvents />
-            )}
+            <Decoration search={selected.value.search} />
           </Stack>
         );
       }}
@@ -118,6 +127,8 @@ const Decoration = ({
   switch (search) {
     case 'cities':
       return <LocationCity />;
+    case 'companies':
+      return <Pallet />;
     case 'achievements':
       return <EmojiEvents />;
     default:

@@ -3,7 +3,7 @@ import { CssBaseline, CssVarsProvider, useColorScheme } from '@mui/joy';
 import {
   THEME_ID as MATERIAL_THEME_ID,
   Experimental_CssVarsProvider as MaterialCssVarsProvider,
-  experimental_extendTheme as materialExtendTheme,
+  extendTheme as materialExtendTheme,
 } from '@mui/material/styles';
 import type { Preview, StoryContext } from '@storybook/react';
 import type { ReactNode } from 'react';

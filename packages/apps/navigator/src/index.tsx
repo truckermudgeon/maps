@@ -3,7 +3,7 @@ import { CssBaseline, CssVarsProvider } from '@mui/joy';
 import {
   THEME_ID as MATERIAL_THEME_ID,
   Experimental_CssVarsProvider as MaterialCssVarsProvider,
-  experimental_extendTheme as materialExtendTheme,
+  extendTheme as materialExtendTheme,
 } from '@mui/material/styles';
 import { createTRPCProxyClient, createWSClient, wsLink } from '@trpc/client';
 import type { AppRouter } from '@truckermudgeon/navigation';

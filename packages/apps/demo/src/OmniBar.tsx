@@ -1,6 +1,7 @@
 import { Stack } from '@mui/joy';
 import { assertExists } from '@truckermudgeon/base/assert';
 import { getExtent, toRadians } from '@truckermudgeon/base/geom';
+import { UnreachableError } from '@truckermudgeon/base/precon';
 import type {
   AtsDlcGuard,
   AtsSelectableDlc,
@@ -14,6 +15,8 @@ import type { AchievementOption } from './AchievementSearchBar';
 import { AchievementSearchBar } from './AchievementSearchBar';
 import type { CityOption } from './CitySearchBar';
 import { CitySearchBar } from './CitySearchBar';
+import type { CompanyOption } from './CompanySearchBar';
+import { CompanySearchBar } from './CompanySearchBar';
 import type { SearchOption } from './SearchSelect';
 import { getSearchOption, SearchSelect } from './SearchSelect';
 
@@ -161,6 +164,84 @@ export const OmniBar = (props: OmniBarProps) => {
     onAchievementSelect(achievementOption, { enableFitBounds: false });
   }, [achievementOption, props.visibleStates]);
 
+  const [companyOption, setCompanyOption] = useState<CompanyOption | null>(
+    null,
+  );
+  const onCompanySelect = React.useCallback(
+    (
+      option: CompanyOption | null,
+      options: { enableFitBounds: boolean } = { enableFitBounds: true },
+    ) => {
+      markers.forEach(marker => marker.remove());
+      setCompanyOption(option);
+      if (map == null || option == null) {
+        return;
+      }
+
+      // add markers for all points
+      const enabledDlcGuards = toAtsDlcGuards(props.visibleStateDlcs);
+      const newMarkers = option.features
+        .filter(f => enabledDlcGuards.has(f.dlcGuard as AtsDlcGuard))
+        .map(({ coordinates }) =>
+          new Marker().setLngLat(coordinates).addTo(map.getMap()),
+        );
+      setMarkers(newMarkers);
+      if (newMarkers.length && options.enableFitBounds) {
+        const extent = getExtent(newMarkers.map(m => m.getLngLat().toArray()));
+        const sw = [extent[0], extent[1]] as [number, number];
+        const ne = [extent[2], extent[3]] as [number, number];
+        map.fitBounds([sw, ne], { curve: 1, padding: 100, maxZoom: 9 });
+      }
+    },
+    [map, markers, setCompanyOption, setMarkers, props.visibleStates],
+  );
+
+  useEffect(() => {
+    onCompanySelect(companyOption, { enableFitBounds: false });
+  }, [companyOption, props.visibleStates]);
+
+  const SearchBar = ({ selected }: { selected: SearchOption['value'] }) => {
+    switch (selected.search) {
+      case 'cities':
+        return (
+          <CitySearchBar
+            selectDecorator={
+              <SearchSelect selected={selected} onSelect={onMapSelect} />
+            }
+            map={selected.map}
+            onSelect={onCitySelect}
+            visibleStates={props.visibleStates}
+          />
+        );
+      case 'companies':
+        return (
+          <CompanySearchBar
+            selectDecorator={
+              <SearchSelect selected={selected} onSelect={onMapSelect} />
+            }
+            map={selected.map}
+            onSelect={onCompanySelect}
+            visibleStates={props.visibleStates}
+            visibleStateDlcs={props.visibleStateDlcs}
+          />
+        );
+      case 'achievements':
+        return (
+          <AchievementSearchBar
+            selectDecorator={
+              <SearchSelect selected={selected} onSelect={onMapSelect} />
+            }
+            map={selected.map}
+            onSelect={onAchievementSelect}
+            visibleStates={props.visibleStates}
+            visibleStateDlcs={props.visibleStateDlcs}
+          />
+        );
+      default:
+        throw new UnreachableError(selected.search);
+    }
+  };
+
   return (
     <div
       ref={ref}
@@ -168,26 +249,7 @@ export const OmniBar = (props: OmniBarProps) => {
       style={{ width: 'calc(100svw - 64px)' }}
     >
       <Stack direction={'row'} gap={1}>
-        {gameMap.value.search === 'cities' ? (
-          <CitySearchBar
-            selectDecorator={
-              <SearchSelect selected={gameMap.value} onSelect={onMapSelect} />
-            }
-            map={gameMap.value.map}
-            onSelect={onCitySelect}
-            visibleStates={props.visibleStates}
-          />
-        ) : (
-          <AchievementSearchBar
-            selectDecorator={
-              <SearchSelect selected={gameMap.value} onSelect={onMapSelect} />
-            }
-            map={gameMap.value.map}
-            onSelect={onAchievementSelect}
-            visibleStates={props.visibleStates}
-            visibleStateDlcs={props.visibleStateDlcs}
-          />
-        )}
+        <SearchBar selected={gameMap.value} />
       </Stack>
     </div>
   );
