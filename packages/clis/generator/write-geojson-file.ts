@@ -2,7 +2,7 @@ import fs from 'fs';
 
 export function writeGeojsonFile(
   path: string,
-  data: GeoJSON.FeatureCollection,
+  data: GeoJSON.FeatureCollection & { properties?: Record<string, unknown> },
 ) {
   const fd = fs.openSync(path, 'w');
   let pos = 0;
@@ -21,6 +21,9 @@ export function writeGeojsonFile(
     }
   }
   writeln(']');
+  if (data.properties != null) {
+    writeln(JSON.stringify(data.properties, null, 2));
+  }
   writeln('}');
   fs.closeSync(fd);
 }

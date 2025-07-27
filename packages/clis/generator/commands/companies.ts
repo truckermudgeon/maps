@@ -6,6 +6,7 @@ import { quadtree } from 'd3-quadtree';
 import path from 'path';
 import type { Argv, BuilderArguments } from 'yargs';
 import { createNormalizeFeature } from '../geo-json/normalize';
+import { createIsoA2Map } from '../geo-json/populated-places';
 import { logger } from '../logger';
 import type { MappedDataForKeys } from '../mapped-data';
 import { readMapData } from '../mapped-data';
@@ -53,10 +54,23 @@ interface QtCompanyEntry {
 export function handler(args: BuilderArguments<typeof builder>) {
   logger.log('creating companies.geojson...');
 
+  // map of city,country,company tokens to names
+  const tokenLut: Record<string, string> = {};
+  const countryIsoA2 = createIsoA2Map();
   const companyFeatures = [args.map].flat().flatMap(map => {
     const { companies, pois, ...context } = readMapData(args.inputDir, map, {
       mapDataKeys: ['companies', 'pois', 'cities', 'countries', 'prefabs'],
     });
+
+    const mapCountryCode = (code: string) =>
+      map === 'europe' ? countryIsoA2.get(code) : code;
+
+    for (const city of context.cities.values()) {
+      tokenLut[city.token] = city.name;
+    }
+    for (const country of context.countries.values()) {
+      tokenLut[mapCountryCode(country.code)] = country.name;
+    }
 
     // a quadtree of company POIs, which is the source of truth for positional
     // information for rendering a CompanyItem's logo on a map.
@@ -66,6 +80,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
     for (const p of pois) {
       if (p.type === 'company') {
         companyQuadtree.add(p);
+        tokenLut[p.icon] = p.label;
       }
     }
 
@@ -78,7 +93,9 @@ export function handler(args: BuilderArguments<typeof builder>) {
         }
         return true;
       })
-      .map(c => toCompanyFeature(c, { ...context, companyQuadtree }))
+      .map(c =>
+        toCompanyFeature(c, { ...context, companyQuadtree, mapCountryCode }),
+      )
       .toArray();
 
     const normalizeFeature = createNormalizeFeature(map, 4);
@@ -88,12 +105,13 @@ export function handler(args: BuilderArguments<typeof builder>) {
   writeGeojsonFile(path.join(args.outputDir, 'companies.geojson'), {
     type: 'FeatureCollection',
     features: companyFeatures,
+    properties: { tokenLut },
   });
   logger.info(
     companyFeatures.length,
     'depots',
     'for',
-    new Set(companyFeatures.map(f => f.properties.name)).size,
+    new Set(companyFeatures.map(f => f.properties.token)).size,
     'companies',
   );
   logger.success('done.');
@@ -103,12 +121,13 @@ function toCompanyFeature(
   company: CompanyItem,
   context: MappedDataForKeys<['cities', 'countries', 'prefabs']> & {
     companyQuadtree: Quadtree<QtCompanyEntry>;
+    mapCountryCode: (countryCode: string) => string;
   },
 ): CompanyFeature {
   const poi = assertExists(context.companyQuadtree.find(company.x, company.y));
   if (distance(poi, company) > 50) {
     logger.warn(
-      'poi is > 50 meters away from company item',
+      'poi is > 20 meters away from company item',
       `0x${company.uid.toString(16)}`,
     );
   }
@@ -124,11 +143,10 @@ function toCompanyFeature(
       coordinates: [poi.x, poi.y],
     },
     properties: {
-      name: poi.label,
-      icon: poi.icon,
       map: context.map,
-      country: country.name,
-      city: city.name,
+      token: poi.icon,
+      countryCode: context.mapCountryCode(country.code),
+      cityToken: city.token,
       dlcGuard: prefab.dlcGuard,
     },
   };

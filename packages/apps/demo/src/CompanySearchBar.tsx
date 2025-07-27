@@ -67,11 +67,11 @@ export const CompanySearchBar = (props: SearchBarProps) => {
         setCompanies(
           geoJson.features
             .map(f => ({
-              label: `${f.properties.name}-${f.properties.city}`,
-              company: f.properties.name,
+              label: `${f.properties.token}-${f.properties.cityToken}`,
+              company: f.properties.token,
               map: f.properties.map,
-              city: f.properties.city,
-              country: f.properties.country,
+              city: f.properties.cityToken,
+              country: f.properties.countryCode,
               features: [
                 {
                   coordinates: f.geometry.coordinates as [number, number],

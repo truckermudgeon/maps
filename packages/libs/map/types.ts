@@ -720,10 +720,9 @@ export type CompanyFeature = GeoJSON.Feature<
   GeoJSON.Point,
   {
     map: 'usa' | 'europe';
-    name: string;
-    icon: string;
-    country: string;
-    city: string;
+    token: string;
+    countryCode: string;
+    cityToken: string;
     dlcGuard: number;
   }
 >;
