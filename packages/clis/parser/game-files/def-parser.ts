@@ -15,6 +15,7 @@ import type {
   RoadLook,
   Route,
   SpeedLimits,
+  WithPath,
 } from '@truckermudgeon/map/types';
 import type { JSONSchemaType } from 'ajv';
 import { logger } from '../logger';
@@ -171,7 +172,7 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
   const defWorld = Preconditions.checkExists(
     entries.directories.get('def/world'),
   );
-  const prefabs = new Map<string, PrefabDescription & { path: string }>();
+  const prefabs = new Map<string, WithPath<PrefabDescription>>();
   const roadLooks = new Map<string, RoadLook>();
   const models = new Map<string, ModelDescription>();
   const vegetation = new Set<string>();
@@ -474,7 +475,7 @@ function processFerryJson(obj: FerrySii, entries: Entries) {
 function processPrefabJson(
   obj: PrefabSii,
   entries: Entries,
-): Map<string, PrefabDescription & { path: string }> {
+): Map<string, WithPath<PrefabDescription>> {
   const prefabModel = obj.prefabModel;
   if (!prefabModel) {
     return new Map();

@@ -29,6 +29,7 @@ import type {
   Route,
   TrajectoryItem,
   Trigger,
+  WithPath,
   WithToken,
 } from '@truckermudgeon/map/types';
 import fs from 'fs';
@@ -269,7 +270,9 @@ export function readMapData<
         break;
       case 'prefabDescriptions':
         mapData.prefabDescriptions = mapify(
-          readArrayFile<WithToken<PrefabDescription>>(toJsonFilePath(key)),
+          readArrayFile<WithToken<WithPath<PrefabDescription>>>(
+            toJsonFilePath(key),
+          ),
           p => p.token,
         );
         break;

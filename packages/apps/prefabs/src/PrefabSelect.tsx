@@ -15,10 +15,12 @@ import type {
   PrefabDescription as BasePrefab,
   Node,
   Prefab,
+  WithPath,
+  WithToken,
 } from '@truckermudgeon/map/types';
 import { useEffect, useState } from 'react';
 
-export type PrefabDescription = BasePrefab & { path: string; token: string };
+export type PrefabDescription = WithToken<WithPath<BasePrefab>>;
 
 export interface PrefabOption {
   label: string;
