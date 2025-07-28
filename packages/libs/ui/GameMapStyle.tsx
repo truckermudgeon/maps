@@ -14,6 +14,7 @@ import type {
   FacilityIcon,
   NonFacilityPoi,
   RoadType,
+  TrafficProperties,
 } from '@truckermudgeon/map/types';
 import type {
   ExpressionSpecification,
@@ -46,9 +47,11 @@ export const enum MapIcon {
   CityNames,
   Company,
   RoadNumber,
+  Roadwork,
+  RailCrossing,
 }
 export const allIcons: ReadonlySet<MapIcon> = new Set<MapIcon>(
-  Array.from({ length: 17 }, (_, i) => i as MapIcon),
+  Array.from({ length: 19 }, (_, i) => i as MapIcon),
 );
 
 export type GameMapStyleProps = {
@@ -638,6 +641,32 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             paint={colors.primaryTextPaint}
           />
         )}
+      {(visibleIcons.has(MapIcon.Roadwork) ||
+        visibleIcons.has(MapIcon.RailCrossing)) && (
+        <Layer
+          id={game + 'traffic-icons'}
+          source-layer={game}
+          type={'symbol'}
+          minzoom={enableIconAutoHide ? 6 : 0}
+          filter={[
+            'all',
+            ['==', ['geometry-type'], 'Point'],
+            ['==', ['get', 'type'], 'traffic'],
+            createTrafficFilter(visibleIcons),
+            dlcGuardFilter,
+          ]}
+          layout={iconLayout(
+            enableIconAutoHide,
+            0.6 * 0.5,
+            1.25 * 0.5,
+            2.5 * 0.5,
+            {
+              vertical: 2,
+              horizontal: 2,
+            },
+          )}
+        />
+      )}
     </Source>
   );
 };
@@ -738,7 +767,7 @@ const cityIconImage: ExpressionSpecification = [
   '',
 ];
 
-const mapIcons = [
+const poiMapIcons = [
   MapIcon.PhotoSight,
   MapIcon.Viewpoint,
   MapIcon.Port,
@@ -755,6 +784,8 @@ const mapIcons = [
   MapIcon.BorderCheck,
 ];
 
+const trafficMapIcons = [MapIcon.Roadwork, MapIcon.RailCrossing];
+
 type RoadFacilityIcon = 'weigh_ico' | 'toll_ico' | 'agri_check' | 'border_ico';
 const allRoadFacilityIcons: readonly RoadFacilityIcon[] = [
   'weigh_ico',
@@ -764,7 +795,31 @@ const allRoadFacilityIcons: readonly RoadFacilityIcon[] = [
 ];
 
 function hasPois(icons: ReadonlySet<MapIcon>): boolean {
-  return mapIcons.some(icon => icons.has(icon));
+  return poiMapIcons.some(icon => icons.has(icon));
+}
+
+function hasTraffics(icons: ReadonlySet<MapIcon>): boolean {
+  return trafficMapIcons.some(icon => icons.has(icon));
+}
+
+function createTrafficFilter(
+  visibleIcons: ReadonlySet<MapIcon>,
+): ExpressionSpecification {
+  Preconditions.checkArgument(hasTraffics(visibleIcons));
+
+  const trafficSprites: TrafficProperties['sprite'][] = [];
+  if (visibleIcons.has(MapIcon.Roadwork)) {
+    trafficSprites.push('roadwork');
+  }
+  if (visibleIcons.has(MapIcon.RailCrossing)) {
+    trafficSprites.push('railcrossing');
+  }
+  const trafficPredicate: ExpressionSpecification | false =
+    trafficSprites.length > 0
+      ? ['in', ['get', 'sprite'], ['literal', trafficSprites]]
+      : false;
+
+  return ['any', trafficPredicate];
 }
 
 function createPoiFilter(

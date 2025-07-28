@@ -678,7 +678,7 @@ function createTrafficFeatures(
       features.push(
         turf.point(midPoint(nodePoints[0], nodePoints[1]), {
           type: 'traffic',
-          trafficType: 'roadwork',
+          sprite: 'roadwork',
           dlcGuard: p.dlcGuard,
         }),
       );
@@ -692,7 +692,7 @@ function createTrafficFeatures(
       features.push(
         turf.point(center(getExtent(nodePoints)), {
           type: 'traffic',
-          trafficType: 'rail_crossing',
+          sprite: 'railcrossing',
           dlcGuard: p.dlcGuard,
         }),
       );

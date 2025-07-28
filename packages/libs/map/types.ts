@@ -701,7 +701,7 @@ export interface PoiProperties {
 
 export interface TrafficProperties {
   type: 'traffic';
-  trafficType: 'roadwork' | 'rail_crossing';
+  sprite: string;
   dlcGuard: number;
 }
 
