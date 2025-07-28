@@ -784,7 +784,7 @@ const poiMapIcons = [
   MapIcon.BorderCheck,
 ];
 
-const trafficMapIcons = [MapIcon.Roadwork, MapIcon.RailCrossing];
+export const trafficMapIcons = [MapIcon.Roadwork, MapIcon.RailCrossing];
 
 type RoadFacilityIcon = 'weigh_ico' | 'toll_ico' | 'agri_check' | 'border_ico';
 const allRoadFacilityIcons: readonly RoadFacilityIcon[] = [

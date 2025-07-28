@@ -7,6 +7,7 @@ export {
   GameMapStyle,
   MapIcon,
   textVariableAnchor,
+  trafficMapIcons,
 } from './GameMapStyle';
 export {
   atsSceneryTownsUrl,
