@@ -1,7 +1,13 @@
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { areSetsEqual } from '@truckermudgeon/base/equals';
 import type { Position } from '@truckermudgeon/base/geom';
-import { distance, midPoint, toSplinePoints } from '@truckermudgeon/base/geom';
+import {
+  center,
+  distance,
+  getExtent,
+  midPoint,
+  toSplinePoints,
+} from '@truckermudgeon/base/geom';
 import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
 import { Preconditions } from '@truckermudgeon/base/precon';
 import { isLabeledPoi } from '@truckermudgeon/map/constants';
@@ -32,6 +38,9 @@ import type {
   RoadLook,
   RoadLookProperties,
   RoadType,
+  TrafficFeature,
+  WithPath,
+  WithToken,
 } from '@truckermudgeon/map/types';
 import * as turf from '@turf/helpers';
 import lineOffset from '@turf/line-offset';
@@ -567,6 +576,14 @@ export function convertToMapGeoJson(
   logger.log('creating pois...');
   const poiFeatures = pois.map(p => poiToFeature(p));
 
+  logger.log('creating traffic-y features...');
+  const trafficFeatures = createTrafficFeatures(
+    map,
+    nodes,
+    prefabs,
+    prefabDescriptions,
+  );
+
   const debugCityAreaFeatures: DebugFeature[] = [];
   const debugNodeFeatures: DebugFeature[] = [];
   if (options.includeDebug) {
@@ -598,6 +615,7 @@ export function convertToMapGeoJson(
     ...cityFeatures.map(c => withDlcGuard(c, dlcGuardQuadTree)),
     ...countryFeatures,
     ...poiFeatures.map(p => withDlcGuard(p, dlcGuardQuadTree)),
+    ...trafficFeatures,
     //...dividerFeatures,
     ...debugNodeFeatures,
     ...ferryFeatures,
@@ -632,6 +650,60 @@ function withDlcGuard<T extends CityFeature | PoiFeature>(
 
   (feature.properties as { dlcGuard: number }).dlcGuard = entry.dlcGuard;
   return feature;
+}
+
+function createTrafficFeatures(
+  map: 'usa' | 'europe',
+  nodes: ReadonlyMap<bigint, Node>,
+  prefabs: ReadonlyMap<bigint, Prefab>,
+  prefabDescriptions: ReadonlyMap<
+    string,
+    WithToken<WithPath<PrefabDescription>>
+  >,
+): TrafficFeature[] {
+  const features: TrafficFeature[] = [];
+
+  let roadworkCount = 0;
+  let railCrossingCount = 0;
+
+  for (const p of prefabs.values()) {
+    if (p.hidden) {
+      continue;
+    }
+
+    const pd = assertExists(prefabDescriptions.get(p.token));
+    if (pd.path.includes('/roadwork/')) {
+      assert(p.nodeUids.length === 2);
+      const nodePoints = p.nodeUids.map(nid => assertExists(nodes.get(nid)));
+      features.push(
+        turf.point(midPoint(nodePoints[0], nodePoints[1]), {
+          type: 'traffic',
+          sprite: 'roadwork',
+          dlcGuard: p.dlcGuard,
+        }),
+      );
+      roadworkCount++;
+    } else if (
+      (map === 'usa' && pd.path.includes('_xrail_')) ||
+      (map === 'europe' && /\brail\d_x_road/.test(pd.path))
+    ) {
+      assert(p.nodeUids.length >= 4);
+      const nodePoints = p.nodeUids.map(nid => assertExists(nodes.get(nid)));
+      features.push(
+        turf.point(center(getExtent(nodePoints)), {
+          type: 'traffic',
+          sprite: 'railcrossing',
+          dlcGuard: p.dlcGuard,
+        }),
+      );
+      railCrossingCount++;
+    }
+  }
+
+  logger.info(roadworkCount, 'road work points');
+  logger.info(railCrossingCount, 'railroad crossing points');
+
+  return features;
 }
 
 /**

@@ -8,6 +8,7 @@ import {
   GameMapStyle,
   MapIcon,
   SceneryTownSource,
+  trafficMapIcons,
 } from '@truckermudgeon/ui';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useState } from 'react';
@@ -43,8 +44,11 @@ const Demo = (props: { tileRootUrl: string }) => {
       ? { lat, lon }
       : undefined;
 
+  const allButTrafficIcons = new Set(
+    [...allIcons].filter(i => !trafficMapIcons.includes(i)),
+  );
   const [autoHide, setAutoHide] = useState(true);
-  const [visibleIcons, setVisibleIcons] = useState(new Set(allIcons));
+  const [visibleIcons, setVisibleIcons] = useState(allButTrafficIcons);
   const [visibleAtsDlcs, setVisibleAtsDlcs] = useState(
     new Set(AtsSelectableDlcs),
   );

@@ -1,4 +1,8 @@
-import type { PrefabDescription, WithToken } from '@truckermudgeon/map/types';
+import type {
+  PrefabDescription,
+  WithPath,
+  WithToken,
+} from '@truckermudgeon/map/types';
 
 export const d_oil_gst3 = {
   token: 'd_oil_gst3',
@@ -101,7 +105,7 @@ export const d_oil_gst3 = {
       connections: [],
     },
   ],
-} as unknown as WithToken<PrefabDescription>;
+} as unknown as WithToken<WithPath<PrefabDescription>>;
 
 export const d_farm_grg = {
   token: 'd_farm_grg',
@@ -708,7 +712,7 @@ export const d_farm_grg = {
       connections: [],
     },
   ],
-} as unknown as WithToken<PrefabDescription>;
+} as unknown as WithToken<WithPath<PrefabDescription>>;
 
 export const prefab_us_405 = {
   token: 'us_405',
@@ -1102,4 +1106,4 @@ export const prefab_us_405 = {
       ],
     },
   ],
-} as unknown as WithToken<PrefabDescription>;
+} as unknown as WithToken<WithPath<PrefabDescription>>;

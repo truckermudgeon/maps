@@ -58,6 +58,8 @@ const mapIconInfo: Record<MapIcon, { label: string; iconName: string }> = {
   [MapIcon.CityNames]: { iconName: 'city_names_ico', label: 'City names' },
   [MapIcon.Company]: { iconName: 'companies_ico', label: 'Companies' },
   [MapIcon.RoadNumber]: { iconName: 'road_numbers_ico', label: 'Road numbers' },
+  [MapIcon.Roadwork]: { iconName: 'roadwork', label: 'Roadwork' },
+  [MapIcon.RailCrossing]: { iconName: 'railcrossing', label: 'Rail Crossing' },
 };
 const mapIcons = new Map<MapIcon, string>(
   Object.entries(mapIconInfo).map(([k, v]) => [Number(k), v.label]),
