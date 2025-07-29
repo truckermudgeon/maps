@@ -685,7 +685,7 @@ function createTrafficFeatures(
       roadworkCount++;
     } else if (
       (map === 'usa' && pd.path.includes('_xrail_')) ||
-      (map === 'europe' && /\brail\d_x_road/.test(pd.path))
+      (map === 'europe' && /[_/]rail\d_x_road/.test(pd.path))
     ) {
       assert(p.nodeUids.length >= 4);
       const nodePoints = p.nodeUids.map(nid => assertExists(nodes.get(nid)));
