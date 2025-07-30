@@ -95,7 +95,7 @@ export const OmniBar = (props: OmniBarProps) => {
   }, [map, gameMap, setGameMap]);
 
   const onCitySelect = React.useCallback(
-    (option: CityOption) => {
+    (option: CityOption | null) => {
       if (map == null || option == null) {
         return;
       }
@@ -171,7 +171,6 @@ export const OmniBar = (props: OmniBarProps) => {
       options: { enableFitBounds: boolean } = { enableFitBounds: true },
     ) => {
       markers.forEach(marker => marker.remove());
-      console.log('onCompanySelect', option);
       setCompanyOption(option);
       if (map == null || option == null) {
         return;
@@ -199,8 +198,45 @@ export const OmniBar = (props: OmniBarProps) => {
     onCompanySelect(companyOption, { enableFitBounds: false });
   }, [companyOption, props.visibleStateDlcs]);
 
-  const SearchBar = ({ selected }: { selected: SearchOption['value'] }) => {
-    console.log('render searchbar');
+  return (
+    <div
+      ref={ref}
+      className={'maplibregl-ctrl'}
+      style={{ width: 'calc(100svw - 64px)' }}
+    >
+      <Stack direction={'row'} gap={1}>
+        <SearchBar
+          selected={gameMap.value}
+          onMapSelect={onMapSelect}
+          onCitySelect={onCitySelect}
+          onCompanySelect={onCompanySelect}
+          onAchievementSelect={onAchievementSelect}
+          visibleStates={props.visibleStates}
+          visibleStateDlcs={props.visibleStateDlcs}
+        />
+      </Stack>
+    </div>
+  );
+};
+
+const SearchBar = React.memo(
+  ({
+    selected,
+    onMapSelect,
+    onCitySelect,
+    onCompanySelect,
+    onAchievementSelect,
+    visibleStates,
+    visibleStateDlcs,
+  }: {
+    selected: SearchOption['value'];
+    onMapSelect: (option: SearchOption) => void;
+    onCitySelect: (option: CityOption | null) => void;
+    onCompanySelect: (option: CompanyOption | null) => void;
+    onAchievementSelect: (option: AchievementOption | null) => void;
+    visibleStates: Set<StateCode>;
+    visibleStateDlcs: Set<AtsSelectableDlc>;
+  }) => {
     switch (selected.search) {
       case 'cities':
         return (
@@ -210,7 +246,7 @@ export const OmniBar = (props: OmniBarProps) => {
             }
             map={selected.map}
             onSelect={onCitySelect}
-            visibleStates={props.visibleStates}
+            visibleStates={visibleStates}
           />
         );
       case 'companies':
@@ -221,7 +257,7 @@ export const OmniBar = (props: OmniBarProps) => {
             }
             map={selected.map}
             onSelect={onCompanySelect}
-            visibleStateDlcs={props.visibleStateDlcs}
+            visibleStateDlcs={visibleStateDlcs}
           />
         );
       case 'achievements':
@@ -232,27 +268,15 @@ export const OmniBar = (props: OmniBarProps) => {
             }
             map={selected.map}
             onSelect={onAchievementSelect}
-            visibleStates={props.visibleStates}
-            visibleStateDlcs={props.visibleStateDlcs}
+            visibleStates={visibleStates}
+            visibleStateDlcs={visibleStateDlcs}
           />
         );
       default:
         throw new UnreachableError(selected.search);
     }
-  };
-
-  return (
-    <div
-      ref={ref}
-      className={'maplibregl-ctrl'}
-      style={{ width: 'calc(100svw - 64px)' }}
-    >
-      <Stack direction={'row'} gap={1}>
-        <SearchBar selected={gameMap.value} />
-      </Stack>
-    </div>
-  );
-};
+  },
+);
 
 function toSearchOption(maybeString: string | null): SearchTypes {
   if (

@@ -97,7 +97,6 @@ export const CompanySearchBar = (props: SearchBarProps) => {
     );
   }, [map]);
 
-  console.log('filtering companies...');
   const options = companies.filter(c => {
     const mapMatches = c.map === map;
     if (map === 'europe') {
