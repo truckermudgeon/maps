@@ -1031,13 +1031,20 @@ function ferryToFeature(
 }
 
 function poiToFeature(poi: Poi): PoiFeature {
+  let poiName: string | undefined;
+  if (isLabeledPoi(poi)) {
+    poiName = poi.label;
+  } else if (poi.type === 'facility' && poi.icon === 'dealer_ico') {
+    poiName = toDealerLabel(poi.prefabPath);
+  }
+
   return {
     type: 'Feature',
     properties: {
       type: 'poi',
       sprite: poi.icon,
       poiType: poi.type,
-      poiName: isLabeledPoi(poi) ? poi.label : undefined,
+      poiName,
       dlcGuard: 'dlcGuard' in poi ? poi.dlcGuard : undefined,
       prefabUid: 'prefabUid' in poi ? poi.prefabUid : undefined,
     },
@@ -1046,6 +1053,35 @@ function poiToFeature(poi: Poi): PoiFeature {
       coordinates: [poi.x, poi.y],
     },
   };
+}
+
+function toDealerLabel(prefabPath: string): string {
+  Preconditions.checkArgument(prefabPath.includes('/truck_dealer/'));
+  const dealerRegex = /\/truck_dealer\/(?:truck_dealer_([^.]+).ppd$|([^/]+)\/)/;
+  const matches = assertExists(dealerRegex.exec(prefabPath));
+  const dealer = assertExists(matches[1] ?? matches[2]);
+
+  switch (dealer) {
+    case 'mb':
+      return 'Mercedes-Benz';
+    case 'westernstar':
+      return 'Western Star';
+    case 'daf':
+    case 'man':
+      return dealer.toUpperCase();
+    case 'freightliner':
+    case 'international':
+    case 'iveco':
+    case 'kenworth':
+    case 'mack':
+    case 'peterbilt':
+    case 'renault':
+    case 'scania':
+    case 'volvo':
+      return dealer.charAt(0).toUpperCase() + dealer.slice(1);
+    default:
+      throw new Error('unknown dealer: ' + dealer);
+  }
 }
 
 type CityWithScaleRank = City & {
