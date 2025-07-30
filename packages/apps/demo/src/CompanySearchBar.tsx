@@ -95,7 +95,7 @@ export const CompanySearchBar = (props: SearchBarProps) => {
             }),
         );
       },
-      () => console.error('could not load company data.'),
+      err => console.error('could not load company data.', err),
     );
   }, [map]);
 

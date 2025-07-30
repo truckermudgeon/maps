@@ -22,6 +22,8 @@ export function writeGeojsonFile(
   }
   writeln(']');
   if (data.properties != null) {
+    writeln(',');
+    writeln('"properties":');
     writeln(JSON.stringify(data.properties, null, 2));
   }
   writeln('}');
