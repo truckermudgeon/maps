@@ -1,4 +1,11 @@
-import { Autocomplete, createFilterOptions } from '@mui/joy';
+import {
+  Autocomplete,
+  AutocompleteOption,
+  Box,
+  createFilterOptions,
+  ListItemContent,
+  ListItemDecorator,
+} from '@mui/joy';
 import { assertExists } from '@truckermudgeon/base/assert';
 import type {
   AtsDlcGuard,
@@ -12,6 +19,7 @@ import { useEffect, useState } from 'react';
 
 export interface CompanyOption {
   map: 'usa' | 'europe';
+  token: string;
   label: string;
   spriteEntry: {
     x: number;
@@ -84,6 +92,7 @@ export const CompanySearchBar = (props: SearchBarProps) => {
 
           options.push({
             label: tokenLut.get(first.token) ?? first.token,
+            token: first.token,
             spriteEntry,
             map: first.map,
             features: companies.map(c => ({
@@ -132,6 +141,20 @@ export const CompanySearchBar = (props: SearchBarProps) => {
         flexBasis: '28em',
       }}
       startDecorator={selectDecorator}
+      renderOption={(props, { token, spriteEntry, label }) => (
+        <AutocompleteOption {...props} key={token}>
+          <ListItemDecorator>
+            <Box
+              sx={{
+                width: spriteEntry.width + 'px',
+                height: spriteEntry.height + 'px',
+                background: `url(sprites.png) -${spriteEntry.x}px -${spriteEntry.y}px`,
+              }}
+            />
+          </ListItemDecorator>
+          <ListItemContent>{label}</ListItemContent>
+        </AutocompleteOption>
+      )}
     />
   );
 };
