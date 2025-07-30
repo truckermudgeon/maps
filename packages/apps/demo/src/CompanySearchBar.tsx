@@ -69,6 +69,9 @@ export const CompanySearchBar = (props: SearchBarProps) => {
         const options: CompanyOption[] = [];
         for (const companies of Object.values(groupedCompanies)) {
           const first = companies[0].properties;
+          if (first.map !== props.map) {
+            continue;
+          }
           const spriteEntry = sprites[first.token] ?? {
             height: 0,
             width: 0,
