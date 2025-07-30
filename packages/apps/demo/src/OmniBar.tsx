@@ -219,64 +219,62 @@ export const OmniBar = (props: OmniBarProps) => {
   );
 };
 
-const SearchBar = React.memo(
-  ({
-    selected,
-    onMapSelect,
-    onCitySelect,
-    onCompanySelect,
-    onAchievementSelect,
-    visibleStates,
-    visibleStateDlcs,
-  }: {
-    selected: SearchOption['value'];
-    onMapSelect: (option: SearchOption) => void;
-    onCitySelect: (option: CityOption | null) => void;
-    onCompanySelect: (option: CompanyOption | null) => void;
-    onAchievementSelect: (option: AchievementOption | null) => void;
-    visibleStates: Set<StateCode>;
-    visibleStateDlcs: Set<AtsSelectableDlc>;
-  }) => {
-    switch (selected.search) {
-      case 'cities':
-        return (
-          <CitySearchBar
-            selectDecorator={
-              <SearchSelect selected={selected} onSelect={onMapSelect} />
-            }
-            map={selected.map}
-            onSelect={onCitySelect}
-            visibleStates={visibleStates}
-          />
-        );
-      case 'companies':
-        return (
-          <CompanySearchBar
-            selectDecorator={
-              <SearchSelect selected={selected} onSelect={onMapSelect} />
-            }
-            map={selected.map}
-            onSelect={onCompanySelect}
-            visibleStateDlcs={visibleStateDlcs}
-          />
-        );
-      case 'achievements':
-        return (
-          <AchievementSearchBar
-            selectDecorator={
-              <SearchSelect selected={selected} onSelect={onMapSelect} />
-            }
-            map={selected.map}
-            onSelect={onAchievementSelect}
-            visibleStates={visibleStates}
-            visibleStateDlcs={visibleStateDlcs}
-          />
-        );
-      default:
-        throw new UnreachableError(selected.search);
-    }
-  },
-);
+const SearchBar = ({
+  selected,
+  onMapSelect,
+  onCitySelect,
+  onCompanySelect,
+  onAchievementSelect,
+  visibleStates,
+  visibleStateDlcs,
+}: {
+  selected: SearchOption['value'];
+  onMapSelect: (option: SearchOption) => void;
+  onCitySelect: (option: CityOption | null) => void;
+  onCompanySelect: (option: CompanyOption | null) => void;
+  onAchievementSelect: (option: AchievementOption | null) => void;
+  visibleStates: Set<StateCode>;
+  visibleStateDlcs: Set<AtsSelectableDlc>;
+}) => {
+  switch (selected.search) {
+    case 'cities':
+      return (
+        <CitySearchBar
+          selectDecorator={
+            <SearchSelect selected={selected} onSelect={onMapSelect} />
+          }
+          map={selected.map}
+          onSelect={onCitySelect}
+          visibleStates={visibleStates}
+        />
+      );
+    case 'companies':
+      return (
+        <CompanySearchBar
+          selectDecorator={
+            <SearchSelect selected={selected} onSelect={onMapSelect} />
+          }
+          map={selected.map}
+          onSelect={onCompanySelect}
+          visibleStateDlcs={visibleStateDlcs}
+        />
+      );
+    case 'achievements':
+      return (
+        <AchievementSearchBar
+          selectDecorator={
+            <SearchSelect selected={selected} onSelect={onMapSelect} />
+          }
+          map={selected.map}
+          onSelect={onAchievementSelect}
+          visibleStates={visibleStates}
+          visibleStateDlcs={visibleStateDlcs}
+        />
+      );
+    default:
+      throw new UnreachableError(selected.search);
+  }
+};
 
 function toSearchOption(maybeString: string | null): SearchTypes {
   if (
