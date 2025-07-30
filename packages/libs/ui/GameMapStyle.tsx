@@ -608,7 +608,8 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
       )}
       {hasPois(visibleIcons) &&
         (visibleIcons.has(MapIcon.Viewpoint) ||
-          visibleIcons.has(MapIcon.PhotoSight)) && (
+          visibleIcons.has(MapIcon.PhotoSight) ||
+          visibleIcons.has(MapIcon.TruckDealer)) && (
           <Layer
             id={game + 'poi-icon-labels'}
             source-layer={game}
@@ -619,9 +620,17 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
               ['==', ['geometry-type'], 'Point'],
               ['==', ['get', 'type'], 'poi'],
               [
-                'in',
-                ['get', 'poiType'],
-                ['literal', ['viewpoint', 'landmark']],
+                'any',
+                [
+                  'in',
+                  ['get', 'poiType'],
+                  ['literal', ['viewpoint', 'landmark']],
+                ],
+                [
+                  'all',
+                  ['==', ['get', 'poiType'], 'facility'],
+                  ['==', ['get', 'sprite'], 'dealer_ico'],
+                ],
               ],
               createPoiFilter(visibleIcons),
               dlcGuardFilter,
