@@ -1,27 +1,24 @@
-import {
-  Autocomplete,
-  createFilterOptions,
-  List,
-  ListDivider,
-  Typography,
-} from '@mui/joy';
-import type { AutocompleteRenderGroupParams } from '@mui/joy/Autocomplete/AutocompleteProps';
+import { Autocomplete, createFilterOptions } from '@mui/joy';
+import { assertExists } from '@truckermudgeon/base/assert';
 import type {
   AtsDlcGuard,
   AtsSelectableDlc,
 } from '@truckermudgeon/map/constants';
 import { toAtsDlcGuards } from '@truckermudgeon/map/constants';
 import type { CompanyFeature } from '@truckermudgeon/map/types';
-import { type StateCode } from '@truckermudgeon/ui';
+import groupBy from 'object.groupby';
 import type { ReactElement } from 'react';
-import { Fragment, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export interface CompanyOption {
-  label: string;
-  company: string;
   map: 'usa' | 'europe';
-  city: string;
-  country: string;
+  label: string;
+  spriteEntry: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
   features: {
     coordinates: [number, number];
     dlcGuard: number;
@@ -34,7 +31,6 @@ type SearchBarProps = {
 } & (
   | {
       map: 'usa';
-      visibleStates: Set<StateCode>;
       visibleStateDlcs: Set<AtsSelectableDlc>;
     }
   | {
@@ -59,41 +55,43 @@ export const CompanySearchBar = (props: SearchBarProps) => {
             GeoJSON.FeatureCollection<
               CompanyFeature['geometry'],
               CompanyFeature['properties']
-            >
+            > & {
+              properties: { tokenLut: Record<string, string> };
+            }
           >,
       ),
     ]).then(
-      ([_sprites, geoJson]) => {
-        setCompanies(
-          geoJson.features
-            .map(f => ({
-              label: `${f.properties.token}-${f.properties.cityToken}`,
-              company: f.properties.token,
-              map: f.properties.map,
-              city: f.properties.cityToken,
-              country: f.properties.countryCode,
-              features: [
-                {
-                  coordinates: f.geometry.coordinates as [number, number],
-                  dlcGuard: f.properties.dlcGuard,
-                },
-              ],
-            }))
-            .sort((a, b) => {
-              if (a.company !== b.company) {
-                return a.company.localeCompare(b.company);
-              }
-              if (a.map !== b.map) {
-                return a.map.localeCompare(b.map);
-              }
-              if (a.country !== b.country) {
-                return a.country.localeCompare(b.country);
-              }
-              //if (a.city !== b.city) {
-              return a.city.localeCompare(b.city);
-              //}
-            }),
+      ([sprites, geoJson]) => {
+        const tokenLut = new Map(Object.entries(geoJson.properties.tokenLut));
+        const groupedCompanies = groupBy(geoJson.features, companyFeature =>
+          assertExists(tokenLut.get(companyFeature.properties.token)),
         );
+        const options: CompanyOption[] = [];
+        for (const companies of Object.values(groupedCompanies)) {
+          const first = companies[0].properties;
+          const spriteEntry = sprites[first.token] ?? {
+            height: 0,
+            width: 0,
+            x: 0,
+            y: 0,
+          };
+          if (sprites[first.token] == null) {
+            console.warn('no sprite for company token:', first.token);
+          }
+
+          options.push({
+            label: tokenLut.get(first.token) ?? first.token,
+            spriteEntry,
+            map: first.map,
+            features: companies.map(c => ({
+              coordinates: c.geometry.coordinates as [number, number],
+              dlcGuard: c.properties.dlcGuard,
+            })),
+          });
+        }
+        options.sort((a, b) => a.label.localeCompare(b.label));
+
+        setCompanies(options);
       },
       err => console.error('could not load company data.', err),
     );
@@ -125,11 +123,8 @@ export const CompanySearchBar = (props: SearchBarProps) => {
       placeholder={'Search companies...'}
       options={options}
       filterOptions={filterOptions}
-      groupBy={option => option.company}
-      clearOnBlur={false}
       blurOnSelect
       autoComplete
-      renderGroup={formatGroupLabel}
       sx={{
         paddingInlineStart: 0,
         flexBasis: '28em',
@@ -138,20 +133,3 @@ export const CompanySearchBar = (props: SearchBarProps) => {
     />
   );
 };
-
-function formatGroupLabel(params: AutocompleteRenderGroupParams) {
-  return (
-    <Fragment key={params.key}>
-      <Typography
-        m={1}
-        level={'body-xs'}
-        textTransform={'uppercase'}
-        fontWeight={'lg'}
-      >
-        {params.group}
-      </Typography>
-      <List>{params.children}</List>
-      <ListDivider />
-    </Fragment>
-  );
-}

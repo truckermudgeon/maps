@@ -171,6 +171,7 @@ export const OmniBar = (props: OmniBarProps) => {
       options: { enableFitBounds: boolean } = { enableFitBounds: true },
     ) => {
       markers.forEach(marker => marker.remove());
+      console.log('onCompanySelect', option);
       setCompanyOption(option);
       if (map == null || option == null) {
         return;
@@ -191,14 +192,15 @@ export const OmniBar = (props: OmniBarProps) => {
         map.fitBounds([sw, ne], { curve: 1, padding: 100, maxZoom: 9 });
       }
     },
-    [map, markers, setCompanyOption, setMarkers, props.visibleStates],
+    [map, markers, setCompanyOption, setMarkers, props.visibleStateDlcs],
   );
 
   useEffect(() => {
     onCompanySelect(companyOption, { enableFitBounds: false });
-  }, [companyOption, props.visibleStates]);
+  }, [companyOption, props.visibleStateDlcs]);
 
   const SearchBar = ({ selected }: { selected: SearchOption['value'] }) => {
+    console.log('render searchbar');
     switch (selected.search) {
       case 'cities':
         return (
@@ -219,7 +221,6 @@ export const OmniBar = (props: OmniBarProps) => {
             }
             map={selected.map}
             onSelect={onCompanySelect}
-            visibleStates={props.visibleStates}
             visibleStateDlcs={props.visibleStateDlcs}
           />
         );
