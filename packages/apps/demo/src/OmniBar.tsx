@@ -17,7 +17,7 @@ import type { CityOption } from './CitySearchBar';
 import { CitySearchBar } from './CitySearchBar';
 import type { CompanyOption } from './CompanySearchBar';
 import { CompanySearchBar } from './CompanySearchBar';
-import type { SearchOption } from './SearchSelect';
+import type { SearchOption, SearchTypes } from './SearchSelect';
 import { getSearchOption, SearchSelect } from './SearchSelect';
 
 export const mapCenters = {
@@ -49,9 +49,7 @@ export const OmniBar = (props: OmniBarProps) => {
   const [gameMap, setGameMap] = useState<SearchOption>(
     getSearchOption(
       localStorage.getItem('tm-map') === 'europe' ? 'europe' : 'usa',
-      localStorage.getItem('tm-search') === 'achievements'
-        ? 'achievements'
-        : 'cities',
+      toSearchOption(localStorage.getItem('tm-search')),
     ),
   );
   const onMapSelect = React.useCallback(
@@ -254,6 +252,17 @@ export const OmniBar = (props: OmniBarProps) => {
     </div>
   );
 };
+
+function toSearchOption(maybeString: string | null): SearchTypes {
+  if (
+    maybeString === 'achievements' ||
+    maybeString === 'cities' ||
+    maybeString === 'companies'
+  ) {
+    return maybeString;
+  }
+  return 'cities';
+}
 
 function delta(lngA: number, lngB: number) {
   const a = toRadians(lngA) / 2;

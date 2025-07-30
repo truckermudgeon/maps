@@ -4,7 +4,7 @@ import { assertExists } from '@truckermudgeon/base/assert';
 import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
 import groupBy from 'object.groupby';
 
-type SearchTypes = 'cities' | 'companies' | 'achievements';
+export type SearchTypes = 'cities' | 'companies' | 'achievements';
 
 export type SearchOption = Readonly<
   {
