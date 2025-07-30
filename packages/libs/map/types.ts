@@ -140,6 +140,13 @@ export type LabeledPoi = BasePoi &
         dlcGuard: number;
         nodeUid: bigint;
       }
+    | {
+        type: 'facility';
+        icon: 'dealer_ico';
+        prefabUid: bigint;
+        prefabPath: string;
+        label: string;
+      }
   >;
 
 export type FacilityIcon =
@@ -161,7 +168,7 @@ type UnlabeledPoi = BasePoi &
       }
     | {
         type: 'facility';
-        icon: Exclude<FacilityIcon, 'parking_ico'>;
+        icon: Exclude<FacilityIcon, 'parking_ico' | 'dealer_ico'>;
         prefabUid: bigint;
         prefabPath: string;
       }
