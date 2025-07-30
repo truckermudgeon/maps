@@ -403,7 +403,8 @@ export const isLabeledPoi = (poi: Poi): poi is LabeledPoi =>
   poi.type === 'landmark' ||
   poi.type === 'viewpoint' ||
   poi.type === 'ferry' ||
-  poi.type === 'train';
+  poi.type === 'train' ||
+  (poi.type === 'facility' && poi.icon === 'dealer_ico');
 
 type Enumerate<
   N extends number,
