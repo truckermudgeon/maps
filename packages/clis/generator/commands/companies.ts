@@ -5,6 +5,7 @@ import type { Quadtree } from 'd3-quadtree';
 import { quadtree } from 'd3-quadtree';
 import path from 'path';
 import type { Argv, BuilderArguments } from 'yargs';
+import { dlcGuardMapDataKeys, normalizeDlcGuards } from '../dlc-guards';
 import { createNormalizeFeature } from '../geo-json/normalize';
 import { createIsoA2Map } from '../geo-json/populated-places';
 import { logger } from '../logger';
@@ -58,9 +59,18 @@ export function handler(args: BuilderArguments<typeof builder>) {
   const tokenLut: Record<string, string> = {};
   const countryIsoA2 = createIsoA2Map();
   const companyFeatures = [args.map].flat().flatMap(map => {
-    const { companies, pois, ...context } = readMapData(args.inputDir, map, {
-      mapDataKeys: ['companies', 'pois', 'cities', 'countries', 'prefabs'],
-    });
+    const { companies, pois, ...context } = normalizeDlcGuards(
+      readMapData(args.inputDir, map, {
+        mapDataKeys: [
+          'companies',
+          'pois',
+          'cities',
+          'countries',
+          'prefabs',
+          ...dlcGuardMapDataKeys,
+        ],
+      }),
+    );
 
     const mapCountryCode = (code: string) =>
       map === 'europe' ? countryIsoA2.get(code) : code;
