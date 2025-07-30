@@ -1,13 +1,12 @@
 /* Tweaks to MapLibre styling to make it more similar to Joy UI */
 
 html[data-joy-color-scheme='dark'] .maplibregl-ctrl-attrib.maplibregl-compact {
-  background-color: #000;
+  background-color: #4448;
 }
 
 html[data-joy-color-scheme='dark']
-  .maplibregl-ctrl-attrib.maplibregl-compact-show
-  .maplibregl-ctrl-attrib-button {
-  background-color: #444;
+  .maplibregl-ctrl-attrib.maplibregl-compact-show {
+  color: unset;
 }
 
 html[data-joy-color-scheme='dark']
