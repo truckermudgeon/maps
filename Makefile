@@ -74,6 +74,12 @@ $(GENERATOR_OUT_DIR)/cities.geojson: $(ATS_PARSER_JSON_FILES) $(ETS2_PARSER_JSON
 
 MAP_FILES += $(GENERATOR_OUT_DIR)/cities.geojson
 
+# Create combined ATS and ETS2 companies.geojson file
+$(GENERATOR_OUT_DIR)/companies.geojson: $(ATS_PARSER_JSON_FILES) $(ETS2_PARSER_JSON_FILES)
+	npx generator companies -m usa -m europe -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR)
+
+MAP_FILES += $(GENERATOR_OUT_DIR)/companies.geojson
+
 
 # Create ATS and ETS2 achievements.geojson files
 $(GENERATOR_OUT_DIR)/ats-achievements.geojson: $(ATS_PARSER_JSON_FILES)
