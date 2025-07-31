@@ -1,6 +1,7 @@
 import { assertExists } from '@truckermudgeon/base/assert';
 import { distance } from '@truckermudgeon/base/geom';
 import type { CompanyFeature, CompanyItem } from '@truckermudgeon/map/types';
+import * as turf from '@turf/helpers';
 import type { Quadtree } from 'd3-quadtree';
 import { quadtree } from 'd3-quadtree';
 import path from 'path';
@@ -146,18 +147,11 @@ function toCompanyFeature(
   const city = assertExists(context.cities.get(company.cityToken));
   const country = assertExists(context.countries.get(city.countryToken));
 
-  return {
-    type: 'Feature',
-    geometry: {
-      type: 'Point',
-      coordinates: [poi.x, poi.y],
-    },
-    properties: {
-      map: context.map,
-      token: poi.icon,
-      countryCode: context.mapCountryCode(country.code),
-      cityToken: city.token,
-      dlcGuard: prefab.dlcGuard,
-    },
-  };
+  return turf.point([poi.x, poi.y], {
+    map: context.map,
+    token: poi.icon,
+    countryCode: context.mapCountryCode(country.code),
+    cityToken: city.token,
+    dlcGuard: prefab.dlcGuard,
+  });
 }
