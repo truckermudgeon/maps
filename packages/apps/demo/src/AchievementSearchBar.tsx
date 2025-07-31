@@ -14,7 +14,6 @@ import type {
 } from '@truckermudgeon/map/constants';
 import { toAtsDlcGuards } from '@truckermudgeon/map/constants';
 import type { AchievementFeature } from '@truckermudgeon/map/types';
-import { type StateCode } from '@truckermudgeon/ui';
 import type { ReactElement } from 'react';
 import { useEffect, useState } from 'react';
 
@@ -53,7 +52,6 @@ type SearchBarProps = {
 } & (
   | {
       map: 'usa';
-      visibleStates: Set<StateCode>;
       visibleStateDlcs: Set<AtsSelectableDlc>;
     }
   | {

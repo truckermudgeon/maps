@@ -5,6 +5,7 @@ import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import * as achievements from './commands/achievements';
 import * as cities from './commands/cities';
+import * as companies from './commands/companies';
 import * as contours from './commands/contours';
 import * as ets2Villages from './commands/ets2-villages';
 import * as extraLabels from './commands/extra-labels';
@@ -20,6 +21,7 @@ async function main() {
     .command(map)
     .command(prefabCurves)
     .command(cities)
+    .command(companies)
     .command(ets2Villages)
     .command(extraLabels)
     .command(footprints)

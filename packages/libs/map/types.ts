@@ -716,6 +716,17 @@ export type ScopedCountryFeature = GeoJSON.Feature<
   { type: 'country'; map: 'usa' | 'europe'; code: string; name: string }
 >;
 
+export type CompanyFeature = GeoJSON.Feature<
+  GeoJSON.Point,
+  {
+    map: 'usa' | 'europe';
+    token: string;
+    countryCode: string;
+    cityToken: string;
+    dlcGuard: number;
+  }
+>;
+
 // Routing
 
 /**
