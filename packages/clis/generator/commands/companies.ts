@@ -135,9 +135,9 @@ function toCompanyFeature(
   },
 ): CompanyFeature {
   const poi = assertExists(context.companyQuadtree.find(company.x, company.y));
-  if (distance(poi, company) > 50) {
+  if (distance(poi, company) > 0) {
     logger.warn(
-      'poi is > 20 meters away from company item',
+      'poi is at different location from company item',
       `0x${company.uid.toString(16)}`,
     );
   }
