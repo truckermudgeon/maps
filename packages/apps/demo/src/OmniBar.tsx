@@ -127,73 +127,56 @@ export const OmniBar = (props: OmniBarProps) => {
   );
 
   const [markers, setMarkers] = useState<Marker[]>([]);
+  const createMarkersOnOptionCallback = <
+    T extends {
+      features: { coordinates: [number, number]; dlcGuard: number }[];
+    },
+  >(
+    setOption: React.Dispatch<React.SetStateAction<T | null>>,
+  ) =>
+    React.useCallback(
+      (
+        option: T | null,
+        options: { enableFitBounds: boolean } = { enableFitBounds: true },
+      ) => {
+        markers.forEach(marker => marker.remove());
+        setOption(option);
+        if (map == null || option == null) {
+          return;
+        }
+
+        // add markers for all points
+        const enabledDlcGuards = toAtsDlcGuards(props.visibleStateDlcs);
+        const newMarkers = option.features
+          .filter(f => enabledDlcGuards.has(f.dlcGuard as AtsDlcGuard))
+          .map(({ coordinates }) =>
+            new Marker().setLngLat(coordinates).addTo(map.getMap()),
+          );
+        setMarkers(newMarkers);
+        if (newMarkers.length && options.enableFitBounds) {
+          const extent = getExtent(
+            newMarkers.map(m => m.getLngLat().toArray()),
+          );
+          const sw = [extent[0], extent[1]] as [number, number];
+          const ne = [extent[2], extent[3]] as [number, number];
+          map.fitBounds([sw, ne], { curve: 1, padding: 100, maxZoom: 9 });
+        }
+      },
+      [map, markers, setOption, setMarkers, props.visibleStateDlcs],
+    );
+
   const [achievementOption, setAchievementOption] =
     useState<AchievementOption | null>(null);
-  const onAchievementSelect = React.useCallback(
-    (
-      option: AchievementOption | null,
-      options: { enableFitBounds: boolean } = { enableFitBounds: true },
-    ) => {
-      markers.forEach(marker => marker.remove());
-      setAchievementOption(option);
-      if (map == null || option == null) {
-        return;
-      }
-
-      // add markers for all points
-      const enabledDlcGuards = toAtsDlcGuards(props.visibleStateDlcs);
-      const newMarkers = option.features
-        .filter(f => enabledDlcGuards.has(f.dlcGuard as AtsDlcGuard))
-        .map(({ coordinates }) =>
-          new Marker().setLngLat(coordinates).addTo(map.getMap()),
-        );
-      setMarkers(newMarkers);
-      if (newMarkers.length && options.enableFitBounds) {
-        const extent = getExtent(newMarkers.map(m => m.getLngLat().toArray()));
-        const sw = [extent[0], extent[1]] as [number, number];
-        const ne = [extent[2], extent[3]] as [number, number];
-        map.fitBounds([sw, ne], { curve: 1, padding: 100, maxZoom: 9 });
-      }
-    },
-    [map, markers, setAchievementOption, setMarkers, props.visibleStates],
-  );
-
+  const onAchievementSelect =
+    createMarkersOnOptionCallback(setAchievementOption);
   useEffect(() => {
     onAchievementSelect(achievementOption, { enableFitBounds: false });
-  }, [achievementOption, props.visibleStates]);
+  }, [achievementOption, props.visibleStateDlcs]);
 
   const [companyOption, setCompanyOption] = useState<CompanyOption | null>(
     null,
   );
-  const onCompanySelect = React.useCallback(
-    (
-      option: CompanyOption | null,
-      options: { enableFitBounds: boolean } = { enableFitBounds: true },
-    ) => {
-      markers.forEach(marker => marker.remove());
-      setCompanyOption(option);
-      if (map == null || option == null) {
-        return;
-      }
-
-      // add markers for all points
-      const enabledDlcGuards = toAtsDlcGuards(props.visibleStateDlcs);
-      const newMarkers = option.features
-        .filter(f => enabledDlcGuards.has(f.dlcGuard as AtsDlcGuard))
-        .map(({ coordinates }) =>
-          new Marker().setLngLat(coordinates).addTo(map.getMap()),
-        );
-      setMarkers(newMarkers);
-      if (newMarkers.length && options.enableFitBounds) {
-        const extent = getExtent(newMarkers.map(m => m.getLngLat().toArray()));
-        const sw = [extent[0], extent[1]] as [number, number];
-        const ne = [extent[2], extent[3]] as [number, number];
-        map.fitBounds([sw, ne], { curve: 1, padding: 100, maxZoom: 9 });
-      }
-    },
-    [map, markers, setCompanyOption, setMarkers, props.visibleStateDlcs],
-  );
-
+  const onCompanySelect = createMarkersOnOptionCallback(setCompanyOption);
   useEffect(() => {
     onCompanySelect(companyOption, { enableFitBounds: false });
   }, [companyOption, props.visibleStateDlcs]);
@@ -267,7 +250,6 @@ const SearchBar = ({
           }
           map={selected.map}
           onSelect={onAchievementSelect}
-          visibleStates={visibleStates}
           visibleStateDlcs={visibleStateDlcs}
         />
       );
