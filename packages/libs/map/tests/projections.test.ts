@@ -1,3 +1,4 @@
+import type { Position } from '@truckermudgeon/base/geom';
 import {
   fromAtsCoordsToWgs84,
   fromEts2CoordsToWgs84,
@@ -5,39 +6,33 @@ import {
   fromWgs84ToEts2Coords,
 } from '../projections';
 
-describe('fromAtsCoordsToWgs84', () => {
-  it('converts game coords to longitude/latitude', () => {
-    // somewhere near Las Vegas, NV
-    const lonLat = fromAtsCoordsToWgs84([-85_672, 7870]);
-    expect(lonLat).toEqual([-114.92606131601985, 36.00959614633237]);
-  });
+describe('ATS', () => {
+  // somewhere near Las Vegas, NV
+  const lvGame: Position = [-85_672, 7870];
+  const lvLonLat: Position = [-114.92606131601985, 36.00959614633237];
 
-  it('converts longitude/latitude to game coords', () => {
-    const xy = fromWgs84ToAtsCoords([-114.92606131601985, 36.00959614633237]);
-    expect(xy).toEqual([-85_672, 7870]);
+  it('converts game coords to longitude/latitude and back', () => {
+    expect(fromAtsCoordsToWgs84(lvGame)).toEqual(lvLonLat);
+    expect(fromWgs84ToAtsCoords(lvLonLat)).toEqual(lvGame);
   });
 });
 
-describe('fromEts2CoordsToWgs84', () => {
-  it('converts UK game coords to longitude/latitude', () => {
-    // somewhere south of London, England
-    const lonLat = fromEts2CoordsToWgs84([-40_169, -10_685]);
-    expect(lonLat).toEqual([-0.5943602137854889, 51.29443960532431]);
-  });
+describe('ETS', () => {
+  // somewhere south of London, England
+  const londonGame: Position = [-40_169, -10_685];
+  const londonLonLat: Position = [-0.5943602137854889, 51.29443960532431];
 
-  it('converts longitude/latitude to UK game coords', () => {
-    const xy = fromWgs84ToEts2Coords([-0.5943602137854889, 51.29443960532431]);
-    expect(xy).toEqual([-40_169, -10_685]);
-  });
+  // somewhere between Chania and Heraklion, Greece
+  const greeceGame: Position = [62_276, 84_880];
+  const greeceLonLat: Position = [24.63877984644102, 35.391305791648065];
 
-  it('converts non-UK game coords to longitude/latitude', () => {
-    // somewhere between Chania and Heraklion, Greece
-    const lonLat = fromEts2CoordsToWgs84([62_276, 84_880]);
-    expect(lonLat).toEqual([24.63877984644102, 35.391305791648065]);
+  it('converts UK game coords to longitude/latitude and back', () => {
+    expect(fromEts2CoordsToWgs84(londonGame)).toEqual(londonLonLat);
+    expect(fromWgs84ToEts2Coords(londonLonLat)).toEqual(londonGame);
   });
 
   it('converts longitude/latitude to non-UK game coords', () => {
-    const xy = fromWgs84ToEts2Coords([24.63877984644102, 35.391305791648065]);
-    expect(xy).toEqual([62_276, 84_880]);
+    expect(fromEts2CoordsToWgs84(greeceGame)).toEqual(greeceLonLat);
+    expect(fromWgs84ToEts2Coords(greeceLonLat)).toEqual(greeceGame);
   });
 });
