@@ -32,6 +32,14 @@ export const fromAtsCoordsToWgs84 = ([x, y]: Position): Position => {
   return fromWgs84ToAtsConverter.inverse(lccCoords);
 };
 
+export const fromWgs84ToAtsCoords = ([lon, lat]: Position): Position => {
+  const unscaled = fromWgs84ToAtsConverter.forward([lon, lat]);
+  return [
+    unscaled[0] / atsDefData.mapFactor[1] / lengthOfDegree,
+    unscaled[1] / atsDefData.mapFactor[0] / lengthOfDegree,
+  ].map(v => Number(v.toPrecision(10))) as [number, number];
+};
+
 // from def/climate.sii
 const ets2DefData = {
   mapProjection: 'lambert_conic',
@@ -74,4 +82,34 @@ export const fromEts2CoordsToWgs84 = ([x, y]: Position): Position => {
     y * ets2DefData.mapFactor[0] * lengthOfDegree, // ~19.078 ┘
   ];
   return fromWgs84ToEts2Converter.inverse(lccCoords);
+};
+
+export const fromWgs84ToEts2Coords = ([lon, lat]: Position): Position => {
+  const unscaled = fromWgs84ToEts2Converter.forward([lon, lat]);
+  let [x, y] = [
+    unscaled[0] / ets2DefData.mapFactor[1] / lengthOfDegree,
+    unscaled[1] / ets2DefData.mapFactor[0] / lengthOfDegree,
+  ] as [number, number];
+
+  // UK content is authored at a slightly larger scale (~14.37 vs. ~19.15)
+  const ukScaleFactor = 0.75;
+  // HACK: treat all coords up-and-to-the-left of Calais (-31_100, -5500) as UK
+  // coords. Maybe there's a better point to pick than Calais, but I couldn't
+  // find any clues in the def files.
+  const calais = [-31100, -5500];
+
+  const unUkX = x / ukScaleFactor - calais[0] / 2;
+  const unUkY = y / ukScaleFactor - calais[1] / 2;
+  const isUk =
+    unUkX * ukScaleFactor < calais[0] && //
+    unUkX * ukScaleFactor < calais[1];
+  if (isUk) {
+    x = unUkX;
+    y = unUkY;
+  }
+
+  return [
+    x + ets2DefData.mapOffset[0], //
+    y + ets2DefData.mapOffset[1],
+  ].map(v => Number(v.toPrecision(10))) as [number, number];
 };

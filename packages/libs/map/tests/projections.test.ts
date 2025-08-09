@@ -1,10 +1,20 @@
-import { fromAtsCoordsToWgs84, fromEts2CoordsToWgs84 } from '../projections';
+import {
+  fromAtsCoordsToWgs84,
+  fromEts2CoordsToWgs84,
+  fromWgs84ToAtsCoords,
+  fromWgs84ToEts2Coords,
+} from '../projections';
 
 describe('fromAtsCoordsToWgs84', () => {
   it('converts game coords to longitude/latitude', () => {
     // somewhere near Las Vegas, NV
     const lonLat = fromAtsCoordsToWgs84([-85_672, 7870]);
     expect(lonLat).toEqual([-114.92606131601985, 36.00959614633237]);
+  });
+
+  it('converts longitude/latitude to game coords', () => {
+    const xy = fromWgs84ToAtsCoords([-114.92606131601985, 36.00959614633237]);
+    expect(xy).toEqual([-85_672, 7870]);
   });
 });
 
@@ -15,9 +25,19 @@ describe('fromEts2CoordsToWgs84', () => {
     expect(lonLat).toEqual([-0.5943602137854889, 51.29443960532431]);
   });
 
+  it('converts longitude/latitude to UK game coords', () => {
+    const xy = fromWgs84ToEts2Coords([-0.5943602137854889, 51.29443960532431]);
+    expect(xy).toEqual([-40_169, -10_685]);
+  });
+
   it('converts non-UK game coords to longitude/latitude', () => {
     // somewhere between Chania and Heraklion, Greece
     const lonLat = fromEts2CoordsToWgs84([62_276, 84_880]);
     expect(lonLat).toEqual([24.63877984644102, 35.391305791648065]);
+  });
+
+  it('converts longitude/latitude to non-UK game coords', () => {
+    const xy = fromWgs84ToEts2Coords([24.63877984644102, 35.391305791648065]);
+    expect(xy).toEqual([62_276, 84_880]);
   });
 });
