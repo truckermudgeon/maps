@@ -19,6 +19,7 @@ import MapGl, {
   NavigationControl,
 } from 'react-map-gl/maplibre';
 import { useSearchParams } from 'react-router-dom';
+import { ContextMenu } from './ContextMenu';
 import './Demo.css';
 import { createListProps, Legend } from './Legend';
 import { ModeControl } from './ModeControl';
@@ -154,6 +155,7 @@ const Demo = (props: { tileRootUrl: string }) => {
         }}
         atsDlcs={atsDlcsListProps}
       />
+      <ContextMenu />
     </MapGl>
   );
 };
