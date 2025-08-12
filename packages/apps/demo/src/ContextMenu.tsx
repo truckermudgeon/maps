@@ -17,7 +17,7 @@ import { assertExists } from '@truckermudgeon/base/assert';
 import { UnreachableError } from '@truckermudgeon/base/precon';
 import { fromWgs84ToAtsCoords } from '@truckermudgeon/map/projections';
 import type { MapLayerMouseEvent } from 'maplibre-gl';
-import { memo, useCallback, useEffect, useState } from 'react';
+import { Fragment, memo, useCallback, useEffect, useState } from 'react';
 import { useMap } from 'react-map-gl/maplibre';
 
 interface ClickContext {
@@ -32,6 +32,8 @@ const toFixed = (f: number, tuple: [number, number]): [number, number] =>
   tuple.map(v => Number(v.toFixed(f))) as [number, number];
 
 export const ContextMenu = () => {
+  console.log('render ContextMenu');
+
   const map = assertExists(useMap().current);
   const [clickContext, setClickContext] = useState<ClickContext | null>(null);
   const [showClipboardToast, setShowClipboardToast] = useState<boolean>(false);
@@ -68,39 +70,41 @@ export const ContextMenu = () => {
     };
   };
 
-  const closeContextMenu = () => setClickContext(null);
-
-  const showContextMenu = (e: MapLayerMouseEvent) => {
-    const { clientX, clientY } = e.originalEvent;
-    const lngLat = e.lngLat.toArray();
-    const xz = fromWgs84ToAtsCoords(lngLat);
-
-    setClickContext({
-      position: {
-        lngLat: toFixed(4, lngLat),
-        xz: toFixed(1, xz),
-      },
-      anchorEl: {
-        getBoundingClientRect: () => ({
-          width: 0,
-          height: 0,
-          top: clientY,
-          right: clientX,
-          bottom: clientY,
-          left: clientX,
-        }),
-      } as VirtualElement,
-    });
-
-    void map.once('move', closeContextMenu);
-  };
+  const closeContextMenu = useCallback(() => {
+    setClickContext(null);
+    map.off('move', closeContextMenu);
+  }, []);
 
   useEffect(() => {
+    const showContextMenu = (e: MapLayerMouseEvent) => {
+      const { clientX, clientY } = e.originalEvent;
+      const lngLat = e.lngLat.toArray();
+      const xz = fromWgs84ToAtsCoords(lngLat);
+
+      setClickContext({
+        position: {
+          lngLat: toFixed(4, lngLat),
+          xz: toFixed(1, xz),
+        },
+        anchorEl: {
+          getBoundingClientRect: () => ({
+            width: 0,
+            height: 0,
+            top: clientY,
+            right: clientX,
+            bottom: clientY,
+            left: clientX,
+          }),
+        } as VirtualElement,
+      });
+
+      console.log('installing move handler');
+      void map.once('move', closeContextMenu);
+    };
+
     map.on('contextmenu', showContextMenu);
     return () => void map.off('contextmenu', showContextMenu);
   }, [map]);
-
-  console.log('render ContextMenu');
 
   useEffect(() => {
     console.log('measuring points effect');
@@ -194,7 +198,6 @@ export const ContextMenu = () => {
         </Menu>
       </div>
       <MeasuringToast
-        map={map}
         open={measuring}
         close={closeMeasuringToast}
         measuringPoints={measuringPoints}
@@ -212,19 +215,18 @@ const LabeledCoordinates = (props: {
   coords: Record<string, number>;
 }) => {
   return Object.entries(props.coords).map(([label, value], index) => (
-    <>
+    <Fragment key={label}>
       {index > 0 ? <span>&nbsp;&nbsp;</span> : null}
       <Chip size={'sm'} variant={'plain'} sx={{ opacity: 0.4 }}>
         {label}
       </Chip>
       {value.toLocaleString()}
-    </>
+    </Fragment>
   ));
 };
 
 const MeasuringToast = memo(
   (props: {
-    map: NonNullable<ReturnType<typeof useMap>['current']>;
     measuringPoints: [lon: number, lat: number][];
     open: boolean;
     close: () => void;
@@ -269,7 +271,7 @@ const MeasuringToast = memo(
 
 const CopiedToClipboardToast = memo(
   (props: { open: boolean; close: (reason: SnackbarCloseReason) => void }) => {
-    console.log('render clipboard toast', props);
+    console.log('render clipboard toast');
     return (
       <Snackbar
         open={props.open}
