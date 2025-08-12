@@ -1,4 +1,5 @@
 import { Close, ContentCopy, Public, SportsEsports } from '@mui/icons-material';
+import type { SnackbarCloseReason } from '@mui/joy';
 import {
   Chip,
   IconButton,
@@ -16,7 +17,7 @@ import { assertExists } from '@truckermudgeon/base/assert';
 import { UnreachableError } from '@truckermudgeon/base/precon';
 import { fromWgs84ToAtsCoords } from '@truckermudgeon/map/projections';
 import type { MapLayerMouseEvent } from 'maplibre-gl';
-import { useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { useMap } from 'react-map-gl/maplibre';
 
 interface ClickContext {
@@ -31,13 +32,24 @@ const toFixed = (f: number, tuple: [number, number]): [number, number] =>
   tuple.map(v => Number(v.toFixed(f))) as [number, number];
 
 export const ContextMenu = () => {
-  const mapRef = useMap();
+  const map = assertExists(useMap().current);
   const [clickContext, setClickContext] = useState<ClickContext | null>(null);
   const [showClipboardToast, setShowClipboardToast] = useState<boolean>(false);
   const [measuring, setMeasuring] = useState<boolean>(false);
   const [measuringPoints, setMeasuringPoints] = useState<
     [lon: number, lat: number][]
   >([]);
+
+  const closeClipboardToast = useCallback((reason: SnackbarCloseReason) => {
+    if (reason !== 'clickaway') {
+      setShowClipboardToast(false);
+    }
+  }, []);
+
+  const closeMeasuringToast = useCallback(() => {
+    setMeasuring(false);
+    setMeasuringPoints([]);
+  }, []);
 
   const createCopyHandler = (mode: 'lngLat' | 'xz') => {
     return () => {
@@ -80,19 +92,22 @@ export const ContextMenu = () => {
       } as VirtualElement,
     });
 
-    const map = assertExists(mapRef.current);
     void map.once('move', closeContextMenu);
   };
 
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map) {
-      return;
-    }
-
     map.on('contextmenu', showContextMenu);
     return () => void map.off('contextmenu', showContextMenu);
-  }, [mapRef, setClickContext]);
+  }, [map]);
+
+  console.log('render ContextMenu');
+
+  useEffect(() => {
+    console.log('measuring points effect');
+    return () => {
+      console.log('measuring points cleanup');
+    };
+  }, [map, measuringPoints]);
 
   return (
     <>
@@ -108,8 +123,9 @@ export const ContextMenu = () => {
         }}
         onMouseDown={e => {
           if (e.currentTarget === e.target) {
-            // only close if user mousedowns on this click-away div. this prevents
-            // us from prematurely closing on mousedowns to menu items.
+            // only close if user mousedowns on this click-away div, because
+            // we don't want bubbled events (e.g., when a mousedown happens on
+            // a descendant <MenuItem>) to close the context menu.
             closeContextMenu();
           }
         }}
@@ -130,15 +146,12 @@ export const ContextMenu = () => {
               >
                 <Public />
                 <ListItemContent>
-                  <Chip size={'sm'} variant={'plain'} sx={{ opacity: 0.4 }}>
-                    lat
-                  </Chip>
-                  {clickContext.position.lngLat[1].toLocaleString()}
-                  <span>&nbsp;&nbsp;</span>
-                  <Chip size={'sm'} variant={'plain'} sx={{ opacity: 0.4 }}>
-                    lng
-                  </Chip>
-                  {clickContext.position.lngLat[0].toLocaleString()}
+                  <LabeledCoordinates
+                    coords={{
+                      lat: clickContext.position.lngLat[1],
+                      lng: clickContext.position.lngLat[0],
+                    }}
+                  />
                 </ListItemContent>
                 <ContentCopy sx={{ ml: 1 }} />
               </MenuItem>
@@ -148,26 +161,18 @@ export const ContextMenu = () => {
               >
                 <SportsEsports />
                 <ListItemContent>
-                  <Chip size={'sm'} variant={'plain'} sx={{ opacity: 0.4 }}>
-                    x
-                  </Chip>
-                  {clickContext.position.xz[0].toLocaleString()}
-                  <span>&nbsp;&nbsp;</span>
-                  <Chip size={'sm'} variant={'plain'} sx={{ opacity: 0.4 }}>
-                    z
-                  </Chip>
-                  {clickContext.position.xz[1].toLocaleString()}
+                  <LabeledCoordinates
+                    coords={{
+                      x: clickContext.position.xz[0],
+                      z: clickContext.position.xz[1],
+                    }}
+                  />
                 </ListItemContent>
                 <ContentCopy sx={{ ml: 1 }} />
               </MenuItem>
               <ListDivider />
               {measuring ? (
-                <MenuItem
-                  onClick={() => {
-                    setMeasuring(false);
-                    setMeasuringPoints([]);
-                  }}
-                >
+                <MenuItem onClick={closeMeasuringToast}>
                   Clear measurement
                 </MenuItem>
               ) : (
@@ -188,8 +193,46 @@ export const ContextMenu = () => {
           )}
         </Menu>
       </div>
-      <Snackbar
+      <MeasuringToast
+        map={map}
         open={measuring}
+        close={closeMeasuringToast}
+        measuringPoints={measuringPoints}
+      />
+      <CopiedToClipboardToast
+        open={showClipboardToast}
+        close={closeClipboardToast}
+      />
+    </>
+  );
+};
+
+const LabeledCoordinates = (props: {
+  /** map of component label to value */
+  coords: Record<string, number>;
+}) => {
+  return Object.entries(props.coords).map(([label, value], index) => (
+    <>
+      {index > 0 ? <span>&nbsp;&nbsp;</span> : null}
+      <Chip size={'sm'} variant={'plain'} sx={{ opacity: 0.4 }}>
+        {label}
+      </Chip>
+      {value.toLocaleString()}
+    </>
+  ));
+};
+
+const MeasuringToast = memo(
+  (props: {
+    map: NonNullable<ReturnType<typeof useMap>['current']>;
+    measuringPoints: [lon: number, lat: number][];
+    open: boolean;
+    close: () => void;
+  }) => {
+    console.log('render measuring toast');
+    return (
+      <Snackbar
+        open={props.open}
         anchorOrigin={{
           vertical: 'bottom',
           horizontal: 'center',
@@ -197,14 +240,14 @@ export const ContextMenu = () => {
         size={'sm'}
         sx={{ alignItems: 'baseline', mb: 4 }}
         endDecorator={
-          <IconButton onClick={() => setMeasuring(false)}>
+          <IconButton onClick={props.close}>
             <Close />
           </IconButton>
         }
       >
         <Stack gap={1}>
           <Typography level={'title-md'}>Measure distance</Typography>
-          {measuringPoints.length <= 1 ? (
+          {props.measuringPoints.length <= 1 ? (
             <Typography level={'body-sm'}>
               Click on the map to trace a path you want to measure
             </Typography>
@@ -220,9 +263,17 @@ export const ContextMenu = () => {
           )}
         </Stack>
       </Snackbar>
+    );
+  },
+);
+
+const CopiedToClipboardToast = memo(
+  (props: { open: boolean; close: (reason: SnackbarCloseReason) => void }) => {
+    console.log('render clipboard toast', props);
+    return (
       <Snackbar
-        open={showClipboardToast}
-        onClose={() => setShowClipboardToast(false)}
+        open={props.open}
+        onClose={(_, reason) => props.close(reason)}
         autoHideDuration={3000}
         anchorOrigin={{
           vertical: 'bottom',
@@ -230,13 +281,13 @@ export const ContextMenu = () => {
         }}
         size={'sm'}
         endDecorator={
-          <IconButton onClick={() => setShowClipboardToast(false)}>
+          <IconButton onClick={() => props.close('escapeKeyDown')}>
             <Close />
           </IconButton>
         }
       >
         Copied to clipboard
       </Snackbar>
-    </>
-  );
-};
+    );
+  },
+);
