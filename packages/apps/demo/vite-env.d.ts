@@ -6,6 +6,7 @@ interface ViteTypeOptions {
 
 interface ImportMetaEnv {
   readonly VITE_TILE_ROOT_URL: string;
+  readonly VITE_PIXEL_ROOT_URL: string;
 }
 
 interface ImportMeta {

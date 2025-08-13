@@ -8,15 +8,23 @@ import {
   createRoutesFromElements,
 } from 'react-router-dom';
 import Demo from './Demo';
-import RoutesDemo from './RoutesDemo';
 import './index.css';
+import RoutesDemo from './RoutesDemo';
+import StreetViewDemo from './StreetViewDemo';
 
 const tileRootUrl = import.meta.env.VITE_TILE_ROOT_URL;
+const pixelRootUrl = import.meta.env.VITE_PIXEL_ROOT_URL;
 
 const router = createBrowserRouter(
   createRoutesFromElements([
     <Route path="/" element={<Demo tileRootUrl={tileRootUrl} />} />,
     <Route path="routes" element={<RoutesDemo tileRootUrl={tileRootUrl} />} />,
+    <Route
+      path="street-view"
+      element={
+        <StreetViewDemo tileRootUrl={tileRootUrl} pixelRootUrl={pixelRootUrl} />
+      }
+    />,
   ]),
 );
 
