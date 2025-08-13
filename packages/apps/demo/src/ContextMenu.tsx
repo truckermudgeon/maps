@@ -184,10 +184,26 @@ export const ContextMenu = () => {
         layers: ['measure-points'],
       });
       // UI indicator for clicking/hovering a point on the map
-      map.getCanvas().style.cursor = features.length ? 'pointer' : 'crosshair';
+      const inBounds = withinExtent(
+        e.lngLat.toArray(),
+        measuring === 'ats' ? extents.ats : extents.ets2,
+      );
+      map.getCanvas().style.cursor = inBounds
+        ? features.length
+          ? 'pointer'
+          : 'crosshair'
+        : 'not-allowed';
     };
 
     const addOrDeletePoint = (e: MapMouseEvent) => {
+      const inBounds = withinExtent(
+        e.lngLat.toArray(),
+        measuring === 'ats' ? extents.ats : extents.ets2,
+      );
+      if (!inBounds) {
+        return;
+      }
+
       const features = map.queryRenderedFeatures(e.point, {
         layers: ['measure-points'],
       });
