@@ -148,6 +148,15 @@ export function getExtent(
   return [minX, minY, maxX, maxY];
 }
 
+export function withinExtent(
+  point: [x: number, y: number],
+  extent: Extent,
+): boolean {
+  const [x, y] = point;
+  const [minX, minY, maxX, maxY] = extent;
+  return minX <= x && x <= maxX && minY <= y && y <= maxY;
+}
+
 /**
  * Normalizes an angle between (-Pi, Pi]
  * @param theta

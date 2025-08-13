@@ -14,8 +14,14 @@ import {
 } from '@mui/joy';
 import type { VirtualElement } from '@popperjs/core/lib/types';
 import { assert, assertExists } from '@truckermudgeon/base/assert';
+import type { Extent } from '@truckermudgeon/base/geom';
+import { center, withinExtent } from '@truckermudgeon/base/geom';
 import { UnreachableError } from '@truckermudgeon/base/precon';
-import { fromWgs84ToAtsCoords } from '@truckermudgeon/map/projections';
+import {
+  fromWgs84ToAtsCoords,
+  fromWgs84ToEts2Coords,
+} from '@truckermudgeon/map/projections';
+import { distance } from '@turf/distance';
 import type { GeoJSON } from 'geojson';
 import type {
   GeoJSONSource,
@@ -27,23 +33,28 @@ import { useMap } from 'react-map-gl/maplibre';
 
 interface ClickContext {
   anchorEl: VirtualElement;
-  position?: {
+  closestGame: 'ats' | 'ets2';
+  position: {
     lngLat: [number, number];
-    xz: [number, number];
+    // `xz` is undefined when context menu is brought up at a point that
+    // is not in bounds of the ATS or ETS2 map.
+    xz: [number, number] | undefined;
   };
 }
 
-const toFixed = (f: number, tuple: [number, number]): [number, number] =>
-  tuple.map(v => Number(v.toFixed(f))) as [number, number];
+type PointFeature = GeoJSON.Feature<GeoJSON.Point, { id: number }>;
 
-let idCounter = 0;
-const newId = () => {
-  const stringId = idCounter.toString(36);
-  idCounter++;
-  return stringId;
+// TODO read these values from the .pmtiles files at runtime.
+const extents = {
+  ats: [
+    [-124.477162, 25.767968].map(n => Math.floor(n)),
+    [-88.777474, 49.1223839].map(n => Math.ceil(n)),
+  ].flat() as Extent,
+  ets2: [
+    [-10.025698, 34.897275].map(n => Math.floor(n)),
+    [33.284941, 61.881437].map(n => Math.ceil(n)),
+  ].flat() as Extent,
 };
-
-type PointFeature = GeoJSON.Feature<GeoJSON.Point, { id: string }>;
 
 export const ContextMenu = () => {
   console.log('render ContextMenu');
@@ -70,13 +81,13 @@ export const ContextMenu = () => {
   const createCopyHandler = (mode: 'lngLat' | 'xz') => {
     return () => {
       setShowClipboardToast(true);
-      const pos = assertExists(clickContext?.position);
+      const pos = assertExists(clickContext).position;
       switch (mode) {
         case 'lngLat':
           void navigator.clipboard.writeText(pos.lngLat.join(','));
           break;
         case 'xz':
-          void navigator.clipboard.writeText(pos.xz.join(';'));
+          void navigator.clipboard.writeText(assertExists(pos.xz).join(';'));
           break;
         default:
           throw new UnreachableError(mode);
@@ -93,13 +104,24 @@ export const ContextMenu = () => {
     const showContextMenu = (e: MapLayerMouseEvent) => {
       const { clientX, clientY } = e.originalEvent;
       const lngLat = e.lngLat.toArray();
-      const xz = fromWgs84ToAtsCoords(lngLat);
+      let xz: [number, number] | undefined;
+      if (withinExtent(lngLat, extents.ats)) {
+        xz = fromWgs84ToAtsCoords(lngLat);
+      } else if (withinExtent(lngLat, extents.ets2)) {
+        xz = fromWgs84ToEts2Coords(lngLat);
+      }
+      const position = {
+        lngLat,
+        xz,
+      };
+
+      const atsCenterDelta = distance(lngLat, center(extents.ats));
+      const ets2CenterDelta = distance(lngLat, center(extents.ets2));
+      const closestGame = atsCenterDelta <= ets2CenterDelta ? 'ats' : 'ets2';
 
       setClickContext({
-        position: {
-          lngLat: toFixed(4, lngLat),
-          xz: toFixed(1, xz),
-        },
+        position,
+        closestGame,
         anchorEl: {
           getBoundingClientRect: () => ({
             width: 0,
@@ -127,9 +149,12 @@ export const ContextMenu = () => {
       return;
     }
 
+    let idCounter = 0;
+    const newId = () => idCounter++;
+
     // based on https://maplibre.org/maplibre-gl-js/docs/examples/measure-distances/
 
-    const linestring: GeoJSON.Feature<GeoJSON.LineString, { id: string }> = {
+    const linestring: GeoJSON.Feature<GeoJSON.LineString, { id: number }> = {
       type: 'Feature',
       geometry: {
         type: 'LineString',
@@ -140,21 +165,11 @@ export const ContextMenu = () => {
 
     const geojson: GeoJSON.FeatureCollection<
       GeoJSON.Point | GeoJSON.LineString,
-      { id: string }
+      { id: number }
     > = {
       type: 'FeatureCollection',
       features: [
-        ...measuringPoints.map(
-          point =>
-            ({
-              type: 'Feature',
-              geometry: {
-                type: 'Point',
-                coordinates: point,
-              },
-              properties: { id: newId() },
-            }) as PointFeature,
-        ),
+        ...measuringPoints.map(p => point(p, newId())),
         ...(measuringPoints.length > 1 ? [linestring] : []),
       ],
     };
@@ -180,23 +195,11 @@ export const ContextMenu = () => {
 
       // If a point was clicked, remove it from the map
       if (features.length) {
-        const id = (features[0].properties as { id: string }).id;
-        geojson.features = geojson.features.filter(point => {
-          return point.properties.id !== id;
-        });
+        // assume only PointFeatures are added to `measure-points`.
+        const id = (features[0].properties as { id: number }).id;
+        geojson.features = geojson.features.filter(p => p.properties.id !== id);
       } else {
-        const point: PointFeature = {
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: [e.lngLat.lng, e.lngLat.lat],
-          },
-          properties: {
-            id: newId(),
-          },
-        };
-
-        geojson.features.push(point);
+        geojson.features.push(point(e.lngLat.toArray(), newId()));
       }
 
       if (geojson.features.length > 1) {
@@ -205,8 +208,7 @@ export const ContextMenu = () => {
             maybePoint.geometry.type === 'Point',
             `unexpected non-Point geometry: ${maybePoint.geometry.type}`,
           );
-          const point: PointFeature = maybePoint as PointFeature;
-          return point.geometry.coordinates;
+          return (maybePoint as PointFeature).geometry.coordinates;
         });
 
         geojson.features.push(linestring);
@@ -264,7 +266,7 @@ export const ContextMenu = () => {
           onClick={closeContextMenu}
           onContextMenu={e => e.preventDefault()}
         >
-          {clickContext?.position ? (
+          {clickContext ? (
             <>
               <MenuItem
                 sx={{ justifyContent: 'space-between' }}
@@ -277,49 +279,65 @@ export const ContextMenu = () => {
                       lat: clickContext.position.lngLat[1],
                       lng: clickContext.position.lngLat[0],
                     }}
+                    fractionDigits={4}
                   />
                 </ListItemContent>
                 <ContentCopy sx={{ ml: 1 }} />
               </MenuItem>
-              <MenuItem
-                sx={{ justifyContent: 'space-between' }}
-                onClick={createCopyHandler('xz')}
-              >
-                <SportsEsports />
-                <ListItemContent>
-                  <LabeledCoordinates
-                    coords={{
-                      x: clickContext.position.xz[0],
-                      z: clickContext.position.xz[1],
-                    }}
-                  />
-                </ListItemContent>
-                <ContentCopy sx={{ ml: 1 }} />
-              </MenuItem>
-              <ListDivider />
-              {measuring ? (
-                <MenuItem onClick={closeMeasuringToast}>
-                  Clear measurement
-                </MenuItem>
+              {clickContext.position.xz ? (
+                <>
+                  <MenuItem
+                    sx={{ justifyContent: 'space-between' }}
+                    onClick={createCopyHandler('xz')}
+                  >
+                    <SportsEsports />
+                    <ListItemContent>
+                      <LabeledCoordinates
+                        coords={{
+                          x: clickContext.position.xz[0],
+                          z: clickContext.position.xz[1],
+                        }}
+                        fractionDigits={1}
+                      />
+                    </ListItemContent>
+                    <ContentCopy sx={{ ml: 1 }} />
+                  </MenuItem>
+                  <ListDivider />
+                  {measuring ? (
+                    <MenuItem onClick={closeMeasuringToast}>
+                      Clear measurement
+                    </MenuItem>
+                  ) : (
+                    <MenuItem
+                      onClick={() => {
+                        setMeasuring(true);
+                        setMeasuringPoints([
+                          assertExists(clickContext).position.lngLat,
+                        ]);
+                      }}
+                    >
+                      Measure distance
+                    </MenuItem>
+                  )}
+                </>
               ) : (
-                <MenuItem
-                  onClick={() => {
-                    setMeasuring(true);
-                    setMeasuringPoints([
-                      assertExists(clickContext?.position).lngLat,
-                    ]);
-                  }}
-                >
-                  Measure distance
-                </MenuItem>
+                <>
+                  <ListDivider />
+                  <ListItem>
+                    <Typography level={'body-xs'} sx={{ opacity: 0.75 }}>
+                      Right-click within the{' '}
+                      {clickContext.closestGame.toUpperCase()} game map for more
+                      options.
+                    </Typography>
+                  </ListItem>
+                </>
               )}
             </>
-          ) : (
-            <ListItem>Share this location</ListItem>
-          )}
+          ) : null}
         </Menu>
       </div>
       <MeasuringToast
+        units={'mi'}
         open={measuring}
         close={closeMeasuringToast}
         measuringPoints={measuringPoints}
@@ -335,6 +353,7 @@ export const ContextMenu = () => {
 const LabeledCoordinates = (props: {
   /** map of component label to value */
   coords: Record<string, number>;
+  fractionDigits: number;
 }) => {
   return Object.entries(props.coords).map(([label, value], index) => (
     <Fragment key={label}>
@@ -342,13 +361,14 @@ const LabeledCoordinates = (props: {
       <Chip size={'sm'} variant={'plain'} sx={{ opacity: 0.4 }}>
         {label}
       </Chip>
-      {value.toLocaleString()}
+      {Number(value.toFixed(props.fractionDigits)).toLocaleString()}
     </Fragment>
   ));
 };
 
 const MeasuringToast = memo(
   (props: {
+    units: 'mi' | 'km';
     measuringPoints: [lon: number, lat: number][];
     open: boolean;
     close: () => void;
@@ -381,9 +401,25 @@ const MeasuringToast = memo(
                 Click on the map to add to your path. Click on an existing point
                 to remove it from the path.
               </Typography>
-              <Typography level={'title-sm'}>
-                Total distance: 120.98 mi (194.70 km)
-              </Typography>
+              <Stack direction={'row'} gap={2}>
+                <Typography level={'title-sm'}>Total distance:</Typography>
+                <Stack direction={'row'} gap={0.5}>
+                  <Typography level={'body-xs'}>
+                    <Public />
+                  </Typography>
+                  <Typography level={'title-sm'}>
+                    {getDistanceReadout(props.measuringPoints, props.units)}
+                  </Typography>
+                </Stack>
+                <Stack direction={'row'} gap={0.5}>
+                  <Typography level={'body-xs'}>
+                    <SportsEsports />
+                  </Typography>
+                  <Typography level={'title-sm'}>
+                    {getDistanceReadout(props.measuringPoints, 'game')}
+                  </Typography>
+                </Stack>
+              </Stack>
             </Stack>
           )}
         </Stack>
@@ -416,3 +452,20 @@ const CopiedToClipboardToast = memo(
     );
   },
 );
+
+function point(lngLat: [number, number], id: number): PointFeature {
+  return {
+    type: 'Feature',
+    geometry: {
+      type: 'Point',
+      coordinates: lngLat,
+    },
+    properties: {
+      id,
+    },
+  };
+}
+
+function getDistanceReadout(_lngLats: [number, number][], _units: string) {
+  return distance([1, 2], [3, 4]);
+}

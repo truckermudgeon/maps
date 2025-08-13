@@ -29,6 +29,7 @@
     "@truckermudgeon/base": "0.0.0",
     "@truckermudgeon/map": "0.0.0",
     "@truckermudgeon/ui": "0.0.0",
+    "@turf/distance": "^7.2.0",
     "maplibre-gl": "^5.6.1",
     "object.groupby": "^1.0.3",
     "react": "^18.2.0",

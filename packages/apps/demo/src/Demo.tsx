@@ -149,20 +149,13 @@ const Demo = (props: { tileRootUrl: string }) => {
           filter={['in', '$type', 'LineString']}
         />
         <Layer
-          id={'measure-points-back'}
-          type={'circle'}
-          paint={{
-            'circle-radius': 8,
-            'circle-color': '#f00',
-          }}
-          filter={['in', '$type', 'Point']}
-        />
-        <Layer
           id={'measure-points'}
           type={'circle'}
           paint={{
             'circle-radius': 5,
             'circle-color': '#fff',
+            'circle-stroke-width': 3,
+            'circle-stroke-color': '#f00',
           }}
           filter={['in', '$type', 'Point']}
         />
