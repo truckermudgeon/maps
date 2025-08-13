@@ -15,10 +15,13 @@ import { useState } from 'react';
 import MapGl, {
   AttributionControl,
   FullscreenControl,
+  Layer,
   Marker,
   NavigationControl,
+  Source,
 } from 'react-map-gl/maplibre';
 import { useSearchParams } from 'react-router-dom';
+import { ContextMenu } from './ContextMenu';
 import './Demo.css';
 import { createListProps, Legend } from './Legend';
 import { ModeControl } from './ModeControl';
@@ -127,6 +130,36 @@ const Demo = (props: { tileRootUrl: string }) => {
           enableAutoHide={autoHide}
         />
       )}
+      <Source
+        id={'measure'}
+        type={'geojson'}
+        data={{
+          type: 'FeatureCollection',
+          features: [],
+        }}
+      >
+        <Layer
+          id={'measure-lines'}
+          type={'line'}
+          paint={{
+            'line-color': '#f00',
+            'line-width': 3,
+            'line-opacity': 1,
+          }}
+          filter={['in', '$type', 'LineString']}
+        />
+        <Layer
+          id={'measure-points'}
+          type={'circle'}
+          paint={{
+            'circle-radius': 5,
+            'circle-color': '#fff',
+            'circle-stroke-width': 3,
+            'circle-stroke-color': '#f00',
+          }}
+          filter={['in', '$type', 'Point']}
+        />
+      </Source>
       <NavigationControl visualizePitch={true} />
       <FullscreenControl containerId={'fsElem'} />
       <ShareControl />
@@ -154,6 +187,7 @@ const Demo = (props: { tileRootUrl: string }) => {
         }}
         atsDlcs={atsDlcsListProps}
       />
+      <ContextMenu />
     </MapGl>
   );
 };
