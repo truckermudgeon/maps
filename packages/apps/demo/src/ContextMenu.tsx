@@ -84,10 +84,16 @@ export const ContextMenu = () => {
       const pos = assertExists(clickContext).position;
       switch (mode) {
         case 'lngLat':
-          void navigator.clipboard.writeText(pos.lngLat.join(','));
+          void navigator.clipboard.writeText(
+            pos.lngLat.map(n => toFixed(n, 4)).join(','),
+          );
           break;
         case 'xz':
-          void navigator.clipboard.writeText(assertExists(pos.xz).join(';'));
+          void navigator.clipboard.writeText(
+            assertExists(pos.xz)
+              .map(n => toFixed(n, 1))
+              .join(';'),
+          );
           break;
         default:
           throw new UnreachableError(mode);
@@ -110,17 +116,16 @@ export const ContextMenu = () => {
       } else if (withinExtent(lngLat, extents.ets2)) {
         xz = fromWgs84ToEts2Coords(lngLat);
       }
-      const position = {
-        lngLat,
-        xz,
-      };
 
       const atsCenterDelta = distance(lngLat, center(extents.ats));
       const ets2CenterDelta = distance(lngLat, center(extents.ets2));
       const closestGame = atsCenterDelta <= ets2CenterDelta ? 'ats' : 'ets2';
 
       setClickContext({
-        position,
+        position: {
+          lngLat,
+          xz,
+        },
         closestGame,
         anchorEl: {
           getBoundingClientRect: () => ({
@@ -360,7 +365,9 @@ const LabeledCoordinates = (props: {
       <Chip size={'sm'} variant={'plain'} sx={{ opacity: 0.4 }}>
         {label}
       </Chip>
-      {Number(value.toFixed(props.fractionDigits)).toLocaleString()}
+      {toFixed(value, props.fractionDigits).toLocaleString(undefined, {
+        maximumFractionDigits: props.fractionDigits,
+      })}
     </Fragment>
   ));
 };
@@ -462,6 +469,10 @@ const CopiedToClipboardToast = memo(
     );
   },
 );
+
+function toFixed(n: number, fracDigits: number): number {
+  return Number(n.toFixed(fracDigits));
+}
 
 function point(lngLat: [number, number], id: number): PointFeature {
   return {
