@@ -26,6 +26,10 @@
     "@fontsource/inter": "^5.0.16",
     "@mui/icons-material": "^7.2.0",
     "@mui/joy": "^5.0.0-beta.31",
+    "@photo-sphere-viewer/core": "^5.13.4",
+    "@photo-sphere-viewer/equirectangular-tiles-adapter": "^5.13.4",
+    "@photo-sphere-viewer/markers-plugin": "^5.13.4",
+    "@photo-sphere-viewer/virtual-tour-plugin": "^5.13.4",
     "@truckermudgeon/base": "0.0.0",
     "@truckermudgeon/map": "0.0.0",
     "@truckermudgeon/ui": "0.0.0",
@@ -35,6 +39,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-map-gl": "^8.0.4",
+    "react-photo-sphere-viewer": "^6.2.3",
     "react-router-dom": "^7.1.1"
   }
 }
