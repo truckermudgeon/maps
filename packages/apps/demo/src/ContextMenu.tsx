@@ -13,10 +13,15 @@ import {
   Typography,
 } from '@mui/joy';
 import type { VirtualElement } from '@popperjs/core/lib/types';
-import { assertExists } from '@truckermudgeon/base/assert';
+import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { UnreachableError } from '@truckermudgeon/base/precon';
 import { fromWgs84ToAtsCoords } from '@truckermudgeon/map/projections';
-import type { MapLayerMouseEvent } from 'maplibre-gl';
+import type { GeoJSON } from 'geojson';
+import type {
+  GeoJSONSource,
+  MapLayerMouseEvent,
+  MapMouseEvent,
+} from 'maplibre-gl';
 import { Fragment, memo, useCallback, useEffect, useState } from 'react';
 import { useMap } from 'react-map-gl/maplibre';
 
@@ -30,6 +35,15 @@ interface ClickContext {
 
 const toFixed = (f: number, tuple: [number, number]): [number, number] =>
   tuple.map(v => Number(v.toFixed(f))) as [number, number];
+
+let idCounter = 0;
+const newId = () => {
+  const stringId = idCounter.toString(36);
+  idCounter++;
+  return stringId;
+};
+
+type PointFeature = GeoJSON.Feature<GeoJSON.Point, { id: string }>;
 
 export const ContextMenu = () => {
   console.log('render ContextMenu');
@@ -108,10 +122,119 @@ export const ContextMenu = () => {
 
   useEffect(() => {
     console.log('measuring points effect');
-    return () => {
-      console.log('measuring points cleanup');
+    if (!measuring) {
+      return;
+    }
+
+    // based on https://maplibre.org/maplibre-gl-js/docs/examples/measure-distances/
+
+    const linestring: GeoJSON.Feature<GeoJSON.LineString, { id: string }> = {
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: measuringPoints,
+      },
+      properties: { id: newId() },
     };
-  }, [map, measuringPoints]);
+
+    const geojson: GeoJSON.FeatureCollection<
+      GeoJSON.Point | GeoJSON.LineString,
+      { id: string }
+    > = {
+      type: 'FeatureCollection',
+      features: [
+        ...measuringPoints.map(
+          point =>
+            ({
+              type: 'Feature',
+              geometry: {
+                type: 'Point',
+                coordinates: point,
+              },
+              properties: { id: newId() },
+            }) as PointFeature,
+        ),
+        ...(measuringPoints.length > 1 ? [linestring] : []),
+      ],
+    };
+
+    const setCursor = (e: MapMouseEvent) => {
+      const features = map.queryRenderedFeatures(e.point, {
+        layers: ['measure-points'],
+      });
+      // UI indicator for clicking/hovering a point on the map
+      map.getCanvas().style.cursor = features.length ? 'pointer' : 'crosshair';
+    };
+
+    const addOrDeletePoint = (e: MapMouseEvent) => {
+      const features = map.queryRenderedFeatures(e.point, {
+        layers: ['measure-points'],
+      });
+
+      // Remove the linestring from the group
+      // So we can redraw it based on the points collection
+      if (geojson.features.length > 1) {
+        geojson.features.pop();
+      }
+
+      // If a point was clicked, remove it from the map
+      if (features.length) {
+        const id = (features[0].properties as { id: string }).id;
+        geojson.features = geojson.features.filter(point => {
+          return point.properties.id !== id;
+        });
+      } else {
+        const point: PointFeature = {
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [e.lngLat.lng, e.lngLat.lat],
+          },
+          properties: {
+            id: newId(),
+          },
+        };
+
+        geojson.features.push(point);
+      }
+
+      if (geojson.features.length > 1) {
+        linestring.geometry.coordinates = geojson.features.map(maybePoint => {
+          assert(
+            maybePoint.geometry.type === 'Point',
+            `unexpected non-Point geometry: ${maybePoint.geometry.type}`,
+          );
+          const point: PointFeature = maybePoint as PointFeature;
+          return point.geometry.coordinates;
+        });
+
+        geojson.features.push(linestring);
+      }
+
+      assertExists(map.getSource<GeoJSONSource>('measure')).setData(geojson);
+      setMeasuringPoints(
+        geojson.features
+          .filter(f => f.geometry.type === 'Point')
+          .map(p => p.geometry.coordinates as [number, number]),
+      );
+    };
+
+    map.on('mousemove', setCursor);
+    map.on('click', addOrDeletePoint);
+    assertExists(map.getSource<GeoJSONSource>('measure')).setData(geojson);
+
+    return () => {
+      console.log('measurer effect cleanup');
+      map.off('mousemove', setCursor);
+      map.off('click', addOrDeletePoint);
+
+      map.getCanvas().style.cursor = '';
+      assertExists(map.getSource<GeoJSONSource>('measure')).setData({
+        type: 'FeatureCollection',
+        features: [],
+      });
+    };
+  }, [map, measuringPoints, measuring]);
 
   return (
     <>
@@ -251,12 +374,13 @@ const MeasuringToast = memo(
           <Typography level={'title-md'}>Measure distance</Typography>
           {props.measuringPoints.length <= 1 ? (
             <Typography level={'body-sm'}>
-              Click on the map to trace a path you want to measure
+              Click on the map to trace a path you want to measure.
             </Typography>
           ) : (
             <Stack gap={2}>
               <Typography level={'body-sm'}>
-                Click on the map to add to your path
+                Click on the map to add to your path. Click on an existing point
+                to remove it from the path.
               </Typography>
               <Typography level={'title-sm'}>
                 Total distance: 120.98 mi (194.70 km)
@@ -288,7 +412,7 @@ const CopiedToClipboardToast = memo(
           </IconButton>
         }
       >
-        Copied to clipboard
+        Copied to clipboard.
       </Snackbar>
     );
   },
