@@ -62,7 +62,7 @@ export const ContextMenu = () => {
   const map = assertExists(useMap().current);
   const [clickContext, setClickContext] = useState<ClickContext | null>(null);
   const [showClipboardToast, setShowClipboardToast] = useState<boolean>(false);
-  const [measuring, setMeasuring] = useState<boolean>(false);
+  const [measuring, setMeasuring] = useState<'ats' | 'ets2' | false>(false);
   const [measuringPoints, setMeasuringPoints] = useState<
     [lon: number, lat: number][]
   >([]);
@@ -310,7 +310,7 @@ export const ContextMenu = () => {
                   ) : (
                     <MenuItem
                       onClick={() => {
-                        setMeasuring(true);
+                        setMeasuring(assertExists(clickContext).closestGame);
                         setMeasuringPoints([
                           assertExists(clickContext).position.lngLat,
                         ]);
@@ -337,8 +337,7 @@ export const ContextMenu = () => {
         </Menu>
       </div>
       <MeasuringToast
-        units={'mi'}
-        open={measuring}
+        measuring={measuring}
         close={closeMeasuringToast}
         measuringPoints={measuringPoints}
       />
@@ -368,15 +367,18 @@ const LabeledCoordinates = (props: {
 
 const MeasuringToast = memo(
   (props: {
-    units: 'mi' | 'km';
+    measuring: 'ats' | 'ets2' | false;
     measuringPoints: [lon: number, lat: number][];
-    open: boolean;
     close: () => void;
   }) => {
     console.log('render measuring toast');
+    if (props.measuring === false) {
+      return null;
+    }
+
     return (
       <Snackbar
-        open={props.open}
+        open={true}
         anchorOrigin={{
           vertical: 'bottom',
           horizontal: 'center',
@@ -408,7 +410,11 @@ const MeasuringToast = memo(
                     <Public />
                   </Typography>
                   <Typography level={'title-sm'}>
-                    {getDistanceReadout(props.measuringPoints, props.units)}
+                    {getDistanceReadout(
+                      props.measuringPoints,
+                      'irl',
+                      props.measuring,
+                    )}
                   </Typography>
                 </Stack>
                 <Stack direction={'row'} gap={0.5}>
@@ -416,7 +422,11 @@ const MeasuringToast = memo(
                     <SportsEsports />
                   </Typography>
                   <Typography level={'title-sm'}>
-                    {getDistanceReadout(props.measuringPoints, 'game')}
+                    {getDistanceReadout(
+                      props.measuringPoints,
+                      'game',
+                      props.measuring,
+                    )}
                   </Typography>
                 </Stack>
               </Stack>
@@ -466,6 +476,10 @@ function point(lngLat: [number, number], id: number): PointFeature {
   };
 }
 
-function getDistanceReadout(_lngLats: [number, number][], _units: string) {
+function getDistanceReadout(
+  _lngLats: [number, number][],
+  _type: 'irl' | 'game',
+  _game: 'ats' | 'ets2',
+) {
   return distance([1, 2], [3, 4]);
 }
