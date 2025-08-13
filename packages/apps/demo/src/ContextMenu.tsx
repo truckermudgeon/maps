@@ -123,6 +123,7 @@ export const ContextMenu = () => {
   useEffect(() => {
     console.log('measuring points effect');
     if (!measuring) {
+      map.getCanvas().style.cursor = '';
       return;
     }
 
@@ -227,8 +228,6 @@ export const ContextMenu = () => {
       console.log('measurer effect cleanup');
       map.off('mousemove', setCursor);
       map.off('click', addOrDeletePoint);
-
-      map.getCanvas().style.cursor = '';
       assertExists(map.getSource<GeoJSONSource>('measure')).setData({
         type: 'FeatureCollection',
         features: [],
