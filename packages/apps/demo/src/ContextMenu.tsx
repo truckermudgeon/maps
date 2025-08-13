@@ -61,8 +61,6 @@ const extents = {
 };
 
 export const ContextMenu = () => {
-  console.log('render ContextMenu');
-
   const map = assertExists(useMap().current);
   const [clickContext, setClickContext] = useState<ClickContext | null>(null);
   const [showClipboardToast, setShowClipboardToast] = useState<boolean>(false);
@@ -143,7 +141,6 @@ export const ContextMenu = () => {
         } as VirtualElement,
       });
 
-      console.log('installing move handler');
       void map.once('move', closeContextMenu);
     };
 
@@ -152,7 +149,6 @@ export const ContextMenu = () => {
   }, [map]);
 
   useEffect(() => {
-    console.log('measuring points effect');
     if (!measuring) {
       map.getCanvas().style.cursor = '';
       return;
@@ -252,7 +248,6 @@ export const ContextMenu = () => {
     assertExists(map.getSource<GeoJSONSource>('measure')).setData(geojson);
 
     return () => {
-      console.log('measurer effect cleanup');
       map.off('mousemove', setCursor);
       map.off('click', addOrDeletePoint);
       assertExists(map.getSource<GeoJSONSource>('measure')).setData({
@@ -396,7 +391,6 @@ const MeasuringToast = memo(
     measuringPoints: [lon: number, lat: number][];
     close: () => void;
   }) => {
-    console.log('render measuring toast');
     if (props.measuring === false) {
       return null;
     }
@@ -465,7 +459,6 @@ const MeasuringToast = memo(
 
 const CopiedToClipboardToast = memo(
   (props: { open: boolean; close: (reason: SnackbarCloseReason) => void }) => {
-    console.log('render clipboard toast');
     return (
       <Snackbar
         open={props.open}
