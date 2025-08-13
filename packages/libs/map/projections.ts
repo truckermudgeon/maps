@@ -37,7 +37,7 @@ export const fromWgs84ToAtsCoords = ([lon, lat]: Position): Position => {
   return [
     unscaled[0] / atsDefData.mapFactor[1] / lengthOfDegree,
     unscaled[1] / atsDefData.mapFactor[0] / lengthOfDegree,
-  ].map(v => Number(v.toPrecision(10))) as [number, number];
+  ].map(v => Number(v.toFixed(10))) as [number, number];
 };
 
 // from def/climate.sii
@@ -111,5 +111,5 @@ export const fromWgs84ToEts2Coords = ([lon, lat]: Position): Position => {
   return [
     x + ets2DefData.mapOffset[0], //
     y + ets2DefData.mapOffset[1],
-  ].map(v => Number(v.toPrecision(10))) as [number, number];
+  ].map(v => Number(v.toFixed(10))) as [number, number];
 };
