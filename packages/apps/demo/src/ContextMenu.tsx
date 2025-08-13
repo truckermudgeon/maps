@@ -15,7 +15,11 @@ import {
 import type { VirtualElement } from '@popperjs/core/lib/types';
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import type { Extent } from '@truckermudgeon/base/geom';
-import { center, withinExtent } from '@truckermudgeon/base/geom';
+import {
+  center,
+  distance as euclideanDistance,
+  withinExtent,
+} from '@truckermudgeon/base/geom';
 import { UnreachableError } from '@truckermudgeon/base/precon';
 import {
   fromWgs84ToAtsCoords,
@@ -381,9 +385,7 @@ const LabeledCoordinates = (props: {
       <Chip size={'sm'} variant={'plain'} sx={{ opacity: 0.4 }}>
         {label}
       </Chip>
-      {toFixed(value, props.fractionDigits).toLocaleString(undefined, {
-        maximumFractionDigits: props.fractionDigits,
-      })}
+      {toFixedString(value, props.fractionDigits)}
     </Fragment>
   ));
 };
@@ -426,7 +428,7 @@ const MeasuringToast = memo(
                 Click on the map to add to your path. Click on an existing point
                 to remove it from the path.
               </Typography>
-              <Stack direction={'row'} gap={2}>
+              <Stack direction={'row'} gap={2} sx={{ textWrap: 'nowrap' }}>
                 <Typography level={'title-sm'}>Total distance:</Typography>
                 <Stack direction={'row'} gap={0.5}>
                   <Typography level={'body-xs'}>
@@ -490,6 +492,12 @@ function toFixed(n: number, fracDigits: number): number {
   return Number(n.toFixed(fracDigits));
 }
 
+function toFixedString(n: number, fracDigits: number): string {
+  return Number(n.toFixed(fracDigits)).toLocaleString(undefined, {
+    maximumFractionDigits: fracDigits,
+  });
+}
+
 function point(lngLat: [number, number], id: number): PointFeature {
   return {
     type: 'Feature',
@@ -504,9 +512,47 @@ function point(lngLat: [number, number], id: number): PointFeature {
 }
 
 function getDistanceReadout(
-  _lngLats: [number, number][],
-  _type: 'irl' | 'game',
-  _game: 'ats' | 'ets2',
+  lngLats: [number, number][],
+  type: 'irl' | 'game',
+  game: 'ats' | 'ets2',
 ) {
-  return distance([1, 2], [3, 4]);
+  let points: [number, number][];
+  if (type === 'irl') {
+    points = lngLats;
+  } else {
+    const tx = game === 'ats' ? fromWgs84ToAtsCoords : fromWgs84ToEts2Coords;
+    points = lngLats.map(tx);
+  }
+
+  const distanceInKm =
+    type === 'irl'
+      ? distance
+      : (a: [number, number], b: [number, number]) =>
+          euclideanDistance(a, b) / 1000;
+
+  let prevPoint = points[0];
+  let totalDistanceKm = 0;
+  for (const curPoint of points.slice(1)) {
+    totalDistanceKm += distanceInKm(prevPoint, curPoint);
+    prevPoint = curPoint;
+  }
+
+  const metricReadout =
+    totalDistanceKm < 1
+      ? `${toFixedString(totalDistanceKm * 1000, 1)} meters`
+      : `${toFixedString(totalDistanceKm, 2)} km`;
+
+  if (type === 'irl') {
+    const miles = totalDistanceKm * 0.6213712;
+    const imperialReadout =
+      miles < 1
+        ? `${toFixedString(miles * 5280, 0)} ft`
+        : `${toFixedString(miles, 2)} mi`;
+
+    const primary = game === 'ats' ? imperialReadout : metricReadout;
+    const secondary = game === 'ats' ? metricReadout : imperialReadout;
+    return `${primary} (${secondary})`;
+  } else {
+    return metricReadout;
+  }
 }
