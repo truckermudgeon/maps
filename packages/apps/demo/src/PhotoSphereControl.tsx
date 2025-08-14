@@ -1,17 +1,27 @@
 import { Vrpano } from '@mui/icons-material';
 import { IconButton } from '@mui/joy';
 import { assertExists } from '@truckermudgeon/base/assert';
-import { useRef, useState } from 'react';
-import { useControl } from 'react-map-gl/maplibre';
+import { useCallback, useRef, useState } from 'react';
+import { useControl, useMap } from 'react-map-gl/maplibre';
 
-export const PhotoSphereControl = () => {
+export interface PhotoSphereControlProps {
+  onToggle: (newValue: boolean) => void;
+}
+
+export const PhotoSphereControl = (props: PhotoSphereControlProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState<boolean>(false);
+  const map = assertExists(useMap().current);
 
   useControl(() => ({
     onAdd: () => assertExists(ref.current),
     onRemove: () => assertExists(ref.current).remove(),
   }));
+
+  const togglePhotoSpheres = useCallback(() => {
+    setActive(!active);
+    props.onToggle(!active);
+  }, [active]);
 
   return (
     <div ref={ref} className={'maplibregl-ctrl maplibregl-ctrl-group'}>
@@ -23,11 +33,11 @@ export const PhotoSphereControl = () => {
           borderRadius: 0,
           backgroundColor: active
             ? 'var(--joy-palette-primary-softHoverBg) !important'
-            : undefined, //'var(--joy-palette-background-surface)',
+            : undefined,
         }}
         variant={active ? 'soft' : 'plain'}
         title={'Browse Photo Spheres'}
-        onClick={() => setActive(!active)}
+        onClick={togglePhotoSpheres}
       >
         <Vrpano />
       </IconButton>

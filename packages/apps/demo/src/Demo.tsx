@@ -71,6 +71,7 @@ const Demo = (props: { tileRootUrl: string }) => {
   );
 
   const [showContours, setShowContours] = useState(false);
+  const [showStreetViewLayer, setShowStreetViewLayer] = useState(false);
 
   return (
     <MapGl
@@ -131,6 +132,38 @@ const Demo = (props: { tileRootUrl: string }) => {
           enableAutoHide={autoHide}
         />
       )}
+      {showStreetViewLayer && (
+        <Source
+          id={'street-view'}
+          type={'geojson'}
+          data={'/street-view.geojson'}
+          cluster={true}
+          clusterMaxZoom={7}
+          clusterRadius={10}
+        >
+          <Layer
+            id={'photo-spheres-halo'}
+            type={'circle'}
+            paint={{
+              'circle-radius': 10,
+              'circle-color': '#fff8',
+              'circle-blur': 0.75,
+            }}
+            filter={['in', '$type', 'Point']}
+          />
+          <Layer
+            id={'photo-spheres'}
+            type={'circle'}
+            paint={{
+              'circle-radius': 5,
+              'circle-color': '#48f2',
+              'circle-stroke-width': 2,
+              'circle-stroke-color': '#48f',
+            }}
+            filter={['in', '$type', 'Point']}
+          />
+        </Source>
+      )}
       <Source
         id={'measure'}
         type={'geojson'}
@@ -162,7 +195,7 @@ const Demo = (props: { tileRootUrl: string }) => {
         />
       </Source>
       <NavigationControl visualizePitch={true} />
-      <PhotoSphereControl />
+      <PhotoSphereControl onToggle={setShowStreetViewLayer} />
       <FullscreenControl containerId={'fsElem'} />
       <ShareControl />
       <ModeControl />
