@@ -26,6 +26,7 @@ import './Demo.css';
 import { createListProps, Legend } from './Legend';
 import { ModeControl } from './ModeControl';
 import { mapCenters, OmniBar } from './OmniBar';
+import { PhotoSphereControl } from './PhotoSphereControl';
 import { ShareControl } from './ShareControl';
 import { toStateCodes } from './state-codes';
 
@@ -161,6 +162,7 @@ const Demo = (props: { tileRootUrl: string }) => {
         />
       </Source>
       <NavigationControl visualizePitch={true} />
+      <PhotoSphereControl />
       <FullscreenControl containerId={'fsElem'} />
       <ShareControl />
       <ModeControl />
