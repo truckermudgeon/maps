@@ -17,7 +17,10 @@ const pixelRootUrl = import.meta.env.VITE_PIXEL_ROOT_URL;
 
 const router = createBrowserRouter(
   createRoutesFromElements([
-    <Route path="/" element={<Demo tileRootUrl={tileRootUrl} />} />,
+    <Route
+      path="/"
+      element={<Demo tileRootUrl={tileRootUrl} pixelRootUrl={pixelRootUrl} />}
+    />,
     <Route path="routes" element={<RoutesDemo tileRootUrl={tileRootUrl} />} />,
     <Route
       path="street-view"

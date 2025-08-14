@@ -11,7 +11,8 @@ import {
   trafficMapIcons,
 } from '@truckermudgeon/ui';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import type { MapRef } from 'react-map-gl/maplibre';
 import MapGl, {
   AttributionControl,
   FullscreenControl,
@@ -29,12 +30,16 @@ import { mapCenters, OmniBar } from './OmniBar';
 import { PhotoSphereControl } from './PhotoSphereControl';
 import { ShareControl } from './ShareControl';
 import { toStateCodes } from './state-codes';
+import type { PanoramaMeta } from './StreetView';
+import { StreetView } from './StreetView';
 
 const inRange = (n: number, [min, max]: [number, number]) =>
   !isNaN(n) && min <= n && n <= max;
 
-const Demo = (props: { tileRootUrl: string }) => {
-  const { tileRootUrl } = props;
+const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
+  const mapRef = useRef<MapRef>(null);
+
+  const { tileRootUrl, pixelRootUrl } = props;
   const { mode: _maybeMode, systemMode } = useColorScheme();
   const mode = _maybeMode === 'system' ? systemMode : _maybeMode;
   const { longitude, latitude } =
@@ -71,10 +76,13 @@ const Demo = (props: { tileRootUrl: string }) => {
   );
 
   const [showContours, setShowContours] = useState(false);
-  const [showStreetViewLayer, setShowStreetViewLayer] = useState(false);
 
-  return (
+  const [showStreetViewLayer, setShowStreetViewLayer] = useState(false);
+  const [panorama, setPanorama] = useState<PanoramaMeta | null>(null);
+
+  const slippyMap = (
     <MapGl
+      ref={mapRef}
       style={{ width: '100svw', height: '100svh' }} // ensure map fills page
       hash={true}
       minZoom={4}
@@ -224,6 +232,19 @@ const Demo = (props: { tileRootUrl: string }) => {
       />
       <ContextMenu />
     </MapGl>
+  );
+
+  return (
+    <>
+      {slippyMap}
+      {panorama && (
+        <StreetView
+          tileRootUrl={tileRootUrl}
+          pixelRootUrl={pixelRootUrl}
+          panorama={panorama}
+        />
+      )}
+    </>
   );
 };
 

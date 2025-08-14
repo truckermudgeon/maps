@@ -1,0 +1,42 @@
+/* The following are all copied from StreetViewDemo.css.
+ *
+ * TODO: refactor StreetViewDemo to use a proper StreetView component.
+ */
+
+.psv-loader-container {
+  display: none;
+}
+
+.street-view-marker:before {
+  content: '';
+  display: block;
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  top: -55px;
+  left: -20px;
+  z-index: -1;
+  background: transparent;
+  transform: rotate(-45deg);
+  background: linear-gradient(45deg, #0004 0%, #fff0 45%);
+}
+
+.street-view-marker {
+  width: 20px;
+  height: 20px;
+  background: #1da1f2;
+  border: 3px solid white;
+  border-radius: 50%;
+  box-shadow: 0 0 8px 4px #0004;
+}
+
+.credits {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  background: #000a;
+  font-size: 9px;
+  color: #bbbe;
+  padding: 4px 8px;
+  border-radius: 8px 0 0;
+}

@@ -2,7 +2,7 @@ import { Vrpano } from '@mui/icons-material';
 import { IconButton } from '@mui/joy';
 import { assertExists } from '@truckermudgeon/base/assert';
 import { useCallback, useRef, useState } from 'react';
-import { useControl, useMap } from 'react-map-gl/maplibre';
+import { useControl } from 'react-map-gl/maplibre';
 
 export interface PhotoSphereControlProps {
   onToggle: (newValue: boolean) => void;
@@ -11,7 +11,6 @@ export interface PhotoSphereControlProps {
 export const PhotoSphereControl = (props: PhotoSphereControlProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState<boolean>(false);
-  const map = assertExists(useMap().current);
 
   useControl(() => ({
     onAdd: () => assertExists(ref.current),
