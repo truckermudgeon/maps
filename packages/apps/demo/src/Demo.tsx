@@ -197,7 +197,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
             type={'circle'}
             paint={{
               'circle-radius': 10,
-              'circle-color': '#fff8',
+              'circle-color': mode === 'light' ? '#fff8' : '#8884',
               'circle-blur': 0.75,
             }}
             filter={['in', '$type', 'Point']}
