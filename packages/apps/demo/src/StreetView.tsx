@@ -18,6 +18,7 @@ import './StreetView.css';
 export interface PanoramaMeta {
   id: string;
   point: [number, number];
+  // CW radians, with 0 as north, Pi/2 as east, etc.
   yaw?: number;
 }
 

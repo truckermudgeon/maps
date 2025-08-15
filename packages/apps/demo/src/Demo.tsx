@@ -21,6 +21,7 @@ import MapGl, {
   Layer,
   Marker,
   NavigationControl,
+  Popup,
   Source,
 } from 'react-map-gl/maplibre';
 import { useSearchParams } from 'react-router-dom';
@@ -80,6 +81,9 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
   const mapRef = useRef<MapRef>(null);
   const [showStreetViewLayer, setShowStreetViewLayer] = useState(false);
   const [panorama, setPanorama] = useState<PanoramaMeta | null>(null);
+  const [panoramaPreview, setPanoramaPreview] = useState<PanoramaMeta | null>(
+    null,
+  );
   const clearPanorama = useCallback(() => setPanorama(null), []);
 
   useEffect(() => {
@@ -89,21 +93,35 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
 
     const map = mapRef.current;
     const setCursor = (e: MapMouseEvent) => {
-      const features = map.queryRenderedFeatures(e.point, {
+      const panoFeature = map.queryRenderedFeatures(e.point, {
         layers: ['photo-spheres'],
-      });
+      })[0];
       // UI indicator for clicking/hovering a point on the map
-      map.getCanvas().style.cursor = features.length ? 'pointer' : '';
+      map.getCanvas().style.cursor = panoFeature ? 'pointer' : '';
+      if (panoFeature) {
+        if (panoramaPreview?.id !== '8') {
+          setPanoramaPreview({
+            id: '8',
+            point: [-92.1117, 38.5479],
+            yaw: -0.96,
+          });
+        }
+      } else {
+        if (panoramaPreview) {
+          setPanoramaPreview(null);
+        }
+      }
     };
 
     const maybeOpenPanorama = (e: MapMouseEvent) => {
-      const features = map.queryRenderedFeatures(e.point, {
+      const panoFeature = map.queryRenderedFeatures(e.point, {
         layers: ['photo-spheres'],
-      });
-      if (!features.length) {
+      })[0];
+      if (!panoFeature) {
         return;
       }
 
+      setPanoramaPreview(null);
       setPanorama({
         id: '8',
         point: [-92.1117, 38.5479],
@@ -117,7 +135,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
       map.off('mousemove', setCursor);
       map.off('click', maybeOpenPanorama);
     };
-  }, [mapRef.current, showStreetViewLayer, panorama]);
+  }, [mapRef.current, showStreetViewLayer, panoramaPreview]);
 
   const slippyMap = (
     <MapGl
@@ -273,6 +291,34 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
         }}
         atsDlcs={atsDlcsListProps}
       />
+      {panoramaPreview && (
+        <Popup
+          className={'pano-preview-popup'}
+          closeButton={false}
+          closeOnClick={false}
+          closeOnMove={true}
+          longitude={panoramaPreview.point[0]}
+          latitude={panoramaPreview.point[1]}
+        >
+          <div
+            style={{
+              overflow: 'hidden',
+              width: 100,
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                position: 'relative',
+                left: -10,
+              }}
+            >
+              <img width={100} height={100} src={`${pixelRootUrl}/8_5_3.jpg`} />
+              <img width={100} height={100} src={`${pixelRootUrl}/8_6_3.jpg`} />
+            </div>
+          </div>
+        </Popup>
+      )}
       <ContextMenu />
     </MapGl>
   );
