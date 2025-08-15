@@ -1,4 +1,5 @@
-import { useColorScheme } from '@mui/joy';
+import CloseIcon from '@mui/icons-material/Close';
+import { IconButton, useColorScheme } from '@mui/joy';
 import { AtsSelectableDlcs } from '@truckermudgeon/map/constants';
 import {
   allIcons,
@@ -10,8 +11,9 @@ import {
   SceneryTownSource,
   trafficMapIcons,
 } from '@truckermudgeon/ui';
+import type { MapMouseEvent } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MapRef } from 'react-map-gl/maplibre';
 import MapGl, {
   AttributionControl,
@@ -37,8 +39,6 @@ const inRange = (n: number, [min, max]: [number, number]) =>
   !isNaN(n) && min <= n && n <= max;
 
 const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
-  const mapRef = useRef<MapRef>(null);
-
   const { tileRootUrl, pixelRootUrl } = props;
   const { mode: _maybeMode, systemMode } = useColorScheme();
   const mode = _maybeMode === 'system' ? systemMode : _maybeMode;
@@ -77,13 +77,56 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
 
   const [showContours, setShowContours] = useState(false);
 
+  const mapRef = useRef<MapRef>(null);
   const [showStreetViewLayer, setShowStreetViewLayer] = useState(false);
   const [panorama, setPanorama] = useState<PanoramaMeta | null>(null);
+  const clearPanorama = useCallback(() => setPanorama(null), []);
+
+  useEffect(() => {
+    if (!mapRef.current || !showStreetViewLayer) {
+      return;
+    }
+
+    const map = mapRef.current;
+    const setCursor = (e: MapMouseEvent) => {
+      const features = map.queryRenderedFeatures(e.point, {
+        layers: ['photo-spheres'],
+      });
+      // UI indicator for clicking/hovering a point on the map
+      map.getCanvas().style.cursor = features.length ? 'pointer' : '';
+    };
+
+    const maybeOpenPanorama = (e: MapMouseEvent) => {
+      const features = map.queryRenderedFeatures(e.point, {
+        layers: ['photo-spheres'],
+      });
+      if (!features.length) {
+        return;
+      }
+
+      setPanorama({
+        id: '8',
+        point: [-92.1117, 38.5479],
+        yaw: -0.96,
+      });
+    };
+
+    map.on('mousemove', setCursor);
+    map.on('click', maybeOpenPanorama);
+    return () => {
+      map.off('mousemove', setCursor);
+      map.off('click', maybeOpenPanorama);
+    };
+  }, [mapRef.current, showStreetViewLayer, panorama]);
 
   const slippyMap = (
     <MapGl
       ref={mapRef}
-      style={{ width: '100svw', height: '100svh' }} // ensure map fills page
+      style={{
+        width: '100svw',
+        height: '100svh',
+        display: panorama ? 'none' : undefined,
+      }} // ensure map fills page
       hash={true}
       minZoom={4}
       maxZoom={15}
@@ -238,11 +281,30 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
     <>
       {slippyMap}
       {panorama && (
-        <StreetView
-          tileRootUrl={tileRootUrl}
-          pixelRootUrl={pixelRootUrl}
-          panorama={panorama}
-        />
+        <>
+          <StreetView
+            tileRootUrl={tileRootUrl}
+            pixelRootUrl={pixelRootUrl}
+            panorama={panorama}
+            mode={mode}
+          />
+          <IconButton
+            sx={{
+              backgroundColor: 'primary.500',
+              position: 'absolute',
+              borderRadius: '50%',
+              m: 2.5,
+              top: 0,
+              right: 0,
+            }}
+            size={'lg'}
+            color={'primary'}
+            variant={'solid'}
+            onClick={clearPanorama}
+          >
+            <CloseIcon />
+          </IconButton>
+        </>
       )}
     </>
   );

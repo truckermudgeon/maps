@@ -18,7 +18,25 @@
   z-index: -1;
   background: transparent;
   transform: rotate(-45deg);
-  background: linear-gradient(45deg, #0004 0%, #fff0 45%);
+  background: linear-gradient(45deg, #0004 10%, #fff0 45%);
+  border-left: 1px solid #0001;
+  border-bottom: 1px solid #0001;
+}
+
+html[data-joy-color-scheme='dark'] .street-view-marker:before {
+  content: '';
+  display: block;
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  top: -55px;
+  left: -20px;
+  z-index: -1;
+  background: transparent;
+  transform: rotate(-45deg);
+  background: linear-gradient(45deg, #fff4 10%, #0000 45%);
+  border-left: 1px solid #fff1;
+  border-bottom: 1px solid #fff1;
 }
 
 .street-view-marker {

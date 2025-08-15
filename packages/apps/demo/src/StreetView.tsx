@@ -7,6 +7,7 @@ import {
   defaultMapStyle,
   GameMapStyle,
 } from '@truckermudgeon/ui';
+import type { Mode } from '@truckermudgeon/ui/colors';
 import type { Marker as MapLibreGLMarker } from 'maplibre-gl';
 import { useRef } from 'react';
 import type { MapRef } from 'react-map-gl/maplibre';
@@ -17,6 +18,7 @@ import './StreetView.css';
 export interface PanoramaMeta {
   id: string;
   point: [number, number];
+  yaw?: number;
 }
 
 const makePanoSrc = (pixelRootUrl: string, id: string) => {
@@ -34,8 +36,9 @@ export const StreetView = (props: {
   panorama: PanoramaMeta;
   tileRootUrl: string;
   pixelRootUrl: string;
+  mode?: Mode;
 }) => {
-  const { panorama, tileRootUrl, pixelRootUrl } = props;
+  const { panorama, tileRootUrl, pixelRootUrl, mode = 'light' } = props;
   const mapRef = useRef<MapRef>(null);
   const markerRef = useRef<MapLibreGLMarker>(null);
 
@@ -52,6 +55,7 @@ export const StreetView = (props: {
         navbar={false}
         moveInertia={0.9}
         onPositionChange={onPitchYawChanged}
+        defaultYaw={props.panorama.yaw ?? 0}
       />
       <div className={'credits'}>
         Game data and images &copy; SCS Software. Images captured by Trucker
@@ -63,8 +67,8 @@ export const StreetView = (props: {
           position: 'absolute',
           left: 20,
           bottom: 20,
-          width: '250px',
-          height: '125px',
+          width: '200px',
+          height: '200px',
           border: '2px solid black',
           borderRadius: 8,
           zIndex: 100,
@@ -87,18 +91,26 @@ export const StreetView = (props: {
           ref={markerRef}
           longitude={panorama.point[0]}
           latitude={panorama.point[1]}
+          rotation={((panorama.yaw ?? 0) / Math.PI) * 180}
           rotationAlignment={'map'}
         >
           <div className={'street-view-marker'} />
         </Marker>
-        <BaseMapStyle tileRootUrl={tileRootUrl} mode={'light'}></BaseMapStyle>
+        <BaseMapStyle tileRootUrl={tileRootUrl} mode={mode}></BaseMapStyle>
         <GameMapStyle
           tileRootUrl={tileRootUrl}
           game={'ats'}
-          mode={'light'}
+          mode={mode}
           enableIconAutoHide={true}
           visibleIcons={allIcons}
           dlcs={AtsSelectableDlcs}
+        />
+        <GameMapStyle
+          tileRootUrl={tileRootUrl}
+          game={'ets2'}
+          mode={mode}
+          enableIconAutoHide={true}
+          visibleIcons={allIcons}
         />
       </MapGl>
     </>
