@@ -73,8 +73,8 @@ export const StreetView = (props: {
           borderRadius: 8,
           zIndex: 100,
         }}
-        minZoom={4}
-        maxZoom={15}
+        minZoom={9}
+        maxZoom={14}
         maxBounds={[
           panorama.point.map(v => v - 1) as [number, number], // southwest corner (lon, lat)
           panorama.point.map(v => v + 1) as [number, number], // southwest corner (lon, lat)
