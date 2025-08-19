@@ -11,6 +11,7 @@ import {
   SceneryTownSource,
   trafficMapIcons,
 } from '@truckermudgeon/ui';
+import type { GeoJSON } from 'geojson';
 import type { MapMouseEvent } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -99,11 +100,15 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
       // UI indicator for clicking/hovering a point on the map
       map.getCanvas().style.cursor = panoFeature ? 'pointer' : '';
       if (panoFeature) {
-        if (panoramaPreview?.id !== '8') {
+        if (panoramaPreview?.id !== panoFeature.properties['id']) {
+          const pointFeature = panoFeature as unknown as GeoJSON.Feature<
+            GeoJSON.Point,
+            { id: string; yaw: number }
+          >;
           setPanoramaPreview({
-            id: '8',
-            point: [-92.1117, 38.5479],
-            yaw: -0.96,
+            id: pointFeature.properties.id,
+            point: pointFeature.geometry.coordinates as [number, number],
+            yaw: pointFeature.properties.yaw,
           });
         }
       } else {
@@ -117,16 +122,12 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
       const panoFeature = map.queryRenderedFeatures(e.point, {
         layers: ['photo-spheres'],
       })[0];
-      if (!panoFeature) {
+      if (!panoFeature || panoFeature.properties['cluster'] === true) {
         return;
       }
 
       setPanoramaPreview(null);
-      setPanorama({
-        id: '8',
-        point: [-92.1117, 38.5479],
-        yaw: -0.96,
-      });
+      setPanorama(panoramaPreview);
     };
 
     map.on('mousemove', setCursor);
@@ -206,7 +207,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
           id={'street-view'}
           type={'geojson'}
           data={'/street-view.geojson'}
-          cluster={true}
+          cluster={false} // TODO: re-enable once mouse-event handling on clusters is fixed.
           clusterMaxZoom={7}
           clusterRadius={10}
         >
@@ -313,8 +314,16 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
                 left: -10,
               }}
             >
-              <img width={100} height={100} src={`${pixelRootUrl}/8_5_3.jpg`} />
-              <img width={100} height={100} src={`${pixelRootUrl}/8_6_3.jpg`} />
+              <img
+                width={100}
+                height={100}
+                src={`${pixelRootUrl}/${panoramaPreview.id}_5_3.jpg`}
+              />
+              <img
+                width={100}
+                height={100}
+                src={`${pixelRootUrl}/${panoramaPreview.id}_6_3.jpg`}
+              />
             </div>
           </div>
         </Popup>

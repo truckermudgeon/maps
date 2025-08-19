@@ -85,7 +85,7 @@ export const StreetView = (props: {
         initialViewState={{
           longitude: panorama.point[0],
           latitude: panorama.point[1],
-          zoom: 12,
+          zoom: 10,
         }}
       >
         <Marker
