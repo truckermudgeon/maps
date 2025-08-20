@@ -23,7 +23,7 @@ export const PanoramaPreview = (props: PanoramaPreviewProps) => {
   const pixelX = Math.floor(pixelsPerDegree * yawDegrees);
   let leftTileIndex;
   let rightTileIndex;
-  if (pixelX % tileSize < 256) {
+  if (pixelX % tileSize < tileSize / 2) {
     // yaw centers on left part of tile. grab this tile and tile to the left.
     rightTileIndex = Math.floor(pixelX / tileSize);
     leftTileIndex = rightTileIndex === 0 ? numXTiles - 1 : rightTileIndex - 1;

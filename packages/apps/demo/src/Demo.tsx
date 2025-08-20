@@ -164,7 +164,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
         width: '100svw',
         height: '100svh',
         display: panorama ? 'none' : undefined,
-      }} // ensure map fills page
+      }}
       hash={true}
       minZoom={4}
       maxZoom={15}
