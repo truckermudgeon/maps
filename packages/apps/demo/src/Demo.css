@@ -45,7 +45,7 @@ html[data-joy-color-scheme='dark'] .maplibregl-ctrl-group button + button {
   display: flex;
 }
 
-.maplibregl-ctrl button:not(:disabled):hover {
+.maplibregl-ctrl button:not(:disabled):not(.MuiIconButton-variantSoft):hover {
   background-color: var(
     --variant-plainHoverBg,
     var(

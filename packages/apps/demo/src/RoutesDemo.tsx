@@ -155,6 +155,9 @@ const RoutesDemo = (props: { tileRootUrl: string }) => {
         advanced={{
           showContours,
           onContoursToggle: setShowContours,
+          // HACK make this UI inert.
+          showPhotoSpheresUi: false,
+          onPhotoSpheresToggleUi: () => void 0,
         }}
         atsDlcs={atsDlcsListProps}
       />
