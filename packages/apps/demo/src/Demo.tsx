@@ -78,6 +78,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
   );
 
   const [showContours, setShowContours] = useState(false);
+  const [showPhotoSpheresUi, setShowPhotoSpheresUi] = useState(false);
 
   const mapRef = useRef<MapRef>(null);
   const [showStreetViewLayer, setShowStreetViewLayer] = useState(false);
@@ -88,7 +89,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
   const clearPanorama = useCallback(() => setPanorama(null), []);
 
   useEffect(() => {
-    if (!mapRef.current || !showStreetViewLayer) {
+    if (!mapRef.current || !showStreetViewLayer || !showPhotoSpheresUi) {
       return;
     }
 
@@ -136,7 +137,12 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
       map.off('mousemove', setCursor);
       map.off('click', maybeOpenPanorama);
     };
-  }, [mapRef.current, showStreetViewLayer, panoramaPreview]);
+  }, [
+    mapRef.current,
+    showStreetViewLayer,
+    panoramaPreview,
+    showPhotoSpheresUi,
+  ]);
 
   const slippyMap = (
     <MapGl
@@ -202,7 +208,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
           enableAutoHide={autoHide}
         />
       )}
-      {showStreetViewLayer && (
+      {showPhotoSpheresUi && showStreetViewLayer && (
         <Source
           id={'street-view'}
           type={'geojson'}
@@ -265,7 +271,10 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
         />
       </Source>
       <NavigationControl visualizePitch={true} />
-      <PhotoSphereControl onToggle={setShowStreetViewLayer} />
+      <PhotoSphereControl
+        visible={showPhotoSpheresUi}
+        onToggle={setShowStreetViewLayer}
+      />
       <FullscreenControl containerId={'fsElem'} />
       <ShareControl />
       <ModeControl />
@@ -289,6 +298,8 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
         advanced={{
           showContours,
           onContoursToggle: setShowContours,
+          showPhotoSpheresUi,
+          onPhotoSpheresToggleUi: setShowPhotoSpheresUi,
         }}
         atsDlcs={atsDlcsListProps}
       />

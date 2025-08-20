@@ -5,6 +5,7 @@ import { useCallback, useRef, useState } from 'react';
 import { useControl } from 'react-map-gl/maplibre';
 
 export interface PhotoSphereControlProps {
+  visible: boolean;
   onToggle: (newValue: boolean) => void;
 }
 
@@ -23,7 +24,11 @@ export const PhotoSphereControl = (props: PhotoSphereControlProps) => {
   }, [active]);
 
   return (
-    <div ref={ref} className={'maplibregl-ctrl maplibregl-ctrl-group'}>
+    <div
+      ref={ref}
+      className={'maplibregl-ctrl maplibregl-ctrl-group'}
+      style={{ display: props.visible ? '' : 'none' }}
+    >
       <IconButton
         slots={{ root: IconButton }}
         sx={{
