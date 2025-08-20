@@ -104,12 +104,13 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
         if (panoramaPreview?.id !== panoFeature.properties['id']) {
           const pointFeature = panoFeature as unknown as GeoJSON.Feature<
             GeoJSON.Point,
-            { id: string; yaw: number }
+            { id: string; yaw: number; label: string }
           >;
           setPanoramaPreview({
             id: pointFeature.properties.id,
             point: pointFeature.geometry.coordinates as [number, number],
             yaw: pointFeature.properties.yaw,
+            label: pointFeature.properties.label,
           });
         }
       } else {
@@ -356,7 +357,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
           />
           <IconButton
             sx={{
-              backgroundColor: 'primary.500',
+              background: '#000a',
               position: 'absolute',
               borderRadius: '50%',
               m: 2.5,
@@ -364,7 +365,6 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
               right: 0,
             }}
             size={'lg'}
-            color={'primary'}
             variant={'solid'}
             onClick={clearPanorama}
           >

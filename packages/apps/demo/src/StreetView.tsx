@@ -1,3 +1,4 @@
+import { Card, Divider, Stack, Typography } from '@mui/joy';
 import { EquirectangularTilesAdapter } from '@photo-sphere-viewer/equirectangular-tiles-adapter';
 import { assertExists } from '@truckermudgeon/base/assert';
 import { AtsSelectableDlcs } from '@truckermudgeon/map/constants';
@@ -20,6 +21,7 @@ export interface PanoramaMeta {
   point: [number, number];
   // CW radians, with 0 as north, Pi/2 as east, etc.
   yaw?: number;
+  label: string;
 }
 
 const makePanoSrc = (pixelRootUrl: string, id: string) => {
@@ -58,9 +60,28 @@ export const StreetView = (props: {
         onPositionChange={onPitchYawChanged}
         defaultYaw={props.panorama.yaw ?? 0}
       />
+      <Card
+        sx={{
+          position: 'absolute',
+          m: 2.5,
+          top: 0,
+          left: 0,
+          background: '#000a',
+        }}
+        color="neutral"
+        invertedColors
+        variant="solid"
+      >
+        <Typography level={'title-lg'}>{panorama.label}</Typography>
+        <Divider />
+        <Stack direction={'row'} gap={2}>
+          <Typography level={'body-xs'}>August 2025</Typography>
+          <Divider orientation={'vertical'} />
+          <Typography level={'body-xs'}>ATS v1.55.2.2</Typography>
+        </Stack>
+      </Card>
       <div className={'credits'}>
-        Game data and images &copy; SCS Software. Images captured by Trucker
-        Mudgeon.
+        Images &copy; SCS Software. Captured by Trucker Mudgeon.
       </div>
       <MapGl
         ref={mapRef}
