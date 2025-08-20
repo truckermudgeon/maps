@@ -1,6 +1,5 @@
 import { Card, Divider, Stack, Typography } from '@mui/joy';
 import { EquirectangularTilesAdapter } from '@photo-sphere-viewer/equirectangular-tiles-adapter';
-import { assertExists } from '@truckermudgeon/base/assert';
 import { AtsSelectableDlcs } from '@truckermudgeon/map/constants';
 import {
   allIcons,
@@ -46,7 +45,9 @@ export const StreetView = (props: {
   const markerRef = useRef<MapLibreGLMarker>(null);
 
   const onPitchYawChanged = (_pitch: number, yaw: number) =>
-    assertExists(markerRef.current).setRotation((yaw / Math.PI) * 180);
+    // it's possible for markerRef.current to be undefined when StreetView is
+    // dismissed in the middle of inertial pitch/yaw changes
+    markerRef.current?.setRotation((yaw / Math.PI) * 180);
 
   return (
     <>

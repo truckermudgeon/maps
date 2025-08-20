@@ -36,6 +36,7 @@ import { ShareControl } from './ShareControl';
 import { toStateCodes } from './state-codes';
 import type { PanoramaMeta } from './StreetView';
 import { StreetView } from './StreetView';
+import { PanoramaPreview } from './StreetViewPreview';
 
 const inRange = (n: number, [min, max]: [number, number]) =>
   !isNaN(n) && min <= n && n <= max;
@@ -132,15 +133,26 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
       setPanorama(panoramaPreview);
     };
 
+    const handleEscape = (e: KeyboardEvent) => {
+      if (panorama != null && e.key === 'Escape') {
+        setPanorama(null);
+      }
+    };
+
+    if (panorama) {
+      document.addEventListener('keydown', handleEscape);
+    }
     map.on('mousemove', setCursor);
     map.on('click', maybeOpenPanorama);
     return () => {
       map.off('mousemove', setCursor);
       map.off('click', maybeOpenPanorama);
+      document.removeEventListener('keydown', handleEscape);
     };
   }, [
     mapRef.current,
     showStreetViewLayer,
+    panorama,
     panoramaPreview,
     showPhotoSpheresUi,
   ]);
@@ -313,31 +325,10 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
           longitude={panoramaPreview.point[0]}
           latitude={panoramaPreview.point[1]}
         >
-          <div
-            style={{
-              overflow: 'hidden',
-              width: 100,
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                position: 'relative',
-                left: -10,
-              }}
-            >
-              <img
-                width={100}
-                height={100}
-                src={`${pixelRootUrl}/${panoramaPreview.id}_5_3.jpg`}
-              />
-              <img
-                width={100}
-                height={100}
-                src={`${pixelRootUrl}/${panoramaPreview.id}_6_3.jpg`}
-              />
-            </div>
-          </div>
+          <PanoramaPreview
+            panorama={panoramaPreview}
+            pixelRootUrl={pixelRootUrl}
+          />
         </Popup>
       )}
       <ContextMenu />
