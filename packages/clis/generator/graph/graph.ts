@@ -726,19 +726,19 @@ prefab/truck_dealer/truck_dealer_peterbilt.ppd
     }
   }
 
-  let noEdgeToCount = 0;
+  const nodesWithoutEdgesTo = new Set<bigint>();
   for (const [nodeUid, neighbors] of graph.entries()) {
     if (neighbors.forward.length === 0 && neighbors.backward.length === 0) {
       logger.warn('no edge _from_', nodeUid);
     }
     if (!nodesWithEdgesTo.has(nodeUid)) {
       //logger.warn('no edge _to_', nodeUid);
-      noEdgeToCount++;
+      nodesWithoutEdgesTo.add(nodeUid);
     }
   }
   // maybe this is ok? e.g., one-way roads that dead-end somewhere?
   // TODO look into these.
-  logger.info('no edges to', noEdgeToCount);
+  logger.info('no edges to', nodesWithoutEdgesTo.size, 'nodes');
 
   // verify facilityNodes have at least one edge _to_ them and at least one edge
   // _from_ them.
@@ -748,6 +748,8 @@ prefab/truck_dealer/truck_dealer_peterbilt.ppd
     assert(neighbors.backward.length > 0 || neighbors.forward.length > 0);
     // verify facility node can be routed _to_
     if (!nodesWithEdgesTo.has(nodeUid)) {
+      // why? is it because of one-way roads? if so, should they be coerced
+      // into two-way roads?
       logger.warn('cannot route to facility', nodeUid);
     }
   }
