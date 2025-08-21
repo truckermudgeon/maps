@@ -742,6 +742,7 @@ prefab/truck_dealer/truck_dealer_peterbilt.ppd
 
   // verify facilityNodes have at least one edge _to_ them and at least one edge
   // _from_ them.
+  const unreachableFacilityNodes = new Set<bigint>();
   for (const nodeUid of facilityNodes.keys()) {
     const neighbors = assertExists(graph.get(nodeUid));
     // verify facility node can be routed _from_
@@ -750,9 +751,29 @@ prefab/truck_dealer/truck_dealer_peterbilt.ppd
     if (!nodesWithEdgesTo.has(nodeUid)) {
       // why? is it because of one-way roads? if so, should they be coerced
       // into two-way roads?
-      logger.warn('cannot route to facility', nodeUid);
+      //logger.warn('cannot route to facility', nodeUid);
+      unreachableFacilityNodes.add(nodeUid);
     }
   }
+
+  logger.info('no edges to', unreachableFacilityNodes.size, 'facility nodes');
+  const graphDebug = {
+    type: 'FeatureCollection',
+    features: [] as unknown[],
+  };
+  unreachableFacilityNodes.forEach(nid => {
+    const node = assertExists(nodes.get(nid));
+    const { x, y } = node;
+    const coordinates = fromAtsCoordsToWgs84([x, y]);
+    graphDebug.features.push({
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates,
+      },
+    });
+  });
+  console.log(JSON.stringify(graphDebug, null, 2));
 
   // TODO verify all nodes in graph have at least one edge _to_ them and at
   //  least one edge _from_ them.
