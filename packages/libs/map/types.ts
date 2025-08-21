@@ -796,6 +796,18 @@ export type Neighbors = Readonly<{
   backward: readonly Neighbor[];
 }>;
 
+export interface ServiceArea {
+  facilities: Set<FacilityIcon>;
+  itemUid: bigint;
+  itemType: ItemType.Prefab | ItemType.MapArea;
+}
+
+export interface GraphData {
+  graph: Map<bigint, Neighbors>;
+  // key is node uid (also appears as a key within `graph` map)
+  serviceAreas: Map<bigint, ServiceArea>;
+}
+
 // Routing Demo
 // Hacky, minimal versions of types needed for the fully-clientside "routes" demo page.
 

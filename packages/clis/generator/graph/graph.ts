@@ -1,5 +1,6 @@
 import { rotateRight } from '@truckermudgeon/base/array';
 import { assert, assertExists } from '@truckermudgeon/base/assert';
+import { areSetsEqual } from '@truckermudgeon/base/equals';
 import type { Extent, Position } from '@truckermudgeon/base/geom';
 import { contains, distance, getExtent } from '@truckermudgeon/base/geom';
 import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
@@ -19,6 +20,7 @@ import type { Direction } from '@truckermudgeon/map/routing';
 import type {
   CompanyItem,
   FacilityIcon,
+  GraphData,
   MapArea,
   Neighbor,
   Node,
@@ -60,18 +62,7 @@ export const graphMapDataKeys = [
 
 type GraphMappedData = MappedDataForKeys<typeof graphMapDataKeys>;
 
-export function generateGraph(tsMapData: GraphMappedData): {
-  graph: Map<bigint, { forward: Neighbor[]; backward: Neighbor[] }>;
-  serviceAreas: Map<
-    // node uid (appears as a key within `graph` map)
-    bigint,
-    {
-      facilities: Set<FacilityIcon>;
-      itemUid: bigint;
-      itemType: ItemType.Prefab | ItemType.MapArea;
-    }
-  >;
-} {
+export function generateGraph(tsMapData: GraphMappedData): GraphData {
   const {
     map,
     nodes: _nodes,
@@ -509,7 +500,15 @@ export function generateGraph(tsMapData: GraphMappedData): {
       nodes,
       knownGraphNodes,
     });
-    assert(!facilityNodes.has(key));
+
+    if (facilityNodes.has(key)) {
+      const existing = facilityNodes.get(key)!;
+      assert(existing.itemUid === value.itemUid);
+      assert(areSetsEqual(existing.facilities, value.facilities));
+      logger.warn('encountered a benign duplicate key', key.toString(16));
+      continue;
+    }
+
     facilityNodes.set(key, {
       ...value,
       facilities: new Set([
@@ -1102,6 +1101,14 @@ function getObjectsInSectorRange<T>(
   ];
 }
 
+/**
+ * Returns a key and value, where:
+ * - `value` is a Prefab or MapArea item containing a set of facilities, and
+ * - `key` is the node uid used to navigate to the value
+ *
+ * @param prefab a Prefab with facilities
+ * @param context context needed to perform this calculation
+ */
 function getPrefabFacilitiesEntry(
   prefab: Prefab,
   context: {
