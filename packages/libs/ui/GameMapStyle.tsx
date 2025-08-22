@@ -1,7 +1,9 @@
 import type { DataDrivenPropertyValueSpecification } from '@maplibre/maplibre-gl-style-spec';
 import { Preconditions } from '@truckermudgeon/base/precon';
 import type {
+  AtsDlcGuard,
   AtsSelectableDlc,
+  Ets2DlcGuard,
   Ets2SelectableDlc,
 } from '@truckermudgeon/map/constants';
 import {
@@ -929,14 +931,19 @@ function createDlcGuardFilter(
   game: 'ats' | 'ets2',
   selectedDlcs: ReadonlySet<AtsSelectableDlc> | ReadonlySet<Ets2SelectableDlc>,
 ): ExpressionSpecification {
-  let dlcGuards;
+  let dlcGuards: Set<AtsDlcGuard> | Set<Ets2DlcGuard>;
   if (game === 'ats') {
     dlcGuards = toAtsDlcGuards(selectedDlcs as ReadonlySet<AtsSelectableDlc>);
   } else {
     dlcGuards = toEts2DlcGuards(selectedDlcs as ReadonlySet<Ets2SelectableDlc>);
   }
 
-  return ['in', ['get', 'dlcGuard'], ['literal', [...dlcGuards]]];
+  return [
+    'any',
+    ['in', ['get', 'dlcGuard'], ['literal', [...dlcGuards]]],
+    // HACK temporary condition until `normalizeDlcGuards` supports ETS2
+    ['==', ['get', 'dlcGuard'], null as unknown as ExpressionSpecification],
+  ];
 }
 
 export const textVariableAnchor: ExpressionSpecification = [
