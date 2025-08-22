@@ -1,9 +1,6 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { IconButton, useColorScheme } from '@mui/joy';
-import {
-  AtsSelectableDlcs,
-  Ets2SelectableDlcs,
-} from '@truckermudgeon/map/constants';
+import { AtsSelectableDlcs } from '@truckermudgeon/map/constants';
 import {
   allIcons,
   BaseMapStyle,
@@ -208,7 +205,6 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
         mode={mode}
         enableIconAutoHide={autoHide}
         visibleIcons={visibleIcons}
-        dlcs={Ets2SelectableDlcs}
       />
       {visibleIcons.has(MapIcon.CityNames) && (
         <SceneryTownSource
