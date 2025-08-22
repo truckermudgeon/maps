@@ -204,9 +204,21 @@ export type Ets2SelectableDlc = Exclude<
   Ets2Dlc,
   Ets2Dlc.HeartOfRussia | Ets2Dlc.Krone | Ets2Dlc.Feldbinder
 >;
-export const Ets2SelectableDlcs: ReadonlySet<Ets2SelectableDlc> = new Set([]);
+export const Ets2SelectableDlcs: ReadonlySet<Ets2SelectableDlc> = new Set([
+  Ets2Dlc.GoingEast,
+  Ets2Dlc.Scandinavia,
+  Ets2Dlc.ViveLaFrance,
+  Ets2Dlc.Italia,
+  Ets2Dlc.BeyondTheBalticSea,
+  Ets2Dlc.RoadToTheBlackSea,
+  Ets2Dlc.Iberia,
+  Ets2Dlc.WestBalkans,
+  Ets2Dlc.Greece,
+]);
 
-export const Ets2DlcGuards: Record<number, ReadonlySet<Ets2Dlc>> = {
+export type Ets2DlcGuard = Range<0, 23>;
+
+export const Ets2DlcGuards: Record<number, ReadonlySet<Ets2SelectableDlc>> = {
   0: new Set(),
   1: new Set([Ets2Dlc.GoingEast]),
   2: new Set([Ets2Dlc.Scandinavia]),
@@ -220,17 +232,29 @@ export const Ets2DlcGuards: Record<number, ReadonlySet<Ets2Dlc>> = {
   10: new Set([Ets2Dlc.RoadToTheBlackSea, Ets2Dlc.GoingEast]),
   11: new Set([Ets2Dlc.Iberia]),
   12: new Set([Ets2Dlc.Iberia, Ets2Dlc.ViveLaFrance]),
-  13: new Set([Ets2Dlc.HeartOfRussia]),
-  14: new Set([Ets2Dlc.HeartOfRussia, Ets2Dlc.BeyondTheBalticSea]),
-  15: new Set([Ets2Dlc.Krone]),
+  //13: new Set([Ets2Dlc.HeartOfRussia]),
+  //14: new Set([Ets2Dlc.HeartOfRussia, Ets2Dlc.BeyondTheBalticSea]),
+  //15: new Set([Ets2Dlc.Krone]),
   16: new Set([Ets2Dlc.WestBalkans]),
   17: new Set([Ets2Dlc.WestBalkans, Ets2Dlc.GoingEast]),
   18: new Set([Ets2Dlc.WestBalkans, Ets2Dlc.BeyondTheBalticSea]),
-  19: new Set([Ets2Dlc.Feldbinder]),
+  //19: new Set([Ets2Dlc.Feldbinder]),
   20: new Set([Ets2Dlc.Greece]),
   21: new Set([Ets2Dlc.Greece, Ets2Dlc.GoingEast]),
   22: new Set([Ets2Dlc.Greece, Ets2Dlc.WestBalkans]),
 };
+
+export function toEts2DlcGuards(
+  selectedDlcs: ReadonlySet<Ets2SelectableDlc>,
+): Set<Ets2DlcGuard> {
+  const guards = new Set<Ets2SelectableDlc>();
+  for (const [key, dlcs] of Object.entries(Ets2DlcGuards)) {
+    if ([...dlcs].every(dlc => selectedDlcs.has(dlc))) {
+      guards.add(Number(key));
+    }
+  }
+  return guards;
+}
 
 // names, color values defined in def/map_data.sii
 export enum MapAreaColor {
