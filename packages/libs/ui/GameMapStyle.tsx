@@ -1,7 +1,9 @@
 import type { DataDrivenPropertyValueSpecification } from '@maplibre/maplibre-gl-style-spec';
 import { Preconditions } from '@truckermudgeon/base/precon';
 import type {
+  AtsDlcGuard,
   AtsSelectableDlc,
+  Ets2DlcGuard,
   Ets2SelectableDlc,
 } from '@truckermudgeon/map/constants';
 import {
@@ -9,6 +11,7 @@ import {
   Ets2SelectableDlcs,
   MapAreaColor,
   toAtsDlcGuards,
+  toEts2DlcGuards,
 } from '@truckermudgeon/map/constants';
 import type {
   FacilityIcon,
@@ -926,15 +929,17 @@ function createDlcGuardFilter(
 ): ExpressionSpecification;
 function createDlcGuardFilter(
   game: 'ats' | 'ets2',
-  selectedDlcs: ReadonlySet<unknown>,
+  selectedDlcs: ReadonlySet<AtsSelectableDlc> | ReadonlySet<Ets2SelectableDlc>,
 ): ExpressionSpecification {
-  if (game !== 'ats') {
-    return ['boolean', true];
+  let dlcGuards: Set<AtsDlcGuard> | Set<Ets2DlcGuard>;
+  if (game === 'ats') {
+    dlcGuards = toAtsDlcGuards(selectedDlcs as ReadonlySet<AtsSelectableDlc>);
+  } else {
+    dlcGuards = toEts2DlcGuards(selectedDlcs as ReadonlySet<Ets2SelectableDlc>);
+    // HACK temporary condition until `normalizeDlcGuards` supports ETS2
+    dlcGuards.add(null as unknown as Ets2SelectableDlc);
   }
 
-  const dlcGuards = toAtsDlcGuards(
-    selectedDlcs as ReadonlySet<AtsSelectableDlc>,
-  );
   return ['in', ['get', 'dlcGuard'], ['literal', [...dlcGuards]]];
 }
 
