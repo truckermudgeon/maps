@@ -9,6 +9,7 @@ import {
   Ets2SelectableDlcs,
   MapAreaColor,
   toAtsDlcGuards,
+  toEts2DlcGuards,
 } from '@truckermudgeon/map/constants';
 import type {
   FacilityIcon,
@@ -926,15 +927,15 @@ function createDlcGuardFilter(
 ): ExpressionSpecification;
 function createDlcGuardFilter(
   game: 'ats' | 'ets2',
-  selectedDlcs: ReadonlySet<unknown>,
+  selectedDlcs: ReadonlySet<AtsSelectableDlc> | ReadonlySet<Ets2SelectableDlc>,
 ): ExpressionSpecification {
-  if (game !== 'ats') {
-    return ['boolean', true];
+  let dlcGuards;
+  if (game === 'ats') {
+    dlcGuards = toAtsDlcGuards(selectedDlcs as ReadonlySet<AtsSelectableDlc>);
+  } else {
+    dlcGuards = toEts2DlcGuards(selectedDlcs as ReadonlySet<Ets2SelectableDlc>);
   }
 
-  const dlcGuards = toAtsDlcGuards(
-    selectedDlcs as ReadonlySet<AtsSelectableDlc>,
-  );
   return ['in', ['get', 'dlcGuard'], ['literal', [...dlcGuards]]];
 }
 
