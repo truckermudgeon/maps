@@ -28,6 +28,7 @@ import type {
   Poi,
   Prefab,
   Road,
+  Sign,
   Terrain,
   TrajectoryItem,
   Trigger,
@@ -339,6 +340,8 @@ function postProcess(
   logger.success('built', itemsByUid.size, 'item LUT entries');
 
   const referencedNodeUids = new Set<bigint>();
+  const referencedPrefabTokens = new Set<string>();
+  const referencedSignTokens = new Set<string>();
   const elevationNodeUids = new Set<bigint>();
   const cityAreas = new Map<string, CityArea[]>();
   const prefabs: Prefab[] = [];
@@ -347,6 +350,7 @@ function postProcess(
   const mapAreas: MapArea[] = [];
   const cutscenes: Cutscene[] = [];
   const triggers: Trigger[] = [];
+  const signs: Sign[] = [];
   const ferryItems = new Map<string, FerryItem>();
   const poifulItems: (
     | Prefab
@@ -382,6 +386,7 @@ function postProcess(
       case ItemType.Prefab:
         checkReference(item.token, defData.prefabs, 'prefab token', item);
         checkReference(item.nodeUids, nodesByUid, 'nodeUids', item);
+        referencedPrefabTokens.add(item.token);
         item.nodeUids.forEach(uid => {
           referencedNodeUids.add(uid);
           elevationNodeUids.add(uid);
@@ -431,6 +436,13 @@ function postProcess(
         item.nodeUids.forEach(uid => referencedNodeUids.add(uid));
         poifulItems.push(item);
         triggers.push(item);
+        break;
+      case ItemType.Sign:
+        checkReference(item.nodeUid, nodesByUid, 'nodeUid', item);
+        checkReference(item.token, defData.signs, 'sign token', item);
+        referencedSignTokens.add(item.token);
+        referencedNodeUids.add(item.nodeUid);
+        signs.push(item);
         break;
       case ItemType.Model:
         // sector parsing returns _all_ models, but
@@ -953,14 +965,20 @@ function postProcess(
       pois,
       dividers,
       triggers,
+      signs,
       trajectories,
       cutscenes,
       countries: valuesWithTokens(defData.countries).map(withLocalizedName),
       cities: valuesWithTokens(cities).map(withLocalizedName),
       companyDefs: valuesWithTokens(defData.companies),
       roadLooks: valuesWithTokens(defData.roadLooks),
-      prefabDescriptions: valuesWithTokens(defData.prefabs),
+      prefabDescriptions: valuesWithTokens(defData.prefabs).filter(prefab =>
+        referencedPrefabTokens.has(prefab.token),
+      ),
       modelDescriptions: valuesWithTokens(defData.models),
+      signDescriptions: valuesWithTokens(defData.signs).filter(sign =>
+        referencedSignTokens.has(sign.token),
+      ),
       achievements: valuesWithTokens(defData.achievements),
       routes: valuesWithTokens(defData.routes),
       mileageTargets: valuesWithTokens(defData.mileageTargets),
@@ -980,6 +998,7 @@ function toDefData(
     roadLooks: valuesWithTokens(defData.roadLooks),
     prefabDescriptions: valuesWithTokens(defData.prefabs),
     modelDescriptions: valuesWithTokens(defData.models),
+    signDescriptions: valuesWithTokens(defData.signs),
     achievements: valuesWithTokens(defData.achievements),
     routes: valuesWithTokens(defData.routes),
     mileageTargets: valuesWithTokens(defData.mileageTargets),

@@ -558,6 +558,8 @@ function createFakeMapData(arrays: PartialMapData): MappedData<'usa'> {
     routes: new Map(),
     trajectories: new Map(),
     triggers: new Map(),
+    signDescriptions: new Map(),
+    signs: new Map(),
     achievements: new Map(),
     cutscenes: new Map(),
     dividers: new Map(),

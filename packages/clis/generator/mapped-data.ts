@@ -27,6 +27,8 @@ import type {
   Road,
   RoadLook,
   Route,
+  Sign,
+  SignDescription,
   TrajectoryItem,
   Trigger,
   WithPath,
@@ -67,6 +69,8 @@ interface MapDataKeyFields {
   routes: PickKey<'routes', 'token'>;
   trajectories: PickKey<'trajectories', 'uid'>;
   triggers: PickKey<'triggers', 'uid'>;
+  signDescriptions: PickKey<'signDescriptions', 'token'>;
+  signs: PickKey<'signs', 'uid'>;
 }
 
 // Transforms MapData (a type containing all array properties) into a type with
@@ -282,6 +286,12 @@ export function readMapData<
           m => m.token,
         );
         break;
+      case 'signDescriptions':
+        mapData.signDescriptions = mapify(
+          readArrayFile<WithToken<SignDescription>>(toJsonFilePath(key)),
+          m => m.token,
+        );
+        break;
       // N.B.: the following data is always included in its entirety, regardless
       // of focus options.
       case 'achievements':
@@ -299,6 +309,12 @@ export function readMapData<
       case 'triggers':
         mapData.triggers = mapify(
           readArrayFile<Trigger>(toJsonFilePath(key)),
+          t => t.uid,
+        );
+        break;
+      case 'signs':
+        mapData.signs = mapify(
+          readArrayFile<Sign>(toJsonFilePath(key)),
           t => t.uid,
         );
         break;
