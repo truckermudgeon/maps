@@ -616,6 +616,8 @@ export type PoiFeature = GeoJSON.Feature<GeoJSON.Point, PoiProperties>;
 
 export type TrafficFeature = GeoJSON.Feature<GeoJSON.Point, TrafficProperties>;
 
+export type ExitFeature = GeoJSON.Feature<GeoJSON.Point, ExitProperties>;
+
 export type FootprintFeature = GeoJSON.Feature<
   GeoJSON.Polygon,
   FootprintProperties
@@ -640,6 +642,7 @@ export type AtsMapGeoJsonFeature =
   | CountryFeature
   | PoiFeature
   | TrafficFeature
+  | ExitFeature
   | FootprintFeature
   | ContourFeature
   | AchievementFeature
@@ -722,6 +725,11 @@ export interface TrafficProperties {
   type: 'traffic';
   sprite: string;
   dlcGuard: number;
+}
+
+export interface ExitProperties {
+  type: 'exit';
+  name: string;
 }
 
 export type ScopedCityFeature = GeoJSON.Feature<
