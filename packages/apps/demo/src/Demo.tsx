@@ -254,7 +254,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
           />
         </Source>
       )}
-      {Math.random() < 2 && (
+      {Math.random() > 2 && (
         <Source type={'vector'} url={'pmtiles:///usa-prefab-curves.pmtiles'}>
           <Layer
             source-layer={'usaprefabcurves'}
