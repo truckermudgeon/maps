@@ -780,26 +780,18 @@ function createExitFeatures(
       }
       return true;
     })
-    .map(s => {
-      return {
-        ...s,
-        textItems: s.textItems.filter(
-          t =>
-            // ignore text that looks like a path, e.g., /def or /font, or a
-            // traffic rule.
-            !/^(\/|traffic_rule)/.exec(t) &&
-            // we don't care about the part of an exit sign with speed limits
-            !t.includes('MPH') &&
-            // we don't care about the part of an exit sign with street names,
-            // e.g., 1st Ave S
-            !t.includes('Ave') &&
-            // an exit sign must have a number
-            /\d/.exec(t) &&
-            // we only care about singular exits, not, e.g., "EXITS 257 B-A"
-            !/[A-Z]-[A-Z]/.exec(t),
-        ),
-      };
-    })
+    .map(s => ({
+      ...s,
+      textItems: s.textItems.filter(t =>
+        // we only care about text that looks like exit text, e.g.:
+        // EXIT 2
+        //    3
+        // 124 B
+        // 456A
+        // 1 1   (which gets normalized to 11; see sign item 0x33d547dc3d4908e2)
+        /^\s*(EXIT\s+)?(\d+\s*)+[A-Z]?\s*$/i.exec(t),
+      ),
+    }))
     .filter(s => s.textItems.length);
 
   logger.info(likelySigns.length, 'likely exit signs');
