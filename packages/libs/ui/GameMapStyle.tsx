@@ -25,7 +25,8 @@ import type {
   PaddingSpecification,
   SymbolLayerSpecification,
 } from 'maplibre-gl';
-import { Layer, Source } from 'react-map-gl/maplibre';
+import { useEffect } from 'react';
+import { Layer, Source, useMap } from 'react-map-gl/maplibre';
 import type { Mode } from './colors';
 import { modeColors } from './colors';
 import { addPmTilesProtocol } from './pmtiles';
@@ -96,6 +97,68 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
       : createDlcGuardFilter(game, props.dlcs ?? Ets2SelectableDlcs);
   const colors = modeColors[mode];
   addPmTilesProtocol();
+
+  const map = useMap();
+  useEffect(() => {
+    if (!map.current) {
+      return;
+    }
+    const mapRef = map.current;
+    mapRef.on('styleimagemissing', e => {
+      if (e.id !== 'exit-sign' || mapRef.hasImage('exit-sign')) {
+        return;
+      }
+      const size = 64; // The image will be 64 pixels square
+      const bytesPerPixel = 4; // Each pixel is represented by 4 bytes: red, green, blue, and alpha.
+      const data = new Uint8Array(size * size * bytesPerPixel);
+
+      for (let x = 0; x < size; x++) {
+        for (let y = 0; y < size; y++) {
+          const offset = (y * size + x) * bytesPerPixel;
+          if (y === 0 || y === size - 1 || x === 0 || x === size - 1) {
+            // gray
+            data[offset + 0] = 0x88;
+            data[offset + 1] = 0x88;
+            data[offset + 2] = 0x88;
+            data[offset + 3] = 255; // alpha
+          } else if (
+            x === 1 ||
+            x === 2 ||
+            x === size - 2 ||
+            x === size - 3 ||
+            y === 1 ||
+            y === 2 ||
+            y === size - 2 ||
+            y === size - 3
+          ) {
+            // white
+            data[offset + 0] = 0xff;
+            data[offset + 1] = 0xff;
+            data[offset + 2] = 0xff;
+            data[offset + 3] = 255; // alpha
+          } else {
+            // green
+            data[offset + 0] = 0x52;
+            data[offset + 1] = 0xb1;
+            data[offset + 2] = 0x81;
+            data[offset + 3] = 255; // alpha
+          }
+        }
+      }
+      const padding = 8;
+      mapRef.addImage(
+        'exit-sign',
+        { width: size, height: size, data },
+        {
+          stretchX: [[padding, size - padding]],
+          stretchY: [[padding, size - padding]],
+          content: [padding, padding, size - padding, size - padding],
+          pixelRatio: 2,
+        },
+      );
+    });
+  }, [map.current]);
+
   return (
     // N.B.: {ats,ets2}.pmtiles each have one layer named 'ats' or 'ets2'
     // (layer names are set when running tippecanoe).
@@ -464,6 +527,32 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             ],
           ]}
           layout={iconLayout(enableIconAutoHide, 0.4, 0.75, 1.25)}
+        />
+      )}
+      {visibleIcons.has(MapIcon.RoadNumber) && (
+        <Layer
+          id={game + 'exit-points'}
+          source-layer={game}
+          type={'symbol'}
+          paint={{
+            'text-color': '#fff',
+          }}
+          minzoom={enableIconAutoHide ? 10 : 0}
+          layout={{
+            ...iconLayout(enableIconAutoHide, 0.4, 0.75, 1.25),
+            ...baseTextLayout,
+            'text-field': '{name}',
+            'text-size': ['interpolate', ['linear'], ['zoom'], 4, 4, 10, 10],
+            'icon-text-fit': 'both',
+            'icon-text-fit-padding': [0, 2, 0, 2],
+            'icon-image': 'exit-sign',
+          }}
+          filter={[
+            'all',
+            ['==', ['geometry-type'], 'Point'],
+            ['==', ['get', 'type'], 'exit'],
+            dlcGuardFilter,
+          ]}
         />
       )}
       {visibleIcons.has(MapIcon.CityNames) && (

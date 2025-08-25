@@ -23,6 +23,7 @@ import type {
   Country,
   CountryFeature,
   DebugFeature,
+  ExitFeature,
   Ferry,
   FerryFeature,
   MapArea,
@@ -38,6 +39,8 @@ import type {
   RoadLook,
   RoadLookProperties,
   RoadType,
+  Sign,
+  SignDescription,
   TrafficFeature,
   WithPath,
   WithToken,
@@ -73,6 +76,7 @@ export const geoJsonMapDataKeys = [
   'roads',
   'ferries',
   'prefabs',
+  'signs',
   'mapAreas',
   'dividers',
   'pois',
@@ -80,6 +84,7 @@ export const geoJsonMapDataKeys = [
   'countries',
   'roadLooks',
   'prefabDescriptions',
+  'signDescriptions',
 ] satisfies MapDataKeys;
 
 type GeoJsonMappedData = MappedDataForKeys<typeof geoJsonMapDataKeys>;
@@ -99,6 +104,7 @@ export function convertToMapGeoJson(
     map,
     nodes,
     roads,
+    signs,
     ferries,
     prefabs,
     mapAreas,
@@ -108,6 +114,7 @@ export function convertToMapGeoJson(
     countries,
     roadLooks,
     prefabDescriptions,
+    signDescriptions,
     dlcGuardQuadTree,
   } = normalizeDlcGuards(tsMapData);
 
@@ -584,6 +591,9 @@ export function convertToMapGeoJson(
     prefabDescriptions,
   );
 
+  logger.log('creating exit features...');
+  const exitFeatures = createExitFeatures(map, nodes, signs, signDescriptions);
+
   const debugCityAreaFeatures: DebugFeature[] = [];
   const debugNodeFeatures: DebugFeature[] = [];
   if (options.includeDebug) {
@@ -616,10 +626,11 @@ export function convertToMapGeoJson(
     ...countryFeatures,
     ...poiFeatures.map(p => withDlcGuard(p, dlcGuardQuadTree)),
     ...trafficFeatures,
+    ...exitFeatures.map(e => withDlcGuard(e, dlcGuardQuadTree)),
     //...dividerFeatures,
     ...debugNodeFeatures,
     ...ferryFeatures,
-  ];
+  ]; // TODO: should `withDlcGuard` be called on all features?
 
   return {
     type: 'FeatureCollection',
@@ -627,7 +638,10 @@ export function convertToMapGeoJson(
   };
 }
 
-function withDlcGuard<T extends CityFeature | PoiFeature>(
+/**
+ * Adds a best-guess `dlcGuard` field to `T`, using data from `dlcQuadTree`.
+ */
+function withDlcGuard<T extends CityFeature | PoiFeature | ExitFeature>(
   feature: T,
   dlcQuadTree: Quadtree<{ x: number; y: number; dlcGuard: number }> | undefined,
 ): T {
@@ -704,6 +718,95 @@ function createTrafficFeatures(
   logger.info(railCrossingCount, 'railroad crossing points');
 
   return features;
+}
+
+function createExitFeatures(
+  map: 'usa' | 'europe',
+  nodes: ReadonlyMap<bigint, Node>,
+  signs: ReadonlyMap<bigint, Sign>,
+  signDescriptions: ReadonlyMap<string, WithToken<SignDescription>>,
+): ExitFeature[] {
+  if (map === 'europe') {
+    // not yet supported.
+    return [];
+  }
+
+  // find likely exit sign descriptions
+  // name contains 'exit', but does not contain "exit mph"
+  const likelyExitTokens = new Set(
+    signDescriptions
+      .values()
+      .filter(
+        v =>
+          v.modelDesc.startsWith('/model/sign/navigation') &&
+          ((v.name.includes('exit') && !v.name.includes('exit mph')) ||
+            v.name.includes('side board green')),
+      )
+      .map(v => v.token),
+  );
+  logger.info(likelyExitTokens.size, 'potential exit sign tokens');
+
+  // find sign items that match. check text items
+  //   - filter out lines of text that match \d\s+MPH (to take into account sm_bd_13 and _14)
+  const likelySigns = signs
+    .values()
+    .toArray()
+    .filter(s => likelyExitTokens.has(s.token))
+    .map(s => ({
+      ...s,
+      // normalize text to remove HTML-ish tags.
+      textItems: s.textItems
+        .map(t => t.replaceAll(/<br>/gi, ' '))
+        .map(t => t.replaceAll(/<[^>]*>/g, '')),
+    }))
+    // ignore signs that have a distance, e.g. "1 MILE" or "1000 FT", because
+    // we're interested in exit signs at the exit point, not x distance away
+    // from the exit point.
+    .filter(s => !s.textItems.some(t => /\d+\s+(MILE|FT)/.exec(t)))
+    .filter(s => {
+      const desc = assertExists(signDescriptions.get(s.token));
+      if (desc.name.includes('side board green')) {
+        // sometimes green side boards are used at exit points, sometimes
+        // they're used to indicate that an exit is approaching. use some
+        // heuristics to figure out what's happening for the current sign.
+        if (s.textItems.length > 3) {
+          // lots of stuff going on in this side board. most likely not an
+          // exit point sign.
+          return false;
+        }
+        const textItems = s.textItems.filter(t => !t.startsWith('/'));
+        // return `true` if the only text on the sign looks like an exit number.
+        return textItems.length === 1 && /^\d+\s*[A-Z]?$/i.exec(textItems[0]);
+      }
+      return true;
+    })
+    .map(s => ({
+      ...s,
+      textItems: s.textItems.filter(t =>
+        // we only care about text that looks like exit text, e.g.:
+        // EXIT 2
+        //    3
+        // 124 B
+        // 456A
+        // 1 1   (which gets normalized to 11; see sign item 0x33d547dc3d4908e2)
+        /^\s*(EXIT\s+)?(\d+\s*)+[A-Z]?\s*$/i.exec(t),
+      ),
+    }))
+    .filter(s => s.textItems.length);
+
+  logger.info(likelySigns.length, 'likely exit signs');
+  return likelySigns.map(sign => {
+    assert(
+      sign.textItems.length === 1,
+      'multiple text items: ' +
+        sign.textItems.join(',') +
+        '\n' +
+        JSON.stringify(sign, null, 2),
+    );
+    const exitText = sign.textItems[0].replaceAll(/EXIT|\s/g, '');
+    const { x, y } = assertExists(nodes.get(sign.nodeUid));
+    return turf.point([x, y], { type: 'exit', name: exitText });
+  });
 }
 
 /**

@@ -167,18 +167,20 @@ export function readMapData<
 
   const focusXY =
     focusCoords != null
-      ? (i: { x: number; y: number }, padding = 0) =>
-          distance([i.x, i.y], focusCoords) <=
-          focusOptions!.radiusMeters + padding
+      ? (i: { x: number; y: number }) =>
+          distance([i.x, i.y], focusCoords) <= focusOptions!.radiusMeters
       : () => true;
   const focusXYArray =
     focusCoords != null
-      ? (i: [number, number, number], padding = 0) =>
-          distance([i[0], i[1]], focusCoords) <=
+      ? (i: [number, number, number]) =>
+          distance([i[0], i[1]], focusCoords) <= focusOptions!.radiusMeters
+      : () => true;
+  const focusXYPlus = (padding: number) =>
+    focusCoords != null
+      ? (i: { x: number; y: number }) =>
+          distance([i.x, i.y], focusCoords) <=
           focusOptions!.radiusMeters + padding
       : () => true;
-  const focusXYPlus = (padding: number) => (pos: { x: number; y: number }) =>
-    focusXY(pos, padding);
 
   logger.log(`reading ${map} map JSON files...`);
   const cities = allCities.filter(focusXY);
@@ -220,6 +222,12 @@ export function readMapData<
               (includeHiddenRoadsAndPrefabs ? true : !p.hidden) && focusXY(p),
           ),
           p => p.uid,
+        );
+        break;
+      case 'signs':
+        mapData.signs = mapify(
+          readArrayFile<Sign>(toJsonFilePath(key), focusXY),
+          t => t.uid,
         );
         break;
       case 'companies':
@@ -309,12 +317,6 @@ export function readMapData<
       case 'triggers':
         mapData.triggers = mapify(
           readArrayFile<Trigger>(toJsonFilePath(key)),
-          t => t.uid,
-        );
-        break;
-      case 'signs':
-        mapData.signs = mapify(
-          readArrayFile<Sign>(toJsonFilePath(key)),
           t => t.uid,
         );
         break;

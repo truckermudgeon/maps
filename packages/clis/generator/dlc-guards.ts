@@ -23,11 +23,14 @@ export type DlcGuardQuadTree = Quadtree<QtDlcGuardEntry>;
 
 export const dlcGuardMapDataKeys = [
   'nodes',
+  // Item types that have a `dlcGuard` field
   'roads',
   'prefabs',
   'mapAreas',
   'triggers',
   'cutscenes',
+  // note: Pois representing MapOverlays have a `dlcGuard` field. other Pois
+  // may not.
   'pois',
 ] satisfies MapDataKeys;
 
