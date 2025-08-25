@@ -58,8 +58,6 @@ export const allIcons: ReadonlySet<MapIcon> = new Set<MapIcon>(
   Array.from({ length: 19 }, (_, i) => i as MapIcon),
 );
 
-let exitIconAdded = false;
-
 export type GameMapStyleProps = {
   /**
    * URL where .pmtiles are stored, without the trailing `/`, e.g.,
@@ -102,24 +100,63 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
 
   const map = useMap();
   useEffect(() => {
-    if (!map.current || exitIconAdded) {
+    if (!map.current) {
       return;
     }
-    exitIconAdded = true;
     const mapRef = map.current;
-    void mapRef
-      .loadImage(
-        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAACVBMVEVSsYH///+IiIjkQI6XAAAANklEQVR42u3XsREAIBDDsPD7D80OBI5GHkC9M2WZVXUHyHEAAAAAAAAAAAAAAAA8B/6/c7v/G00RA9lAe2TaAAAAAElFTkSuQmCC',
-      )
-      .then(res => {
-        const padding = 8;
-        mapRef.addImage('exit-sign', res.data, {
+    mapRef.on('styleimagemissing', e => {
+      if (e.id !== 'exit-sign' || mapRef.hasImage('exit-sign')) {
+        return;
+      }
+      const size = 64; // The image will be 64 pixels square
+      const bytesPerPixel = 4; // Each pixel is represented by 4 bytes: red, green, blue, and alpha.
+      const data = new Uint8Array(size * size * bytesPerPixel);
+
+      for (let x = 0; x < size; x++) {
+        for (let y = 0; y < size; y++) {
+          const offset = (y * size + x) * bytesPerPixel;
+          if (y === 0 || y === size - 1 || x === 0 || x === size - 1) {
+            // gray
+            data[offset + 0] = 0x88;
+            data[offset + 1] = 0x88;
+            data[offset + 2] = 0x88;
+            data[offset + 3] = 255; // alpha
+          } else if (
+            x === 1 ||
+            x === 2 ||
+            x === size - 2 ||
+            x === size - 3 ||
+            y === 1 ||
+            y === 2 ||
+            y === size - 2 ||
+            y === size - 3
+          ) {
+            // white
+            data[offset + 0] = 0xff;
+            data[offset + 1] = 0xff;
+            data[offset + 2] = 0xff;
+            data[offset + 3] = 255; // alpha
+          } else {
+            // green
+            data[offset + 0] = 0x52;
+            data[offset + 1] = 0xb1;
+            data[offset + 2] = 0x81;
+            data[offset + 3] = 255; // alpha
+          }
+        }
+      }
+      const padding = 8;
+      mapRef.addImage(
+        'exit-sign',
+        { width: size, height: size, data },
+        {
           stretchX: [[padding, 64 - padding]],
           stretchY: [[padding, 64 - padding]],
           content: [padding, padding, 64 - padding, 64 - padding],
           pixelRatio: 2,
-        });
-      });
+        },
+      );
+    });
   }, [map.current]);
 
   return (
