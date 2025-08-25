@@ -150,9 +150,9 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
         'exit-sign',
         { width: size, height: size, data },
         {
-          stretchX: [[padding, 64 - padding]],
-          stretchY: [[padding, 64 - padding]],
-          content: [padding, padding, 64 - padding, 64 - padding],
+          stretchX: [[padding, size - padding]],
+          stretchY: [[padding, size - padding]],
+          content: [padding, padding, size - padding, size - padding],
           pixelRatio: 2,
         },
       );
