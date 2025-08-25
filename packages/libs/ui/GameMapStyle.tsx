@@ -466,30 +466,32 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           layout={iconLayout(enableIconAutoHide, 0.4, 0.75, 1.25)}
         />
       )}
-      <Layer
-        id={game + 'exit-points'}
-        source-layer={game}
-        type={'symbol'}
-        paint={{
-          'text-color': '#fff',
-        }}
-        minzoom={enableIconAutoHide ? 10 : 0}
-        layout={{
-          ...iconLayout(enableIconAutoHide, 0.4, 0.75, 1.25),
-          ...baseTextLayout,
-          'text-field': '{name}',
-          'text-size': 10,
-          'icon-text-fit': 'both',
-          'icon-text-fit-padding': [0, 2, 0, 2],
-          'icon-image': 'exit-sign',
-        }}
-        filter={[
-          'all',
-          ['==', ['geometry-type'], 'Point'],
-          ['==', ['get', 'type'], 'exit'],
-          dlcGuardFilter,
-        ]}
-      />
+      {visibleIcons.has(MapIcon.RoadNumber) && (
+        <Layer
+          id={game + 'exit-points'}
+          source-layer={game}
+          type={'symbol'}
+          paint={{
+            'text-color': '#fff',
+          }}
+          minzoom={enableIconAutoHide ? 10 : 0}
+          layout={{
+            ...iconLayout(enableIconAutoHide, 0.4, 0.75, 1.25),
+            ...baseTextLayout,
+            'text-field': '{name}',
+            'text-size': ['interpolate', ['linear'], ['zoom'], 4, 4, 10, 10],
+            'icon-text-fit': 'both',
+            'icon-text-fit-padding': [0, 2, 0, 2],
+            'icon-image': 'exit-sign',
+          }}
+          filter={[
+            'all',
+            ['==', ['geometry-type'], 'Point'],
+            ['==', ['get', 'type'], 'exit'],
+            dlcGuardFilter,
+          ]}
+        />
+      )}
       {visibleIcons.has(MapIcon.CityNames) && (
         <Layer
           id={game + 'city-labels-small'}
