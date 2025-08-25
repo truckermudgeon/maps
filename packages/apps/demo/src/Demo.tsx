@@ -1,5 +1,6 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { IconButton, useColorScheme } from '@mui/joy';
+import { assertExists } from '@truckermudgeon/base/assert';
 import { AtsSelectableDlcs } from '@truckermudgeon/map/constants';
 import {
   allIcons,
@@ -157,6 +158,18 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
     showPhotoSpheresUi,
   ]);
 
+  const onLoad = async () => {
+    const map = assertExists(mapRef.current);
+    const exitSign = await map.loadImage('/exit-sign.png');
+    const padding = 8;
+    map.addImage('exit-sign', exitSign.data, {
+      stretchX: [[padding, 64 - padding]],
+      stretchY: [[padding, 64 - padding]],
+      content: [padding, padding, 64 - padding, 64 - padding],
+      pixelRatio: 2,
+    });
+  };
+
   const slippyMap = (
     <MapGl
       ref={mapRef}
@@ -175,6 +188,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
         latitude,
         zoom: 4,
       }}
+      onLoad={() => void onLoad()}
     >
       {markerPos && (
         <Marker longitude={markerPos.lon} latitude={markerPos.lat} />
