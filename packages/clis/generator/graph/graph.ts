@@ -29,9 +29,11 @@ import type {
   PrefabDescription,
 } from '@truckermudgeon/map/types';
 import { quadtree } from 'd3-quadtree';
+import type { GeoJSON } from 'geojson';
 import { dlcGuardMapDataKeys, normalizeDlcGuards } from '../dlc-guards';
 import { logger } from '../logger';
 import type { MapDataKeys, MappedDataForKeys } from '../mapped-data';
+import { writeGeojsonFile } from '../write-geojson-file';
 
 type GraphContextMappedData = MappedDataForKeys<
   [
@@ -757,10 +759,43 @@ prefab/truck_dealer/truck_dealer_peterbilt.ppd
   }
 
   logger.info('no edges to', unreachableFacilityNodes.size, 'facility nodes');
-  const graphDebug = {
+  const graphDebug: GeoJSON.FeatureCollection = {
     type: 'FeatureCollection',
-    features: [] as unknown[],
+    features: [],
   };
+  for (const nid of graph.keys()) {
+    const node = assertExists(nodes.get(nid));
+    const entry = assertExists(graph.get(nid));
+    const { x, y } = node;
+
+    for (const e of [...entry.backward, ...entry.forward]) {
+      const destEntry = graph.get(e.nodeUid);
+      if (!destEntry) {
+        continue;
+      }
+      const destNode = assertExists(nodes.get(e.nodeUid));
+      const destNeighbors = [...destEntry.forward, ...destEntry.backward];
+      let color;
+      if (destNeighbors.some(n => n.nodeUid === nid)) {
+        // draw line that is green
+        color = '#0c0';
+      } else {
+        // draw line that is red;
+        color = '#c00';
+      }
+      graphDebug.features.push({
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: [
+            [x, y],
+            [destNode.x, destNode.y],
+          ].map(p => fromAtsCoordsToWgs84([p[0], p[1]])),
+        },
+        properties: { color: color + '8' },
+      } as GeoJSON.Feature<GeoJSON.LineString>);
+    }
+  }
   unreachableFacilityNodes.forEach(nid => {
     const node = assertExists(nodes.get(nid));
     const { x, y } = node;
@@ -771,9 +806,10 @@ prefab/truck_dealer/truck_dealer_peterbilt.ppd
         type: 'Point',
         coordinates,
       },
+      properties: {},
     });
   });
-  console.log(JSON.stringify(graphDebug, null, 2));
+  writeGeojsonFile('out/graph-debug.geojson', graphDebug);
 
   // TODO verify all nodes in graph have at least one edge _to_ them and at
   //  least one edge _from_ them.

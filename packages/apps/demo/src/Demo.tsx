@@ -271,13 +271,20 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
       <Source
         id={'graph-debug-source'}
         type={'geojson'}
-        data={{
-          type: 'FeatureCollection',
-          features: [],
-        }}
+        data={'graph-debug.geojson'}
       >
         <Layer
-          id={'graph-debug'}
+          id={'graph-debug-line'}
+          type={'line'}
+          paint={{
+            'line-color': ['get', 'color'],
+            'line-width': 3,
+            'line-opacity': 1,
+          }}
+          filter={['in', '$type', 'LineString']}
+        />
+        <Layer
+          id={'graph-debug-point'}
           type={'circle'}
           paint={{
             'circle-radius': 5,
@@ -299,7 +306,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
             'text-size': 12,
             'text-rotate': ['to-number', ['get', 'rotation']],
             'text-rotation-alignment': 'map',
-            'text-overlap': 'always',
+            //'text-overlap': 'always',
           }}
           filter={['in', '$type', 'Point']}
         />
