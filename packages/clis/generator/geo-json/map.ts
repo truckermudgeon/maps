@@ -766,16 +766,17 @@ function createExitFeatures(
     .filter(s => {
       const desc = assertExists(signDescriptions.get(s.token));
       if (desc.name.includes('side board green')) {
-        if (s.textItems.length <= 3) {
-          const textItems = s.textItems.filter(t => !t.startsWith('/'));
-          if (
-            textItems.length === 1 &&
-            /^(EXIT\s+)?\d+\s*[A-Z]?$/i.exec(textItems[0])
-          ) {
-            return true;
-          }
+        // sometimes green side boards are used at exit points, sometimes
+        // they're used to indicate that an exit is approaching. use some
+        // heuristics to figure out what's happening for the current sign.
+        if (s.textItems.length > 3) {
+          // lots of stuff going on in this side board. most likely not an
+          // exit point sign.
+          return false;
         }
-        return false;
+        const textItems = s.textItems.filter(t => !t.startsWith('/'));
+        // return `true` if the only text on the sign looks like an exit number.
+        return textItems.length === 1 && /^\d+\s*[A-Z]?$/i.exec(textItems[0]);
       }
       return true;
     })
