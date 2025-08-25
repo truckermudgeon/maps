@@ -25,7 +25,8 @@ import type {
   PaddingSpecification,
   SymbolLayerSpecification,
 } from 'maplibre-gl';
-import { Layer, Source } from 'react-map-gl/maplibre';
+import { useEffect } from 'react';
+import { Layer, Source, useMap } from 'react-map-gl/maplibre';
 import type { Mode } from './colors';
 import { modeColors } from './colors';
 import { addPmTilesProtocol } from './pmtiles';
@@ -56,6 +57,8 @@ export const enum MapIcon {
 export const allIcons: ReadonlySet<MapIcon> = new Set<MapIcon>(
   Array.from({ length: 19 }, (_, i) => i as MapIcon),
 );
+
+let exitIconAdded = false;
 
 export type GameMapStyleProps = {
   /**
@@ -96,6 +99,29 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
       : createDlcGuardFilter(game, props.dlcs ?? Ets2SelectableDlcs);
   const colors = modeColors[mode];
   addPmTilesProtocol();
+
+  const map = useMap();
+  useEffect(() => {
+    if (!map.current || exitIconAdded) {
+      return;
+    }
+    exitIconAdded = true;
+    const mapRef = map.current;
+    void mapRef
+      .loadImage(
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAACVBMVEVSsYH///+IiIjkQI6XAAAANklEQVR42u3XsREAIBDDsPD7D80OBI5GHkC9M2WZVXUHyHEAAAAAAAAAAAAAAAA8B/6/c7v/G00RA9lAe2TaAAAAAElFTkSuQmCC',
+      )
+      .then(res => {
+        const padding = 8;
+        mapRef.addImage('exit-sign', res.data, {
+          stretchX: [[padding, 64 - padding]],
+          stretchY: [[padding, 64 - padding]],
+          content: [padding, padding, 64 - padding, 64 - padding],
+          pixelRatio: 2,
+        });
+      });
+  }, [map.current]);
+
   return (
     // N.B.: {ats,ets2}.pmtiles each have one layer named 'ats' or 'ets2'
     // (layer names are set when running tippecanoe).
