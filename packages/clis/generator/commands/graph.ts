@@ -6,6 +6,7 @@ import { toDemoGraph } from '../graph/demo-graph';
 import { generateGraph, graphMapDataKeys } from '../graph/graph';
 import { logger } from '../logger';
 import { readMapData } from '../mapped-data';
+import { writeGeojsonFile } from '../write-geojson-file';
 import { maybeEnsureOutputDir, untildify } from './path-helpers';
 
 export const command = 'graph';
@@ -52,6 +53,11 @@ export const builder = (yargs: Argv) =>
       type: 'boolean',
       default: false,
     })
+    .option('debugType', {
+      describe:
+        'Output a graph-debug.geojson file (even if --dryRun is specified)',
+      choices: ['overview', 'detail'] as const,
+    })
     .check(maybeEnsureOutputDir)
     .check(argv => {
       if (Array.isArray(argv.map)) {
@@ -86,6 +92,17 @@ export async function handler(args: BuilderArguments<typeof builder>) {
         JSON.stringify(res, graphSerializer, 2),
       );
     }
+  }
+  if (args.debugType != null) {
+    const debugPath = path.join(args.outputDir, 'graph-debug.geojson');
+    const geoJson = {
+      ...res.graphDebug,
+      features: res.graphDebug.features.filter(
+        f => f.properties.debugType === args.debugType,
+      ),
+    };
+    writeGeojsonFile(debugPath, geoJson);
+    logger.info(debugPath, 'written with', geoJson.features.length, 'features');
   }
   logger.success('done.');
 }

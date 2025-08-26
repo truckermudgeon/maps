@@ -37,7 +37,6 @@ import { dlcGuardMapDataKeys, normalizeDlcGuards } from '../dlc-guards';
 import { createNormalizeFeature } from '../geo-json/normalize';
 import { logger } from '../logger';
 import type { MapDataKeys, MappedDataForKeys } from '../mapped-data';
-import { writeGeojsonFile } from '../write-geojson-file';
 
 type GraphContextMappedData = MappedDataForKeys<
   [
@@ -51,7 +50,10 @@ type GraphContextMappedData = MappedDataForKeys<
   ]
 >;
 
-type DebugFC = GeoJSON.FeatureCollection<GeoJSON.Point | GeoJSON.LineString>;
+type DebugFC = GeoJSON.FeatureCollection<
+  GeoJSON.Point | GeoJSON.LineString,
+  { debugType: 'overview' | 'detail' }
+>;
 
 type Context = GraphContextMappedData & {
   prefabLanes: Map<string, Map<number, Lane[]>>;
@@ -71,7 +73,9 @@ export const graphMapDataKeys = [
 
 type GraphMappedData = MappedDataForKeys<typeof graphMapDataKeys>;
 
-export function generateGraph(tsMapData: GraphMappedData): GraphData {
+export function generateGraph(
+  tsMapData: GraphMappedData,
+): GraphData & { graphDebug: DebugFC } {
   const {
     map,
     nodes: _nodes,
@@ -369,7 +373,12 @@ export function generateGraph(tsMapData: GraphMappedData): GraphData {
     //);
     // establish edges from company node to closest node
     graphDebug.features.push(
-      createDebugLineString(companyNode, closest, 'island:company-to-closest'),
+      createDebugLineString(
+        companyNode,
+        closest,
+        'island:company-to-closest',
+        'detail',
+      ),
     );
     graph.set(companyNode.uid, {
       forward: [
@@ -381,7 +390,12 @@ export function generateGraph(tsMapData: GraphMappedData): GraphData {
     // establish edges from closest node to company node
     const neighbors = graph.get(closest.uid)!;
     graphDebug.features.push(
-      createDebugLineString(closest, companyNode, 'island:closest-to-company'),
+      createDebugLineString(
+        closest,
+        companyNode,
+        'island:closest-to-company',
+        'detail',
+      ),
     );
     neighbors.forward.push(
       createNeighbor(closest, companyNode, 'forward', getDlcGuard),
@@ -735,7 +749,7 @@ prefab/truck_dealer/truck_dealer_peterbilt.ppd
   //   fromItemType: 'trigger'
   // }
   // is awfully close to a map area.
-  logger.info('uncontained parking', uncontainedParking.length);
+  logger.warn('uncontained parking', uncontainedParking.length);
   if (uncontainedParking.length) {
     const project =
       map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
@@ -750,6 +764,8 @@ prefab/truck_dealer/truck_dealer_peterbilt.ppd
       );
     }
   }
+
+  // Simple graph checks.
 
   const nodesWithEdgesTo = new Set<bigint>();
   for (const neighbors of graph.values()) {
@@ -773,7 +789,7 @@ prefab/truck_dealer/truck_dealer_peterbilt.ppd
   }
   // maybe this is ok? e.g., one-way roads that dead-end somewhere?
   // TODO look into these.
-  logger.info('no edges to', nodesWithoutEdgesTo.size, 'nodes');
+  logger.warn('no edges to', nodesWithoutEdgesTo.size, 'nodes');
 
   // verify facilityNodes have at least one edge _to_ them and at least one edge
   // _from_ them.
@@ -786,71 +802,76 @@ prefab/truck_dealer/truck_dealer_peterbilt.ppd
     if (!nodesWithEdgesTo.has(nodeUid)) {
       // why? is it because of one-way roads? if so, should they be coerced
       // into two-way roads?
-      //logger.warn('cannot route to facility', nodeUid);
+      // what if we checked prefabs inside map areas associated with these
+      // nodes, then forced them to be two-way?
       unreachableFacilityNodes.add(nodeUid);
+      const node = assertExists(nodes.get(nodeUid));
+      graphDebug.features.push(
+        point([node.x, node.y], {
+          tag: 'facility:unreachable',
+          debugType: 'overview',
+        }),
+      );
     }
   }
+  logger.warn('no edges to', unreachableFacilityNodes.size, 'facility nodes');
 
-  graph.keys().forEach(nid => {
-    const { x, y } = assertExists(nodes.get(nid));
-    graphDebug.features.push(
-      point([x, y], { tag: 'graphNode', id: nid.toString(16) }),
-    );
-  });
-
-  logger.info('no edges to', unreachableFacilityNodes.size, 'facility nodes');
-  graphDebug.features.length = 0;
+  let neighborCount = 0;
+  const unknownEdges = new Set<bigint>();
   for (const nid of graph.keys()) {
     const node = assertExists(nodes.get(nid));
     const entry = assertExists(graph.get(nid));
-    const { x, y } = node;
 
-    for (const e of [...entry.backward, ...entry.forward]) {
+    const neighbors = [...entry.backward, ...entry.forward];
+    neighborCount += neighbors.length;
+    for (const e of neighbors) {
       const destEntry = graph.get(e.nodeUid);
       if (!destEntry) {
+        unknownEdges.add(e.nodeUid);
         continue;
       }
       const destNode = assertExists(nodes.get(e.nodeUid));
       const destNeighbors = [...destEntry.forward, ...destEntry.backward];
-      let color;
-      if (destNeighbors.some(n => n.nodeUid === nid)) {
-        // two-way connectivity
-        color = '#0c0';
-      } else {
-        // one-way connectivity
-        color = '#ca0';
-      }
-      graphDebug.features.push({
-        type: 'Feature',
-        geometry: {
-          type: 'LineString',
-          coordinates: [
-            [x, y],
+      const color = destNeighbors.some(n => n.nodeUid === nid)
+        ? '#0c08' // two-way connectivity
+        : '#ca08'; // one-way connectivity
+      graphDebug.features.push(
+        lineString(
+          [
+            [node.x, node.y],
             [destNode.x, destNode.y],
           ],
-        },
-        properties: { color: color + '8' },
-      } as GeoJSON.Feature<GeoJSON.LineString>);
+          {
+            debugType: 'overview',
+            color,
+          },
+        ),
+      );
     }
   }
-  // what if we checked prefabs inside map areas associated
-  // withi these nodes, then forced them to be two-way?
-  unreachableFacilityNodes.forEach(nid => {
-    const node = assertExists(nodes.get(nid));
-    const { x, y } = node;
-    graphDebug.features.push(point([x, y], { tag: 'facility:unreachable' }));
+  graph.keys().forEach(nid => {
+    const { x, y } = assertExists(nodes.get(nid));
+    graphDebug.features.push(
+      point([x, y], {
+        tag: 'graphNode',
+        id: nid.toString(16),
+        debugType: 'detail',
+      }),
+    );
   });
+  logger.info(graph.size, 'graph nodes');
+  logger.info(neighborCount, 'graph edges');
+  if (unknownEdges.size) {
+    logger.warn(unknownEdges.size, 'unknown nodes with edges to them.');
+  }
 
   const normalize = createNormalizeFeature(map, 4);
   graphDebug.features.map(f => normalize(f));
-  writeGeojsonFile('out/graph-debug.geojson', graphDebug);
-
-  // TODO verify all nodes in graph have at least one edge _to_ them and at
-  //  least one edge _from_ them.
 
   return {
     graph,
     serviceAreas: facilityNodes,
+    graphDebug,
   };
 }
 
@@ -1040,6 +1061,7 @@ function getNeighborsInDirection(
             originNode,
             nextNode,
             'gNID:Prefab:CompanyItem',
+            'detail',
           ),
         );
         return neighbors;
@@ -1076,6 +1098,7 @@ function getNeighborsInDirection(
               originNode,
               nextNode,
               'gNID:Prefab:Connection',
+              'detail',
             ),
           );
           return toNeighbor(nextNode, {
@@ -1122,6 +1145,7 @@ function getNeighborsInDirection(
             originNode,
             nextNode,
             'gNID:Company:PrefabNode',
+            'detail',
           ),
         ),
       );
@@ -1190,7 +1214,12 @@ function createConnectionsMap(
   return connectionsMap;
 }
 
-function createDebugLineString(from: Node, to: Node, tag: string) {
+function createDebugLineString(
+  from: Node,
+  to: Node,
+  tag: string,
+  debugType: 'overview' | 'detail',
+) {
   return lineString(
     [
       [from.x, from.y],
@@ -1198,6 +1227,7 @@ function createDebugLineString(from: Node, to: Node, tag: string) {
     ],
     {
       tag,
+      debugType,
       from: from.uid.toString(16),
       to: to.uid.toString(16),
     },
