@@ -28,12 +28,13 @@ import type {
   Prefab,
   PrefabDescription,
 } from '@truckermudgeon/map/types';
+import { lineString, point } from '@turf/helpers';
 import { quadtree } from 'd3-quadtree';
 import type { GeoJSON } from 'geojson';
 import { dlcGuardMapDataKeys, normalizeDlcGuards } from '../dlc-guards';
+import { createNormalizeFeature } from '../geo-json/normalize';
 import { logger } from '../logger';
 import type { MapDataKeys, MappedDataForKeys } from '../mapped-data';
-import { writeGeojsonFile } from '../write-geojson-file';
 
 type GraphContextMappedData = MappedDataForKeys<
   [
@@ -47,10 +48,13 @@ type GraphContextMappedData = MappedDataForKeys<
   ]
 >;
 
+type DebugFC = GeoJSON.FeatureCollection<GeoJSON.Point | GeoJSON.LineString>;
+
 type Context = GraphContextMappedData & {
   prefabLanes: Map<string, Map<number, Lane[]>>;
   companiesByPrefabItemId: Map<bigint, CompanyItem>;
   getDlcGuard: (node: Node) => number;
+  graphDebug: DebugFC;
 };
 
 export const graphMapDataKeys = [
@@ -81,6 +85,11 @@ export function generateGraph(tsMapData: GraphMappedData): GraphData {
   const getDlcGuard = (node: Node): number =>
     dlcGuardQuadTree?.find(node.x, node.y)?.dlcGuard ?? -1;
   const toNode = (nodeUid: bigint): Node => assertExists(nodes.get(nodeUid));
+
+  const graphDebug: DebugFC = {
+    type: 'FeatureCollection',
+    features: [],
+  };
 
   //
   // Set up supporting data based on input data
@@ -216,6 +225,7 @@ export function generateGraph(tsMapData: GraphMappedData): GraphData {
     companiesByPrefabItemId,
     ferries,
     getDlcGuard,
+    graphDebug,
   };
 
   // keyed by node uids
@@ -341,6 +351,9 @@ export function generateGraph(tsMapData: GraphMappedData): GraphData {
     //  closest.uid.toString(16),
     //);
     // establish edges from company node to closest node
+    graphDebug.features.push(
+      createDebugLineString(companyNode, closest, 'island:company-to-closest'),
+    );
     graph.set(companyNode.uid, {
       forward: [
         createNeighbor(companyNode, closest, 'forward', getDlcGuard),
@@ -350,6 +363,9 @@ export function generateGraph(tsMapData: GraphMappedData): GraphData {
     });
     // establish edges from closest node to company node
     const neighbors = graph.get(closest.uid)!;
+    graphDebug.features.push(
+      createDebugLineString(closest, companyNode, 'island:closest-to-company'),
+    );
     neighbors.forward.push(
       createNeighbor(closest, companyNode, 'forward', getDlcGuard),
       createNeighbor(closest, companyNode, 'backward', getDlcGuard),
@@ -759,57 +775,54 @@ prefab/truck_dealer/truck_dealer_peterbilt.ppd
   }
 
   logger.info('no edges to', unreachableFacilityNodes.size, 'facility nodes');
-  const graphDebug: GeoJSON.FeatureCollection = {
-    type: 'FeatureCollection',
-    features: [],
-  };
-  for (const nid of graph.keys()) {
-    const node = assertExists(nodes.get(nid));
-    const entry = assertExists(graph.get(nid));
-    const { x, y } = node;
+  //for (const nid of graph.keys()) {
+  //  const node = assertExists(nodes.get(nid));
+  //  const entry = assertExists(graph.get(nid));
+  //  const { x, y } = node;
 
-    for (const e of [...entry.backward, ...entry.forward]) {
-      const destEntry = graph.get(e.nodeUid);
-      if (!destEntry) {
-        continue;
-      }
-      const destNode = assertExists(nodes.get(e.nodeUid));
-      const destNeighbors = [...destEntry.forward, ...destEntry.backward];
-      let color;
-      if (destNeighbors.some(n => n.nodeUid === nid)) {
-        // draw line that is green
-        color = '#0c0';
-      } else {
-        // draw line that is red;
-        color = '#c00';
-      }
-      graphDebug.features.push({
-        type: 'Feature',
-        geometry: {
-          type: 'LineString',
-          coordinates: [
-            [x, y],
-            [destNode.x, destNode.y],
-          ].map(p => fromAtsCoordsToWgs84([p[0], p[1]])),
-        },
-        properties: { color: color + '8' },
-      } as GeoJSON.Feature<GeoJSON.LineString>);
-    }
-  }
+  //  for (const e of [...entry.backward, ...entry.forward]) {
+  //    const destEntry = graph.get(e.nodeUid);
+  //    if (!destEntry) {
+  //      continue;
+  //    }
+  //    const destNode = assertExists(nodes.get(e.nodeUid));
+  //    const destNeighbors = [...destEntry.forward, ...destEntry.backward];
+  //    let color;
+  //    if (destNeighbors.some(n => n.nodeUid === nid)) {
+  //      // two-way connectivity
+  //      color = '#0c0';
+  //    } else {
+  //      // one-way connectivity
+  //      color = '#ca0';
+  //    }
+  //    graphDebug.features.push({
+  //      type: 'Feature',
+  //      geometry: {
+  //        type: 'LineString',
+  //        coordinates: [
+  //          [x, y],
+  //          [destNode.x, destNode.y],
+  //        ],
+  //      },
+  //      properties: { color: color + '8' },
+  //    } as GeoJSON.Feature<GeoJSON.LineString>);
+  //  }
+  //}
   unreachableFacilityNodes.forEach(nid => {
     const node = assertExists(nodes.get(nid));
     const { x, y } = node;
-    const coordinates = fromAtsCoordsToWgs84([x, y]);
-    graphDebug.features.push({
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates,
-      },
-      properties: {},
-    });
+    graphDebug.features.push(point([x, y], { tag: 'facility:unreachable' }));
   });
-  writeGeojsonFile('out/graph-debug.geojson', graphDebug);
+  graph.keys().forEach(nid => {
+    const { x, y } = assertExists(nodes.get(nid));
+    graphDebug.features.push(
+      point([x, y], { tag: 'graphNode', id: nid.toString(16) }),
+    );
+  });
+
+  const normalize = createNormalizeFeature(map, 4);
+  graphDebug.features.map(f => normalize(f));
+  //writeGeojsonFile('out/graph-debug.geojson', graphDebug);
 
   // TODO verify all nodes in graph have at least one edge _to_ them and at
   //  least one edge _from_ them.
@@ -924,7 +937,7 @@ function updateGraphWithFerries(
 }
 
 function getNeighborsInDirection(
-  node: Node,
+  originNode: Node,
   direction: 'forward' | 'backward',
   context: Context,
 ): Neighbor[] {
@@ -934,7 +947,7 @@ function getNeighborsInDirection(
     context.roads.get(id) ??
     context.prefabs.get(id) ??
     context.companies.get(id);
-  const item = getItem(getNeighborItemId(node));
+  const item = getItem(getNeighborItemId(originNode));
   if (!item) {
     // unknown neighbor item, e.g., a hidden or unknown road not present in context.
     return [];
@@ -949,7 +962,8 @@ function getNeighborsInDirection(
     } = {},
   ): Neighbor => {
     const dist =
-      options.distance ?? distance([nextNode.x, nextNode.y], [node.x, node.y]);
+      options.distance ??
+      distance([nextNode.x, nextNode.y], [originNode.x, originNode.y]);
     const dir = options.direction ?? direction;
     return {
       nodeUid: nextNode.uid,
@@ -967,7 +981,7 @@ function getNeighborsInDirection(
       const destNodeId =
         direction === 'forward' ? item.endNodeUid : item.startNodeUid;
 
-      assert(originNodeId === node.uid);
+      assert(originNodeId === originNode.uid);
       const roadLook = assertExists(context.roadLooks.get(item.roadLookToken));
       const lanesInDirection =
         direction === 'forward'
@@ -994,6 +1008,13 @@ function getNeighborsInDirection(
         // `node`'s neighbor prefab item.
         const nextNode = assertExists(context.nodes.get(companyItem.nodeUid));
         neighbors.push(toNeighbor(nextNode));
+        context.graphDebug.features.push(
+          createDebugLineString(
+            originNode,
+            nextNode,
+            'gNID:Prefab:CompanyItem',
+          ),
+        );
       }
 
       const laneInfo = assertExists(context.prefabLanes.get(item.token));
@@ -1004,7 +1025,7 @@ function getNeighborsInDirection(
         item,
         context.nodes,
       );
-      const connections = connectionNodes.get(node);
+      const connections = connectionNodes.get(originNode);
       if (connections == null) {
         // `connectionNodes` may be missing `node` if `node` is one of those
         // weird island unrouteable nodes that point to a prefab and nothing
@@ -1021,17 +1042,24 @@ function getNeighborsInDirection(
       neighbors.push(
         // establish edges between `node` and the output nodes that the prefab
         // connects it to.
-        ...connections.map(({ nextNode, distance }) =>
-          toNeighbor(nextNode, {
+        ...connections.map(({ nextNode, distance }) => {
+          context.graphDebug.features.push(
+            createDebugLineString(
+              originNode,
+              nextNode,
+              'gNID:Prefab:Connection',
+            ),
+          );
+          return toNeighbor(nextNode, {
             distance,
             direction:
-              getNeighborItemId(node) === getNeighborItemId(nextNode)
+              getNeighborItemId(originNode) === getNeighborItemId(nextNode)
                 ? direction === 'forward'
                   ? 'backward'
                   : 'forward'
                 : direction,
-          }),
-        ),
+          });
+        }),
       );
       return neighbors;
     }
@@ -1060,6 +1088,15 @@ function getNeighborsInDirection(
               node.forwardItemUid === prefab.uid && node.backwardItemUid === 0n
             ),
         );
+      context.graphDebug.features.push(
+        ...prefabNodes.map(nextNode =>
+          createDebugLineString(
+            originNode,
+            nextNode,
+            'gNID:Company:PrefabNode',
+          ),
+        ),
+      );
       return prefabNodes.flatMap(nextNode => [
         toNeighbor(nextNode),
         toNeighbor(nextNode, { direction: 'backward' }),
@@ -1123,6 +1160,20 @@ function createConnectionsMap(
   }
 
   return connectionsMap;
+}
+
+function createDebugLineString(from: Node, to: Node, tag: string) {
+  return lineString(
+    [
+      [from.x, from.y],
+      [to.x, to.y],
+    ],
+    {
+      tag,
+      from: from.uid.toString(16),
+      to: to.uid.toString(16),
+    },
+  );
 }
 
 function createNeighbor(
