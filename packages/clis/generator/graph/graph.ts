@@ -660,27 +660,6 @@ export function generateGraph(
     'island facility prefabs for nearest prefabs / map areas',
   );
 
-  /*
-17
-prefab/service/service.ppd
-prefab/service/nm_service1.ppd
-prefab/gas/us_gas_gallonoil_car_2rows_roof_trigger.ppd
-prefab/truck_dealer/truck_dealer_kenworth.ppd
-prefab/garage/garage.ppd
-prefab/truck_dealer/truck_dealer_peterbilt.ppd
-   */
-
-  // // TODO find closest prefab-intersection / road node in graph to
-  // // prefab's "entry" point, which we'll define as the prefab
-  // // node point closest to the service / recruit / garage /
-  // // other facility point.
-  //const paths = new Set<string>();
-  //for (const island of islandFacilityPrefabs) {
-  //  paths.add(prefabDescriptions.get(island.token).path);
-  //}
-  //for (const p of paths) {
-  //  console.log(p);
-  //}
 
   logger.info('service areas', facilityNodes.size);
 
