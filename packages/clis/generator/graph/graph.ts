@@ -1007,6 +1007,9 @@ function getNeighborsInDirection(
         // establish edge between `node` and the company node associated with
         // `node`'s neighbor prefab item.
         const nextNode = assertExists(context.nodes.get(companyItem.nodeUid));
+        if (direction === 'forward' && originNode.backwardItemUid === 0n) {
+          return neighbors;
+        }
         neighbors.push(toNeighbor(nextNode));
         context.graphDebug.features.push(
           createDebugLineString(
@@ -1015,6 +1018,7 @@ function getNeighborsInDirection(
             'gNID:Prefab:CompanyItem',
           ),
         );
+        return neighbors;
       }
 
       const laneInfo = assertExists(context.prefabLanes.get(item.token));
