@@ -827,6 +827,21 @@ prefab/truck_dealer/truck_dealer_peterbilt.ppd
     for (const e of neighbors) {
       const destEntry = graph.get(e.nodeUid);
       if (!destEntry) {
+        const destNode = assertExists(nodes.get(e.nodeUid));
+        graphDebug.features.push(
+          lineString(
+            [
+              [node.x, node.y],
+              [destNode.x, destNode.y],
+            ],
+            {
+              debugType: 'overview',
+              tag: 'edge:unknown-node',
+              color: '#f00',
+              unknownNodeUid: destNode.uid.toString(16),
+            },
+          ),
+        );
         unknownEdges.add(e.nodeUid);
         continue;
       }
@@ -863,6 +878,16 @@ prefab/truck_dealer/truck_dealer_peterbilt.ppd
   logger.info(neighborCount, 'graph edges');
   if (unknownEdges.size) {
     logger.warn(unknownEdges.size, 'unknown nodes with edges to them.');
+    // const some = [...unknownEdges.values()].slice(0, 5);
+    // console.log(
+    //   some
+    //     .map(b => nodes.get(b))
+    //     .map(n => ({
+    //       uid: n?.uid.toString(16),
+    //       forwardItem: n?.forwardItemUid.toString(16),
+    //       backwardItem: n?.backwardItemUid.toString(16),
+    //     })),
+    // );
   }
 
   const normalize = createNormalizeFeature(map, 4);
