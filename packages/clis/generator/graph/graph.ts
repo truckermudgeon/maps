@@ -660,7 +660,6 @@ export function generateGraph(
     'island facility prefabs for nearest prefabs / map areas',
   );
 
-
   logger.info('service areas', facilityNodes.size);
 
   // Parking.
