@@ -1007,7 +1007,10 @@ function getNeighborsInDirection(
         // establish edge between `node` and the company node associated with
         // `node`'s neighbor prefab item.
         const nextNode = assertExists(context.nodes.get(companyItem.nodeUid));
-        if (direction === 'forward' && originNode.backwardItemUid === 0n) {
+        if (
+          (direction === 'forward' && originNode.backwardItemUid === 0n) ||
+          (direction === 'backward' && originNode.forwardItemUid === 0n)
+        ) {
           return neighbors;
         }
         neighbors.push(toNeighbor(nextNode));
