@@ -4,7 +4,6 @@ import { AtsSelectableDlcs } from '@truckermudgeon/map/constants';
 import {
   allIcons,
   BaseMapStyle,
-  baseTextLayout,
   ContoursStyle,
   defaultMapStyle,
   GameMapStyle,
@@ -254,63 +253,6 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
           />
         </Source>
       )}
-      {Math.random() > 2 && (
-        <Source type={'vector'} url={'pmtiles:///usa-prefab-curves.pmtiles'}>
-          <Layer
-            source-layer={'usaprefabcurves'}
-            type={'line'}
-            paint={{
-              'line-color': '#f044',
-              'line-width': 3,
-              'line-opacity': 1,
-            }}
-            filter={['in', '$type', 'LineString']}
-          />
-        </Source>
-      )}
-      <Source
-        id={'graph-debug-source'}
-        type={'geojson'}
-        data={'graph-debug.geojson'}
-      >
-        <Layer
-          id={'graph-debug-line'}
-          type={'line'}
-          paint={{
-            'line-color': ['get', 'color'],
-            'line-width': 3,
-            'line-opacity': 1,
-          }}
-          filter={['in', '$type', 'LineString']}
-        />
-        <Layer
-          id={'graph-debug-point'}
-          type={'circle'}
-          paint={{
-            'circle-radius': 5,
-            'circle-color': '#fff',
-            'circle-stroke-width': 3,
-            'circle-stroke-color': '#f00',
-          }}
-          filter={['in', '$type', 'Point']}
-        />
-      </Source>
-      <Source id={'signs'} type={'geojson'} data={'signs.geojson'}>
-        <Layer
-          id={'signs-points'}
-          type={'symbol'}
-          layout={{
-            ...baseTextLayout,
-            //'text-field': '{poiName} {token}',
-            'text-field': '{poiName}',
-            'text-size': 12,
-            'text-rotate': ['to-number', ['get', 'rotation']],
-            'text-rotation-alignment': 'map',
-            //'text-overlap': 'always',
-          }}
-          filter={['in', '$type', 'Point']}
-        />
-      </Source>
       <Source
         id={'measure'}
         type={'geojson'}
