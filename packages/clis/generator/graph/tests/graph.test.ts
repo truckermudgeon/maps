@@ -13,7 +13,7 @@ import type {
 } from '@truckermudgeon/map/types';
 import type { MappedData } from '../../mapped-data';
 import { generateGraph } from '../graph';
-import { d_farm_grg, prefab_us_405 } from './fixtures';
+import { d_farm_grg, d_oil_gst3, prefab_us_405 } from './fixtures';
 
 describe('generateGraph', () => {
   let partialMapData: PartialMapData;
@@ -118,8 +118,8 @@ describe('generateGraph', () => {
   it('generates a graph for roads and road-y prefabs', () => {
     const fakeMapData = createFakeMapData(partialMapData);
 
-    const res = generateGraph(fakeMapData);
-    expect(res.get(0n)).toMatchObject({
+    const { graph } = generateGraph(fakeMapData);
+    expect(graph.get(0n)).toMatchObject({
       forward: [
         expect.objectContaining({
           nodeUid: 1n,
@@ -128,20 +128,20 @@ describe('generateGraph', () => {
       ],
       backward: [],
     });
-    expect(res.get(1n)).toMatchObject({
+    expect(graph.get(1n)).toMatchObject({
       forward: [
-        expect.objectContaining({
-          nodeUid: 2n,
-          direction: 'forward',
-        }),
         expect.objectContaining({
           nodeUid: 4n,
           direction: 'backward',
         }),
+        expect.objectContaining({
+          nodeUid: 2n,
+          direction: 'forward',
+        }),
       ],
       backward: [],
     });
-    expect(res.get(2n)).toMatchObject({
+    expect(graph.get(2n)).toMatchObject({
       forward: [
         expect.objectContaining({
           nodeUid: 3n,
@@ -151,8 +151,8 @@ describe('generateGraph', () => {
       backward: [],
     });
     // can't navigate _from_ node-3 (can only navigate _to_ node-3).
-    expect(res.get(3n)).toBeUndefined();
-    expect(res.get(4n)).toMatchObject({
+    expect(graph.get(3n)).toBeUndefined();
+    expect(graph.get(4n)).toMatchObject({
       forward: [
         expect.objectContaining({
           nodeUid: 2n,
@@ -166,7 +166,7 @@ describe('generateGraph', () => {
         }),
       ],
     });
-    expect(res.get(5n)).toMatchObject({
+    expect(graph.get(5n)).toMatchObject({
       forward: [
         expect.objectContaining({
           nodeUid: 4n,
@@ -238,9 +238,9 @@ describe('generateGraph', () => {
     );
 
     const fakeMapData = createFakeMapData(partialMapData);
-    const res = generateGraph(fakeMapData);
+    const { graph } = generateGraph(fakeMapData);
     // node-3 should have a single edge to the company node.
-    expect(res.get(3n)).toMatchObject({
+    expect(graph.get(3n)).toMatchObject({
       forward: [
         expect.objectContaining({
           direction: 'forward',
@@ -251,10 +251,10 @@ describe('generateGraph', () => {
       backward: [],
     });
 
-    // documenting a quirk:
+    // documenting a fixed quirk:
     // node 7 is unreachable (i.e., it has no edges that point to it)
     const allEdgeDestinations = new Set(
-      res
+      graph
         .values()
         .flatMap(ns => [
           ...ns.forward.map(e => e.nodeUid),
@@ -263,16 +263,8 @@ describe('generateGraph', () => {
     );
     expect(allEdgeDestinations.has(7n)).toBe(false);
 
-    // but the graph contains an entry that connects it to the company node.
-    expect(res.get(7n)).toMatchObject({
-      forward: [
-        expect.objectContaining({
-          direction: 'forward',
-          nodeUid: 6n,
-        }),
-      ],
-      backward: [],
-    });
+    // and the graph does not contain an entry for it.
+    expect(graph.get(7n)).toBeUndefined();
   });
 
   it('generates a graph that has edges to company nodes (island prefab)', () => {
@@ -340,8 +332,8 @@ describe('generateGraph', () => {
     // in the island and non-island cases).
 
     const fakeMapData = createFakeMapData(partialMapData);
-    const res = generateGraph(fakeMapData);
-    expect(res.get(3n)).toMatchObject({
+    const { graph } = generateGraph(fakeMapData);
+    expect(graph.get(3n)).toMatchObject({
       forward: [
         // back to start point of road-2, since road-2 is a two-way road in
         // this test.
@@ -379,10 +371,10 @@ describe('generateGraph', () => {
     });
 
     // "island" company prefab points aren't present (i.e., routeable) in graph.
-    expect(res.has(6n)).toBe(false);
-    expect(res.has(7n)).toBe(false);
+    expect(graph.has(6n)).toBe(false);
+    expect(graph.has(7n)).toBe(false);
 
-    expect(res.get(8n)).toMatchObject({
+    expect(graph.get(8n)).toMatchObject({
       forward: [
         // edges to nearest routeable node.
         expect.objectContaining({
@@ -498,7 +490,7 @@ type PartialMapData = Pick<
 
 function createFakeMapData(arrays: PartialMapData): MappedData<'usa'> {
   const { nodes, roads, prefabs, companies, ferries } = arrays;
-  const prefabDescriptions = [prefab_us_405, d_farm_grg];
+  const prefabDescriptions = [prefab_us_405, d_farm_grg, d_oil_gst3];
 
   // node uids must be unique
   Preconditions.checkArgument(

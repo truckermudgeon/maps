@@ -6,6 +6,7 @@ import { toDemoGraph } from '../graph/demo-graph';
 import { generateGraph, graphMapDataKeys } from '../graph/graph';
 import { logger } from '../logger';
 import { readMapData } from '../mapped-data';
+import { writeGeojsonFile } from '../write-geojson-file';
 import { maybeEnsureOutputDir, untildify } from './path-helpers';
 
 export const command = 'graph';
@@ -52,6 +53,11 @@ export const builder = (yargs: Argv) =>
       type: 'boolean',
       default: false,
     })
+    .option('debugType', {
+      describe:
+        'Output a graph-debug.geojson file (even if --dryRun is specified)',
+      choices: ['overview', 'detail'] as const,
+    })
     .check(maybeEnsureOutputDir)
     .check(argv => {
       if (Array.isArray(argv.map)) {
@@ -69,23 +75,47 @@ export async function handler(args: BuilderArguments<typeof builder>) {
     ],
   });
 
-  const graph = generateGraph(tsMapData);
+  const res = generateGraph(tsMapData);
   if (args.check) {
-    await checkGraph(graph, tsMapData);
+    await checkGraph(res.graph, tsMapData);
   }
 
   if (!args.dryRun) {
     if (args.demo) {
       fs.writeFileSync(
         path.join(args.outputDir, `${args.map}-graph-demo.json`),
-        JSON.stringify(toDemoGraph(graph, tsMapData)),
+        JSON.stringify(toDemoGraph(res.graph, tsMapData)),
       );
     } else {
       fs.writeFileSync(
         path.join(args.outputDir, `${args.map}-graph.json`),
-        JSON.stringify([...graph.entries()], null, 2),
+        JSON.stringify(res, graphSerializer, 2),
       );
     }
   }
+  if (args.debugType != null) {
+    const debugPath = path.join(args.outputDir, 'graph-debug.geojson');
+    const geoJson = {
+      ...res.graphDebug,
+      features: res.graphDebug.features.filter(
+        f => f.properties.debugType === args.debugType,
+      ),
+    };
+    writeGeojsonFile(debugPath, geoJson);
+    logger.info(debugPath, 'written with', geoJson.features.length, 'features');
+  }
   logger.success('done.');
+}
+
+function graphSerializer(key: string, value: unknown) {
+  if (key === 'distance' && typeof value === 'number') {
+    return Number(value.toFixed(2));
+  }
+  if (value instanceof Set) {
+    return [...value] as unknown[];
+  }
+  if (value instanceof Map) {
+    return [...value.entries()] as unknown[];
+  }
+  return value;
 }

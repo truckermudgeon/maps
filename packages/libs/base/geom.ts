@@ -57,7 +57,7 @@ export function distance(a: PositionLike, b: PositionLike): number {
   );
 }
 
-export function magnitude(p: Position) {
+export function magnitude(p: PositionLike) {
   return distance(p, [0, 0]);
 }
 
@@ -68,8 +68,8 @@ export function midPoint(a: PositionLike, b: PositionLike): Position {
   ]);
 }
 
-export function dot([x1, y1]: Position, [x2, y2]: Position) {
-  return x1 * x2 + y1 * y2;
+export function dot(a: PositionLike, b: PositionLike) {
+  return withPositionLikes(a, b, (x1, y1, x2, y2) => x1 * x2 + y1 * y2);
 }
 
 export function center([minX, minY, maxX, maxY]: Extent): Position {
@@ -148,12 +148,9 @@ export function getExtent(
   return [minX, minY, maxX, maxY];
 }
 
-export function withinExtent(
-  point: [x: number, y: number],
-  extent: Extent,
-): boolean {
-  const [x, y] = point;
+export function contains(extent: Extent, position: PositionLike) {
   const [minX, minY, maxX, maxY] = extent;
+  const [x, y] = Array.isArray(position) ? position : [position.x, position.y];
   return minX <= x && x <= maxX && minY <= y && y <= maxY;
 }
 
@@ -172,11 +169,10 @@ export function toRadians(deg: number) {
   return normalizeRadians((deg * Math.PI) / 180);
 }
 
-function withPositionLikes<T>(
+function withPositionLike<T>(
   a: PositionLike,
-  b: PositionLike,
-  fn: (x1: number, y1: number, x2: number, y2: number) => T,
-) {
+  fn: (x1: number, y1: number) => T,
+): T {
   let x1, y1;
   if (Array.isArray(a)) {
     Preconditions.checkArgument(a.length >= 2);
@@ -186,14 +182,15 @@ function withPositionLikes<T>(
     x1 = a.x;
     y1 = a.y;
   }
-  let x2, y2;
-  if (Array.isArray(b)) {
-    Preconditions.checkArgument(b.length >= 2);
-    x2 = b[0];
-    y2 = b[1];
-  } else {
-    x2 = b.x;
-    y2 = b.y;
-  }
+  return fn(x1, y1);
+}
+
+function withPositionLikes<T>(
+  a: PositionLike,
+  b: PositionLike,
+  fn: (x1: number, y1: number, x2: number, y2: number) => T,
+): T {
+  const [x1, y1] = withPositionLike(a, (x, y) => [x, y]);
+  const [x2, y2] = withPositionLike(b, (x, y) => [x, y]);
   return fn(x1, y1, x2, y2);
 }
