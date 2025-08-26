@@ -6,8 +6,10 @@ import { contains, distance, getExtent } from '@truckermudgeon/base/geom';
 import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
 import { UnreachableError } from '@truckermudgeon/base/precon';
 import {
+  AtsSelectableDlcs,
   FacilitySpawnPointTypes,
   ItemType,
+  toAtsDlcGuards,
   toFacilityIcon,
 } from '@truckermudgeon/map/constants';
 import type { Lane } from '@truckermudgeon/map/prefabs';
@@ -73,7 +75,7 @@ export function generateGraph(tsMapData: GraphMappedData): GraphData {
   const {
     map,
     nodes: _nodes,
-    roads,
+    roads: _roads,
     prefabs: _prefabs,
     companies: _companies,
     ferries,
@@ -100,6 +102,20 @@ export function generateGraph(tsMapData: GraphMappedData): GraphData {
   // and prefabs maps. Create mutable copies to allow for this.
   const nodes = new Map(_nodes);
   const prefabs = new Map(_prefabs);
+  const roads = new Map(_roads);
+
+  // delete roads + prefabs in unselectable dlc content.
+  const guards = toAtsDlcGuards(AtsSelectableDlcs) as Set<number>;
+  for (const [key, prefab] of prefabs) {
+    if (!guards.has(prefab.dlcGuard)) {
+      prefabs.delete(key);
+    }
+  }
+  for (const [key, road] of roads) {
+    if (!guards.has(road.dlcGuard)) {
+      roads.delete(key);
+    }
+  }
 
   const companies = new Map(
     [..._companies.entries()].filter(([, company]) =>
