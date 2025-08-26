@@ -816,14 +816,12 @@ prefab/truck_dealer/truck_dealer_peterbilt.ppd
   }
   logger.warn('no edges to', unreachableFacilityNodes.size, 'facility nodes');
 
-  let neighborCount = 0;
   const unknownEdges = new Set<bigint>();
   for (const nid of graph.keys()) {
     const node = assertExists(nodes.get(nid));
     const entry = assertExists(graph.get(nid));
 
     const neighbors = [...entry.backward, ...entry.forward];
-    neighborCount += neighbors.length;
     for (const e of neighbors) {
       const destEntry = graph.get(e.nodeUid);
       if (!destEntry) {
@@ -874,8 +872,6 @@ prefab/truck_dealer/truck_dealer_peterbilt.ppd
       }),
     );
   });
-  logger.info(graph.size, 'graph nodes');
-  logger.info(neighborCount, 'graph edges');
   if (unknownEdges.size) {
     logger.warn(unknownEdges.size, 'unknown nodes with edges to them.');
     // const some = [...unknownEdges.values()].slice(0, 5);
