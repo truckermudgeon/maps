@@ -251,7 +251,7 @@ describe('generateGraph', () => {
       backward: [],
     });
 
-    // documenting a quirk:
+    // documenting a fixed quirk:
     // node 7 is unreachable (i.e., it has no edges that point to it)
     const allEdgeDestinations = new Set(
       graph
@@ -263,16 +263,8 @@ describe('generateGraph', () => {
     );
     expect(allEdgeDestinations.has(7n)).toBe(false);
 
-    // but the graph contains an entry that connects it to the company node.
-    expect(graph.get(7n)).toMatchObject({
-      forward: [
-        expect.objectContaining({
-          direction: 'forward',
-          nodeUid: 6n,
-        }),
-      ],
-      backward: [],
-    });
+    // and the graph does not contain an entry for it.
+    expect(graph.get(7n)).toBeUndefined();
   });
 
   it('generates a graph that has edges to company nodes (island prefab)', () => {
