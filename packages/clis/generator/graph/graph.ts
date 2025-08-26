@@ -35,6 +35,7 @@ import { dlcGuardMapDataKeys, normalizeDlcGuards } from '../dlc-guards';
 import { createNormalizeFeature } from '../geo-json/normalize';
 import { logger } from '../logger';
 import type { MapDataKeys, MappedDataForKeys } from '../mapped-data';
+import { writeGeojsonFile } from '../write-geojson-file';
 
 type GraphContextMappedData = MappedDataForKeys<
   [
@@ -774,45 +775,6 @@ prefab/truck_dealer/truck_dealer_peterbilt.ppd
     }
   }
 
-  logger.info('no edges to', unreachableFacilityNodes.size, 'facility nodes');
-  //for (const nid of graph.keys()) {
-  //  const node = assertExists(nodes.get(nid));
-  //  const entry = assertExists(graph.get(nid));
-  //  const { x, y } = node;
-
-  //  for (const e of [...entry.backward, ...entry.forward]) {
-  //    const destEntry = graph.get(e.nodeUid);
-  //    if (!destEntry) {
-  //      continue;
-  //    }
-  //    const destNode = assertExists(nodes.get(e.nodeUid));
-  //    const destNeighbors = [...destEntry.forward, ...destEntry.backward];
-  //    let color;
-  //    if (destNeighbors.some(n => n.nodeUid === nid)) {
-  //      // two-way connectivity
-  //      color = '#0c0';
-  //    } else {
-  //      // one-way connectivity
-  //      color = '#ca0';
-  //    }
-  //    graphDebug.features.push({
-  //      type: 'Feature',
-  //      geometry: {
-  //        type: 'LineString',
-  //        coordinates: [
-  //          [x, y],
-  //          [destNode.x, destNode.y],
-  //        ],
-  //      },
-  //      properties: { color: color + '8' },
-  //    } as GeoJSON.Feature<GeoJSON.LineString>);
-  //  }
-  //}
-  unreachableFacilityNodes.forEach(nid => {
-    const node = assertExists(nodes.get(nid));
-    const { x, y } = node;
-    graphDebug.features.push(point([x, y], { tag: 'facility:unreachable' }));
-  });
   graph.keys().forEach(nid => {
     const { x, y } = assertExists(nodes.get(nid));
     graphDebug.features.push(
@@ -820,9 +782,52 @@ prefab/truck_dealer/truck_dealer_peterbilt.ppd
     );
   });
 
+  logger.info('no edges to', unreachableFacilityNodes.size, 'facility nodes');
+  graphDebug.features.length = 0;
+  for (const nid of graph.keys()) {
+    const node = assertExists(nodes.get(nid));
+    const entry = assertExists(graph.get(nid));
+    const { x, y } = node;
+
+    for (const e of [...entry.backward, ...entry.forward]) {
+      const destEntry = graph.get(e.nodeUid);
+      if (!destEntry) {
+        continue;
+      }
+      const destNode = assertExists(nodes.get(e.nodeUid));
+      const destNeighbors = [...destEntry.forward, ...destEntry.backward];
+      let color;
+      if (destNeighbors.some(n => n.nodeUid === nid)) {
+        // two-way connectivity
+        color = '#0c0';
+      } else {
+        // one-way connectivity
+        color = '#ca0';
+      }
+      graphDebug.features.push({
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: [
+            [x, y],
+            [destNode.x, destNode.y],
+          ],
+        },
+        properties: { color: color + '8' },
+      } as GeoJSON.Feature<GeoJSON.LineString>);
+    }
+  }
+  // what if we checked prefabs inside map areas associated
+  // withi these nodes, then forced them to be two-way?
+  unreachableFacilityNodes.forEach(nid => {
+    const node = assertExists(nodes.get(nid));
+    const { x, y } = node;
+    graphDebug.features.push(point([x, y], { tag: 'facility:unreachable' }));
+  });
+
   const normalize = createNormalizeFeature(map, 4);
   graphDebug.features.map(f => normalize(f));
-  //writeGeojsonFile('out/graph-debug.geojson', graphDebug);
+  writeGeojsonFile('out/graph-debug.geojson', graphDebug);
 
   // TODO verify all nodes in graph have at least one edge _to_ them and at
   //  least one edge _from_ them.
