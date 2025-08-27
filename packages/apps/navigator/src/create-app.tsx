@@ -1,5 +1,5 @@
 import { Box, Stack } from '@mui/joy';
-import { Slide } from '@mui/material';
+import { Grid, Slide } from '@mui/material';
 import { assertExists } from '@truckermudgeon/base/assert';
 import type { Marker as MapLibreGLMarker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -197,20 +197,67 @@ const App = (props: {
   console.log('render app');
   const { SlippyMap, NavSheet, Directions, Controls } = props;
 
+  /*
+
+   * @default {
+   *    // extra-small
+   *    xs: 0,
+   *    // small
+   *    sm: 600,
+   *    // medium
+   *    md: 900,
+   *    // large
+   *    lg: 1200,
+   *    // extra-large
+   *    xl: 1536,
+   */
+
   return (
     <>
-      <SlippyMap />
-      <Controls />
-      <NavSheetContainer store={props.store}>
-        <NavSheet />
-      </NavSheetContainer>
-      <RouteGuidanceContainer store={props.store}>
-        <Directions />
-        <RouteControls
-          summary={{ minutes: 95, distanceMeters: 1234 }}
-          expanded={false}
-        />
-      </RouteGuidanceContainer>
+      {Math.random() > 1 && <SlippyMap />}
+      <Grid
+        container={true}
+        sx={{ flexGrow: 1, border: '4px solid green' }}
+        padding={2}
+        paddingBlockEnd={3}
+        height={'100vh'}
+        justifyContent={'space-between'}
+      >
+        {Math.random() > 5 && (
+          <Grid>
+            <NavSheetContainer store={props.store}>
+              <NavSheet />
+            </NavSheetContainer>
+          </Grid>
+        )}
+        <Grid size={{ xs: 12, sm: 9 }} maxWidth={600}>
+          <RouteGuidanceContainer store={props.store}>
+            <Directions />
+            <RouteControls
+              summary={{ minutes: 95, distanceMeters: 1234 }}
+              expanded={false}
+            />
+          </RouteGuidanceContainer>
+        </Grid>
+      </Grid>
+      <Grid
+        columns={3}
+        container={true}
+        sx={{
+          flexGrow: 1,
+          border: '4px solid blue',
+          position: 'absolute',
+          top: 0,
+          right: 0,
+        }}
+        padding={2}
+        paddingBlockEnd={3}
+        height={'100vh'}
+      >
+        <Grid container alignItems={'stretch'} sx={{ pt: { xs: 16, sm: 0 } }}>
+          <Controls />
+        </Grid>
+      </Grid>
     </>
   );
 };
@@ -219,8 +266,6 @@ const NavSheetContainer = observer(
   (props: { store: AppStore; children: ReactElement }) => (
     <Slide in={props.store.showNavSheet} direction={'right'}>
       <Box
-        padding={2}
-        paddingBlockEnd={3}
         height={'100vh'}
         width={'42vw'}
         sx={{
@@ -238,18 +283,15 @@ const NavSheetContainer = observer(
 
 const RouteGuidanceContainer = observer(
   (props: { store: AppStore; children: ReactNode }) => (
-    <Slide in={props.store.activeRoute != null} direction={'right'}>
+    <Slide
+      in={Math.random() < 10 || props.store.activeRoute != null}
+      direction={'right'}
+    >
       <Stack
+        height={'100%'}
         justifyContent={'space-between'}
-        padding={2}
-        paddingBlockEnd={3}
-        height={'100vh'}
-        width={'42vw'}
-        sx={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-        }}
+        position={'relative'} // why is this needed for Directions to show?
+        sx={{ border: '1px solid red' }}
       >
         {props.children}
       </Stack>
