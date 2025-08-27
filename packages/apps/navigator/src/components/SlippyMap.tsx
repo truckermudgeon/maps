@@ -89,11 +89,21 @@ export const SlippyMap = (props: {
         }
       >
         <Layer
+          id={'activeRouteLayer-case'}
+          type={'line'}
+          paint={{
+            'line-color': 'hsl(204,100%,40%)',
+            'line-gap-width': 8,
+            'line-width': 4,
+            'line-opacity': 1,
+          }}
+        />
+        <Layer
           id={'activeRouteLayer'}
           type={'line'}
           paint={{
-            'line-color': '#f00',
-            'line-width': 5,
+            'line-color': 'hsl(204,100%,50%)',
+            'line-width': 10,
             'line-opacity': 1,
           }}
         />
@@ -115,7 +125,7 @@ export const SlippyMap = (props: {
             type={'line'}
             paint={{
               'line-color': '#f00',
-              'line-width': 5,
+              'line-width': 10,
               'line-opacity': 1,
             }}
           />
