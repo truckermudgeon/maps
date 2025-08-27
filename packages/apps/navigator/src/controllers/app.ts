@@ -115,6 +115,21 @@ export class AppControllerImpl implements AppController {
       }),
     });
 
+    client.onDirectionUpdate.subscribe(undefined, {
+      onData: action(maybeDir => {
+        if (maybeDir) {
+          console.log('distance to', maybeDir.distanceMeters);
+          if (maybeDir.distanceMeters === 0) {
+            console.log(maybeDir);
+          }
+        }
+        if (maybeDir && maybeDir.distanceMeters >= 500) {
+          maybeDir = { ...maybeDir, laneHint: undefined };
+        }
+        store.activeRouteDirection = maybeDir;
+      }),
+    });
+
     client.onPositionUpdate.subscribe(undefined, {
       // HACK wrap this in an `action`, even though no observable state is being
       // written to, just to squash the mobx warnings about accessing observable

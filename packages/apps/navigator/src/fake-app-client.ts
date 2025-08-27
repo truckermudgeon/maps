@@ -15,21 +15,24 @@ export const fakeAppClient: AppClient = {
   },
   onRouteUpdate: {
     subscribe: (_, cb) => {
-      setTimeout(
+      let ticks = 0;
+      setInterval(
         () =>
-          cb.onData?.({
-            id: 'active',
-            segments: [
-              {
-                key: 'key',
-                lonLats: fakeRoute,
-                distance: 0,
-                time: 0,
-                strategy: 'shortest',
-              },
-            ],
-          }),
-        500,
+          ticks++ % 2 === 0
+            ? cb.onData?.(undefined)
+            : cb.onData?.({
+                id: 'active',
+                segments: [
+                  {
+                    key: 'key',
+                    lonLats: fakeRoute,
+                    distance: 0,
+                    time: 0,
+                    strategy: 'shortest',
+                  },
+                ],
+              }),
+        10_000,
       );
       return {
         unsubscribe: () => void 0,
