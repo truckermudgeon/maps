@@ -32,7 +32,7 @@ export const fakeAppClient: AppClient = {
                   },
                 ],
               }),
-        10_000,
+        6_000,
       );
       return {
         unsubscribe: () => void 0,

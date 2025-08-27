@@ -197,24 +197,9 @@ const App = (props: {
   console.log('render app');
   const { SlippyMap, NavSheet, Directions, Controls } = props;
 
-  /*
-
-   * @default {
-   *    // extra-small
-   *    xs: 0,
-   *    // small
-   *    sm: 600,
-   *    // medium
-   *    md: 900,
-   *    // large
-   *    lg: 1200,
-   *    // extra-large
-   *    xl: 1536,
-   */
-
   return (
     <>
-      {Math.random() > 1 && <SlippyMap />}
+      <SlippyMap />
       <Grid
         container={true}
         sx={{ flexGrow: 1, border: '4px solid green' }}
@@ -223,13 +208,6 @@ const App = (props: {
         height={'100vh'}
         justifyContent={'space-between'}
       >
-        {Math.random() > 5 && (
-          <Grid>
-            <NavSheetContainer store={props.store}>
-              <NavSheet />
-            </NavSheetContainer>
-          </Grid>
-        )}
         <Grid size={{ xs: 12, sm: 9 }} maxWidth={600}>
           <RouteGuidanceContainer store={props.store}>
             <Directions />
@@ -238,6 +216,26 @@ const App = (props: {
               expanded={false}
             />
           </RouteGuidanceContainer>
+        </Grid>
+      </Grid>
+      <Grid
+        container={true}
+        sx={{
+          flexGrow: 1,
+          border: '4px solid orange',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+        }}
+        padding={2}
+        paddingBlockEnd={3}
+        height={'100vh'}
+      >
+        <Grid size={{ xs: 12, sm: 9 }} maxWidth={600}>
+          <NavSheetContainer store={props.store}>
+            <NavSheet />
+          </NavSheetContainer>
         </Grid>
       </Grid>
       <Grid
@@ -254,20 +252,39 @@ const App = (props: {
         paddingBlockEnd={3}
         height={'100vh'}
       >
-        <Grid container alignItems={'stretch'} sx={{ pt: { xs: 16, sm: 0 } }}>
+        <HudStackGridItem store={props.store}>
           <Controls />
-        </Grid>
+        </HudStackGridItem>
       </Grid>
     </>
   );
 };
 
+const HudStackGridItem = observer(
+  (props: { store: AppStore; children: ReactElement }) => (
+    <Grid
+      container
+      alignItems={'stretch'}
+      sx={{
+        py: {
+          xs:
+            !props.store.showNavSheet && props.store.activeRoute != null
+              ? 15
+              : 0,
+          sm: 0,
+        },
+      }}
+    >
+      {props.children}
+    </Grid>
+  ),
+);
+
 const NavSheetContainer = observer(
   (props: { store: AppStore; children: ReactElement }) => (
     <Slide in={props.store.showNavSheet} direction={'right'}>
       <Box
-        height={'100vh'}
-        width={'42vw'}
+        height={'100%'}
         sx={{
           position: 'absolute',
           top: 0,
@@ -284,7 +301,7 @@ const NavSheetContainer = observer(
 const RouteGuidanceContainer = observer(
   (props: { store: AppStore; children: ReactNode }) => (
     <Slide
-      in={Math.random() < 10 || props.store.activeRoute != null}
+      in={!props.store.showNavSheet && props.store.activeRoute != null}
       direction={'right'}
     >
       <Stack
