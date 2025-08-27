@@ -12,22 +12,13 @@ export const NavSheet = (props: {
         p: 2,
         borderRadius: 12,
         height: '100%',
+        maxHeight: 'calc(100vh - 40px)',
       }}
     >
       <Stack gap={2} height={'100%'} overflow={'hidden'}>
         <props.TitleControls />
         <Divider />
-        <Box
-          overflow={'auto'}
-          display={'flex'}
-          justifyContent={'center'}
-          sx={{
-            // negative margin to counter-act gap.
-            // positive padding to counter-act negative margin.
-            m: -2,
-            p: 2,
-          }}
-        >
+        <Box overflow={'auto'} display={'flex'} justifyContent={'center'}>
           <props.CurrentPage />
         </Box>
       </Stack>

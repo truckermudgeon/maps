@@ -202,40 +202,24 @@ const App = (props: {
       <SlippyMap />
       <Grid
         container={true}
-        sx={{ flexGrow: 1, border: '4px solid green' }}
+        sx={{ flexGrow: 1, border: '4px solid green', pointerEvents: 'none' }}
         padding={2}
         paddingBlockEnd={3}
         height={'100vh'}
         justifyContent={'space-between'}
       >
-        <Grid size={{ xs: 12, sm: 9 }} maxWidth={600}>
+        <Grid size={{ xs: 12, sm: 5 }} maxWidth={600}>
           <RouteGuidanceContainer store={props.store}>
-            <Directions />
-            <RouteControls
-              summary={{ minutes: 95, distanceMeters: 1234 }}
-              expanded={false}
-            />
+            <Box sx={{ pointerEvents: 'auto' }}>
+              <Directions />
+            </Box>
+            <Box sx={{ pointerEvents: 'auto' }}>
+              <RouteControls
+                summary={{ minutes: 95, distanceMeters: 1234 }}
+                expanded={false}
+              />
+            </Box>
           </RouteGuidanceContainer>
-        </Grid>
-      </Grid>
-      <Grid
-        container={true}
-        sx={{
-          flexGrow: 1,
-          border: '4px solid orange',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-        }}
-        padding={2}
-        paddingBlockEnd={3}
-        height={'100vh'}
-      >
-        <Grid size={{ xs: 12, sm: 9 }} maxWidth={600}>
-          <NavSheetContainer store={props.store}>
-            <NavSheet />
-          </NavSheetContainer>
         </Grid>
       </Grid>
       <Grid
@@ -247,6 +231,7 @@ const App = (props: {
           position: 'absolute',
           top: 0,
           right: 0,
+          pointerEvents: 'none',
         }}
         padding={2}
         paddingBlockEnd={3}
@@ -255,6 +240,27 @@ const App = (props: {
         <HudStackGridItem store={props.store}>
           <Controls />
         </HudStackGridItem>
+      </Grid>
+      <Grid
+        container={true}
+        sx={{
+          flexGrow: 1,
+          border: '4px solid orange',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          pointerEvents: 'none',
+        }}
+        padding={2}
+        paddingBlockEnd={3}
+        height={'100vh'}
+      >
+        <Grid size={{ xs: 12, sm: 5 }} maxWidth={600}>
+          <NavSheetContainer store={props.store}>
+            <NavSheet />
+          </NavSheetContainer>
+        </Grid>
       </Grid>
     </>
   );
@@ -273,6 +279,7 @@ const HudStackGridItem = observer(
               : 0,
           sm: 0,
         },
+        zIndex: 999, // needed so it's drawn over any highlighted destination map markers.
       }}
     >
       {props.children}
@@ -286,10 +293,11 @@ const NavSheetContainer = observer(
       <Box
         height={'100%'}
         sx={{
-          position: 'absolute',
+          position: 'relative',
           top: 0,
           left: 0,
           zIndex: 999, // needed so it's drawn over any highlighted destination map markers.
+          pointerEvents: 'auto',
         }}
       >
         {props.children}

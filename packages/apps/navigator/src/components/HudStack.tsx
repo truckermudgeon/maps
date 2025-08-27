@@ -17,11 +17,21 @@ export const HudStack = (props: {
         border: `1px solid red`,
       }}
     >
-      <Stack gap={1} alignSelf={'end'} alignItems={'end'}>
+      <Stack
+        gap={1}
+        alignSelf={'end'}
+        alignItems={'end'}
+        sx={{ pointerEvents: 'auto' }}
+      >
         <props.Direction />
         <props.SpeedLimit />
       </Stack>
-      <Stack gap={2} alignSelf={'end'} alignItems={'center'}>
+      <Stack
+        gap={2}
+        alignSelf={'end'}
+        alignItems={'center'}
+        sx={{ pointerEvents: 'auto' }}
+      >
         <props.RecenterFab />
         <props.RouteFab />
         <props.SearchFab />
