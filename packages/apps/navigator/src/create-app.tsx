@@ -1,15 +1,16 @@
-import { Box } from '@mui/joy';
+import { Box, Stack } from '@mui/joy';
 import { Slide } from '@mui/material';
 import { assertExists } from '@truckermudgeon/base/assert';
 import type { Marker as MapLibreGLMarker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { action, reaction } from 'mobx';
 import { observer } from 'mobx-react-lite';
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import type { MapRef } from 'react-map-gl/maplibre';
 import { DestinationMarkers } from './components/DestinationMarkers';
 import { Directions } from './components/Directions';
 import { PlayerMarker } from './components/PlayerMarker';
+import { RouteControls } from './components/RouteControls';
 import { SlippyMap } from './components/SlippyMap';
 import { TrailerOrWaypointMarkers } from './components/TrailerOrWaypointMarkers';
 import { AppControllerImpl, AppStoreImpl } from './controllers/app';
@@ -205,6 +206,10 @@ const App = (props: {
       </NavSheetContainer>
       <RouteGuidanceContainer store={props.store}>
         <Directions />
+        <RouteControls
+          summary={{ minutes: 95, distanceMeters: 1234 }}
+          expanded={false}
+        />
       </RouteGuidanceContainer>
     </>
   );
@@ -214,7 +219,8 @@ const NavSheetContainer = observer(
   (props: { store: AppStore; children: ReactElement }) => (
     <Slide in={props.store.showNavSheet} direction={'right'}>
       <Box
-        padding={1}
+        padding={2}
+        paddingBlockEnd={3}
         height={'100vh'}
         width={'42vw'}
         sx={{
@@ -231,21 +237,22 @@ const NavSheetContainer = observer(
 );
 
 const RouteGuidanceContainer = observer(
-  (props: { store: AppStore; children: ReactElement }) => (
+  (props: { store: AppStore; children: ReactNode }) => (
     <Slide in={props.store.activeRoute != null} direction={'right'}>
-      <Box
-        padding={1}
+      <Stack
+        justifyContent={'space-between'}
+        padding={2}
+        paddingBlockEnd={3}
         height={'100vh'}
         width={'42vw'}
         sx={{
           position: 'absolute',
           top: 0,
           left: 0,
-          pointerEvents: 'none',
         }}
       >
         {props.children}
-      </Box>
+      </Stack>
     </Slide>
   ),
 );

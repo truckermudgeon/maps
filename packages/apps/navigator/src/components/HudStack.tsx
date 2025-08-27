@@ -12,7 +12,7 @@ export const HudStack = (props: {
   return (
     <Stack
       padding={2}
-      paddingBlockEnd={6}
+      paddingBlockEnd={3}
       height={'100vh'}
       direction={'column'}
       justifyContent={'space-between'}
