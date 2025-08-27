@@ -6,7 +6,7 @@ import { HudStack } from './HudStack';
 import { SpeedLimit } from './SpeedLimit';
 import {
   KPH as KphSpeedLimit,
-  MPH as MphSpeedLimit,
+  MPHWithNormalSpeed as MphSpeedLimit,
 } from './SpeedLimit.stories';
 import { TextCompass } from './TextCompass';
 import { TwoLetter as TextCompassPrimary } from './TextCompass.stories';

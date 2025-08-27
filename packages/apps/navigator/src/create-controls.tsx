@@ -1,5 +1,4 @@
 import { Directions, NavigationOutlined, Search } from '@mui/icons-material';
-import { Slide } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import type { ReactElement } from 'react';
 import { Fab } from './components/Fab';
@@ -35,14 +34,7 @@ export function createControls(opts: { appStore: AppStore }): {
     <TextCompass direction={store.direction} />
   ));
   const _SpeedLimit = observer(() => (
-    <Slide
-      in={store.limitMph >= 5}
-      direction={'left'}
-      mountOnEnter
-      unmountOnExit
-    >
-      <SpeedLimit limitMph={store.limitMph} />
-    </Slide>
+    <SpeedLimit limitMph={store.limitMph} speedMph={store.speedMph} />
   ));
   const RecenterFab = observer((props: { onClick: () => void }) => (
     <Fab

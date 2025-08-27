@@ -34,6 +34,7 @@ export type CompassPoint = 'N' | 'S' | 'E' | 'W' | 'NE' | 'NW' | 'SE' | 'SW';
 export interface ControlsStore {
   direction: CompassPoint;
   limitMph: number;
+  speedMph: number;
   showRecenterFab: boolean;
   showRouteFab: boolean;
   showSearchFab: boolean;

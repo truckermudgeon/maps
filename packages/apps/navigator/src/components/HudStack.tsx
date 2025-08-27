@@ -22,7 +22,7 @@ export const HudStack = (props: {
         right: 0,
       }}
     >
-      <Stack gap={1} alignSelf={'end'} alignItems={'center'}>
+      <Stack gap={1} alignSelf={'end'} alignItems={'end'}>
         <props.Direction />
         <props.SpeedLimit />
       </Stack>

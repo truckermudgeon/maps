@@ -1,13 +1,59 @@
-import { Box, Typography } from '@mui/joy';
+import { Box, Stack, Typography } from '@mui/joy';
 import { forwardRef } from 'react';
 
+// TODO make units more explicit via prop.
+
 export const SpeedLimit = forwardRef(
-  (props: { limitMph?: number; limitKph?: number }, ref) =>
-    props.limitMph != null ? (
-      <SpeedLimitMph limitMph={props.limitMph} ref={ref} />
-    ) : props.limitKph != null ? (
-      <SpeedLimitKph limitKph={props.limitKph} ref={ref} />
-    ) : null,
+  (props: { limitMph?: number; speedMph: number; limitKph?: number }, ref) => {
+    const limitSign =
+      props.limitMph != null ? (
+        <SpeedLimitMph limitMph={props.limitMph} ref={ref} />
+      ) : props.limitKph != null ? (
+        <SpeedLimitKph limitKph={props.limitKph} ref={ref} />
+      ) : null;
+
+    const effectiveLimit =
+      (props.limitMph ?? 0) < 5 ? Infinity : (props.limitMph ?? 0);
+    const ratio = props.speedMph / effectiveLimit;
+    const color = ratio <= 1 ? 'white' : ratio <= 1.1 ? 'orange' : 'red';
+
+    return (
+      <Stack
+        display={'grid'}
+        gridTemplateColumns={'1fr 1fr'}
+        gap={0.25}
+        sx={{
+          backgroundColor: '#000',
+          p: 0.25,
+        }}
+        borderRadius={4}
+      >
+        {limitSign}
+        <Stack justifyContent={'center'}>
+          <Typography
+            textAlign={'center'}
+            level={'title-lg'}
+            fontSize={'xl2'}
+            fontWeight={'bold'}
+            sx={{
+              color,
+              WebkitTextStroke: 1.25,
+            }}
+          >
+            {Math.round(props.speedMph) || '--'}
+          </Typography>
+          <Typography
+            textAlign={'center'}
+            lineHeight={1}
+            level={'body-md'}
+            sx={{ color }}
+          >
+            mph
+          </Typography>
+        </Stack>
+      </Stack>
+    );
+  },
 );
 
 const SpeedLimitMph = forwardRef((props: { limitMph: number }, ref) => (
@@ -45,7 +91,7 @@ const SpeedLimitMph = forwardRef((props: { limitMph: number }, ref) => (
           WebkitTextStroke: 1.25,
         }}
       >
-        {props.limitMph}
+        {props.limitMph < 5 ? '--' : props.limitMph}
       </Typography>
     </Box>
   </Box>
