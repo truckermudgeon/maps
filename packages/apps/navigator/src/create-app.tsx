@@ -166,6 +166,7 @@ export function createApp({
         distanceMeters={store.activeRouteDirection.distanceMeters}
         laneHint={store.activeRouteDirection.laneHint}
         thenHint={store.activeRouteDirection.thenHint}
+        name={store.activeRouteDirection.name}
       />
     ) : (
       <></>

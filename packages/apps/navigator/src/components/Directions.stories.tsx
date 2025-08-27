@@ -17,6 +17,16 @@ export const Default: Story = {
   },
 };
 
+export const WithNameText: Story = {
+  args: {
+    ...Default.args,
+    distanceMeters: Default.args.distanceMeters * 10,
+    name: {
+      text: 'Main St',
+    },
+  },
+};
+
 export const WithLaneHint: Story = {
   args: {
     ...Default.args,

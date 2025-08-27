@@ -19,26 +19,26 @@ export const Directions = (props: RouteDirection) => {
         bgcolor={bgColor.string()}
         borderRadius={hasHint ? '1em 1em 1em 0' : '1em'}
       >
-        <Stack alignItems={'center'}>
-          <Box width={'4em'}>
-            <LaneIcon branches={[props.direction]} dimColor={'#fff'} />
-          </Box>
-          <Typography
-            level={'h3'}
-            textColor={'#fff'}
-            textAlign={'center'}
-            width={'2.5em'}
-            display={'block'}
-          >
-            {length}
-            <Typography level={'body-sm'} textColor={'#fffa'}>
-              {unit}
+        <Stack>
+          <Stack direction={'row'} alignItems={'center'} gap={1}>
+            <Box width={'6em'}>
+              <LaneIcon branches={[props.direction]} dimColor={'#fff'} />
+            </Box>
+            <Typography
+              level={'h1'}
+              textColor={'#fff'}
+              textAlign={'center'}
+              display={'block'}
+            >
+              {length} {unit}
             </Typography>
-          </Typography>
+          </Stack>
+          {props.name && (
+            <Typography level={'h2'} fontWeight={'normal'} textColor={'#fff'}>
+              {props.name.text}
+            </Typography>
+          )}
         </Stack>
-        <Typography level={'h1'} fontWeight={'normal'} textColor={'#fff'}>
-          Main St
-        </Typography>
       </Stack>
       {props.laneHint ? (
         <LaneHint roundBottomLeft={!props.thenHint} hint={props.laneHint} />
