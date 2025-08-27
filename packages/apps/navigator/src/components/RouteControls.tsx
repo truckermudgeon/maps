@@ -7,6 +7,7 @@ import {
 } from '@mui/icons-material';
 import {
   Button,
+  Card,
   IconButton,
   List,
   ListDivider,
@@ -30,7 +31,7 @@ export const RouteControls = (props: RouteControlsProps) => {
   const DisclosureIcon = props.expanded ? KeyboardArrowDown : KeyboardArrowUp;
 
   return (
-    <Stack
+    <Card
       sx={{
         boxShadow:
           'rgba(0, 0, 0, 0.2) 0px 3px 5px -1px, rgba(0, 0, 0, 0.14) 0px 6px 10px 0px, rgba(0, 0, 0, 0.12) 0px 1px 18px 0px',
@@ -68,7 +69,7 @@ export const RouteControls = (props: RouteControlsProps) => {
         </IconButton>
       </Stack>
       <ExpandedControls expanded={props.expanded} />
-    </Stack>
+    </Card>
   );
 };
 
