@@ -1,5 +1,5 @@
 import { Box, Stack } from '@mui/joy';
-import { Grid, Slide } from '@mui/material';
+import { Grid, Slide, useMediaQuery, useTheme } from '@mui/material';
 import { assertExists } from '@truckermudgeon/base/assert';
 import type { Marker as MapLibreGLMarker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -178,6 +178,7 @@ export function createApp({
     App: () => (
       <App
         store={store}
+        transitionDurationMs={transitionDurationMs}
         SlippyMap={_SlippyMap}
         NavSheet={_NavSheet}
         Directions={_Directions}
@@ -189,6 +190,7 @@ export function createApp({
 
 const App = (props: {
   store: AppStore;
+  transitionDurationMs: number;
   SlippyMap: () => ReactElement;
   NavSheet: () => ReactElement;
   Directions: () => ReactElement;
@@ -196,6 +198,11 @@ const App = (props: {
 }) => {
   console.log('render app');
   const { SlippyMap, NavSheet, Directions, Controls } = props;
+  const theme = useTheme();
+  const isLargePortrait = useMediaQuery(
+    theme.breakpoints.up('sm') + ' and (orientation: portrait)',
+  );
+  console.log('isLargePortrait?', isLargePortrait);
 
   return (
     <>
@@ -208,7 +215,10 @@ const App = (props: {
         height={'100vh'}
         justifyContent={'space-between'}
       >
-        <Grid size={{ xs: 12, sm: 5 }} maxWidth={600}>
+        <Grid
+          size={{ xs: 12, sm: isLargePortrait ? 12 : 5 }}
+          maxWidth={isLargePortrait ? undefined : 600}
+        >
           <RouteGuidanceContainer store={props.store}>
             <Box sx={{ pointerEvents: 'auto' }}>
               <Directions />
@@ -237,7 +247,11 @@ const App = (props: {
         paddingBlockEnd={3}
         height={'100vh'}
       >
-        <HudStackGridItem store={props.store}>
+        <HudStackGridItem
+          store={props.store}
+          isLargePortrait={isLargePortrait}
+          transitionDurationMs={props.transitionDurationMs}
+        >
           <Controls />
         </HudStackGridItem>
       </Grid>
@@ -256,7 +270,10 @@ const App = (props: {
         paddingBlockEnd={3}
         height={'100vh'}
       >
-        <Grid size={{ xs: 12, sm: 5 }} maxWidth={600}>
+        <Grid
+          size={{ xs: 12, sm: isLargePortrait ? 12 : 5 }}
+          maxWidth={isLargePortrait ? undefined : 600}
+        >
           <NavSheetContainer store={props.store}>
             <NavSheet />
           </NavSheetContainer>
@@ -267,7 +284,12 @@ const App = (props: {
 };
 
 const HudStackGridItem = observer(
-  (props: { store: AppStore; children: ReactElement }) => (
+  (props: {
+    store: AppStore;
+    transitionDurationMs: number;
+    isLargePortrait: boolean;
+    children: ReactElement;
+  }) => (
     <Grid
       container
       alignItems={'stretch'}
@@ -277,9 +299,14 @@ const HudStackGridItem = observer(
             !props.store.showNavSheet && props.store.activeRoute != null
               ? 15
               : 0,
-          sm: 0,
+          sm: props.isLargePortrait
+            ? !props.store.showNavSheet && props.store.activeRoute != null
+              ? 15
+              : 0
+            : 0,
         },
         zIndex: 999, // needed so it's drawn over any highlighted destination map markers.
+        transition: `${props.transitionDurationMs}ms padding ease`,
       }}
     >
       {props.children}
