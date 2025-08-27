@@ -209,7 +209,7 @@ const App = (props: {
       <SlippyMap />
       <Grid
         container={true}
-        sx={{ flexGrow: 1, border: '4px solid green', pointerEvents: 'none' }}
+        sx={{ flexGrow: 1, pointerEvents: 'none' }}
         padding={2}
         paddingBlockEnd={3}
         height={'100vh'}
@@ -237,7 +237,6 @@ const App = (props: {
         container={true}
         sx={{
           flexGrow: 1,
-          border: '4px solid blue',
           position: 'absolute',
           top: 0,
           right: 0,
@@ -259,7 +258,6 @@ const App = (props: {
         container={true}
         sx={{
           flexGrow: 1,
-          border: '4px solid orange',
           position: 'absolute',
           top: 0,
           left: 0,
@@ -343,7 +341,6 @@ const RouteGuidanceContainer = observer(
         height={'100%'}
         justifyContent={'space-between'}
         position={'relative'} // why is this needed for Directions to show?
-        sx={{ border: '1px solid red' }}
       >
         {props.children}
       </Stack>

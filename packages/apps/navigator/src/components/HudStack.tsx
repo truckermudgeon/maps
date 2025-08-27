@@ -10,13 +10,7 @@ export const HudStack = (props: {
 }) => {
   console.log('render controls');
   return (
-    <Stack
-      direction={'column'}
-      justifyContent={'space-between'}
-      sx={{
-        border: `1px solid red`,
-      }}
-    >
+    <Stack direction={'column'} justifyContent={'space-between'}>
       <Stack
         gap={1}
         alignSelf={'end'}
