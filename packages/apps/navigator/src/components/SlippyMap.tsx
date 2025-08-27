@@ -71,6 +71,7 @@ export const SlippyMap = (props: {
       minZoom={4}
       maxZoom={15}
       mapStyle={defaultMapStyle}
+      attributionControl={false}
     >
       <BaseMapStyle tileRootUrl={tileRootUrl} mode={mode} />
       <GameMapStyle tileRootUrl={tileRootUrl} mode={mode} game={'ats'} />
@@ -124,12 +125,13 @@ export const SlippyMap = (props: {
       <TrailerOrWaypointMarkers />
       <PlayerMarker mode={props.mode} ref={playerMarkerRef} />
       <AttributionControl
-        compact={true}
         style={{
+          fontSize: '0.8em',
           marginLeft: 54,
-          opacity: 0.5,
+          opacity: 0.25,
+          background: 'transparent',
         }}
-        customAttribution="&copy; Trucker Mudgeon. scenery town data by <a href='https://github.com/nautofon/ats-towns'>nautofon</a> and <a href='https://forum.scssoft.com/viewtopic.php?p=1946956#p1946956'>krmarci</a>."
+        customAttribution="<a href='https://github.com/truckermudgeon/maps'>TruckSim Maps</a>. Adapted from data &copy; <a href='https://www.scssoft.com/'>SCS Software.</a>"
       />
     </MapGl>
   );
