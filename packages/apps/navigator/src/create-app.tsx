@@ -296,29 +296,32 @@ const HudStackGridItem = observer(
     transitionDurationMs: number;
     isLargePortrait: boolean;
     children: ReactElement;
-  }) => (
-    <Grid
-      container
-      alignItems={'stretch'}
-      sx={{
-        py: {
-          xs:
-            !props.store.showNavSheet && props.store.activeRoute != null
-              ? 15
-              : 0,
-          sm: props.isLargePortrait
-            ? !props.store.showNavSheet && props.store.activeRoute != null
-              ? 15
-              : 0
-            : 0,
-        },
-        zIndex: 999, // needed so it's drawn over any highlighted destination map markers.
-        transition: `${props.transitionDurationMs}ms padding ease`,
-      }}
-    >
-      {props.children}
-    </Grid>
-  ),
+  }) => {
+    const showRouteStack =
+      !props.store.showNavSheet && props.store.activeRoute != null;
+    return (
+      <Grid
+        container
+        alignItems={'stretch'}
+        sx={{
+          // apply top/bottom padding for portrait orientations, so that hud
+          // controls don't overlap route controls.
+          pt: {
+            xs: showRouteStack ? 14 : 0,
+            sm: props.isLargePortrait && showRouteStack ? 14 : 0,
+          },
+          pb: {
+            xs: showRouteStack ? 13 : 0,
+            sm: props.isLargePortrait && showRouteStack ? 13 : 0,
+          },
+          zIndex: 999, // needed so it's drawn over any highlighted destination map markers.
+          transition: `${props.transitionDurationMs}ms padding ease`,
+        }}
+      >
+        {props.children}
+      </Grid>
+    );
+  },
 );
 
 const RouteStackContainer = observer(

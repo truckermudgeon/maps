@@ -4,6 +4,7 @@ import { fn } from '@storybook/test';
 import { RouteControls } from './RouteControls';
 
 const meta = {
+  title: 'Route/RouteControls',
   component: RouteControls,
 } satisfies Meta<typeof RouteControls>;
 

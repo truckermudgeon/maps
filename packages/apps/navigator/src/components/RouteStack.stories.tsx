@@ -6,6 +6,7 @@ import { Directions } from './Directions';
 import { RouteStack } from './RouteStack';
 
 const meta = {
+  title: 'Route/RouteStack',
   component: RouteStack,
   decorators: [
     (Story: () => React.JSX.Element) => (
