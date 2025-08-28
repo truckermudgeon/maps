@@ -12,6 +12,7 @@ import type {
 export class ControlsStoreImpl implements ControlsStore {
   direction: CompassPoint = 'N';
   limitMph = 0;
+  speedMph = 0;
 
   constructor(private readonly appStore: AppStore) {
     makeAutoObservable(this);
@@ -36,6 +37,7 @@ export class ControlsControllerImpl implements ControlsController {
       onData: action(gameState => {
         store.direction = toCompassPoint(gameState.bearing);
         store.limitMph = gameState.speedLimit;
+        store.speedMph = gameState.speedMph;
       }),
     });
   }

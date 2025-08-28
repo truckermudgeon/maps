@@ -20,7 +20,7 @@ interface PropsForTestingOnly {
 
 const colors = {
   ['light']: {
-    background: 'rgba(255,255,255,0.8)',
+    background: 'rgba(255,255,255,0.9)',
     fill: 'hsl(204,100%,50%)',
   },
   ['dark']: {
@@ -57,7 +57,7 @@ export const PlayerMarker = forwardRef<
       >
         <Navigation
           sx={{
-            transform: 'scale(4)',
+            transform: 'scale(2)',
             fill,
           }}
         />

@@ -15,21 +15,24 @@ export const fakeAppClient: AppClient = {
   },
   onRouteUpdate: {
     subscribe: (_, cb) => {
-      setTimeout(
+      let ticks = 0;
+      setInterval(
         () =>
-          cb.onData?.({
-            id: 'active',
-            segments: [
-              {
-                key: 'key',
-                lonLats: fakeRoute,
-                distance: 0,
-                time: 0,
-                strategy: 'shortest',
-              },
-            ],
-          }),
-        500,
+          ticks++ % 2 === 0
+            ? cb.onData?.(undefined)
+            : cb.onData?.({
+                id: 'active',
+                segments: [
+                  {
+                    key: 'key',
+                    lonLats: fakeRoute,
+                    distance: 0,
+                    time: 0,
+                    strategy: 'shortest',
+                  },
+                ],
+              }),
+        6_000,
       );
       return {
         unsubscribe: () => void 0,
@@ -101,14 +104,19 @@ export const fakeAppClient: AppClient = {
   onPositionUpdate: {
     subscribe: (_, cb) => {
       let intervalCount = 0;
+      let speedTicks = 0;
+      let speed = 0;
       //let bearing = -180;
       const intervalId = setInterval(() => {
+        if (speedTicks++ % 10 === 0) {
+          speed = Math.round(60 * (0.875 + Math.random() * 0.25));
+        }
         cb.onData?.({
           bearing: 0,
           position: [++intervalCount * 0.0002 + fakeLon, fakeLat],
           scale: 0,
-          speedLimit: 30,
-          speedMph: 60,
+          speedLimit: 60,
+          speedMph: speed,
         });
         //bearing -= 5;
         //if (bearing < -180) {

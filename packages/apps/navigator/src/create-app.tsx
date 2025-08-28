@@ -1,5 +1,5 @@
 import { Box } from '@mui/joy';
-import { Slide } from '@mui/material';
+import { Grid, Slide, useMediaQuery, useTheme } from '@mui/material';
 import { assertExists } from '@truckermudgeon/base/assert';
 import type { Marker as MapLibreGLMarker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -10,6 +10,7 @@ import type { MapRef } from 'react-map-gl/maplibre';
 import { DestinationMarkers } from './components/DestinationMarkers';
 import { Directions } from './components/Directions';
 import { PlayerMarker } from './components/PlayerMarker';
+import { RouteStack } from './components/RouteStack';
 import { SlippyMap } from './components/SlippyMap';
 import { TrailerOrWaypointMarkers } from './components/TrailerOrWaypointMarkers';
 import { AppControllerImpl, AppStoreImpl } from './controllers/app';
@@ -166,19 +167,30 @@ export function createApp({
         distanceMeters={store.activeRouteDirection.distanceMeters}
         laneHint={store.activeRouteDirection.laneHint}
         thenHint={store.activeRouteDirection.thenHint}
+        name={store.activeRouteDirection.name}
       />
     ) : (
       <></>
     ),
   );
 
+  const _RouteStack = () => (
+    <RouteStack
+      Guidance={_Directions}
+      onRouteEndClick={action(() =>
+        controller.setActiveRoute(store, undefined, appClient),
+      )}
+    />
+  );
+
   return {
     App: () => (
       <App
         store={store}
+        transitionDurationMs={transitionDurationMs}
         SlippyMap={_SlippyMap}
         NavSheet={_NavSheet}
-        Directions={_Directions}
+        RouteStack={_RouteStack}
         Controls={_Controls}
       />
     ),
@@ -187,60 +199,155 @@ export function createApp({
 
 const App = (props: {
   store: AppStore;
+  transitionDurationMs: number;
   SlippyMap: () => ReactElement;
   NavSheet: () => ReactElement;
-  Directions: () => ReactElement;
+  RouteStack: () => ReactElement;
   Controls: () => ReactElement;
 }) => {
   console.log('render app');
-  const { SlippyMap, NavSheet, Directions, Controls } = props;
+  const { SlippyMap, NavSheet, RouteStack, Controls } = props;
+  const theme = useTheme();
+  const isLargePortrait = useMediaQuery(
+    theme.breakpoints.up('sm') + ' and (orientation: portrait)',
+  );
 
   return (
     <>
       <SlippyMap />
-      <Controls />
-      <NavSheetContainer store={props.store}>
-        <NavSheet />
-      </NavSheetContainer>
-      <RouteGuidanceContainer store={props.store}>
-        <Directions />
-      </RouteGuidanceContainer>
+      <Grid
+        columns={3}
+        container={true}
+        sx={{
+          flexGrow: 1,
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          pointerEvents: 'none',
+        }}
+        padding={2}
+        paddingBlockEnd={3}
+        height={'100vh'}
+      >
+        <HudStackGridItem
+          store={props.store}
+          isLargePortrait={isLargePortrait}
+          transitionDurationMs={props.transitionDurationMs}
+        >
+          <Controls />
+        </HudStackGridItem>
+      </Grid>
+      <Grid
+        container={true}
+        sx={{
+          flexGrow: 1,
+          pointerEvents: 'none',
+        }}
+        padding={2}
+        paddingBlockEnd={3}
+        height={'100vh'}
+        justifyContent={'space-between'}
+      >
+        <Grid
+          size={{ xs: 12, sm: isLargePortrait ? 12 : 5 }}
+          maxWidth={isLargePortrait ? undefined : 600}
+          sx={{
+            zIndex: 999, // so it renders over hud stack
+          }}
+        >
+          <RouteStackContainer store={props.store}>
+            <RouteStack />
+          </RouteStackContainer>
+        </Grid>
+      </Grid>
+      <Grid
+        container={true}
+        sx={{
+          flexGrow: 1,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          pointerEvents: 'none',
+        }}
+        padding={2}
+        paddingBlockEnd={3}
+        height={'100vh'}
+      >
+        <Grid
+          size={{ xs: 12, sm: isLargePortrait ? 12 : 5 }}
+          maxWidth={isLargePortrait ? undefined : 600}
+          sx={{
+            maxHeight: '100%',
+          }}
+        >
+          <NavSheetContainer store={props.store}>
+            <NavSheet />
+          </NavSheetContainer>
+        </Grid>
+      </Grid>
     </>
   );
 };
+
+const HudStackGridItem = observer(
+  (props: {
+    store: AppStore;
+    transitionDurationMs: number;
+    isLargePortrait: boolean;
+    children: ReactElement;
+  }) => {
+    const showRouteStack =
+      !props.store.showNavSheet && props.store.activeRoute != null;
+    return (
+      <Grid
+        container
+        alignItems={'stretch'}
+        sx={{
+          // apply top/bottom padding for portrait orientations, so that hud
+          // controls don't overlap route controls.
+          pt: {
+            xs: showRouteStack ? 14 : 0,
+            sm: props.isLargePortrait && showRouteStack ? 14 : 0,
+          },
+          pb: {
+            xs: showRouteStack ? 13 : 0,
+            sm: props.isLargePortrait && showRouteStack ? 13 : 0,
+          },
+          zIndex: 999, // needed so it's drawn over any highlighted destination map markers.
+          transition: `${props.transitionDurationMs}ms padding ease`,
+        }}
+      >
+        {props.children}
+      </Grid>
+    );
+  },
+);
+
+const RouteStackContainer = observer(
+  (props: { store: AppStore; children: ReactElement }) => {
+    return (
+      <Slide
+        in={!props.store.showNavSheet && props.store.activeRoute != null}
+        direction={'right'}
+      >
+        <Box height={'100%'}>{props.children}</Box>
+      </Slide>
+    );
+  },
+);
 
 const NavSheetContainer = observer(
   (props: { store: AppStore; children: ReactElement }) => (
     <Slide in={props.store.showNavSheet} direction={'right'}>
       <Box
-        padding={1}
-        height={'100vh'}
-        width={'42vw'}
+        height={'100%'}
         sx={{
-          position: 'absolute',
+          position: 'relative',
           top: 0,
           left: 0,
           zIndex: 999, // needed so it's drawn over any highlighted destination map markers.
-        }}
-      >
-        {props.children}
-      </Box>
-    </Slide>
-  ),
-);
-
-const RouteGuidanceContainer = observer(
-  (props: { store: AppStore; children: ReactElement }) => (
-    <Slide in={props.store.activeRoute != null} direction={'right'}>
-      <Box
-        padding={1}
-        height={'100vh'}
-        width={'42vw'}
-        sx={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          pointerEvents: 'none',
+          pointerEvents: 'auto',
         }}
       >
         {props.children}

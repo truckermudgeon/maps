@@ -9,11 +9,7 @@ import type { Marker as MapLibreGLMarker } from 'maplibre-gl';
 import type { ForwardRefExoticComponent, ReactElement } from 'react';
 import { useRef } from 'react';
 import type { MapRef } from 'react-map-gl/maplibre';
-import MapGl, {
-  AttributionControl,
-  Layer,
-  Source,
-} from 'react-map-gl/maplibre';
+import MapGl, { Layer, Source } from 'react-map-gl/maplibre';
 import type { PlayerMarkerProps } from './PlayerMarker';
 import './SlippyMap.css';
 
@@ -71,6 +67,7 @@ export const SlippyMap = (props: {
       minZoom={4}
       maxZoom={15}
       mapStyle={defaultMapStyle}
+      attributionControl={false}
     >
       <BaseMapStyle tileRootUrl={tileRootUrl} mode={mode} />
       <GameMapStyle tileRootUrl={tileRootUrl} mode={mode} game={'ats'} />
@@ -88,11 +85,21 @@ export const SlippyMap = (props: {
         }
       >
         <Layer
+          id={'activeRouteLayer-case'}
+          type={'line'}
+          paint={{
+            'line-color': 'hsl(204,100%,40%)',
+            'line-gap-width': 8,
+            'line-width': 4,
+            'line-opacity': 1,
+          }}
+        />
+        <Layer
           id={'activeRouteLayer'}
           type={'line'}
           paint={{
-            'line-color': '#f00',
-            'line-width': 5,
+            'line-color': 'hsl(204,100%,50%)',
+            'line-width': 10,
             'line-opacity': 1,
           }}
         />
@@ -114,7 +121,7 @@ export const SlippyMap = (props: {
             type={'line'}
             paint={{
               'line-color': '#f00',
-              'line-width': 5,
+              'line-width': 10,
               'line-opacity': 1,
             }}
           />
@@ -123,14 +130,23 @@ export const SlippyMap = (props: {
       <Destinations />
       <TrailerOrWaypointMarkers />
       <PlayerMarker mode={props.mode} ref={playerMarkerRef} />
-      <AttributionControl
-        compact={true}
+      <div
         style={{
-          marginLeft: 54,
-          opacity: 0.5,
+          fontSize: '0.9em',
+          opacity: 0.25,
+          background: 'transparent',
+          position: 'absolute',
+          right: '1em',
+          bottom: 2,
         }}
-        customAttribution="&copy; Trucker Mudgeon. scenery town data by <a href='https://github.com/nautofon/ats-towns'>nautofon</a> and <a href='https://forum.scssoft.com/viewtopic.php?p=1946956#p1946956'>krmarci</a>."
-      />
+      >
+        <a
+          style={{ color: 'inherit', textDecoration: 'none' }}
+          href="https://github.com/truckermudgeon/maps"
+        >
+          TruckSim Maps
+        </a>
+      </div>
     </MapGl>
   );
 };
