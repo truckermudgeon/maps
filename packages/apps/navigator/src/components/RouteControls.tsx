@@ -28,6 +28,7 @@ interface RouteControlsProps {
   };
   expanded: boolean;
   onDisclosureClick: () => void;
+  onRouteEndClick: () => void;
 }
 
 export const RouteControls = (props: RouteControlsProps) => {
@@ -78,13 +79,22 @@ export const RouteControls = (props: RouteControlsProps) => {
         </IconButton>
       </Stack>
       <Box overflow={'scroll'}>
-        <ExpandedControls expanded={props.expanded} />
+        <ExpandedControls
+          expanded={props.expanded}
+          onRouteEndClick={props.onRouteEndClick}
+        />
       </Box>
     </Card>
   );
 };
 
-const ExpandedControls = ({ expanded }: { expanded: boolean }) => {
+const ExpandedControls = ({
+  expanded,
+  onRouteEndClick,
+}: {
+  expanded: boolean;
+  onRouteEndClick: () => void;
+}) => {
   const ref = useRef<HTMLElement>();
   useEffect(() => {
     if (expanded) {
@@ -129,7 +139,12 @@ const ExpandedControls = ({ expanded }: { expanded: boolean }) => {
         </ListItem>
 
         <ListDivider />
-        <Button sx={{ mt: 2 }} size={'lg'} color={'danger'}>
+        <Button
+          sx={{ mt: 2 }}
+          size={'lg'}
+          color={'danger'}
+          onClick={onRouteEndClick}
+        >
           End Route
         </Button>
         <Box ref={ref} />

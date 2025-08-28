@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 import { WithLaneHint } from './Directions.stories';
 
 import { Directions } from './Directions';
@@ -21,5 +22,6 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     Guidance: () => <Directions {...WithLaneHint.args} />,
+    onRouteEndClick: fn(),
   },
 };

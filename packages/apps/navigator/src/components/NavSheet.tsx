@@ -12,7 +12,6 @@ export const NavSheet = (props: {
         p: 2,
         borderRadius: 12,
         height: '100%',
-        maxHeight: 'calc(100vh - 40px)',
       }}
     >
       <Stack gap={2} height={'100%'} overflow={'hidden'}>

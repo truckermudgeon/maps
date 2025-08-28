@@ -174,6 +174,15 @@ export function createApp({
     ),
   );
 
+  const _RouteStack = () => (
+    <RouteStack
+      Guidance={_Directions}
+      onRouteEndClick={action(() =>
+        controller.setActiveRoute(store, undefined, appClient),
+      )}
+    />
+  );
+
   return {
     App: () => (
       <App
@@ -181,7 +190,7 @@ export function createApp({
         transitionDurationMs={transitionDurationMs}
         SlippyMap={_SlippyMap}
         NavSheet={_NavSheet}
-        Directions={_Directions}
+        RouteStack={_RouteStack}
         Controls={_Controls}
       />
     ),
@@ -193,11 +202,11 @@ const App = (props: {
   transitionDurationMs: number;
   SlippyMap: () => ReactElement;
   NavSheet: () => ReactElement;
-  Directions: () => ReactElement;
+  RouteStack: () => ReactElement;
   Controls: () => ReactElement;
 }) => {
   console.log('render app');
-  const { SlippyMap, NavSheet, Directions, Controls } = props;
+  const { SlippyMap, NavSheet, RouteStack, Controls } = props;
   const theme = useTheme();
   const isLargePortrait = useMediaQuery(
     theme.breakpoints.up('sm') + ' and (orientation: portrait)',
@@ -247,7 +256,7 @@ const App = (props: {
           }}
         >
           <RouteStackContainer store={props.store}>
-            <RouteStack Guidance={Directions} />
+            <RouteStack />
           </RouteStackContainer>
         </Grid>
       </Grid>
@@ -268,6 +277,9 @@ const App = (props: {
         <Grid
           size={{ xs: 12, sm: isLargePortrait ? 12 : 5 }}
           maxWidth={isLargePortrait ? undefined : 600}
+          sx={{
+            maxHeight: '100%',
+          }}
         >
           <NavSheetContainer store={props.store}>
             <NavSheet />

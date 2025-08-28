@@ -5,8 +5,11 @@ import type { ReactElement } from 'react';
 import { useCallback, useState } from 'react';
 import { RouteControls } from './RouteControls';
 
-export const RouteStack = (props: { Guidance: () => ReactElement }) => {
-  const { Guidance } = props;
+export const RouteStack = (props: {
+  Guidance: () => ReactElement;
+  onRouteEndClick: () => void;
+}) => {
+  const { Guidance, onRouteEndClick } = props;
   const [stackRef, { height: stackHeight }] = useMeasure();
   //const [guidanceRef, { height: guidanceHeight }] = useMeasure();
   //const [routeControlsRef, { height: routeControlsHeight }] = useMeasure();
@@ -15,6 +18,10 @@ export const RouteStack = (props: { Guidance: () => ReactElement }) => {
     () => setExpanded(!expanded),
     [expanded],
   );
+  const handleRouteEndClick = () => {
+    onRouteEndClick();
+    setExpanded(false);
+  };
   // HACK until there's a nice way to figure this out for real.
   const needsExpanding = (stackHeight ?? 0) < 520;
 
@@ -47,6 +54,7 @@ export const RouteStack = (props: { Guidance: () => ReactElement }) => {
             summary={{ minutes: 95, distanceMeters: 1234 }}
             expanded={expanded}
             onDisclosureClick={toggleDisclosure}
+            onRouteEndClick={handleRouteEndClick}
           />
         </Box>
       </Stack>

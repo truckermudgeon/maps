@@ -19,6 +19,7 @@ export const Default: Story = {
     },
     expanded: false,
     onDisclosureClick: fn(),
+    onRouteEndClick: fn(),
   },
 };
 
@@ -30,5 +31,6 @@ export const Expanded: Story = {
     },
     expanded: true,
     onDisclosureClick: fn(),
+    onRouteEndClick: fn(),
   },
 };
