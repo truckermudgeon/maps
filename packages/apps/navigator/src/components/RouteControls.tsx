@@ -6,6 +6,7 @@ import {
   Search,
 } from '@mui/icons-material';
 import {
+  Box,
   Button,
   Card,
   IconButton,
@@ -18,6 +19,7 @@ import {
   Typography,
 } from '@mui/joy';
 import { Collapse } from '@mui/material';
+import { useEffect, useRef } from 'react';
 
 interface RouteControlsProps {
   summary: {
@@ -75,12 +77,26 @@ export const RouteControls = (props: RouteControlsProps) => {
           <DisclosureIcon sx={{ transform: 'scale(1.25)' }} />
         </IconButton>
       </Stack>
-      <ExpandedControls expanded={props.expanded} />
+      <Box overflow={'scroll'}>
+        <ExpandedControls expanded={props.expanded} />
+      </Box>
     </Card>
   );
 };
 
 const ExpandedControls = ({ expanded }: { expanded: boolean }) => {
+  const ref = useRef<HTMLElement>();
+  useEffect(() => {
+    if (expanded) {
+      setTimeout(() => {
+        ref.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'end',
+        });
+      }, 250);
+    }
+  }, [expanded]);
+
   return (
     <Collapse in={expanded}>
       <List size={'lg'}>
@@ -116,6 +132,7 @@ const ExpandedControls = ({ expanded }: { expanded: boolean }) => {
         <Button sx={{ mt: 2 }} size={'lg'} color={'danger'}>
           End Route
         </Button>
+        <Box ref={ref} />
       </List>
     </Collapse>
   );

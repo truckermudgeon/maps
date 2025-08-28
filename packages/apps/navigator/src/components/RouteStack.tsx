@@ -16,7 +16,7 @@ export const RouteStack = (props: { Guidance: () => ReactElement }) => {
     [expanded],
   );
   // HACK until there's a nice way to figure this out for real.
-  const needsExpanding = (stackHeight ?? 0) < 500;
+  const needsExpanding = (stackHeight ?? 0) < 520;
 
   return (
     <Box ref={stackRef} height={'100%'}>
