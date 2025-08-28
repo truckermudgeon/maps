@@ -40,6 +40,7 @@ export const RouteControls = (props: RouteControlsProps) => {
         // TODO make this consistent across all corner-rounded components
         borderRadius: 12,
         pb: props.expanded ? 2 : 0,
+        height: '100%',
       }}
     >
       <Stack

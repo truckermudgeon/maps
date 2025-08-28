@@ -43,6 +43,7 @@
     "@trpc/client": "^10.45.2",
     "@truckermudgeon/base": "^0.0.0",
     "@truckermudgeon/ui": "^0.0.0",
+    "@uidotdev/usehooks": "^2.4.1",
     "color": "^4.2.3",
     "maplibre-gl": "^5.6.1",
     "mobx": "^6.12.0",
