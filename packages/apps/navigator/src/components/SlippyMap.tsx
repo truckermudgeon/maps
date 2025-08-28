@@ -9,11 +9,7 @@ import type { Marker as MapLibreGLMarker } from 'maplibre-gl';
 import type { ForwardRefExoticComponent, ReactElement } from 'react';
 import { useRef } from 'react';
 import type { MapRef } from 'react-map-gl/maplibre';
-import MapGl, {
-  AttributionControl,
-  Layer,
-  Source,
-} from 'react-map-gl/maplibre';
+import MapGl, { Layer, Source } from 'react-map-gl/maplibre';
 import type { PlayerMarkerProps } from './PlayerMarker';
 import './SlippyMap.css';
 
@@ -134,15 +130,27 @@ export const SlippyMap = (props: {
       <Destinations />
       <TrailerOrWaypointMarkers />
       <PlayerMarker mode={props.mode} ref={playerMarkerRef} />
-      <AttributionControl
+      <div
         style={{
-          fontSize: '0.8em',
-          marginLeft: 54,
+          fontSize: '0.9em',
           opacity: 0.25,
           background: 'transparent',
+          position: 'absolute',
+          right: '1em',
+          bottom: 2,
         }}
-        customAttribution="<a href='https://github.com/truckermudgeon/maps'>TruckSim Maps</a>. Adapted from data &copy; <a href='https://www.scssoft.com/'>SCS Software.</a>"
-      />
+      >
+        <a
+          style={{ color: 'inherit' }}
+          href="https://github.com/truckermudgeon/maps"
+        >
+          TruckSim Maps
+        </a>
+        . Adapted from data &copy;&nbsp;
+        <a style={{ color: 'inherit' }} href="https://www.scssoft.com/">
+          SCS Software.
+        </a>
+      </div>
     </MapGl>
   );
 };
