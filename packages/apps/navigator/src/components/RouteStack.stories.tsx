@@ -6,6 +6,13 @@ import { RouteStack } from './RouteStack';
 
 const meta = {
   component: RouteStack,
+  decorators: [
+    (Story: () => React.JSX.Element) => (
+      <div style={{ backgroundColor: '#f888', maxWidth: 600, height: '90vh' }}>
+        <Story />
+      </div>
+    ),
+  ],
 } satisfies Meta<typeof RouteStack>;
 
 export default meta;
