@@ -1,4 +1,4 @@
-import { Box, Stack } from '@mui/joy';
+import { Box } from '@mui/joy';
 import { Grid, Slide, useMediaQuery, useTheme } from '@mui/material';
 import { assertExists } from '@truckermudgeon/base/assert';
 import type { Marker as MapLibreGLMarker } from 'maplibre-gl';
@@ -6,12 +6,11 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { action, reaction } from 'mobx';
 import { observer } from 'mobx-react-lite';
 import type { ReactElement } from 'react';
-import { useCallback, useState } from 'react';
 import type { MapRef } from 'react-map-gl/maplibre';
 import { DestinationMarkers } from './components/DestinationMarkers';
 import { Directions } from './components/Directions';
 import { PlayerMarker } from './components/PlayerMarker';
-import { RouteControls } from './components/RouteControls';
+import { RouteStack } from './components/RouteStack';
 import { SlippyMap } from './components/SlippyMap';
 import { TrailerOrWaypointMarkers } from './components/TrailerOrWaypointMarkers';
 import { AppControllerImpl, AppStoreImpl } from './controllers/app';
@@ -248,7 +247,7 @@ const App = (props: {
           }}
         >
           <RouteStackContainer store={props.store}>
-            <RouteStack store={props.store} Guidance={Directions} />
+            <RouteStack Guidance={Directions} />
           </RouteStackContainer>
         </Grid>
       </Grid>
@@ -309,33 +308,6 @@ const HudStackGridItem = observer(
     </Grid>
   ),
 );
-
-const RouteStack = (props: {
-  store: AppStore;
-  Guidance: () => ReactElement;
-}) => {
-  const { Guidance } = props;
-  const [expanded, setExpanded] = useState(false);
-  const toggleDisclosure = useCallback(
-    () => setExpanded(!expanded),
-    [expanded],
-  );
-
-  return (
-    <Stack height={'100%'} justifyContent={'space-between'}>
-      <Box sx={{ pointerEvents: 'auto' }}>
-        <Guidance />
-      </Box>
-      <Box sx={{ pointerEvents: 'auto' }}>
-        <RouteControls
-          summary={{ minutes: 95, distanceMeters: 1234 }}
-          expanded={expanded}
-          onDisclosureClick={toggleDisclosure}
-        />
-      </Box>
-    </Stack>
-  );
-};
 
 const RouteStackContainer = observer(
   (props: { store: AppStore; children: ReactElement }) => {
