@@ -141,14 +141,10 @@ export const SlippyMap = (props: {
         }}
       >
         <a
-          style={{ color: 'inherit' }}
+          style={{ color: 'inherit', textDecoration: 'none' }}
           href="https://github.com/truckermudgeon/maps"
         >
           TruckSim Maps
-        </a>
-        . Adapted from data &copy;&nbsp;
-        <a style={{ color: 'inherit' }} href="https://www.scssoft.com/">
-          SCS Software.
         </a>
       </div>
     </MapGl>
