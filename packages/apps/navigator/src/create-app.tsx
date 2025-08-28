@@ -5,8 +5,8 @@ import type { Marker as MapLibreGLMarker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { action, reaction } from 'mobx';
 import { observer } from 'mobx-react-lite';
-import type { ReactElement, ReactNode } from 'react';
-import { useState } from 'react';
+import type { ReactElement } from 'react';
+import { useCallback, useState } from 'react';
 import type { MapRef } from 'react-map-gl/maplibre';
 import { DestinationMarkers } from './components/DestinationMarkers';
 import { Directions } from './components/Directions';
@@ -203,7 +203,6 @@ const App = (props: {
   const isLargePortrait = useMediaQuery(
     theme.breakpoints.up('sm') + ' and (orientation: portrait)',
   );
-  const [expanded, setExpanded] = useState(false);
 
   return (
     <>
@@ -248,18 +247,9 @@ const App = (props: {
             zIndex: 999, // so it renders over hud stack
           }}
         >
-          <RouteGuidanceContainer store={props.store}>
-            <Box sx={{ pointerEvents: 'auto' }}>
-              <Directions />
-            </Box>
-            <Box sx={{ pointerEvents: 'auto' }}>
-              <RouteControls
-                summary={{ minutes: 95, distanceMeters: 1234 }}
-                expanded={expanded}
-                onDisclosureClick={() => setExpanded(!expanded)}
-              />
-            </Box>
-          </RouteGuidanceContainer>
+          <RouteStackContainer store={props.store}>
+            <RouteStack store={props.store} Guidance={Directions} />
+          </RouteStackContainer>
         </Grid>
       </Grid>
       <Grid
@@ -320,6 +310,46 @@ const HudStackGridItem = observer(
   ),
 );
 
+const RouteStack = (props: {
+  store: AppStore;
+  Guidance: () => ReactElement;
+}) => {
+  const { Guidance } = props;
+  const [expanded, setExpanded] = useState(false);
+  const toggleDisclosure = useCallback(
+    () => setExpanded(!expanded),
+    [expanded],
+  );
+
+  return (
+    <Stack height={'100%'} justifyContent={'space-between'}>
+      <Box sx={{ pointerEvents: 'auto' }}>
+        <Guidance />
+      </Box>
+      <Box sx={{ pointerEvents: 'auto' }}>
+        <RouteControls
+          summary={{ minutes: 95, distanceMeters: 1234 }}
+          expanded={expanded}
+          onDisclosureClick={toggleDisclosure}
+        />
+      </Box>
+    </Stack>
+  );
+};
+
+const RouteStackContainer = observer(
+  (props: { store: AppStore; children: ReactElement }) => {
+    return (
+      <Slide
+        in={!props.store.showNavSheet && props.store.activeRoute != null}
+        direction={'right'}
+      >
+        <Box height={'100%'}>{props.children}</Box>
+      </Slide>
+    );
+  },
+);
+
 const NavSheetContainer = observer(
   (props: { store: AppStore; children: ReactElement }) => (
     <Slide in={props.store.showNavSheet} direction={'right'}>
@@ -335,23 +365,6 @@ const NavSheetContainer = observer(
       >
         {props.children}
       </Box>
-    </Slide>
-  ),
-);
-
-const RouteGuidanceContainer = observer(
-  (props: { store: AppStore; children: ReactNode }) => (
-    <Slide
-      in={!props.store.showNavSheet && props.store.activeRoute != null}
-      direction={'right'}
-    >
-      <Stack
-        height={'100%'}
-        justifyContent={'space-between'}
-        position={'relative'} // why is this needed for Directions to show?
-      >
-        {props.children}
-      </Stack>
     </Slide>
   ),
 );
