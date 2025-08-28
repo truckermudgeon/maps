@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 
 import { RouteControls } from './RouteControls';
 
@@ -17,6 +18,7 @@ export const Default: Story = {
       distanceMeters: 4000,
     },
     expanded: false,
+    onDisclosureClick: fn(),
   },
 };
 
@@ -27,5 +29,6 @@ export const Expanded: Story = {
       distanceMeters: 4000,
     },
     expanded: true,
+    onDisclosureClick: fn(),
   },
 };

@@ -25,10 +25,12 @@ interface RouteControlsProps {
     distanceMeters: number;
   };
   expanded: boolean;
+  onDisclosureClick: () => void;
 }
 
 export const RouteControls = (props: RouteControlsProps) => {
   const DisclosureIcon = props.expanded ? KeyboardArrowDown : KeyboardArrowUp;
+  console.log('render RouteControls. expanded?', props.expanded);
 
   return (
     <Card
@@ -36,8 +38,8 @@ export const RouteControls = (props: RouteControlsProps) => {
         boxShadow:
           'rgba(0, 0, 0, 0.2) 0px 3px 5px -1px, rgba(0, 0, 0, 0.14) 0px 6px 10px 0px, rgba(0, 0, 0, 0.12) 0px 1px 18px 0px',
         // TODO make this consistent across all corner-rounded components
-        p: 2,
         borderRadius: 12,
+        pb: props.expanded ? 2 : 0,
       }}
     >
       <Stack
@@ -64,7 +66,11 @@ export const RouteControls = (props: RouteControlsProps) => {
           <Typography level={'h3'}>12</Typography>
           <Typography>mi</Typography>
         </Stack>
-        <IconButton size={'lg'} variant={'soft'}>
+        <IconButton
+          size={'lg'}
+          variant={'soft'}
+          onClick={props.onDisclosureClick}
+        >
           <DisclosureIcon sx={{ transform: 'scale(1.25)' }} />
         </IconButton>
       </Stack>

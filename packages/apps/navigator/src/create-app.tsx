@@ -6,6 +6,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { action, reaction } from 'mobx';
 import { observer } from 'mobx-react-lite';
 import type { ReactElement, ReactNode } from 'react';
+import { useState } from 'react';
 import type { MapRef } from 'react-map-gl/maplibre';
 import { DestinationMarkers } from './components/DestinationMarkers';
 import { Directions } from './components/Directions';
@@ -202,36 +203,11 @@ const App = (props: {
   const isLargePortrait = useMediaQuery(
     theme.breakpoints.up('sm') + ' and (orientation: portrait)',
   );
-  console.log('isLargePortrait?', isLargePortrait);
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <>
       <SlippyMap />
-      <Grid
-        container={true}
-        sx={{ flexGrow: 1, pointerEvents: 'none' }}
-        padding={2}
-        paddingBlockEnd={3}
-        height={'100vh'}
-        justifyContent={'space-between'}
-      >
-        <Grid
-          size={{ xs: 12, sm: isLargePortrait ? 12 : 5 }}
-          maxWidth={isLargePortrait ? undefined : 600}
-        >
-          <RouteGuidanceContainer store={props.store}>
-            <Box sx={{ pointerEvents: 'auto' }}>
-              <Directions />
-            </Box>
-            <Box sx={{ pointerEvents: 'auto' }}>
-              <RouteControls
-                summary={{ minutes: 95, distanceMeters: 1234 }}
-                expanded={false}
-              />
-            </Box>
-          </RouteGuidanceContainer>
-        </Grid>
-      </Grid>
       <Grid
         columns={3}
         container={true}
@@ -253,6 +229,38 @@ const App = (props: {
         >
           <Controls />
         </HudStackGridItem>
+      </Grid>
+      <Grid
+        container={true}
+        sx={{
+          flexGrow: 1,
+          pointerEvents: 'none',
+        }}
+        padding={2}
+        paddingBlockEnd={3}
+        height={'100vh'}
+        justifyContent={'space-between'}
+      >
+        <Grid
+          size={{ xs: 12, sm: isLargePortrait ? 12 : 5 }}
+          maxWidth={isLargePortrait ? undefined : 600}
+          sx={{
+            zIndex: 999, // so it renders over hud stack
+          }}
+        >
+          <RouteGuidanceContainer store={props.store}>
+            <Box sx={{ pointerEvents: 'auto' }}>
+              <Directions />
+            </Box>
+            <Box sx={{ pointerEvents: 'auto' }}>
+              <RouteControls
+                summary={{ minutes: 95, distanceMeters: 1234 }}
+                expanded={expanded}
+                onDisclosureClick={() => setExpanded(!expanded)}
+              />
+            </Box>
+          </RouteGuidanceContainer>
+        </Grid>
       </Grid>
       <Grid
         container={true}
