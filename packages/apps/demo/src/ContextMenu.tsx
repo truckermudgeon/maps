@@ -422,7 +422,7 @@ const MeasuringToast = memo(
                 Click on the map to add to your path. Click on an existing point
                 to remove it from the path.
               </Typography>
-              <Stack direction={'row'} gap={2} sx={{ textWrap: 'nowrap' }}>
+              <Stack direction={{ xs: 'column', md: 'row' }} gap={2}>
                 <Typography level={'title-sm'}>Total distance:</Typography>
                 <Stack direction={'row'} gap={0.5}>
                   <Typography level={'body-xs'}>
