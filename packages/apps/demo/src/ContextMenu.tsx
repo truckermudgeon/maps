@@ -110,7 +110,7 @@ export const ContextMenu = () => {
 
   useEffect(() => {
     const showContextMenu = (e: MapLayerMouseEvent) => {
-      const { clientX, clientY } = e.originalEvent;
+      const { x, y } = e.point;
       const lngLat = e.lngLat.toArray();
       let xz: [number, number] | undefined;
       if (contains(extents.ats, lngLat)) {
@@ -133,10 +133,10 @@ export const ContextMenu = () => {
           getBoundingClientRect: () => ({
             width: 0,
             height: 0,
-            top: clientY,
-            right: clientX,
-            bottom: clientY,
-            left: clientX,
+            top: y,
+            right: x,
+            bottom: y,
+            left: x,
           }),
         } as VirtualElement,
       });
@@ -144,8 +144,27 @@ export const ContextMenu = () => {
       void map.once('move', closeContextMenu);
     };
 
+    let timer: number | undefined;
+    const listenForLongPress = (e: MapLayerMouseEvent) => {
+      timer = window.setTimeout(() => {
+        timer = undefined;
+        showContextMenu(e);
+      }, 1000);
+    };
+
+    const cancelLongPressTimer = () => clearTimeout(timer);
+
     map.on('contextmenu', showContextMenu);
-    return () => void map.off('contextmenu', showContextMenu);
+    map.on('touchstart', listenForLongPress);
+    map.on('touchend', cancelLongPressTimer);
+    map.on('touchmove', cancelLongPressTimer);
+
+    return () => {
+      map.off('contextmenu', showContextMenu);
+      map.off('touchstart', listenForLongPress);
+      map.off('touchend', cancelLongPressTimer);
+      map.off('touchmove', cancelLongPressTimer);
+    };
   }, [map]);
 
   useEffect(() => {
@@ -422,7 +441,7 @@ const MeasuringToast = memo(
                 Click on the map to add to your path. Click on an existing point
                 to remove it from the path.
               </Typography>
-              <Stack direction={'row'} gap={2} sx={{ textWrap: 'nowrap' }}>
+              <Stack direction={{ xs: 'column', md: 'row' }} gap={2}>
                 <Typography level={'title-sm'}>Total distance:</Typography>
                 <Stack direction={'row'} gap={0.5}>
                   <Typography level={'body-xs'}>
