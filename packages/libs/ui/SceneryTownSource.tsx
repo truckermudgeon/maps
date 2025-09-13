@@ -89,7 +89,7 @@ export const SceneryTownSource = (props: SceneryTownSourceProps) => {
         filter={filter}
         layout={{
           ...baseTextLayout,
-          'text-field': '{text}',
+          'text-field': game === 'ats' ? '{text}' : '{name}',
           'text-allow-overlap': !enableAutoHide,
           'text-variable-anchor': textVariableAnchor,
           'text-size': 10.5,
