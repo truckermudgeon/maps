@@ -14,6 +14,7 @@
     "@types/jest": "^29.5.11",
     "@types/node": "^22.7.4",
     "@types/proj4": "^2.5.5",
+    "@types/rbush": "^4.0.0",
     "@types/spritesmith": "^3.4.5",
     "@types/yargs": "^17.0.33",
     "typescript": "^5.4.2"
@@ -29,6 +30,7 @@
     "d3-tricontour": "^1.0.2",
     "jimp": "^1.6.0",
     "polygon-clipping": "^0.15.7",
+    "rbush": "^4.0.1",
     "spritesmith": "^3.4.1",
     "tinypool": "^1.0.0",
     "tsx": "^4.7.0",

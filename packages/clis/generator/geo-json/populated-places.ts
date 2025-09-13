@@ -36,6 +36,11 @@ export const ets2IsoA2 = new Map([
   ['S', 'SE'],
 ]);
 
+/**
+ * Reverse map of {@link ets2IsoA2}.
+ */
+export const isoA2Ets2 = new Map(ets2IsoA2.entries().map(([k, v]) => [v, k]));
+
 export interface PopulatedPlacesProperties {
   name: string;
   namealt: string;
