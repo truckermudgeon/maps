@@ -753,6 +753,24 @@ export type CompanyFeature = GeoJSON.Feature<
   }
 >;
 
+export type SearchProperties = {
+  dlcGuard: number;
+  stateName: string;
+  stateCode: string;
+  label: string;
+  tags: string[];
+} & (
+  | {
+      type: 'company' | 'landmark' | 'viewpoint' | 'ferry' | 'train' | 'dealer';
+      containingCity?: string;
+      nearestCity?: string;
+      sprite: string;
+    }
+  | {
+      type: 'city' | 'scenery';
+    }
+);
+
 // Routing
 
 /**

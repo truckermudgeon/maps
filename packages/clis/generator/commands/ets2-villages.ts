@@ -23,10 +23,7 @@ export const builder = (yargs: Argv) =>
     })
     .check(maybeEnsureOutputDir);
 
-export function handler(args: BuilderArguments<typeof builder>) {
-  logger.log('creating ets2-villages.geojson...');
-  const normalizeFeature = createNormalizeFeature('europe', 4);
-
+export function parseEts2VillagesCsv() {
   const validCountryCodes = new Set(getCitiesByCountryIsoA2().keys());
   const villagesCsvLines = fs
     .readFileSync(path.join(resourcesDir, 'villages-in-ets2.csv'), 'utf-8')
@@ -48,10 +45,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
   }
 
   let ignoreCount = 0;
-  const points: GeoJSON.Feature<
-    GeoJSON.Point,
-    { state: string; name: string }
-  >[] = [];
+  const villages: { x: number; y: number; state: string; name: string }[] = [];
   for (const line of villagesCsvLines.slice(1)) {
     const [name, countryCode, x, , y, notes] = line
       .split(';')
@@ -79,18 +73,37 @@ export function handler(args: BuilderArguments<typeof builder>) {
         logger.warn('ignoring note:', notes);
         break;
     }
-    points.push({
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: [parseFloat(x), parseFloat(y)],
-      },
-      properties: {
-        state: countryCode,
-        name,
-      },
+    villages.push({
+      x: parseFloat(x),
+      y: parseFloat(y),
+      state: countryCode,
+      name,
     });
   }
+
+  return { villages, ignoreCount };
+}
+
+export function handler(args: BuilderArguments<typeof builder>) {
+  logger.log('creating ets2-villages.geojson...');
+  const normalizeFeature = createNormalizeFeature('europe', 4);
+
+  const { villages, ignoreCount } = parseEts2VillagesCsv();
+
+  const points: GeoJSON.Feature<
+    GeoJSON.Point,
+    { state: string; name: string }
+  >[] = villages.map(v => ({
+    type: 'Feature',
+    geometry: {
+      type: 'Point',
+      coordinates: [v.x, v.y],
+    },
+    properties: {
+      state: v.state,
+      name: v.name,
+    },
+  }));
 
   const featureCollection: GeoJSON.FeatureCollection = {
     type: 'FeatureCollection',

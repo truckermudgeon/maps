@@ -13,6 +13,7 @@ import * as footprints from './commands/footprints';
 import * as graph from './commands/graph';
 import * as map from './commands/map';
 import * as prefabCurves from './commands/prefab-curves';
+import * as search from './commands/search';
 import * as spritesheet from './commands/spritesheet';
 
 async function main() {
@@ -29,6 +30,7 @@ async function main() {
     .command(achievements)
     .command(spritesheet)
     .command(graph)
+    .command(search)
     .demandCommand()
     .check(argv => {
       if (argv._.length !== 1) {
