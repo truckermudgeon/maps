@@ -60,7 +60,7 @@ export const builder = (yargs: Argv) =>
     })
     .option('outputDir', {
       alias: 'o',
-      describe: 'Path to dir {usa,europe}-search.geojson should be written to',
+      describe: 'Path to dir {ats,ets2}-search.geojson should be written to',
       type: 'string',
       coerce: untildify,
       demandOption: true,
@@ -103,20 +103,25 @@ export function handler(args: BuilderArguments<typeof builder>) {
       mapDataKeys: searchMapDataKeys,
     }),
   );
-  if (args.map === 'europe') {
+  let dlcGuardQuadTree: DlcGuardQuadTree;
+  if (args.map === 'usa') {
+    dlcGuardQuadTree = assertExists(tsMapData.dlcGuardQuadTree);
+  } else if (args.map === 'europe') {
     // HACK until europe is properly supported in dlc-guard normalization.
-    tsMapData.dlcGuardQuadTree = quadtree<{
+    dlcGuardQuadTree = quadtree<{
       x: number;
       y: number;
       dlcGuard: number;
     }>()
       .x(e => e.x)
       .y(e => e.y);
-    tsMapData.dlcGuardQuadTree.add({
+    dlcGuardQuadTree.add({
       x: 0,
       y: 0,
       dlcGuard: 0,
     });
+  } else {
+    throw new UnreachableError(args.map);
   }
 
   let extraLabels: ExtraLabelsGeoJSON;
@@ -246,6 +251,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
 
   const context = {
     ...tsMapData,
+    dlcGuardQuadTree,
     cityRTree,
     cityQuadTree,
     nodeQuadTree,
@@ -277,7 +283,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
       ...f,
       properties: {
         dlcGuard: assertExists(
-          assertExists(context.dlcGuardQuadTree).find(
+          context.dlcGuardQuadTree.find(
             f.geometry.coordinates[0],
             f.geometry.coordinates[1],
           ),
@@ -313,7 +319,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
 function poiToSearchFeature(
   poi: Poi,
   context: MappedDataForKeys<typeof searchMapDataKeys> & {
-    dlcGuardQuadTree?: DlcGuardQuadTree;
+    dlcGuardQuadTree: DlcGuardQuadTree;
     cityRTree: RBush<BBox & { cityName: string; stateCode: string }>;
     cityQuadTree: Quadtree<{
       x: number;
@@ -324,8 +330,7 @@ function poiToSearchFeature(
     nodeQuadTree: Quadtree<{ x: number; y: number; node: Node }>;
   },
 ): SearchFeature[] {
-  const dlcGuardQuadTree = Preconditions.checkExists(context.dlcGuardQuadTree);
-  const { nodeQuadTree, cityQuadTree, cityRTree } = context;
+  const { dlcGuardQuadTree, nodeQuadTree, cityQuadTree, cityRTree } = context;
   const geometry: GeoJSON.Point = {
     type: 'Point',
     coordinates: [poi.x, poi.y],
@@ -502,10 +507,10 @@ function poiToSearchFeature(
 function cityToSearchFeature(
   city: City,
   context: MappedDataForKeys<typeof searchMapDataKeys> & {
-    dlcGuardQuadTree?: DlcGuardQuadTree;
+    dlcGuardQuadTree: DlcGuardQuadTree;
   },
 ): SearchFeature {
-  const dlcGuardQuadTree = Preconditions.checkExists(context.dlcGuardQuadTree);
+  const { dlcGuardQuadTree } = context;
   const cityArea = assertExists(city.areas.find(a => !a.hidden));
   const coordinates = [
     city.x + cityArea.width / 2,
