@@ -63,12 +63,6 @@ npx generator map -m usa -i dirWithParserOutput -o dirToWriteFilesTo
 # generate ETS2 pmtiles file
 npx generator map -m europe -i dirWithParserOutput -o dirToWriteFilesTo
 
-# generate combined ATS and ETS2 cities.geojson file
-npx generator cities -m usa -m europe -i dirWithParserOutput -o dirToWriteFilesTo
-
-# generate combined ATS and ETS2 companies.geojson file
-npx generator companies -m usa -m europe -i dirWithParserOutput -o dirToWriteFilesTo
-
 # generate ATS and ETS2 footprints pmtiles files
 npx generator footprints -m usa -m europe -i dirWithParserOutput -o dirToWriteFilesTo
 
@@ -81,6 +75,10 @@ packages/clis/generator/resources/extra-labels/script/csv2json.pl \
   -o packages/clis/generator/resources/usa-labels-meta.json
 npx generator extra-labels -m usa -i dirWithParserOutput -o dirToWriteFilesTo
 npx generator ets2-villages -o dirToWriteFileTo
+
+# generate ATS and ETS2 geojson files used for POI searches
+npx generator search -m usa -i dirWithParserOutput -o dirToWriteFileTo -x pathToExtraLabelsGeoJSON
+npx generator search -m europe -i dirWithParserOutput -o dirToWriteFileTo
 
 # generate ATS and ETS2 contours (aka elevations) pmtiles files
 npx generator contours -m usa -m europe -i dirWithParserOutput -o dirToWriteFilesTo
