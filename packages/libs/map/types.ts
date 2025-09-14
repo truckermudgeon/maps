@@ -131,7 +131,7 @@ export type NonFacilityPoi =
 export type LabeledPoi = BasePoi &
   Readonly<
     | {
-        type: Exclude<NonFacilityPoi, 'landmark'>;
+        type: Exclude<NonFacilityPoi, 'landmark' | 'company'>;
         label: string;
       }
     | {
@@ -139,6 +139,11 @@ export type LabeledPoi = BasePoi &
         label: string;
         dlcGuard: number;
         nodeUid: bigint;
+      }
+    | {
+        type: 'company';
+        label: string;
+        cityToken: string;
       }
   >;
 

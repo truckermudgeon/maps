@@ -703,6 +703,7 @@ function postProcess(
           type: 'company',
           icon: item.token,
           label: companyName ?? item.token,
+          cityToken: item.cityToken,
         });
         companies.push({
           ...item,
