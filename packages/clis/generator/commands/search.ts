@@ -361,7 +361,21 @@ function poiToSearchFeature(
     countriesById.get(closestNode.forwardCountryId) ??
     countriesById.get(closestNode.backwardCountryId);
   if (!country) {
-    logger.warn('unknown country id', closestNode.forwardCountryId, 'for', poi);
+    if (closestNode.forwardCountryId === closestNode.backwardCountryId) {
+      logger.warn(
+        'unknown country id',
+        closestNode.forwardCountryId,
+        'for',
+        poi,
+      );
+    } else {
+      logger.warn(
+        'unknown country ids',
+        [closestNode.forwardCountryId, closestNode.backwardCountryId],
+        'for',
+        poi,
+      );
+    }
     return [];
   }
 
