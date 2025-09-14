@@ -37,7 +37,9 @@ export const ets2IsoA2 = new Map([
 ]);
 
 /**
- * Reverse map of {@link ets2IsoA2}.
+ * Reverse map of {@link ets2IsoA2}. Maps ISO 3166-1 alpha-2 codes to ETS2
+ * `code` values. If an entry isn't listed here, then the country's ISO code is
+ * assumed to be equal to the corresponding ETS2 `Country::code`.
  */
 export const isoA2Ets2 = new Map(ets2IsoA2.entries().map(([k, v]) => [v, k]));
 
