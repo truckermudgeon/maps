@@ -1,5 +1,6 @@
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { distance } from '@truckermudgeon/base/geom';
+import { putIfAbsent } from '@truckermudgeon/base/map';
 import { UnreachableError } from '@truckermudgeon/base/precon';
 import { toDealerLabel } from '@truckermudgeon/map/labels';
 import { PointRBush } from '@truckermudgeon/map/point-rbush';
@@ -177,47 +178,44 @@ export function handler(args: BuilderArguments<typeof builder>) {
     dlcGuardQuadTree,
   };
 
-  const pois: SearchFeature<SearchPoiProperties>[] = tsMapData.pois.flatMap(p =>
+  const pois = disambiguateCompanies(tsMapData.pois).flatMap(p =>
     poiToSearchFeature(p, context),
   );
 
-  const cities: SearchFeature<SearchCityProperties>[] = [
-    ...tsMapData.cities.values(),
-  ].map(city => cityToSearchFeature(city, context));
+  const cities = [...tsMapData.cities.values()].map(city =>
+    cityToSearchFeature(city, context),
+  );
 
-  const scenery: SearchFeature<SearchCityProperties>[] =
-    sceneryTowns.features.map(f => {
-      let state;
-      if (args.map === 'usa') {
-        const [country, stateCode] = f.properties.country.split('-');
-        if (country !== 'US') {
-          throw new Error();
-        }
-        state = assertExists(
-          tsMapData.countries.values().find(c => c.code === stateCode),
-        );
-      } else {
-        state = assertExists(
-          tsMapData.countries
-            .values()
-            .find(c => c.code === f.properties.country),
-          'unknown country code: ' + f.properties.country,
-        );
+  const scenery = sceneryTowns.features.map(f => {
+    let state;
+    if (args.map === 'usa') {
+      const [country, stateCode] = f.properties.country.split('-');
+      if (country !== 'US') {
+        throw new Error();
       }
-      return point(f.geometry.coordinates, {
-        dlcGuard: assertExists(
-          context.dlcGuardQuadTree.find(
-            f.geometry.coordinates[0],
-            f.geometry.coordinates[1],
-          ),
-        ).dlcGuard,
-        stateName: state.name,
-        stateCode: state.code,
-        label: f.properties.text,
-        tags: ['scenery'],
-        type: 'scenery',
-      });
+      state = assertExists(
+        tsMapData.countries.values().find(c => c.code === stateCode),
+      );
+    } else {
+      state = assertExists(
+        tsMapData.countries.values().find(c => c.code === f.properties.country),
+        'unknown country code: ' + f.properties.country,
+      );
+    }
+    return point(f.geometry.coordinates, {
+      dlcGuard: assertExists(
+        context.dlcGuardQuadTree.find(
+          f.geometry.coordinates[0],
+          f.geometry.coordinates[1],
+        ),
+      ).dlcGuard,
+      stateName: state.name,
+      stateCode: state.code,
+      label: f.properties.text,
+      tags: ['scenery'],
+      type: 'scenery',
     });
+  });
 
   const normalizeCoords = createNormalizeFeature(args.map, 4);
   writeGeojsonFile(
@@ -347,6 +345,44 @@ function createSpatialIndices(
     cityPointRTree,
     nodePointRTree,
   };
+}
+
+function disambiguateCompanies(pois: readonly Poi[]): Poi[] {
+  const { companies = [], nonCompanies = [] } = Object.groupBy(pois, poi =>
+    poi.type === 'company' ? 'companies' : 'nonCompanies',
+  );
+
+  const cityTokenToNameToCompany = new Map<
+    // city token
+    string,
+    // company name
+    Map<string, (Poi & { type: 'company' })[]>
+  >();
+  for (const c of companies) {
+    if (c.type !== 'company') {
+      throw new Error();
+    }
+    putIfAbsent(
+      c.label,
+      [],
+      putIfAbsent(
+        c.cityToken,
+        new Map<string, (Poi & { type: 'company' })[]>(),
+        cityTokenToNameToCompany,
+      ),
+    ).push(c);
+  }
+  for (const [city, map] of cityTokenToNameToCompany) {
+    for (const [company, arr] of map) {
+      if (arr.length <= 1) {
+        continue;
+      }
+    }
+  }
+
+  const res: Poi[] = [];
+
+  return res;
 }
 
 function poiToSearchFeature(
