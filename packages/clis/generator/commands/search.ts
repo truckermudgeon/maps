@@ -53,7 +53,8 @@ export const builder = (yargs: Argv) =>
     })
     .option('extraLabels', {
       alias: 'x',
-      describe: 'Path to extra-labels.geojson file (required for usa)',
+      describe:
+        'Path to extra-labels.geojson file (required for usa, ignored for europe)',
       type: 'string',
       coerce: untildify,
       demandOption: false,
@@ -164,11 +165,9 @@ export function handler(args: BuilderArguments<typeof builder>) {
       throw new UnreachableError(args.map);
   }
 
-  const spatialIndices = createSpatialIndices(tsMapData, sceneryTowns);
-
   const context = {
     ...tsMapData,
-    ...spatialIndices,
+    ...createSpatialIndices(tsMapData, sceneryTowns),
     dlcGuardQuadTree,
   };
 
@@ -194,22 +193,19 @@ export function handler(args: BuilderArguments<typeof builder>) {
         'unknown country code: ' + f.properties.country,
       );
     }
-    return {
-      ...f,
-      properties: {
-        dlcGuard: assertExists(
-          context.dlcGuardQuadTree.find(
-            f.geometry.coordinates[0],
-            f.geometry.coordinates[1],
-          ),
-        ).dlcGuard,
-        stateName: state.name,
-        stateCode: state.code,
-        label: f.properties.text,
-        tags: ['scenery'],
-        type: 'scenery',
-      },
-    };
+    return point(f.geometry.coordinates, {
+      dlcGuard: assertExists(
+        context.dlcGuardQuadTree.find(
+          f.geometry.coordinates[0],
+          f.geometry.coordinates[1],
+        ),
+      ).dlcGuard,
+      stateName: state.name,
+      stateCode: state.code,
+      label: f.properties.text,
+      tags: ['scenery'],
+      type: 'scenery',
+    });
   });
 
   const normalizeCoords = createNormalizeFeature(args.map, 4);
@@ -354,10 +350,6 @@ function poiToSearchFeature(
   },
 ): SearchFeature[] {
   const { dlcGuardQuadTree, nodeQuadTree, cityQuadTree, cityRTree } = context;
-  const geometry: GeoJSON.Point = {
-    type: 'Point',
-    coordinates: [poi.x, poi.y],
-  };
   const getDlcGuard = (p: { x: number; y: number }): number =>
     assertExists(dlcGuardQuadTree.find(p.x, p.y)).dlcGuard;
 
@@ -386,6 +378,8 @@ function poiToSearchFeature(
       maxX: poi.x,
       maxY: poi.y,
     })
+    // use `.at(0)` instead of `[0]` to force inferred type of `containingCity`
+    // to be `| undefined`.
     .at(0);
   const nearestCity = assertExists(cityQuadTree.find(poi.x, poi.y));
   const cityProperties: { containingCity?: string; nearestCity?: string } = {
@@ -518,13 +512,8 @@ function poiToSearchFeature(
       'as nearest city.',
     );
   }
-  return [
-    {
-      type: 'Feature',
-      properties,
-      geometry,
-    },
-  ];
+
+  return [point([poi.x, poi.y], properties)];
 }
 
 function cityToSearchFeature(
@@ -539,25 +528,17 @@ function cityToSearchFeature(
     city.x + cityArea.width / 2,
     city.y + cityArea.height / 2,
   ];
-  const geometry: GeoJSON.Point = {
-    type: 'Point',
-    coordinates,
-  };
-  const getDlcGuard = (p: { x: number; y: number }): number =>
-    assertExists(dlcGuardQuadTree.find(p.x, p.y)).dlcGuard;
-
+  const { dlcGuard } = assertExists(
+    dlcGuardQuadTree.find(coordinates[0], coordinates[1]),
+  );
   const country = assertExists(context.countries.get(city.countryToken));
 
-  return {
-    type: 'Feature',
-    properties: {
-      type: 'city',
-      dlcGuard: getDlcGuard({ x: coordinates[0], y: coordinates[1] }),
-      stateName: country.name,
-      stateCode: country.code,
-      label: city.name,
-      tags: ['city'],
-    },
-    geometry,
-  };
+  return point(coordinates, {
+    type: 'city',
+    dlcGuard,
+    stateName: country.name,
+    stateCode: country.code,
+    label: city.name,
+    tags: ['city'],
+  });
 }
