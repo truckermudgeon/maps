@@ -96,6 +96,11 @@ export const PoiSearchBar = (props: SearchBarProps) => {
   const [options, setOptions] = useState<readonly PoiSearchOption[]>([]);
   const [value, setValue] = useState<PoiOption | string | null>(null);
   const [numSearchResults, setNumSearchResults] = useState(0);
+  // HACK call `setNumSearchResults` in a delay to hack around a React error
+  // about setting state and triggering a nested `endDecorator` render, whilst
+  // in the middle of rendering the `AutoComplete` component.
+  const delayedSetNumSearchResults = (n: number) =>
+    setTimeout(() => setNumSearchResults(n), 0);
 
   useEffect(() => {
     fetch('sprites@2x.json')
@@ -126,6 +131,7 @@ export const PoiSearchBar = (props: SearchBarProps) => {
             filterByDlc = f =>
               enabledDlcGuards.has(f.properties.dlcGuard as AtsDlcGuard);
           } else {
+            // TODO update this when DLC toggling is enabled for ETS2.
             filterByDlc = () => true;
           }
           const enabledFeatures = geoJson.features.filter(filterByDlc);
@@ -172,7 +178,7 @@ export const PoiSearchBar = (props: SearchBarProps) => {
           inputValue = value.label;
         }
       } else {
-        setTimeout(() => setNumSearchResults(0), 0);
+        delayedSetNumSearchResults(0);
         return [];
       }
     }
@@ -180,7 +186,7 @@ export const PoiSearchBar = (props: SearchBarProps) => {
     const tokenisedSearchQuery = tokenizeStringWithQuotesBySpaces(inputValue);
     if (!tokenisedSearchQuery.length) {
       console.warn('empty tokens for search input:', inputValue);
-      setTimeout(() => setNumSearchResults(0), 0);
+      delayedSetNumSearchResults(0);
       return [];
     }
 
@@ -193,13 +199,12 @@ export const PoiSearchBar = (props: SearchBarProps) => {
           { 'properties.stateCode': searchToken },
           { 'properties.tags': searchToken },
         ];
-
         return {
           $or: orFields,
         };
       }),
     });
-    setTimeout(() => setNumSearchResults(hits.length), 0);
+    delayedSetNumSearchResults(hits.length);
     return hits.slice(0, maxResults).map(hit => options[hit.refIndex]);
   };
 
@@ -229,9 +234,7 @@ export const PoiSearchBar = (props: SearchBarProps) => {
       placeholder={'Search cities, companies, points of interest...'}
       options={options}
       filterOptions={filterOptions}
-      getOptionLabel={option =>
-        typeof option === 'string' ? option : getOptionLabel(option)
-      }
+      getOptionLabel={getOptionLabel}
       blurOnSelect
       handleHomeEndKeys
       freeSolo
@@ -343,12 +346,14 @@ const Decorator = ({
   );
 };
 
-function getOptionLabel(option: PoiSearchOption): string {
-  if (option.type === 'suggestion') {
+function getOptionLabel(option: string | PoiSearchOption): string {
+  if (typeof option === 'string') {
+    return option;
+  } else if (option.type === 'suggestion') {
     return 'suggestion';
   }
-  const meta = option.poi.properties;
 
+  const meta = option.poi.properties;
   switch (meta.type) {
     case 'city':
     case 'scenery':
@@ -359,13 +364,17 @@ function getOptionLabel(option: PoiSearchOption): string {
     case 'dealer':
     case 'ferry':
     case 'train': {
-      const preposition =
-        meta.city.distance === 0 ||
-        option.label.startsWith(meta.city.name) ||
-        option.label.endsWith(meta.city.name)
-          ? 'in'
-          : 'near';
-      return `${option.label} ${preposition} ${meta.city.name}, ${meta.stateCode}`;
+      const location = classifyLocation(meta.label, meta.city);
+      switch (location) {
+        case LocationType.IN_CITY:
+          return `${option.label} in ${meta.city.name}, ${meta.stateCode}`;
+        case LocationType.NEAR_CITY:
+          return `${option.label} near ${meta.city.name}, ${meta.stateCode}`;
+        case LocationType.IN_STATE:
+          return `${option.label} in ${meta.stateName}`;
+        default:
+          throw new UnreachableError(location);
+      }
     }
     default:
       throw new UnreachableError(meta);
@@ -392,17 +401,25 @@ const Content = ({ option }: { option: PoiSearchOption }) => {
     case 'dealer':
     case 'ferry':
     case 'train': {
+      let locationText: string;
+      const location = classifyLocation(meta.label, meta.city);
+      switch (location) {
+        case LocationType.IN_CITY:
+          locationText = `${meta.city.name}, ${meta.stateCode}`;
+          break;
+        case LocationType.NEAR_CITY:
+          locationText = `near ${meta.city.name}, ${meta.stateCode}`;
+          break;
+        case LocationType.IN_STATE:
+          locationText = `${meta.stateName}`;
+          break;
+        default:
+          throw new UnreachableError(location);
+      }
       return (
         <ListItemContent>
           <Typography>{option.label}</Typography>
-          <Typography level={'body-sm'}>
-            {meta.city.name ||
-            option.label.startsWith(meta.city.name) ||
-            option.label.endsWith(meta.city.name)
-              ? ''
-              : 'near'}{' '}
-            {meta.city.name}, {meta.stateCode}
-          </Typography>
+          <Typography level={'body-sm'}>{locationText}</Typography>
         </ListItemContent>
       );
     }
@@ -410,6 +427,29 @@ const Content = ({ option }: { option: PoiSearchOption }) => {
       throw new UnreachableError(meta);
   }
 };
+
+const enum LocationType {
+  IN_CITY,
+  NEAR_CITY,
+  IN_STATE,
+}
+
+function classifyLocation(
+  name: string,
+  nearestCity: { name: string; stateCode: string; distance: number },
+): LocationType {
+  if (
+    nearestCity.distance <= 250 ||
+    name.startsWith(nearestCity.name) ||
+    name.endsWith(nearestCity.name)
+  ) {
+    return LocationType.IN_CITY;
+  } else if (nearestCity.distance <= 1000) {
+    return LocationType.NEAR_CITY;
+  } else {
+    return LocationType.IN_STATE;
+  }
+}
 
 const searchPropertyPriority: Record<SearchProperties['type'], number> = {
   company: 0,
