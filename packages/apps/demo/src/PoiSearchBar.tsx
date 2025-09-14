@@ -361,14 +361,13 @@ function getOptionLabel(option: PoiSearchOption): string {
     case 'dealer':
     case 'ferry':
     case 'train': {
-      const city = assertExists(meta.containingCity ?? meta.nearestCity);
       const preposition =
-        meta.containingCity ||
-        option.label.startsWith(city) ||
-        option.label.endsWith(city)
+        meta.city.distance === 0 ||
+        option.label.startsWith(meta.city.name) ||
+        option.label.endsWith(meta.city.name)
           ? 'in'
           : 'near';
-      return `${option.label} ${preposition} ${city}, ${meta.stateCode}`;
+      return `${option.label} ${preposition} ${meta.city.name}, ${meta.stateCode}`;
     }
     default:
       throw new UnreachableError(meta);
@@ -395,17 +394,16 @@ const Content = ({ option }: { option: PoiSearchOption }) => {
     case 'dealer':
     case 'ferry':
     case 'train': {
-      const city = assertExists(meta.containingCity ?? meta.nearestCity);
       return (
         <ListItemContent>
           <Typography>{option.label}</Typography>
           <Typography level={'body-sm'}>
-            {meta.containingCity ||
-            option.label.startsWith(city) ||
-            option.label.endsWith(city)
+            {meta.city.name ||
+            option.label.startsWith(meta.city.name) ||
+            option.label.endsWith(meta.city.name)
               ? ''
               : 'near'}{' '}
-            {city}, {meta.stateCode}
+            {meta.city.name}, {meta.stateCode}
           </Typography>
         </ListItemContent>
       );
