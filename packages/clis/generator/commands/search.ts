@@ -1,4 +1,5 @@
 import { assertExists } from '@truckermudgeon/base/assert';
+import { distance } from '@truckermudgeon/base/geom';
 import { UnreachableError } from '@truckermudgeon/base/precon';
 import { toDealerLabel } from '@truckermudgeon/map/labels';
 import { fromWgs84ToAtsCoords } from '@truckermudgeon/map/projections';
@@ -7,6 +8,8 @@ import type {
   Country,
   Node,
   Poi,
+  SearchCityProperties,
+  SearchPoiProperties,
   SearchProperties,
 } from '@truckermudgeon/map/types';
 import { featureCollection, point } from '@turf/helpers';
@@ -85,7 +88,10 @@ const searchMapDataKeys = [
   'countries',
 ] as const;
 
-type SearchFeature = GeoJSON.Feature<GeoJSON.Point, SearchProperties>;
+type SearchFeature<T extends SearchProperties> = GeoJSON.Feature<
+  GeoJSON.Point,
+  T
+>;
 type ExtraLabelsGeoJSON = GeoJSON.FeatureCollection<
   GeoJSON.Point,
   {
@@ -171,42 +177,47 @@ export function handler(args: BuilderArguments<typeof builder>) {
     dlcGuardQuadTree,
   };
 
-  const pois: SearchFeature[] = tsMapData.pois.flatMap(p =>
+  const pois: SearchFeature<SearchPoiProperties>[] = tsMapData.pois.flatMap(p =>
     poiToSearchFeature(p, context),
   );
-  const cities: SearchFeature[] = [...tsMapData.cities.values()].map(city =>
-    cityToSearchFeature(city, context),
-  );
-  const scenery: SearchFeature[] = sceneryTowns.features.map(f => {
-    let state;
-    if (args.map === 'usa') {
-      const [country, stateCode] = f.properties.country.split('-');
-      if (country !== 'US') {
-        throw new Error();
+
+  const cities: SearchFeature<SearchCityProperties>[] = [
+    ...tsMapData.cities.values(),
+  ].map(city => cityToSearchFeature(city, context));
+
+  const scenery: SearchFeature<SearchCityProperties>[] =
+    sceneryTowns.features.map(f => {
+      let state;
+      if (args.map === 'usa') {
+        const [country, stateCode] = f.properties.country.split('-');
+        if (country !== 'US') {
+          throw new Error();
+        }
+        state = assertExists(
+          tsMapData.countries.values().find(c => c.code === stateCode),
+        );
+      } else {
+        state = assertExists(
+          tsMapData.countries
+            .values()
+            .find(c => c.code === f.properties.country),
+          'unknown country code: ' + f.properties.country,
+        );
       }
-      state = assertExists(
-        tsMapData.countries.values().find(c => c.code === stateCode),
-      );
-    } else {
-      state = assertExists(
-        tsMapData.countries.values().find(c => c.code === f.properties.country),
-        'unknown country code: ' + f.properties.country,
-      );
-    }
-    return point(f.geometry.coordinates, {
-      dlcGuard: assertExists(
-        context.dlcGuardQuadTree.find(
-          f.geometry.coordinates[0],
-          f.geometry.coordinates[1],
-        ),
-      ).dlcGuard,
-      stateName: state.name,
-      stateCode: state.code,
-      label: f.properties.text,
-      tags: ['scenery'],
-      type: 'scenery',
+      return point(f.geometry.coordinates, {
+        dlcGuard: assertExists(
+          context.dlcGuardQuadTree.find(
+            f.geometry.coordinates[0],
+            f.geometry.coordinates[1],
+          ),
+        ).dlcGuard,
+        stateName: state.name,
+        stateCode: state.code,
+        label: f.properties.text,
+        tags: ['scenery'],
+        type: 'scenery',
+      });
     });
-  });
 
   const normalizeCoords = createNormalizeFeature(args.map, 4);
   writeGeojsonFile(
@@ -215,13 +226,20 @@ export function handler(args: BuilderArguments<typeof builder>) {
       `${args.map === 'usa' ? 'ats' : 'ets2'}-search.geojson`,
     ),
     featureCollection(
-      [...pois, ...cities, ...scenery].map(normalizeCoords).map(f => {
-        if (args.map === 'europe') {
-          f.properties.stateCode =
-            ets2IsoA2.get(f.properties.stateCode) ?? f.properties.stateCode;
-        }
-        return f;
-      }),
+      ([...pois, ...cities, ...scenery] as SearchFeature<SearchProperties>[])
+        .map(normalizeCoords)
+        .map(f => {
+          if (args.map === 'europe') {
+            f.properties.stateCode =
+              ets2IsoA2.get(f.properties.stateCode) ?? f.properties.stateCode;
+            if ('city' in f.properties) {
+              f.properties.city.stateCode =
+                ets2IsoA2.get(f.properties.city.stateCode) ??
+                f.properties.city.stateCode;
+            }
+          }
+          return f;
+        }),
     ),
   );
   logger.success('done.');
@@ -348,7 +366,7 @@ function poiToSearchFeature(
     }>;
     nodeQuadTree: Quadtree<{ x: number; y: number; node: Node }>;
   },
-): SearchFeature[] {
+): SearchFeature<SearchPoiProperties>[] {
   const { dlcGuardQuadTree, nodeQuadTree, cityQuadTree, cityRTree } = context;
   const getDlcGuard = (p: { x: number; y: number }): number =>
     assertExists(dlcGuardQuadTree.find(p.x, p.y)).dlcGuard;
@@ -366,24 +384,20 @@ function poiToSearchFeature(
         'unknown country id',
         closestNode.forwardCountryId,
         'for',
-        poi,
+        poi.type,
+        poi.icon,
       );
     } else {
       logger.warn(
         'unknown country ids',
         [closestNode.forwardCountryId, closestNode.backwardCountryId],
         'for',
-        poi,
+        poi.type,
+        poi.icon,
       );
     }
     return [];
   }
-
-  const baseProperties = {
-    dlcGuard: getDlcGuard(poi),
-    stateName: country.name,
-    stateCode: country.code,
-  };
 
   const containingCity = cityRTree
     .search({
@@ -396,31 +410,57 @@ function poiToSearchFeature(
     // to be `| undefined`.
     .at(0);
   const nearestCity = assertExists(cityQuadTree.find(poi.x, poi.y));
-  const cityProperties: { containingCity?: string; nearestCity?: string } = {
-    containingCity: containingCity?.cityName,
-    nearestCity: nearestCity.cityName,
+  const city = containingCity
+    ? {
+        name: containingCity.cityName,
+        stateCode: containingCity.stateCode,
+        distance: 0,
+      }
+    : {
+        name: nearestCity.cityName,
+        stateCode: nearestCity.stateCode,
+        distance: distance(nearestCity, poi),
+      };
+
+  const baseProperties = {
+    dlcGuard: getDlcGuard(poi),
+    stateName: country.name,
+    stateCode: country.code,
+    city,
   };
-  if (cityProperties.containingCity) {
-    delete cityProperties.nearestCity;
-  }
-  const city = containingCity ?? nearestCity;
 
   let properties: SearchProperties;
   switch (poi.type) {
-    case 'company':
+    case 'company': {
+      const city = context.cities.get(poi.cityToken);
+      if (!city) {
+        logger.warn(
+          'ignoring company',
+          poi.label,
+          'in unknown city:',
+          poi.cityToken,
+        );
+        return [];
+      }
+
+      const state = assertExists(context.countries.get(city.countryToken));
       properties = {
         ...baseProperties,
-        ...cityProperties,
+        city: {
+          name: city.name,
+          stateCode: state.code,
+          distance: 0,
+        },
         type: 'company',
         label: poi.label,
         sprite: poi.icon,
         tags: ['company'],
       };
       break;
+    }
     case 'viewpoint':
       properties = {
         ...baseProperties,
-        ...cityProperties,
         type: 'viewpoint',
         label: poi.label.replace(/^The /i, ''),
         sprite: poi.icon,
@@ -430,7 +470,6 @@ function poiToSearchFeature(
     case 'ferry':
       properties = {
         ...baseProperties,
-        ...cityProperties,
         type: 'ferry',
         label: poi.label,
         sprite: poi.icon,
@@ -441,7 +480,6 @@ function poiToSearchFeature(
     case 'train':
       properties = {
         ...baseProperties,
-        ...cityProperties,
         type: 'train',
         label: poi.label,
         sprite: poi.icon,
@@ -452,7 +490,6 @@ function poiToSearchFeature(
     case 'landmark':
       properties = {
         ...baseProperties,
-        ...cityProperties,
         type: 'landmark',
         label: poi.label.replace(/^The /i, ''),
         sprite: poi.icon,
@@ -465,7 +502,6 @@ function poiToSearchFeature(
       }
       properties = {
         ...baseProperties,
-        ...cityProperties,
         type: 'dealer',
         label: toDealerLabel(poi.prefabPath),
         sprite: 'dealer_ico',
@@ -479,51 +515,10 @@ function poiToSearchFeature(
   }
 
   if (city.stateCode !== baseProperties.stateCode) {
-    switch (properties.label) {
-      case 'El Capitan':
-        properties.nearestCity = 'Texas-Utah border';
-        break;
-      case 'Monument Valley':
-        properties.nearestCity = 'Mexican Hat';
-        break;
-      case 'Four Corners Monument':
-        properties.nearestCity = 'Teec Nos Pos';
-        break;
-      case 'Mesocco Castle':
-        properties.nearestCity = 'San Bernardino';
-        break;
-      case 'Chillon Castle':
-        properties.nearestCity = 'Vevey';
-        break;
-      case 'Karawanks Tunnel':
-        properties.nearestCity = 'Austria-Slovenia border';
-        break;
-      case 'New Europe Bridge':
-        properties.nearestCity = 'Romania-Bulgaria border';
-        break;
-      case 'Pelješac Bridge':
-        properties.nearestCity = 'Croatia-Bosnia and Herzegovina border';
-        break;
-      case 'Ivangorod Fortress and Hermann Castle':
-        properties.nearestCity = 'Russia-Estonia border';
-        break;
-      case 'Guadiana International Bridge':
-        properties.nearestCity = 'Portugal-Spain border';
-        break;
-      default:
-        logger.error(
-          'mismatched state code for',
-          properties.label,
-          `(guessed: ${city.stateCode}; actual: ${baseProperties.stateCode}).`,
-        );
-        throw new Error();
-    }
     logger.warn(
       'mismatched state code for',
       properties.label,
       `(guessed: ${city.stateCode}; actual: ${baseProperties.stateCode}).`,
-      `Using "${properties.nearestCity}"`,
-      'as nearest city.',
     );
   }
 
@@ -535,7 +530,7 @@ function cityToSearchFeature(
   context: MappedDataForKeys<typeof searchMapDataKeys> & {
     dlcGuardQuadTree: DlcGuardQuadTree;
   },
-): SearchFeature {
+): SearchFeature<SearchCityProperties> {
   const { dlcGuardQuadTree } = context;
   const cityArea = assertExists(city.areas.find(a => !a.hidden));
   const coordinates = [
