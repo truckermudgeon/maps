@@ -1,5 +1,4 @@
-import { assert, assertExists } from '@truckermudgeon/base/assert';
-import type { Position } from '@truckermudgeon/base/geom';
+import { assertExists } from '@truckermudgeon/base/assert';
 import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
 import { fromWgs84ToAtsCoords } from '@truckermudgeon/map/projections';
 import type {
@@ -9,7 +8,7 @@ import type {
   Poi,
   SearchProperties,
 } from '@truckermudgeon/map/types';
-import { featureCollection } from '@turf/helpers';
+import { featureCollection, point } from '@turf/helpers';
 import type { Quadtree } from 'd3-quadtree';
 import { quadtree } from 'd3-quadtree';
 import fs from 'fs';
@@ -103,6 +102,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
       mapDataKeys: searchMapDataKeys,
     }),
   );
+
   let dlcGuardQuadTree: DlcGuardQuadTree;
   if (args.map === 'usa') {
     dlcGuardQuadTree = assertExists(tsMapData.dlcGuardQuadTree);
@@ -115,6 +115,8 @@ export function handler(args: BuilderArguments<typeof builder>) {
     }>()
       .x(e => e.x)
       .y(e => e.y);
+    // N.B.: this datum must be added separately: it cannot be added as part of
+    // the ctor call :(
     dlcGuardQuadTree.add({
       x: 0,
       y: 0,
@@ -124,137 +126,49 @@ export function handler(args: BuilderArguments<typeof builder>) {
     throw new UnreachableError(args.map);
   }
 
-  let extraLabels: ExtraLabelsGeoJSON;
-  if (args.map === 'usa') {
-    extraLabels = JSON.parse(
-      fs.readFileSync(assertExists(args.extraLabels), 'utf-8'),
-    ) as unknown as ExtraLabelsGeoJSON;
-  } else {
-    assert(args.map === 'europe');
-    const { villages } = parseEts2VillagesCsv();
-    extraLabels = {
-      type: 'FeatureCollection',
-      features: villages.map(v => ({
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: [v.x, v.y],
-        },
-        properties: {
-          text: v.name,
-          country: isoA2Ets2.get(v.state) ?? v.state,
-        },
-      })),
-    };
+  let sceneryTowns: ExtraLabelsGeoJSON;
+  switch (args.map) {
+    case 'usa':
+      sceneryTowns = JSON.parse(
+        fs.readFileSync(assertExists(args.extraLabels), 'utf-8'),
+      ) as unknown as ExtraLabelsGeoJSON;
+      sceneryTowns.features = sceneryTowns.features
+        .filter(
+          ({ properties: { show, kind, text } }) =>
+            (kind == null && show == null) ||
+            ((kind == 'town' || kind == null) &&
+              show === true &&
+              text !== 'Golden Gate Bridge'),
+        )
+        .map(f => {
+          f.geometry.coordinates = fromWgs84ToAtsCoords(
+            f.geometry.coordinates as [number, number],
+          );
+          return f;
+        });
+      break;
+    case 'europe': {
+      const { villages } = parseEts2VillagesCsv();
+      sceneryTowns = featureCollection(
+        villages.map(v =>
+          point([v.x, v.y], {
+            text: v.name,
+            country: isoA2Ets2.get(v.state) ?? v.state,
+          }),
+        ),
+      );
+      break;
+    }
+    default:
+      throw new UnreachableError(args.map);
   }
 
-  extraLabels.features = extraLabels.features
-    .filter(f => {
-      return (
-        (f.properties.kind == null && f.properties.show == null) ||
-        ((f.properties.kind == 'town' || f.properties.kind == null) &&
-          f.properties.show === true &&
-          f.properties.text !== 'Golden Gate Bridge')
-      );
-    })
-    .map(f => {
-      const toGameCoords =
-        args.map === 'usa'
-          ? fromWgs84ToAtsCoords
-          : // ETS2 villages data is already in game coords.
-            (v: Position) => v;
-      f.geometry.coordinates = toGameCoords(
-        f.geometry.coordinates as [number, number],
-      );
-      return f;
-    });
-
-  const cityRTree = new RBush<
-    BBox & {
-      cityName: string;
-      stateCode: string;
-    }
-  >();
-  cityRTree.load(
-    [...tsMapData.cities.values()].flatMap(city =>
-      city.areas.map(area => {
-        const buffer = 100;
-        return {
-          minX: area.x - buffer,
-          minY: area.y - buffer,
-          maxX: area.x + area.width + buffer,
-          maxY: area.y + area.height + buffer,
-          cityName: city.name,
-          stateCode: assertExists(tsMapData.countries.get(city.countryToken))
-            .code,
-        };
-      }),
-    ),
-  );
-  const cityQuadTree = quadtree<{
-    x: number;
-    y: number;
-    cityName: string;
-    stateCode: string;
-  }>()
-    .x(e => e.x)
-    .y(e => e.y);
-  cityQuadTree.addAll(
-    [...tsMapData.cities.values()]
-      .flatMap(city =>
-        city.areas.map(area => ({
-          x: area.x + area.width / 2,
-          y: area.y + area.height / 2,
-          cityName: city.name,
-          stateCode: assertExists(tsMapData.countries.get(city.countryToken))
-            .code,
-        })),
-      )
-      .concat(
-        extraLabels.features.map(f => {
-          let stateCode: string;
-          if (args.map === 'usa') {
-            const [country, state] = f.properties.country.split('-');
-            if (country !== 'US') {
-              throw new Error();
-            }
-            stateCode = state;
-          } else {
-            stateCode = f.properties.country;
-          }
-          return {
-            x: f.geometry.coordinates[0],
-            y: f.geometry.coordinates[1],
-            cityName: f.properties.text,
-            stateCode,
-          };
-        }),
-      ),
-  );
-  const nodeQuadTree = quadtree<{ x: number; y: number; node: Node }>()
-    .x(e => e.x)
-    .y(e => e.y);
-  nodeQuadTree.addAll(
-    [...tsMapData.nodes.values()]
-      .filter(
-        n =>
-          n.forwardCountryId !== 0 &&
-          n.forwardCountryId === n.backwardCountryId,
-      )
-      .map(node => ({
-        x: node.x,
-        y: node.y,
-        node,
-      })),
-  );
-  logger.info('country node quadtree', nodeQuadTree.size());
+  const spatialIndices = createSpatialIndices(tsMapData, sceneryTowns);
 
   const context = {
     ...tsMapData,
+    ...spatialIndices,
     dlcGuardQuadTree,
-    cityRTree,
-    cityQuadTree,
-    nodeQuadTree,
   };
 
   const pois: SearchFeature[] = tsMapData.pois.flatMap(p =>
@@ -263,7 +177,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
   const cities: SearchFeature[] = [...tsMapData.cities.values()].map(city =>
     cityToSearchFeature(city, context),
   );
-  const scenery: SearchFeature[] = extraLabels.features.map(f => {
+  const scenery: SearchFeature[] = sceneryTowns.features.map(f => {
     let state;
     if (args.map === 'usa') {
       const [country, stateCode] = f.properties.country.split('-');
@@ -314,6 +228,114 @@ export function handler(args: BuilderArguments<typeof builder>) {
     ),
   );
   logger.success('done.');
+}
+
+function createSpatialIndices(
+  tsMapData: MappedDataForKeys<['cities', 'countries', 'nodes']>,
+  sceneryTowns: ExtraLabelsGeoJSON,
+): {
+  cityRTree: RBush<
+    BBox & {
+      cityName: string;
+      stateCode: string;
+    }
+  >;
+  cityQuadTree: Quadtree<{
+    x: number;
+    y: number;
+    cityName: string;
+    stateCode: string;
+  }>;
+  nodeQuadTree: Quadtree<{
+    x: number;
+    y: number;
+    node: Node;
+  }>;
+} {
+  const cityRTree = new RBush<
+    BBox & {
+      cityName: string;
+      stateCode: string;
+    }
+  >();
+  cityRTree.load(
+    [...tsMapData.cities.values()].flatMap(city =>
+      city.areas.map(area => {
+        const buffer = 100;
+        return {
+          minX: area.x - buffer,
+          minY: area.y - buffer,
+          maxX: area.x + area.width + buffer,
+          maxY: area.y + area.height + buffer,
+          cityName: city.name,
+          stateCode: assertExists(tsMapData.countries.get(city.countryToken))
+            .code,
+        };
+      }),
+    ),
+  );
+  const cityQuadTree = quadtree<{
+    x: number;
+    y: number;
+    cityName: string;
+    stateCode: string;
+  }>()
+    .x(e => e.x)
+    .y(e => e.y);
+  cityQuadTree.addAll(
+    [...tsMapData.cities.values()]
+      .flatMap(city =>
+        city.areas.map(area => ({
+          x: area.x + area.width / 2,
+          y: area.y + area.height / 2,
+          cityName: city.name,
+          stateCode: assertExists(tsMapData.countries.get(city.countryToken))
+            .code,
+        })),
+      )
+      .concat(
+        sceneryTowns.features.map(f => {
+          let stateCode: string;
+          if (tsMapData.map === 'usa') {
+            const [country, state] = f.properties.country.split('-');
+            if (country !== 'US') {
+              throw new Error();
+            }
+            stateCode = state;
+          } else {
+            stateCode = f.properties.country;
+          }
+          return {
+            x: f.geometry.coordinates[0],
+            y: f.geometry.coordinates[1],
+            cityName: f.properties.text,
+            stateCode,
+          };
+        }),
+      ),
+  );
+  const nodeQuadTree = quadtree<{ x: number; y: number; node: Node }>()
+    .x(e => e.x)
+    .y(e => e.y);
+  nodeQuadTree.addAll(
+    [...tsMapData.nodes.values()]
+      .filter(
+        n =>
+          n.forwardCountryId !== 0 &&
+          n.forwardCountryId === n.backwardCountryId,
+      )
+      .map(node => ({
+        x: node.x,
+        y: node.y,
+        node,
+      })),
+  );
+
+  return {
+    cityRTree,
+    cityQuadTree,
+    nodeQuadTree,
+  };
 }
 
 function poiToSearchFeature(
