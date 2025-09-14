@@ -137,8 +137,7 @@ export const PoiSearchBar = (props: SearchBarProps) => {
             sortFn: sortSearchResults,
             keys: [
               { name: 'properties.label', weight: 3 },
-              { name: 'properties.containingCity', weight: 2 },
-              { name: 'properties.nearestCity', weight: 2 },
+              { name: 'properties.city.name', weight: 2 },
               { name: 'properties.stateName', weight: 1.5 },
               'properties.stateCode',
               'properties.tags',
@@ -189,8 +188,7 @@ export const PoiSearchBar = (props: SearchBarProps) => {
       $and: tokenisedSearchQuery.map((searchToken: string) => {
         const orFields: Expression[] = [
           { 'properties.label': searchToken },
-          { 'properties.containingCity': searchToken },
-          { 'properties.nearestCity': searchToken },
+          { 'properties.city.name': searchToken },
           { 'properties.stateName': searchToken },
           { 'properties.stateCode': searchToken },
           { 'properties.tags': searchToken },
@@ -435,12 +433,12 @@ function sortSearchResults(
   // N.B.: the indices into `.item` are based on the `keys` option specified
   // when constructing the Fuse object.
 
-  const aCity = (a.item[1] ?? a.item[2]) as unknown as
+  const aCity = a.item[1] as unknown as
     | {
         v: string;
       }
     | undefined;
-  const bCity = (b.item[1] ?? b.item[2]) as unknown as
+  const bCity = b.item[1] as unknown as
     | {
         v: string;
       }
@@ -457,8 +455,8 @@ function sortSearchResults(
     return -1;
   }
 
-  const aTags = a.item[5];
-  const bTags = b.item[5];
+  const aTags = a.item[4];
+  const bTags = b.item[4];
   if (!Array.isArray(aTags) || !Array.isArray(bTags)) {
     throw new Error('unexpected non-arrays at key 5');
   }
