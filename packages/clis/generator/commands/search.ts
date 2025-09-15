@@ -2,6 +2,7 @@ import { assertExists } from '@truckermudgeon/base/assert';
 import { distance } from '@truckermudgeon/base/geom';
 import { UnreachableError } from '@truckermudgeon/base/precon';
 import { toDealerLabel } from '@truckermudgeon/map/labels';
+import { PointRBush } from '@truckermudgeon/map/point-rbush';
 import { fromWgs84ToAtsCoords } from '@truckermudgeon/map/projections';
 import type {
   City,
@@ -13,7 +14,6 @@ import type {
   SearchProperties,
 } from '@truckermudgeon/map/types';
 import { featureCollection, point } from '@turf/helpers';
-import type { Quadtree } from 'd3-quadtree';
 import { quadtree } from 'd3-quadtree';
 import fs from 'fs';
 import type { GeoJSON } from 'geojson';
@@ -255,13 +255,13 @@ function createSpatialIndices(
       stateCode: string;
     }
   >;
-  cityQuadTree: Quadtree<{
+  cityPointRTree: PointRBush<{
     x: number;
     y: number;
     cityName: string;
     stateCode: string;
   }>;
-  nodeQuadTree: Quadtree<{
+  nodePointRTree: PointRBush<{
     x: number;
     y: number;
     node: Node;
@@ -289,15 +289,13 @@ function createSpatialIndices(
       }),
     ),
   );
-  const cityQuadTree = quadtree<{
+  const cityPointRTree = new PointRBush<{
     x: number;
     y: number;
     cityName: string;
     stateCode: string;
-  }>()
-    .x(e => e.x)
-    .y(e => e.y);
-  cityQuadTree.addAll(
+  }>();
+  cityPointRTree.load(
     [...tsMapData.cities.values()]
       .flatMap(city =>
         city.areas.map(area => ({
@@ -329,10 +327,8 @@ function createSpatialIndices(
         }),
       ),
   );
-  const nodeQuadTree = quadtree<{ x: number; y: number; node: Node }>()
-    .x(e => e.x)
-    .y(e => e.y);
-  nodeQuadTree.addAll(
+  const nodePointRTree = new PointRBush<{ x: number; y: number; node: Node }>();
+  nodePointRTree.load(
     [...tsMapData.nodes.values()]
       .filter(
         n =>
@@ -348,8 +344,8 @@ function createSpatialIndices(
 
   return {
     cityRTree,
-    cityQuadTree,
-    nodeQuadTree,
+    cityPointRTree,
+    nodePointRTree,
   };
 }
 
@@ -358,20 +354,21 @@ function poiToSearchFeature(
   context: MappedDataForKeys<typeof searchMapDataKeys> & {
     dlcGuardQuadTree: DlcGuardQuadTree;
     cityRTree: RBush<BBox & { cityName: string; stateCode: string }>;
-    cityQuadTree: Quadtree<{
+    cityPointRTree: PointRBush<{
       x: number;
       y: number;
       cityName: string;
       stateCode: string;
     }>;
-    nodeQuadTree: Quadtree<{ x: number; y: number; node: Node }>;
+    nodePointRTree: PointRBush<{ x: number; y: number; node: Node }>;
   },
 ): SearchFeature<SearchPoiProperties>[] {
-  const { dlcGuardQuadTree, nodeQuadTree, cityQuadTree, cityRTree } = context;
+  const { dlcGuardQuadTree, nodePointRTree, cityPointRTree, cityRTree } =
+    context;
   const getDlcGuard = (p: { x: number; y: number }): number =>
     assertExists(dlcGuardQuadTree.find(p.x, p.y)).dlcGuard;
 
-  const closestNode = assertExists(nodeQuadTree.find(poi.x, poi.y)).node;
+  const closestNode = nodePointRTree.findClosest(poi.x, poi.y).node;
   const countriesById = new Map<number, Country>(
     context.countries.values().map(c => [c.id, c]),
   );
@@ -409,7 +406,9 @@ function poiToSearchFeature(
     // use `.at(0)` instead of `[0]` to force inferred type of `containingCity`
     // to be `| undefined`.
     .at(0);
-  const nearestCity = assertExists(cityQuadTree.find(poi.x, poi.y));
+  const nearestCity = cityPointRTree.findClosest(poi.x, poi.y, {
+    predicate: candidate => candidate.stateCode === country.code,
+  });
   const city = containingCity
     ? {
         name: containingCity.cityName,

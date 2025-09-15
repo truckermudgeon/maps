@@ -21,6 +21,8 @@
     "@turf/line-offset": "^7.0.0",
     "@turf/simplify": "^7.0.0",
     "priorityqueue": "^2.0.0",
-    "proj4": "^2.9.2"
+    "proj4": "^2.9.2",
+    "rbush": "^4.0.1",
+    "rbush-knn": "^4.0.0"
   }
 }

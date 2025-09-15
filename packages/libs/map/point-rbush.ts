@@ -1,0 +1,70 @@
+import { Preconditions } from '@truckermudgeon/base/precon';
+import RBush from 'rbush';
+// not sure why `npx tsc -b` works, but eslint fails because of this line.
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import knn from 'rbush-knn';
+
+export class PointRBush<T extends { x: number; y: number }> extends RBush<T> {
+  override toBBox({ x, y }: T) {
+    return { minX: x, minY: y, maxX: x, maxY: y };
+  }
+  override compareMinX(a: T, b: T) {
+    return a.x - b.x;
+  }
+  override compareMinY(a: T, b: T) {
+    return a.y - b.y;
+  }
+  findAll(
+    x: number,
+    y: number,
+    options: {
+      radius?: number;
+      maxResults?: number;
+      predicate?: (t: T) => boolean;
+    } = {},
+  ): T[] {
+    const {
+      radius = Infinity,
+      maxResults = Infinity,
+      predicate = () => true,
+    } = options;
+    Preconditions.checkArgument(radius > 0);
+    Preconditions.checkArgument(maxResults > 0);
+    return knn(this, x, y, maxResults, predicate, radius);
+  }
+  findClosest(x: number, y: number): T;
+  findClosest(
+    x: number,
+    y: number,
+    options: {
+      maxResults?: number;
+      predicate?: (t: T) => boolean;
+    },
+  ): T;
+  findClosest(
+    x: number,
+    y: number,
+    options: {
+      radius: number;
+      maxResults?: number;
+      predicate?: (t: T) => boolean;
+    },
+  ): T | undefined;
+  findClosest(
+    x: number,
+    y: number,
+    options: {
+      radius?: number;
+      maxResults?: number;
+      predicate?: (t: T) => boolean;
+    } = {},
+  ): T | undefined {
+    const { radius = Infinity } = options;
+    const result = this.findAll(x, y, options)[0];
+    if (Number.isFinite(radius) && !result) {
+      throw new Error('unexpected no results. Is the RBush empty?');
+    }
+    return result;
+  }
+}
