@@ -9,12 +9,15 @@ export class PointRBush<T extends { x: number; y: number }> extends RBush<T> {
   override toBBox({ x, y }: T) {
     return { minX: x, minY: y, maxX: x, maxY: y };
   }
+
   override compareMinX(a: T, b: T) {
     return a.x - b.x;
   }
+
   override compareMinY(a: T, b: T) {
     return a.y - b.y;
   }
+
   findAll(
     x: number,
     y: number,
@@ -33,6 +36,7 @@ export class PointRBush<T extends { x: number; y: number }> extends RBush<T> {
     Preconditions.checkArgument(maxResults > 0);
     return knn(this, x, y, maxResults, predicate, radius);
   }
+
   findClosest(x: number, y: number): T;
   findClosest(
     x: number,
