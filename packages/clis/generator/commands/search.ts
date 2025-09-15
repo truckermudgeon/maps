@@ -1,4 +1,4 @@
-import { assertExists } from '@truckermudgeon/base/assert';
+import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { distance } from '@truckermudgeon/base/geom';
 import { UnreachableError } from '@truckermudgeon/base/precon';
 import { toDealerLabel } from '@truckermudgeon/map/labels';
@@ -403,11 +403,9 @@ function poiToSearchFeature(
       maxX: poi.x,
       maxY: poi.y,
     })
-    // use `.at(0)` instead of `[0]` to force inferred type of `containingCity`
-    // to be `| undefined`.
-    .at(0);
+    .find(c => c.stateCode === country.code);
   const nearestCity = cityPointRTree.findClosest(poi.x, poi.y, {
-    predicate: candidate => candidate.stateCode === country.code,
+    predicate: c => c.stateCode === country.code,
   });
   const city = containingCity
     ? {
@@ -513,13 +511,9 @@ function poiToSearchFeature(
       throw new UnreachableError(poi);
   }
 
-  if (city.stateCode !== baseProperties.stateCode) {
-    logger.warn(
-      'mismatched state code for',
-      properties.label,
-      `(guessed: ${city.stateCode}; actual: ${baseProperties.stateCode}).`,
-    );
-  }
+  // sanity check. this should be ensured by `search` filtering and
+  // `findClosest`'s predicate.
+  assert(city.stateCode === baseProperties.stateCode);
 
   return [point([poi.x, poi.y], properties)];
 }

@@ -30,7 +30,7 @@ export class PointRBush<T extends { x: number; y: number }> extends RBush<T> {
     const {
       radius = Infinity,
       maxResults = Infinity,
-      predicate = () => true,
+      predicate = undefined,
     } = options;
     Preconditions.checkArgument(radius > 0);
     Preconditions.checkArgument(maxResults > 0);
@@ -42,7 +42,6 @@ export class PointRBush<T extends { x: number; y: number }> extends RBush<T> {
     x: number,
     y: number,
     options: {
-      maxResults?: number;
       predicate?: (t: T) => boolean;
     },
   ): T;
@@ -51,7 +50,6 @@ export class PointRBush<T extends { x: number; y: number }> extends RBush<T> {
     y: number,
     options: {
       radius: number;
-      maxResults?: number;
       predicate?: (t: T) => boolean;
     },
   ): T | undefined;
@@ -60,12 +58,11 @@ export class PointRBush<T extends { x: number; y: number }> extends RBush<T> {
     y: number,
     options: {
       radius?: number;
-      maxResults?: number;
       predicate?: (t: T) => boolean;
     } = {},
   ): T | undefined {
     const { radius = Infinity } = options;
-    const result = this.findAll(x, y, options)[0];
+    const result = this.findAll(x, y, { ...options, radius, maxResults: 1 })[0];
     if (Number.isFinite(radius) && !result) {
       throw new Error('unexpected no results. Is the RBush empty?');
     }
