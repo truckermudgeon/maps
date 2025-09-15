@@ -1,4 +1,4 @@
-import RBush from 'rbush';
+import type RBush from 'rbush';
 
 declare module 'rbush-knn' {
   export default function knn<T>(

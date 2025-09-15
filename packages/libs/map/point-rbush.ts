@@ -34,6 +34,9 @@ export class PointRBush<T extends { x: number; y: number }> extends RBush<T> {
     } = options;
     Preconditions.checkArgument(radius > 0);
     Preconditions.checkArgument(maxResults > 0);
+    // i have no idea why this is needed. IDE says it's not required, but
+    // running `npx eslint packages/*/*` will report errors without it.
+
     return knn(this, x, y, maxResults, predicate, radius);
   }
 
