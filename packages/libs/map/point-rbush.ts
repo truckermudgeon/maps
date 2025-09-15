@@ -34,8 +34,13 @@ export class PointRBush<T extends { x: number; y: number }> extends RBush<T> {
     } = options;
     Preconditions.checkArgument(radius > 0);
     Preconditions.checkArgument(maxResults > 0);
-    // i have no idea why this is needed. IDE says it's not required, but
-    // running `npx eslint packages/*/*` will report errors without it.
+    // i have no idea why these are needed. IDE says it's not required, but
+    // running `npx eslint packages/*/*` will report errors without it. AND:
+    // i'm disabling at the file level instead of at the line level because
+    // the latter will result in eslint "fixing" the file by removing the
+    // directive... which will then cause eslint to fail in CI. Arhghghghg.
+    /* eslint @typescript-eslint/no-unsafe-return: 0 */
+    /* eslint @typescript-eslint/no-unsafe-call: 0 */
     return knn(this, x, y, maxResults, predicate, radius);
   }
 
