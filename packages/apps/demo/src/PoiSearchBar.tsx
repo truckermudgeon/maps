@@ -14,7 +14,7 @@ import {
   Typography,
 } from '@mui/joy';
 import { assertExists } from '@truckermudgeon/base/assert';
-import { UnreachableError } from '@truckermudgeon/base/precon';
+import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
 import type {
   AtsDlcGuard,
   AtsSelectableDlc,
@@ -55,6 +55,9 @@ type SpritesJson = Record<
 type SearchFuse = Fuse<GeoJSON.Feature<GeoJSON.Point, SearchProperties>>;
 type PoiSearchOption =
   | PoiOption
+  // TODO add support for multi-poi-returning suggested searches, e.g.:
+  //  Wallbert - see all locations
+  //  Viewpoints - see all locations
   | {
       type: 'suggestion';
       id: string;
@@ -85,6 +88,7 @@ type PoiSearchOption =
 
 const maxResults = 100;
 
+// This helper, and the code for multi-token searches using Fuse.js, from:
 // https://stackoverflow.com/a/67736057
 const tokenizeStringWithQuotesBySpaces = (string: string): string[] =>
   string.match(/("[^"]*?"|[^"\s]+)+(?=\s*|\s*$)/g) ?? [];
@@ -122,7 +126,6 @@ export const PoiSearchBar = (props: SearchBarProps) => {
       )
       .then(
         geoJson => {
-          console.log('re-initing fuse');
           let filterByDlc: (
             f: GeoJSON.Feature<GeoJSON.Point, SearchProperties>,
           ) => boolean;
@@ -167,9 +170,7 @@ export const PoiSearchBar = (props: SearchBarProps) => {
     options: PoiSearchOption[],
     { inputValue }: { inputValue: string },
   ) => {
-    if (!search) {
-      throw new Error();
-    }
+    Preconditions.checkState(search != null);
     if (inputValue.length < 3) {
       if (value != null) {
         if (typeof value === 'string') {

@@ -84,12 +84,7 @@ export const OmniBar = (props: OmniBarProps) => {
         setGameMap(getSearchOption('usa', gameMap.value.search));
         localStorage.setItem('tm-map', 'usa');
       } else if (dEurope < dUsa && gameMap.value.map !== 'europe') {
-        setGameMap(
-          getSearchOption(
-            'europe',
-            gameMap.value.search === 'achievements' ? 'achievements' : 'places',
-          ),
-        );
+        setGameMap(getSearchOption('europe', gameMap.value.search));
         localStorage.setItem('tm-map', 'europe');
       }
     };
