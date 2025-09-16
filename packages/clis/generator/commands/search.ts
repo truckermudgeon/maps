@@ -2,7 +2,7 @@ import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { distance } from '@truckermudgeon/base/geom';
 import { putIfAbsent } from '@truckermudgeon/base/map';
 import { UnreachableError } from '@truckermudgeon/base/precon';
-import { toDealerLabel } from '@truckermudgeon/map/labels';
+import { getBranchSuffix, toDealerLabel } from '@truckermudgeon/map/labels';
 import { PointRBush } from '@truckermudgeon/map/point-rbush';
 import { fromWgs84ToAtsCoords } from '@truckermudgeon/map/projections';
 import type {
@@ -351,6 +351,7 @@ function disambiguateCompanies(pois: readonly Poi[]): Poi[] {
   const { companies = [], nonCompanies = [] } = Object.groupBy(pois, poi =>
     poi.type === 'company' ? 'companies' : 'nonCompanies',
   );
+  const res: Poi[] = nonCompanies;
 
   const cityTokenToNameToCompany = new Map<
     // city token
@@ -372,15 +373,31 @@ function disambiguateCompanies(pois: readonly Poi[]): Poi[] {
       ),
     ).push(c);
   }
-  for (const [city, map] of cityTokenToNameToCompany) {
-    for (const [company, arr] of map) {
+
+  const unknownBranches = new Set<string>();
+  for (const [, companies] of cityTokenToNameToCompany) {
+    for (const [, arr] of companies) {
       if (arr.length <= 1) {
+        res.push(...arr);
         continue;
       }
+      res.push(
+        ...arr.map(poi => {
+          const suffix = getBranchSuffix(poi.icon);
+          if (!suffix) {
+            if (!unknownBranches.has(poi.icon)) {
+              logger.warn('unknown branch', poi.icon);
+            }
+            unknownBranches.add(poi.icon);
+          }
+          return {
+            ...poi,
+            label: `${poi.label}${suffix ? ` (${suffix})` : ''}`,
+          };
+        }),
+      );
     }
   }
-
-  const res: Poi[] = [];
 
   return res;
 }
