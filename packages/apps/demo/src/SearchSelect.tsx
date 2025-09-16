@@ -1,10 +1,11 @@
-import { EmojiEvents, LocationCity, Pallet } from '@mui/icons-material';
+import { EmojiEvents } from '@mui/icons-material';
+import PlaceIcon from '@mui/icons-material/Place';
 import { List, ListItem, Option, Select, Stack, Typography } from '@mui/joy';
 import { assertExists } from '@truckermudgeon/base/assert';
-import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
+import { UnreachableError } from '@truckermudgeon/base/precon';
 import groupBy from 'object.groupby';
 
-export type SearchTypes = 'cities' | 'companies' | 'achievements';
+export type SearchTypes = 'places' | 'achievements';
 
 export type SearchOption = Readonly<
   {
@@ -19,11 +20,7 @@ export type SearchOption = Readonly<
 const options: readonly SearchOption[] = [
   {
     label: 'ATS',
-    value: { map: 'usa', search: 'cities' },
-  },
-  {
-    label: 'ATS',
-    value: { map: 'usa', search: 'companies' },
+    value: { map: 'usa', search: 'places' },
   },
   {
     label: 'ATS',
@@ -31,11 +28,7 @@ const options: readonly SearchOption[] = [
   },
   {
     label: 'ETS2',
-    value: { map: 'europe', search: 'cities' },
-  },
-  {
-    label: 'ETS2',
-    value: { map: 'europe', search: 'companies' },
+    value: { map: 'europe', search: 'places' },
   },
   {
     label: 'ETS2',
@@ -45,25 +38,32 @@ const options: readonly SearchOption[] = [
 
 export const getSearchOption = (
   map: 'usa' | 'europe',
-  search: SearchTypes,
-): SearchOption =>
-  Preconditions.checkExists(
-    options.find(
-      option => option.value.map === map && option.value.search === search,
-    ),
+  search: SearchTypes | 'places',
+): SearchOption => {
+  const option = options.find(
+    option => option.value.map === map && option.value.search === search,
   );
+  return option
+    ? option
+    : assertExists(options.find(option => option.value.map));
+};
 
 interface SearchSelectProps {
-  selected: {
-    map: 'usa' | 'europe';
-    search: SearchTypes;
-  };
+  selected:
+    | {
+        map: 'europe';
+        search: SearchTypes;
+      }
+    | {
+        map: 'usa';
+        search: 'achievements' | 'places';
+      };
   onSelect: (option: SearchOption) => void;
 }
 
 export const SearchSelect = ({ selected, onSelect }: SearchSelectProps) => {
   return (
-    <Select
+    <Select<SearchSelectProps['selected']>
       sx={{ paddingBlock: 0, minWidth: 'fit-content' }}
       variant={'plain'}
       size={'sm'}
@@ -125,12 +125,10 @@ const Decoration = ({
   search: SearchOption['value']['search'];
 }) => {
   switch (search) {
-    case 'cities':
-      return <LocationCity />;
-    case 'companies':
-      return <Pallet />;
     case 'achievements':
       return <EmojiEvents />;
+    case 'places':
+      return <PlaceIcon />;
     default:
       throw new UnreachableError(search);
   }

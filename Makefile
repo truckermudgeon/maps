@@ -68,19 +68,6 @@ MAP_FILES += $(GENERATOR_OUT_DIR)/ets2-contours.pmtiles
 
 #### geojson files
 
-# Create combined ATS and ETS2 cities.geojson file
-$(GENERATOR_OUT_DIR)/cities.geojson: $(ATS_PARSER_JSON_FILES) $(ETS2_PARSER_JSON_FILES)
-	npx generator cities -m usa -m europe -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR)
-
-MAP_FILES += $(GENERATOR_OUT_DIR)/cities.geojson
-
-# Create combined ATS and ETS2 companies.geojson file
-$(GENERATOR_OUT_DIR)/companies.geojson: $(ATS_PARSER_JSON_FILES) $(ETS2_PARSER_JSON_FILES)
-	npx generator companies -m usa -m europe -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR)
-
-MAP_FILES += $(GENERATOR_OUT_DIR)/companies.geojson
-
-
 # Create ATS and ETS2 achievements.geojson files
 $(GENERATOR_OUT_DIR)/ats-achievements.geojson: $(ATS_PARSER_JSON_FILES)
 	npx generator achievements -m usa -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR)
@@ -110,6 +97,16 @@ $(GENERATOR_OUT_DIR)/ets2-villages.geojson: $(RESOURCES_DIR)/villages-in-ets2.cs
 	npx generator ets2-villages -o $(GENERATOR_OUT_DIR)
 
 MAP_FILES += $(GENERATOR_OUT_DIR)/ets2-villages.geojson
+
+
+# Create ATS and ETS2 search.geojson files
+$(GENERATOR_OUT_DIR)/ats-search.geojson: $(ATS_PARSER_JSON_FILES) $(GENERATOR_OUT_DIR)/extra-labels.geojson
+	npx generator search -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR) -x $(GENERATOR_OUT_DIR)/extra-labels.geojson
+$(GENERATOR_OUT_DIR)/ets2-search.geojson: $(ETS2_PARSER_JSON_FILES) $(RESOURCES_DIR)/villages-in-ets2.csv
+	npx generator search -m europe -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR)
+
+MAP_FILES += $(GENERATOR_OUT_DIR)/ats-search.geojson
+MAP_FILES += $(GENERATOR_OUT_DIR)/ets2-search.geojson
 
 
 #### other map resources

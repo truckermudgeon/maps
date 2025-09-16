@@ -13,10 +13,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useControl, useMap } from 'react-map-gl/maplibre';
 import type { AchievementOption } from './AchievementSearchBar';
 import { AchievementSearchBar } from './AchievementSearchBar';
-import type { CityOption } from './CitySearchBar';
-import { CitySearchBar } from './CitySearchBar';
-import type { CompanyOption } from './CompanySearchBar';
-import { CompanySearchBar } from './CompanySearchBar';
+import type { PoiOption } from './PoiSearchBar';
+import { PoiSearchBar } from './PoiSearchBar';
 import type { SearchOption, SearchTypes } from './SearchSelect';
 import { getSearchOption, SearchSelect } from './SearchSelect';
 
@@ -94,16 +92,16 @@ export const OmniBar = (props: OmniBarProps) => {
     return () => void map.off('moveend', setClosestMap);
   }, [map, gameMap, setGameMap]);
 
-  const onCitySelect = React.useCallback(
-    (option: CityOption | null) => {
+  const onPlaceSelect = React.useCallback(
+    (option: PoiOption | null) => {
       if (map == null || option == null) {
         return;
       }
 
       map.flyTo({
         curve: 1,
-        zoom: 9,
-        center: option.value.map(v => Number(v.toFixed(3))) as [number, number],
+        zoom: 10.5,
+        center: option.poi.geometry.coordinates as [number, number],
       });
       void map.once('moveend', e => {
         const { lat, lng } = e.target.getCenter();
@@ -173,14 +171,6 @@ export const OmniBar = (props: OmniBarProps) => {
     onAchievementSelect(achievementOption, { enableFitBounds: false });
   }, [achievementOption, props.visibleStateDlcs]);
 
-  const [companyOption, setCompanyOption] = useState<CompanyOption | null>(
-    null,
-  );
-  const onCompanySelect = createMarkersOnOptionCallback(setCompanyOption);
-  useEffect(() => {
-    onCompanySelect(companyOption, { enableFitBounds: false });
-  }, [companyOption, props.visibleStateDlcs]);
-
   return (
     <div
       ref={ref}
@@ -191,8 +181,7 @@ export const OmniBar = (props: OmniBarProps) => {
         <SearchBar
           selected={gameMap.value}
           onMapSelect={onMapSelect}
-          onCitySelect={onCitySelect}
-          onCompanySelect={onCompanySelect}
+          onPlaceSelect={onPlaceSelect}
           onAchievementSelect={onAchievementSelect}
           visibleStates={props.visibleStates}
           visibleStateDlcs={props.visibleStateDlcs}
@@ -205,68 +194,78 @@ export const OmniBar = (props: OmniBarProps) => {
 const SearchBar = ({
   selected,
   onMapSelect,
-  onCitySelect,
-  onCompanySelect,
+  onPlaceSelect,
   onAchievementSelect,
-  visibleStates,
   visibleStateDlcs,
 }: {
   selected: SearchOption['value'];
   onMapSelect: (option: SearchOption) => void;
-  onCitySelect: (option: CityOption | null) => void;
-  onCompanySelect: (option: CompanyOption | null) => void;
+  onPlaceSelect: (option: PoiOption | null) => void;
   onAchievementSelect: (option: AchievementOption | null) => void;
   visibleStates: Set<StateCode>;
   visibleStateDlcs: Set<AtsSelectableDlc>;
 }) => {
-  switch (selected.search) {
-    case 'cities':
-      return (
-        <CitySearchBar
-          selectDecorator={
-            <SearchSelect selected={selected} onSelect={onMapSelect} />
-          }
-          map={selected.map}
-          onSelect={onCitySelect}
-          visibleStates={visibleStates}
-        />
-      );
-    case 'companies':
-      return (
-        <CompanySearchBar
-          selectDecorator={
-            <SearchSelect selected={selected} onSelect={onMapSelect} />
-          }
-          map={selected.map}
-          onSelect={onCompanySelect}
-          visibleStateDlcs={visibleStateDlcs}
-        />
-      );
-    case 'achievements':
-      return (
-        <AchievementSearchBar
-          selectDecorator={
-            <SearchSelect selected={selected} onSelect={onMapSelect} />
-          }
-          map={selected.map}
-          onSelect={onAchievementSelect}
-          visibleStateDlcs={visibleStateDlcs}
-        />
-      );
-    default:
-      throw new UnreachableError(selected.search);
+  switch (selected.map) {
+    case 'usa':
+      switch (selected.search) {
+        case 'places':
+          return (
+            <PoiSearchBar
+              selectDecorator={
+                <SearchSelect selected={selected} onSelect={onMapSelect} />
+              }
+              map={selected.map}
+              onSelect={onPlaceSelect}
+              visibleStateDlcs={visibleStateDlcs}
+            />
+          );
+        case 'achievements':
+          return (
+            <AchievementSearchBar
+              selectDecorator={
+                <SearchSelect selected={selected} onSelect={onMapSelect} />
+              }
+              map={selected.map}
+              onSelect={onAchievementSelect}
+              visibleStateDlcs={visibleStateDlcs}
+            />
+          );
+        default:
+          throw new UnreachableError(selected.search);
+      }
+    case 'europe':
+      switch (selected.search) {
+        case 'places':
+          return (
+            <PoiSearchBar
+              selectDecorator={
+                <SearchSelect selected={selected} onSelect={onMapSelect} />
+              }
+              map={selected.map}
+              onSelect={onPlaceSelect}
+            />
+          );
+        case 'achievements':
+          return (
+            <AchievementSearchBar
+              selectDecorator={
+                <SearchSelect selected={selected} onSelect={onMapSelect} />
+              }
+              map={selected.map}
+              onSelect={onAchievementSelect}
+            />
+          );
+        default:
+          throw new UnreachableError(selected.search);
+      }
   }
 };
 
 function toSearchOption(maybeString: string | null): SearchTypes {
-  if (
-    maybeString === 'achievements' ||
-    maybeString === 'cities' ||
-    maybeString === 'companies'
-  ) {
+  if (maybeString === 'achievements') {
     return maybeString;
   }
-  return 'cities';
+  return 'places';
 }
 
 function delta(lngA: number, lngB: number) {

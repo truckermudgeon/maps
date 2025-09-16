@@ -737,27 +737,6 @@ export interface ExitProperties {
   name: string;
 }
 
-export type ScopedCityFeature = GeoJSON.Feature<
-  GeoJSON.Point,
-  { type: 'city'; map: 'usa' | 'europe'; countryCode: string; name: string }
->;
-
-export type ScopedCountryFeature = GeoJSON.Feature<
-  GeoJSON.Point,
-  { type: 'country'; map: 'usa' | 'europe'; code: string; name: string }
->;
-
-export type CompanyFeature = GeoJSON.Feature<
-  GeoJSON.Point,
-  {
-    map: 'usa' | 'europe';
-    token: string;
-    countryCode: string;
-    cityToken: string;
-    dlcGuard: number;
-  }
->;
-
 interface BaseSearchProperties {
   dlcGuard: number;
   stateName: string;
