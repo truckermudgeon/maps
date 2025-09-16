@@ -105,7 +105,7 @@ export const OmniBar = (props: OmniBarProps) => {
 
       map.flyTo({
         curve: 1,
-        zoom: 9,
+        zoom: 10.5,
         center: option.poi.geometry.coordinates as [number, number],
       });
       void map.once('moveend', e => {
