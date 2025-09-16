@@ -13,12 +13,11 @@
   },
   "devDependencies": {
     "@types/ws": "^8.5.13",
-    "typescript": "^5.4.2"
+    "typescript": "^5.9.2"
   },
   "dependencies": {
     "@trpc/client": "^10.45.2",
     "@trpc/server": "^10.45.2",
-    "@truckermudgeon/api": "0.0.0",
     "@truckermudgeon/base": "0.0.0",
     "@truckermudgeon/map": "0.0.0",
     "@turf/bearing": "^7.0.0",

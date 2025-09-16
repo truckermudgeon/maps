@@ -86,15 +86,13 @@ export function toSplinePoints(
   end: SplinePoint,
   steps?: number,
 ): Position[] {
-  if (steps == null) {
-    steps = Math.min(
-      8,
-      // 16: { 1 → 668, 2 → 100, 3 → 100, 4 → 96, 5 → 64, 6 → 44, 7 → 36, 8 → 300 }
-      // 24: { 1 → 656, 2 → 40, 3 → 72, 4 → 56, 5 → 80, 6 → 60, 7 → 40, 8 → 404 }
-      // 32: { 1 → 648, 2 → 20, 3 → 52, 4 → 48, 5 → 52, 6 → 48, 7 → 52, 8 → 488 }
-      Math.floor(Math.abs(Math.tan(start.rotation - end.rotation)) * 20) + 1,
-    );
-  }
+  steps ??= Math.min(
+    8,
+    // 16: { 1 → 668, 2 → 100, 3 → 100, 4 → 96, 5 → 64, 6 → 44, 7 → 36, 8 → 300 }
+    // 24: { 1 → 656, 2 → 40, 3 → 72, 4 → 56, 5 → 80, 6 → 60, 7 → 40, 8 → 404 }
+    // 32: { 1 → 648, 2 → 20, 3 → 52, 4 → 48, 5 → 52, 6 → 48, 7 → 52, 8 → 488 }
+    Math.floor(Math.abs(Math.tan(start.rotation - end.rotation)) * 20) + 1,
+  );
   Preconditions.checkArgument(steps > 0);
   const dist = distance(start.position, end.position);
   // cubic hermite interpolation

@@ -11,7 +11,7 @@
   "devDependencies": {
     "@types/react": "^18.2.47",
     "@types/react-dom": "^18.2.18",
-    "typescript": "^5.4.2"
+    "typescript": "^5.9.2"
   },
   "dependencies": {
     "@truckermudgeon/base": "0.0.0",

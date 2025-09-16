@@ -35,9 +35,10 @@ export const defaultMapStyle = new Proxy<StyleSpecification>(
     get(target, propertyKey, receiver) {
       if (
         propertyKey === 'sprite' &&
-        target.sprite?.toString().match(/^\/\w/)
+        typeof target.sprite == 'string' &&
+        /^\/\w/.exec(target.sprite.toString())
       ) {
-        return window.location.origin + target.sprite.toString();
+        return window.location.origin + target.sprite;
       }
       return Reflect.get(target, propertyKey, receiver) as unknown;
     },

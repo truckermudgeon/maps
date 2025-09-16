@@ -17,7 +17,7 @@
     "@types/rbush": "^4.0.0",
     "@types/spritesmith": "^3.4.5",
     "@types/yargs": "^17.0.33",
-    "typescript": "^5.4.2"
+    "typescript": "^5.9.2"
   },
   "dependencies": {
     "@truckermudgeon/base": "0.0.0",

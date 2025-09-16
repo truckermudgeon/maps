@@ -43,9 +43,7 @@ export const getSearchOption = (
   const option = options.find(
     option => option.value.map === map && option.value.search === search,
   );
-  return option
-    ? option
-    : assertExists(options.find(option => option.value.map));
+  return option ?? assertExists(options.find(option => option.value.map));
 };
 
 interface SearchSelectProps {
