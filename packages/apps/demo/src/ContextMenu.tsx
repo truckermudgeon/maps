@@ -94,7 +94,7 @@ export const ContextMenu = () => {
           void navigator.clipboard.writeText(
             assertExists(pos.xz)
               .map(n => toFixed(n, 1))
-              .join(';'),
+              .join(','),
           );
           break;
         default:
@@ -315,8 +315,8 @@ export const ContextMenu = () => {
                 <ListItemContent>
                   <LabeledCoordinates
                     coords={{
-                      lat: clickContext.position.lngLat[1],
                       lng: clickContext.position.lngLat[0],
+                      lat: clickContext.position.lngLat[1],
                     }}
                     fractionDigits={4}
                   />
