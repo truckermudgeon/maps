@@ -201,6 +201,8 @@ export const Legend = (props: LegendProps) => {
               </TabPanel>
               <TabPanel sx={{ p: 0 }} value={2}>
                 <AdvancedOptions
+                  showSecrets={props.advanced.showSecrets}
+                  onSecretsToggle={props.advanced.onSecretsToggle}
                   showContours={props.advanced.showContours}
                   onContoursToggle={props.advanced.onContoursToggle}
                   showPhotoSpheresUi={props.advanced.showPhotoSpheresUi}
@@ -317,13 +319,26 @@ const DlcFooter = memo((props: DlcFooterProps) => (
 ));
 
 interface AdvancedOptionsProps {
+  showSecrets: boolean;
+  onSecretsToggle: (newValue: boolean) => void;
   showContours: boolean;
   onContoursToggle: (newValue: boolean) => void;
   showPhotoSpheresUi: boolean;
   onPhotoSpheresToggleUi: (newValue: boolean) => void;
 }
 const AdvancedOptions = (props: AdvancedOptionsProps) => (
-  <Stack mx={2}>
+  <Stack mx={2} gap={2}>
+    <Card>
+      <Checkbox
+        sx={{
+          flexDirection: 'row-reverse',
+        }}
+        label={'Show secret roads'}
+        checked={props.showSecrets}
+        onChange={e => props.onSecretsToggle(e.target.checked)}
+      />
+    </Card>
+    <Divider />
     <Typography mb={2} level={'title-lg'}>
       Experimental Features
     </Typography>

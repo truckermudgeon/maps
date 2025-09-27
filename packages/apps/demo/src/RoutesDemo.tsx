@@ -70,6 +70,7 @@ const RoutesDemo = (props: { tileRootUrl: string }) => {
     AtsSelectableDlcs,
   );
 
+  const [showSecrets, setShowSecrets] = useState(true); // TODO localstorage
   const [showContours, setShowContours] = useState(false);
 
   return (
@@ -104,6 +105,7 @@ const RoutesDemo = (props: { tileRootUrl: string }) => {
         enableIconAutoHide={autoHide}
         visibleIcons={visibleIcons}
         dlcs={visibleAtsDlcs}
+        showSecrets={showSecrets}
       />
       <SceneryTownSource
         game={'ats'}
@@ -153,6 +155,8 @@ const RoutesDemo = (props: { tileRootUrl: string }) => {
           onAutoHidingToggle: setAutoHide,
         }}
         advanced={{
+          showSecrets,
+          onSecretsToggle: setShowSecrets,
           showContours,
           onContoursToggle: setShowContours,
           // HACK make this UI inert.
