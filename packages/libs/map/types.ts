@@ -118,6 +118,7 @@ type BasePoi = Readonly<{
   x: number;
   y: number;
   icon: string;
+  secret?: true;
 }>;
 
 export type NonFacilityPoi =
@@ -677,6 +678,7 @@ export interface RoadLookProperties {
   leftLanes: number;
   rightLanes: number;
   hidden: boolean;
+  secret: boolean;
   laneOffset?: number;
   shoulderSpaceLeft?: number;
   shoulderSpaceRight?: number;
@@ -690,6 +692,7 @@ export interface FerryProperties {
 export interface PrefabProperties {
   type: 'prefab';
   dlcGuard: number;
+  secret: boolean;
   zIndex: number;
   color: MapAreaColor;
 }
@@ -697,6 +700,7 @@ export interface PrefabProperties {
 export interface MapAreaProperties {
   type: 'mapArea';
   dlcGuard: number;
+  secret: boolean;
   zIndex: number;
   color: MapAreaColor;
 }
@@ -730,12 +734,14 @@ export interface PoiProperties {
   poiName?: string; // POI label, if available
   dlcGuard?: number; // For dlc-guarded POIs, like road icons
   prefabUid?: bigint;
+  secret: boolean;
 }
 
 export interface TrafficProperties {
   type: 'traffic';
   sprite: string;
   dlcGuard: number;
+  secret: boolean;
 }
 
 export interface ExitProperties {

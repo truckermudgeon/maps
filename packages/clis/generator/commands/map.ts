@@ -165,6 +165,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
       'zIndex',
       'height',
       'hidden',
+      'secret',
       'poiType',
       'poiName',
       'sprite',

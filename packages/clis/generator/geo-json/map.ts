@@ -693,6 +693,7 @@ function createTrafficFeatures(
       features.push(
         turf.point(midPoint(nodePoints[0], nodePoints[1]), {
           type: 'traffic',
+          secret: !!p.secret,
           sprite: 'roadwork',
           dlcGuard: p.dlcGuard,
         }),
@@ -707,6 +708,7 @@ function createTrafficFeatures(
       features.push(
         turf.point(center(getExtent(nodePoints)), {
           type: 'traffic',
+          secret: !!p.secret,
           sprite: 'railcrossing',
           dlcGuard: p.dlcGuard,
         }),
@@ -993,6 +995,7 @@ function areaToFeature(
     properties: {
       type: 'mapArea',
       dlcGuard: area.dlcGuard,
+      secret: !!area.secret,
       zIndex: area.drawOver ? 1 : 0,
       color: area.color,
     },
@@ -1151,6 +1154,7 @@ function poiToFeature(poi: Poi): PoiFeature {
       poiName,
       dlcGuard: 'dlcGuard' in poi ? poi.dlcGuard : undefined,
       prefabUid: 'prefabUid' in poi ? poi.prefabUid : undefined,
+      secret: !!poi.secret,
     },
     geometry: {
       type: 'Point',
@@ -1256,6 +1260,7 @@ function prefabToFeatures(
         properties: {
           type: 'prefab',
           dlcGuard: prefab.dlcGuard,
+          secret: prefab.secret ?? false,
           zIndex: polygon.zIndex,
           color: polygon.color,
         },
@@ -1343,6 +1348,7 @@ function prefabToFeatures(
         properties: {
           type: 'road',
           dlcGuard: prefab.dlcGuard,
+          secret: prefab.secret ?? false,
           prefab: prefab.token,
           roadType: nearestRoadType,
           offset: road.offset,
@@ -1380,7 +1386,7 @@ function roadToFeature(
     },
   );
   const properties = {
-    ...roadLookToProperties(roadLook, !!road.hidden),
+    ...roadLookToProperties(roadLook, !!road.hidden, !!road.secret),
     lookToken: road.roadLookToken,
     dlcGuard: road.dlcGuard,
     startNodeUid: road.startNodeUid,
@@ -1519,6 +1525,7 @@ function getRoadType(look: RoadLook): RoadType {
 function roadLookToProperties(
   look: RoadLook,
   hidden: boolean,
+  secret: boolean,
 ): RoadLookProperties {
   return {
     type: 'road',
@@ -1529,6 +1536,7 @@ function roadLookToProperties(
     shoulderSpaceLeft: look.shoulderSpaceLeft,
     shoulderSpaceRight: look.shoulderSpaceRight,
     hidden,
+    secret,
   };
 }
 
@@ -1537,6 +1545,10 @@ function arePropsConnectable(
   b: RoadLookProperties & { dlcGuard: number },
 ) {
   if (a.dlcGuard !== b.dlcGuard) {
+    return false;
+  }
+
+  if (a.secret !== b.secret) {
     return false;
   }
 
