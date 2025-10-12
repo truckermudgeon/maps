@@ -78,6 +78,9 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
     AtsSelectableDlcs,
   );
 
+  const [showSecrets, setShowSecrets] = useState<boolean>(
+    localStorage.getItem('tm-secrets') !== 'hide',
+  );
   const [showContours, setShowContours] = useState(false);
   const [showPhotoSpheresUi, setShowPhotoSpheresUi] = useState(false);
 
@@ -197,6 +200,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
         mode={mode}
         enableIconAutoHide={autoHide}
         visibleIcons={visibleIcons}
+        showSecrets={showSecrets}
         dlcs={visibleAtsDlcs}
       />
       <GameMapStyle
@@ -205,6 +209,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
         mode={mode}
         enableIconAutoHide={autoHide}
         visibleIcons={visibleIcons}
+        showSecrets={showSecrets}
       />
       {visibleIcons.has(MapIcon.CityNames) && (
         <SceneryTownSource
@@ -309,6 +314,14 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
           onAutoHidingToggle: setAutoHide,
         }}
         advanced={{
+          showSecrets,
+          onSecretsToggle: newValue => {
+            setShowSecrets(newValue);
+            localStorage.setItem(
+              'tm-secrets',
+              newValue ? 'showAsNormal' : 'hide',
+            );
+          },
           showContours,
           onContoursToggle: setShowContours,
           showPhotoSpheresUi,

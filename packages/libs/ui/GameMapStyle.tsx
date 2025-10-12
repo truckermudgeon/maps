@@ -68,6 +68,8 @@ export type GameMapStyleProps = {
   visibleIcons?: ReadonlySet<MapIcon>;
   /** Defaults to true */
   enableIconAutoHide?: boolean;
+  /** Defaults to true */
+  showSecrets?: boolean;
   /** Defaults to 'light' */
   mode?: Mode;
 } & (
@@ -89,12 +91,16 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
     tileRootUrl,
     visibleIcons = allIcons,
     enableIconAutoHide = true,
+    showSecrets = true,
     mode = 'light',
   } = props;
   const dlcGuardFilter =
     game === 'ats'
       ? createDlcGuardFilter(game, props.dlcs ?? AtsSelectableDlcs)
       : createDlcGuardFilter(game, props.dlcs ?? Ets2SelectableDlcs);
+  const secretFilter: ExpressionSpecification | true = showSecrets
+    ? true // show everything
+    : ['==', ['get', 'secret'], false]; // show only non-secret things
   const colors = modeColors[mode];
   addPmTilesProtocol();
 
@@ -176,6 +182,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           ['==', ['geometry-type'], 'Polygon'],
           ['==', ['get', 'type'], 'mapArea'],
           dlcGuardFilter,
+          secretFilter,
         ]}
         layout={{
           'fill-sort-key': ['get', 'zIndex'],
@@ -199,6 +206,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           ['==', ['geometry-type'], 'Polygon'],
           ['==', ['get', 'type'], 'prefab'],
           dlcGuardFilter,
+          secretFilter,
         ]}
         layout={{
           'fill-sort-key': ['get', 'zIndex'],
@@ -242,6 +250,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           ['!=', ['get', 'roadType'], 'train'],
           ['==', ['get', 'hidden'], false],
           dlcGuardFilter,
+          secretFilter,
         ]}
         layout={roadLineLayout}
         paint={{
@@ -271,6 +280,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           ['!=', ['get', 'roadType'], 'train'],
           ['==', ['get', 'hidden'], false],
           dlcGuardFilter,
+          secretFilter,
         ]}
         layout={roadLineLayout}
         paint={{
@@ -446,6 +456,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             ['==', ['get', 'type'], 'poi'],
             ['==', ['get', 'poiType'], 'company'],
             dlcGuardFilter,
+            secretFilter,
           ]}
           layout={iconLayout(enableIconAutoHide, 1, 1.25, 3.5)}
         />
@@ -462,6 +473,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             ['==', ['get', 'type'], 'poi'],
             ['==', ['get', 'poiType'], 'road'],
             ['!', ['in', ['get', 'sprite'], ['literal', allRoadFacilityIcons]]],
+            secretFilter,
           ]}
           layout={iconLayout(
             enableIconAutoHide,
@@ -483,6 +495,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             ['==', ['get', 'poiType'], 'road'],
             ['==', ['index-of', 'is', ['get', 'sprite']], 0],
             dlcGuardFilter,
+            secretFilter,
           ]}
           layout={iconLayout(enableIconAutoHide, 0.4, 0.75, 1.25)}
         />
@@ -500,6 +513,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             ['==', ['get', 'poiType'], 'road'],
             ['==', ['index-of', 'us', ['get', 'sprite']], 0],
             dlcGuardFilter,
+            secretFilter,
           ]}
           layout={iconLayout(enableIconAutoHide, 0.4, 0.75, 1.25)}
         />
@@ -516,6 +530,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             ['==', ['get', 'type'], 'poi'],
             ['==', ['get', 'poiType'], 'road'],
             dlcGuardFilter,
+            secretFilter,
             [
               '!',
               [
@@ -691,6 +706,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             ['==', ['get', 'type'], 'poi'],
             createPoiFilter(visibleIcons),
             dlcGuardFilter,
+            secretFilter,
           ]}
           layout={iconLayout(enableIconAutoHide, 0.6, 1.25, 2.5, {
             vertical: 2,
@@ -726,6 +742,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
               ],
               createPoiFilter(visibleIcons),
               dlcGuardFilter,
+              secretFilter,
             ]}
             layout={{
               ...iconLayout(enableIconAutoHide, 0.6, 1.25, 2.5, {
@@ -755,6 +772,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             ['==', ['get', 'type'], 'traffic'],
             createTrafficFilter(visibleIcons),
             dlcGuardFilter,
+            secretFilter,
           ]}
           layout={iconLayout(
             enableIconAutoHide,
