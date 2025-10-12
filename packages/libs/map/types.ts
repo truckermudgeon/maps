@@ -118,6 +118,7 @@ type BasePoi = Readonly<{
   x: number;
   y: number;
   icon: string;
+  secret?: true;
 }>;
 
 export type NonFacilityPoi =
@@ -282,6 +283,7 @@ export type Road = BaseItem &
     type: ItemType.Road;
     dlcGuard: number;
     hidden?: true;
+    secret?: true;
     roadLookToken: string;
     startNodeUid: bigint;
     endNodeUid: bigint;
@@ -294,6 +296,7 @@ export type Prefab = BaseItem &
     type: ItemType.Prefab;
     dlcGuard: number;
     hidden?: true;
+    secret?: true;
     token: string;
     nodeUids: readonly bigint[];
     originNodeIndex: number;
@@ -303,6 +306,7 @@ export type MapArea = BaseItem &
   Readonly<{
     type: ItemType.MapArea;
     dlcGuard: number;
+    secret?: true;
     drawOver?: true;
     nodeUids: readonly bigint[];
     color: MapAreaColor;
@@ -321,6 +325,7 @@ export type MapOverlay = BaseItem &
   Readonly<{
     type: ItemType.MapOverlay;
     dlcGuard: number;
+    secret?: true;
     overlayType: MapOverlayType;
     token: string;
     nodeUid: bigint;
@@ -376,6 +381,7 @@ export type Cutscene = BaseItem &
   Readonly<{
     type: ItemType.Cutscene;
     dlcGuard: number;
+    secret?: true;
     flags: number;
     tags: readonly string[];
     nodeUid: bigint;
@@ -394,6 +400,7 @@ export type Trigger = BaseItem &
   Readonly<{
     type: ItemType.Trigger;
     dlcGuard: number;
+    secret?: true;
     // [action token, params] tuples
     actions: [string, readonly string[]][];
     nodeUids: readonly bigint[];
@@ -671,6 +678,7 @@ export interface RoadLookProperties {
   leftLanes: number;
   rightLanes: number;
   hidden: boolean;
+  secret: boolean;
   laneOffset?: number;
   shoulderSpaceLeft?: number;
   shoulderSpaceRight?: number;
@@ -684,6 +692,7 @@ export interface FerryProperties {
 export interface PrefabProperties {
   type: 'prefab';
   dlcGuard: number;
+  secret: boolean;
   zIndex: number;
   color: MapAreaColor;
 }
@@ -691,6 +700,7 @@ export interface PrefabProperties {
 export interface MapAreaProperties {
   type: 'mapArea';
   dlcGuard: number;
+  secret: boolean;
   zIndex: number;
   color: MapAreaColor;
 }
@@ -724,12 +734,14 @@ export interface PoiProperties {
   poiName?: string; // POI label, if available
   dlcGuard?: number; // For dlc-guarded POIs, like road icons
   prefabUid?: bigint;
+  secret: boolean;
 }
 
 export interface TrafficProperties {
   type: 'traffic';
   sprite: string;
   dlcGuard: number;
+  secret: boolean;
 }
 
 export interface ExitProperties {

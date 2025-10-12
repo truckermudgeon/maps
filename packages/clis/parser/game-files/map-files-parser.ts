@@ -502,6 +502,7 @@ function postProcess(
         const prefabMeta = {
           prefabUid: item.uid,
           prefabPath: prefabDescription.path,
+          secret: item.secret,
         };
         for (const sp of prefabDescription.spawnPoints) {
           const [x, y] = toMapPosition(
@@ -591,8 +592,12 @@ function postProcess(
         break;
       }
       case ItemType.MapOverlay: {
-        const { x, y } = item;
-        const pos = { x, y };
+        const { x, y, secret } = item;
+        const mapOverlayMeta = {
+          x,
+          y,
+          secret,
+        };
         switch (item.overlayType) {
           case MapOverlayType.Road:
             if (item.token === '') {
@@ -605,7 +610,7 @@ function postProcess(
               // TODO look into ets2 road overlays with token 'weigh_ico'.
               // can they be considered facilities? do they have linked prefabs?
               pois.push({
-                ...pos,
+                ...mapOverlayMeta,
                 type: 'road',
                 dlcGuard: item.dlcGuard,
                 nodeUid: item.nodeUid,
@@ -615,7 +620,7 @@ function postProcess(
             break;
           case MapOverlayType.Parking:
             pois.push({
-              ...pos,
+              ...mapOverlayMeta,
               type: 'facility',
               dlcGuard: item.dlcGuard,
               itemNodeUids: [item.nodeUid],
@@ -637,7 +642,7 @@ function postProcess(
               );
             }
             pois.push({
-              ...pos,
+              ...mapOverlayMeta,
               type: 'landmark',
               dlcGuard: item.dlcGuard,
               nodeUid: item.nodeUid,
@@ -700,6 +705,7 @@ function postProcess(
         const pos = { x, y };
         pois.push({
           ...pos,
+          secret: prefabItem.secret,
           type: 'company',
           icon: item.token,
           label: companyName ?? item.token,
@@ -721,6 +727,7 @@ function postProcess(
           : ferry.name;
         pois.push({
           ...pos,
+          secret: undefined, // assume there are no secret ferries. otherwise, need to parse ferry's prefab.
           type: item.train ? 'train' : 'ferry',
           icon: item.train ? 'train_ico' : 'port_overlay',
           label,
@@ -742,6 +749,7 @@ function postProcess(
         const pos = { x, y };
         pois.push({
           ...pos,
+          secret: item.secret,
           type: 'viewpoint',
           icon: 'viewpoint',
           label: label ?? '',
@@ -754,6 +762,7 @@ function postProcess(
         if (item.actions.find(([key]) => key === 'hud_parking')) {
           pois.push({
             ...pos,
+            secret: item.secret,
             type: 'facility',
             dlcGuard: item.dlcGuard,
             itemNodeUids: item.nodeUids,

@@ -681,6 +681,8 @@ function toRoad(rawItem: SectorItem<ItemType.Road>): Road {
     dlcGuard: rawItem.dlcGuard,
     //                          ┌─ bit 25 (0-based)
     hidden: (rawItem.flags & 0x02_00_00_00) !== 0 ? true : undefined,
+    //                             ┌─ bit 16 (0-based)
+    secret: (rawItem.flags & 0x00_01_00_00) !== 0 ? true : undefined,
     roadLookToken: rawItem.roadLook,
     startNodeUid: rawItem.startNodeUid,
     endNodeUid: rawItem.endNodeUid,
@@ -695,6 +697,8 @@ function toPrefab(rawItem: SectorItem<ItemType.Prefab>): Prefab {
     token: rawItem.model,
     //                             ┌─ bit 17 (0-based)
     hidden: (rawItem.flags & 0x00_02_00_00) !== 0 ? true : undefined,
+    //                                  ┌─ bit 5 (0-based)
+    secret: (rawItem.flags & 0x00_00_00_20) !== 0 ? true : undefined,
     nodeUids: rawItem.nodeUids,
     originNodeIndex: rawItem.originIndex,
   };
@@ -705,6 +709,8 @@ function toMapArea(rawItem: SectorItem<ItemType.MapArea>): MapArea {
     ...toBaseItem(rawItem),
     dlcGuard: (rawItem.flags & 0x00_00_ff_00) >> 8,
     drawOver: (rawItem.flags & 0x00_00_00_01) !== 0 ? true : undefined,
+    //                                  ┌─ bit 4 (0-based)
+    secret: (rawItem.flags & 0x10_00_00_10) !== 0 ? true : undefined,
     nodeUids: rawItem.nodeUids,
     color: MapAreaColorUtils.from(rawItem.colorIndex),
   };
@@ -724,6 +730,8 @@ function toMapOverlay(rawItem: SectorItem<ItemType.MapOverlay>): MapOverlay {
   return {
     ...toBaseItem(rawItem),
     dlcGuard: (rawItem.flags & 0x00_00_ff_00) >> 8,
+    //                             ┌─ bit 16 (0-based)
+    secret: (rawItem.flags & 0x00_01_00_00) !== 0 ? true : undefined,
     overlayType: MapOverlayTypeUtils.from(rawItem.flags & 0x0f),
     token: rawItem.name,
     nodeUid: rawItem.nodeUid,
@@ -754,6 +762,8 @@ function toCutscene(rawItem: SectorItem<ItemType.Cutscene>): Cutscene {
   return {
     ...toBaseItem(rawItem),
     dlcGuard: (rawItem.flags & 0x00_00_ff_00) >> 8,
+    //                         ┌─ bit 28 (0-based)
+    secret: (rawItem.flags & 0x10_00_00_00) !== 0 ? true : undefined,
     flags: rawItem.flags,
     tags: rawItem.tags,
     nodeUid: rawItem.nodeUid,
@@ -769,6 +779,8 @@ function toTrigger(rawItem: SectorItem<ItemType.Trigger>): Trigger {
   return {
     ...toBaseItem(rawItem),
     dlcGuard: (rawItem.flags & 0x00_00_ff_00) >> 8,
+    //                             ┌─ bit 18 (0-based)
+    secret: (rawItem.flags & 0x00_04_00_00) !== 0 ? true : undefined,
     actions: [...actionsMap.entries()],
     nodeUids: rawItem.nodeUids,
   };
