@@ -567,7 +567,6 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             ['==', ['geometry-type'], 'Point'],
             ['==', ['get', 'type'], 'exit'],
             dlcGuardFilter,
-            secretFilter,
           ]}
         />
       )}
