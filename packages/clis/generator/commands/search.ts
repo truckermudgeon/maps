@@ -143,11 +143,8 @@ export function handler(args: BuilderArguments<typeof builder>) {
       ) as unknown as ExtraLabelsGeoJSON;
       sceneryTowns.features = sceneryTowns.features
         .filter(
-          ({ properties: { show, kind, text } }) =>
-            (kind == null && show == null) ||
-            ((kind == 'town' || kind == null) &&
-              show === true &&
-              text !== 'Golden Gate Bridge'),
+          ({ properties: { show = true, kind = 'town' } }) =>
+            kind === 'town' && show,
         )
         .map(f => {
           f.geometry.coordinates = fromWgs84ToAtsCoords(
