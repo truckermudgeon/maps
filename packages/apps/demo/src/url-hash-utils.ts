@@ -37,7 +37,6 @@ export const syncCameraToHash = (map: MapRef, hash: string) => {
     return;
   }
   if (mapHash === calculateMapHash(map)) {
-    console.log('skipping map cameray sync');
     return;
   }
 
@@ -61,6 +60,7 @@ export const calculatePanoHash = (
   );
   return '!' + [panoId, yawDeg, pitchDeg, zoomFov].join('/');
 };
+
 export const toPanoCamera = (panoHash: string) => {
   Preconditions.checkArgument(panoHash.startsWith('!'));
   const [id, yaw, pitch, zoom] = panoHash.slice(1).split('/');
@@ -78,18 +78,4 @@ export const toPanoCamera = (panoHash: string) => {
     pitch: Number(toRadians(Number(pitch ?? 0)).toFixed(3)),
     zoom: Math.round((1 - (Number(zoom ?? 0) - minMaxFov[0]) / fovRange) * 100),
   };
-};
-
-export const syncPanoCameraToHash = (viewer: ViewerAPI, hash: string) => {
-  const [, panoHash] = hash.split('!');
-  if (!panoHash) {
-    return;
-  }
-  const targetCamera = toPanoCamera('!' + panoHash);
-  if (panoHash === calculatePanoHash(viewer, targetCamera.id)) {
-    return;
-  }
-
-  // TODO a hash isn't enough to fully sync viewer, because hash doesn't contain
-  //  GeoJSON data. should it?
 };

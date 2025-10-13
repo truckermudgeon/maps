@@ -1,6 +1,7 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { IconButton, useColorScheme } from '@mui/joy';
 import { assertExists } from '@truckermudgeon/base/assert';
+import { distance } from '@truckermudgeon/base/geom';
 import { AtsSelectableDlcs } from '@truckermudgeon/map/constants';
 import type { PanoramaMeta } from '@truckermudgeon/map/types';
 import {
@@ -76,8 +77,6 @@ type StreetViewGeoJSON = GeoJSON.FeatureCollection<
 >;
 
 const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
-  console.log('render demo');
-
   const { tileRootUrl, pixelRootUrl } = props;
   const { mode: _maybeMode, systemMode } = useColorScheme();
   const mode = _maybeMode === 'system' ? systemMode : _maybeMode;
@@ -176,7 +175,6 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
         return;
       }
 
-      console.log('sync pano to id', id);
       // search photosphere points
       const matchingPhotoSphere = streetViewGeoJSON.features.find(
         f => f.properties.id === id && f.geometry.type === 'Point',
@@ -304,10 +302,19 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
         const lineFeature = assertExists(
           streetViewGeoJSON.features.find(f => f.properties.id === lineId),
         ) as StreetViewFeature;
-        const nearestPointIndex = nearestPointOnLine(lineFeature, [
-          e.point.x,
-          e.point.y,
-        ]).properties.index;
+        const lngLat = e.lngLat.toArray();
+        const nearestSegmentIndex = nearestPointOnLine(lineFeature, lngLat)
+          .properties.index;
+        const distStart = distance(
+          lineFeature.geometry.coordinates[nearestSegmentIndex],
+          lngLat,
+        );
+        const distEnd = distance(
+          lineFeature.geometry.coordinates[nearestSegmentIndex + 1],
+          lngLat,
+        );
+        const nearestPointIndex =
+          distStart < distEnd ? nearestSegmentIndex : nearestSegmentIndex + 1;
 
         setPanorama(
           lineFeature.properties.panos.map((props, i) => ({

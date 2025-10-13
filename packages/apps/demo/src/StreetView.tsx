@@ -97,7 +97,6 @@ export const StreetView = memo(
     mode?: Mode;
     onClose: () => void;
   }) => {
-    console.log('render street view', props);
     const {
       panorama: panos,
       tileRootUrl,
