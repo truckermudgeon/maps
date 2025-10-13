@@ -1,4 +1,4 @@
-import { ListAlt, Vrpano } from '@mui/icons-material';
+import { ListAlt } from '@mui/icons-material';
 import {
   Card,
   Checkbox,
@@ -205,8 +205,6 @@ export const Legend = (props: LegendProps) => {
                   onSecretsToggle={props.advanced.onSecretsToggle}
                   showContours={props.advanced.showContours}
                   onContoursToggle={props.advanced.onContoursToggle}
-                  showPhotoSpheresUi={props.advanced.showPhotoSpheresUi}
-                  onPhotoSpheresToggleUi={props.advanced.onPhotoSpheresToggleUi}
                 />
               </TabPanel>
             </Tabs>
@@ -323,8 +321,6 @@ interface AdvancedOptionsProps {
   onSecretsToggle: (newValue: boolean) => void;
   showContours: boolean;
   onContoursToggle: (newValue: boolean) => void;
-  showPhotoSpheresUi: boolean;
-  onPhotoSpheresToggleUi: (newValue: boolean) => void;
 }
 const AdvancedOptions = (props: AdvancedOptionsProps) => (
   <Stack mx={2} gap={2}>
@@ -355,25 +351,6 @@ const AdvancedOptions = (props: AdvancedOptionsProps) => (
         <Typography level={'body-xs'} color={'warning'}>
           Note: elevation data for points further away from roads is estimated
           and likely inaccurate.
-        </Typography>
-      </Card>
-      <Card>
-        <Checkbox
-          sx={{
-            flexDirection: 'row-reverse',
-          }}
-          label={'Show Photo Spheres button'}
-          checked={props.showPhotoSpheresUi}
-          onChange={e => props.onPhotoSpheresToggleUi(e.target.checked)}
-        />
-        <Typography level={'body-xs'} color={'neutral'}>
-          Shows a <Vrpano style={{ position: 'relative', top: '0.25em' }} />{' '}
-          button in the upper-right of the app.
-        </Typography>
-        <Typography level={'body-xs'} color={'warning'}>
-          Note: the positions of Photo Spheres were determined with 💩
-          heuristics. The landmarks they're meant to capture aren't always in
-          view.
         </Typography>
       </Card>
     </Stack>

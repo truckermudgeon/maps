@@ -1,5 +1,11 @@
 import CloseIcon from '@mui/icons-material/Close';
-import { IconButton, useColorScheme } from '@mui/joy';
+import {
+  IconButton,
+  Snackbar,
+  Stack,
+  Typography,
+  useColorScheme,
+} from '@mui/joy';
 import { assertExists } from '@truckermudgeon/base/assert';
 import { distance } from '@truckermudgeon/base/geom';
 import { AtsSelectableDlcs } from '@truckermudgeon/map/constants';
@@ -126,7 +132,6 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
     localStorage.getItem('tm-secrets') !== 'hide',
   );
   const [showContours, setShowContours] = useState(false);
-  const [showPhotoSpheresUi, setShowPhotoSpheresUi] = useState(false);
 
   const mapRef = useRef<MapRef>(null);
   const [showStreetViewLayer, setShowStreetViewLayer] = useState(false);
@@ -139,6 +144,10 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
   const [streetViewGeoJSON, setStreetViewGeoJSON] =
     useState<StreetViewGeoJSON | null>(null);
 
+  const [gameMap, setGameMap] = useState<'usa' | 'europe'>(
+    localStorage.getItem('tm-map') === 'europe' ? 'europe' : 'usa',
+  );
+
   useEffect(() => {
     if (!mapRef.current || !streetViewGeoJSON) {
       return;
@@ -149,7 +158,12 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
     syncPanoToHash(window.location.hash.split('!')[1]);
 
     const updateHash = () => (window.location.hash = calculateMapHash(map));
+    const updateGameMap = () =>
+      setGameMap(
+        localStorage.getItem('tm-map') === 'europe' ? 'europe' : 'usa',
+      );
     map.on('moveend', updateHash);
+    map.on('moveend', updateGameMap);
 
     const onHashChange = () => {
       const [mapHash, panoHash] = window.location.hash.split('!');
@@ -161,6 +175,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
     return () => {
       window.removeEventListener('hashchange', onHashChange);
       map.off('moveend', updateHash);
+      map.off('moveend', updateGameMap);
     };
   }, [mapRef.current, streetViewGeoJSON]);
 
@@ -181,8 +196,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
       ) as unknown as PhotoSphereFeature;
       if (matchingPhotoSphere) {
         // HACK
-        if (!showPhotoSpheresUi || !showStreetViewLayer) {
-          setShowPhotoSpheresUi(true);
+        if (!showStreetViewLayer) {
           setShowStreetViewLayer(true);
         }
         setPanorama([
@@ -207,8 +221,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
       ) as StreetViewFeature;
       if (matchingStreetView) {
         // HACK
-        if (!showPhotoSpheresUi || !showStreetViewLayer) {
-          setShowPhotoSpheresUi(true);
+        if (!showStreetViewLayer) {
           setShowStreetViewLayer(true);
         }
         setPanorama(
@@ -240,12 +253,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
   }, []);
 
   useEffect(() => {
-    if (
-      !mapRef.current ||
-      !showStreetViewLayer ||
-      !showPhotoSpheresUi ||
-      !streetViewGeoJSON
-    ) {
+    if (!mapRef.current || !showStreetViewLayer || !streetViewGeoJSON) {
       return;
     }
 
@@ -349,7 +357,6 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
     showStreetViewLayer,
     panorama,
     panoramaPreview,
-    showPhotoSpheresUi,
     streetViewGeoJSON,
   ]);
 
@@ -418,7 +425,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
           enableAutoHide={autoHide}
         />
       )}
-      {showPhotoSpheresUi && showStreetViewLayer && (
+      {showStreetViewLayer && (
         <Source
           id={'street-view'}
           type={'geojson'}
@@ -501,7 +508,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
       </Source>
       <NavigationControl visualizePitch={true} />
       <PhotoSphereControl
-        visible={showPhotoSpheresUi}
+        visible={gameMap === 'usa'}
         onToggle={setShowStreetViewLayer}
       />
       <FullscreenControl containerId={'fsElem'} />
@@ -535,8 +542,6 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
           },
           showContours,
           onContoursToggle: setShowContours,
-          showPhotoSpheresUi,
-          onPhotoSpheresToggleUi: setShowPhotoSpheresUi,
         }}
         atsDlcs={atsDlcsListProps}
       />
@@ -556,6 +561,64 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
         </Popup>
       )}
       <ContextMenu />
+      <Snackbar
+        open={showStreetViewLayer}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'center',
+        }}
+        size={'sm'}
+      >
+        <Stack direction={'column'} gap={1}>
+          <Typography level={'title-md'}>Images</Typography>
+          <Stack direction={'row'} justifyContent={'space-around'}>
+            <Typography level={'body-sm'}>
+              <div
+                style={{
+                  display: 'inline-block',
+                  width: '1.25em',
+                  height: '1em',
+                  marginRight: '1ex',
+                  position: 'relative',
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '50%',
+                    width: '100%',
+                    height: 1,
+                    border: '2px solid #2ab',
+                    outline: '1px solid #aef',
+                  }}
+                />
+              </div>
+              Street View
+            </Typography>
+            <Typography level={'body-sm'} sx={{ position: 'relative' }}>
+              <div
+                style={{
+                  display: 'inline-block',
+                  position: 'relative',
+                  top: 2,
+                  width: '1em',
+                  height: '1em',
+                  marginRight: '1ex',
+                  borderRadius: '50%',
+                  background: '#48f2',
+                  border: '2px solid #48f',
+                }}
+              />
+              Photo Sphere
+            </Typography>
+          </Stack>
+          <Typography level={'body-xs'}>
+            Click highlighted areas to see images.
+            <br />
+            Note: Street Views are currently available for Iowa, only.
+          </Typography>
+        </Stack>
+      </Snackbar>
     </MapGl>
   );
 

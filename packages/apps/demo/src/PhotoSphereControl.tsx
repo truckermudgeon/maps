@@ -40,7 +40,7 @@ export const PhotoSphereControl = (props: PhotoSphereControlProps) => {
             : undefined,
         }}
         variant={active ? 'soft' : 'plain'}
-        title={'Browse Photo Spheres'}
+        title={'Browse Street View images'}
         onClick={togglePhotoSpheres}
       >
         <Vrpano />
