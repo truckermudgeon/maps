@@ -1,6 +1,8 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { IconButton, useColorScheme } from '@mui/joy';
+import { assertExists } from '@truckermudgeon/base/assert';
 import { AtsSelectableDlcs } from '@truckermudgeon/map/constants';
+import type { PanoramaMeta } from '@truckermudgeon/map/types';
 import {
   allIcons,
   BaseMapStyle,
@@ -11,6 +13,7 @@ import {
   SceneryTownSource,
   trafficMapIcons,
 } from '@truckermudgeon/ui';
+import nearestPointOnLine from '@turf/nearest-point-on-line';
 import type { GeoJSON } from 'geojson';
 import type { MapMouseEvent } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -34,19 +37,61 @@ import { mapCenters, OmniBar } from './OmniBar';
 import { PhotoSphereControl } from './PhotoSphereControl';
 import { ShareControl } from './ShareControl';
 import { toStateCodes } from './state-codes';
-import type { PanoramaMeta } from './StreetView';
 import { StreetView } from './StreetView';
 import { PanoramaPreview } from './StreetViewPreview';
+import {
+  calculateMapHash,
+  syncCameraToHash,
+  toPanoCamera,
+} from './url-hash-utils';
 
 const inRange = (n: number, [min, max]: [number, number]) =>
   !isNaN(n) && min <= n && n <= max;
 
+interface PhotoSphereProperties {
+  id: string;
+  yaw: number;
+  label: string;
+  location: string;
+}
+
+interface StreetViewProperties {
+  id: string;
+  location: string;
+  panos: {
+    id: string;
+    label: string;
+  }[];
+}
+
+type PhotoSphereFeature = GeoJSON.Feature<GeoJSON.Point, PhotoSphereProperties>;
+type StreetViewFeature = GeoJSON.Feature<
+  GeoJSON.LineString,
+  StreetViewProperties
+>;
+
+type StreetViewGeoJSON = GeoJSON.FeatureCollection<
+  GeoJSON.Point | GeoJSON.LineString,
+  StreetViewProperties
+>;
+
 const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
+  console.log('render demo');
+
   const { tileRootUrl, pixelRootUrl } = props;
   const { mode: _maybeMode, systemMode } = useColorScheme();
   const mode = _maybeMode === 'system' ? systemMode : _maybeMode;
   const { longitude, latitude } =
     mapCenters[ensureValidMapValue(localStorage.getItem('tm-map'))];
+  if (!window.location.hash) {
+    window.location.hash =
+      '#' +
+      [
+        4, // default zoom
+        Number(latitude.toFixed(3)),
+        Number(longitude.toFixed(3)),
+      ].join('/');
+  }
 
   const [searchParams] = useSearchParams();
   const lat = Number(searchParams.get('mlat') ?? undefined);
@@ -86,14 +131,123 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
 
   const mapRef = useRef<MapRef>(null);
   const [showStreetViewLayer, setShowStreetViewLayer] = useState(false);
-  const [panorama, setPanorama] = useState<PanoramaMeta | null>(null);
+  const [panorama, setPanorama] = useState<PanoramaMeta[] | null>(null);
   const [panoramaPreview, setPanoramaPreview] = useState<PanoramaMeta | null>(
     null,
   );
   const clearPanorama = useCallback(() => setPanorama(null), []);
 
+  const [streetViewGeoJSON, setStreetViewGeoJSON] =
+    useState<StreetViewGeoJSON | null>(null);
+
   useEffect(() => {
-    if (!mapRef.current || !showStreetViewLayer || !showPhotoSpheresUi) {
+    if (!mapRef.current || !streetViewGeoJSON) {
+      return;
+    }
+
+    const map = mapRef.current;
+    syncCameraToHash(map, window.location.hash);
+    syncPanoToHash(window.location.hash.split('!')[1]);
+
+    const updateHash = () => (window.location.hash = calculateMapHash(map));
+    map.on('moveend', updateHash);
+
+    const onHashChange = () => {
+      const [mapHash, panoHash] = window.location.hash.split('!');
+      syncCameraToHash(map, mapHash);
+      syncPanoToHash(panoHash);
+    };
+    window.addEventListener('hashchange', onHashChange);
+
+    return () => {
+      window.removeEventListener('hashchange', onHashChange);
+      map.off('moveend', updateHash);
+    };
+  }, [mapRef.current, streetViewGeoJSON]);
+
+  const syncPanoToHash = useCallback(
+    (panoHash: string | undefined) => {
+      if (streetViewGeoJSON == null || panoHash == null) {
+        return;
+      }
+
+      const { id, yaw, pitch, zoom } = toPanoCamera('!' + panoHash);
+      if (panorama?.some(p => p.id === id)) {
+        return;
+      }
+
+      console.log('sync pano to id', id);
+      // search photosphere points
+      const matchingPhotoSphere = streetViewGeoJSON.features.find(
+        f => f.properties.id === id && f.geometry.type === 'Point',
+      ) as unknown as PhotoSphereFeature;
+      if (matchingPhotoSphere) {
+        // HACK
+        if (!showPhotoSpheresUi || !showStreetViewLayer) {
+          setShowPhotoSpheresUi(true);
+          setShowStreetViewLayer(true);
+        }
+        setPanorama([
+          {
+            id: matchingPhotoSphere.properties.id,
+            location: matchingPhotoSphere.properties.location,
+            point: matchingPhotoSphere.geometry.coordinates as [number, number],
+            label: matchingPhotoSphere.properties.label,
+            yaw,
+            pitch,
+            zoom,
+          },
+        ]);
+        return;
+      }
+
+      // search streetview linestrings
+      const matchingStreetView = streetViewGeoJSON.features.find(
+        f =>
+          f.geometry.type === 'LineString' &&
+          f.properties.panos.some(p => p.id === id),
+      ) as StreetViewFeature;
+      if (matchingStreetView) {
+        // HACK
+        if (!showPhotoSpheresUi || !showStreetViewLayer) {
+          setShowPhotoSpheresUi(true);
+          setShowStreetViewLayer(true);
+        }
+        setPanorama(
+          matchingStreetView.properties.panos.map((props, i) => ({
+            id: props.id,
+            active: props.id === id ? true : undefined,
+            point: matchingStreetView.geometry.coordinates[i] as [
+              number,
+              number,
+            ],
+            label: props.label,
+            location: matchingStreetView.properties.location,
+            yaw,
+            pitch,
+            zoom,
+          })),
+        );
+        return;
+      }
+    },
+    [streetViewGeoJSON, panorama],
+  );
+
+  useEffect(() => {
+    fetch('/street-view.geojson')
+      .then(res => res.json() as Promise<StreetViewGeoJSON>)
+      .then(json => setStreetViewGeoJSON(json))
+      .catch(err => console.error(err));
+  }, []);
+
+  useEffect(() => {
+    if (
+      !mapRef.current ||
+      !showStreetViewLayer ||
+      !showPhotoSpheresUi ||
+      !streetViewGeoJSON
+    ) {
       return;
     }
 
@@ -102,16 +256,21 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
       const panoFeature = map.queryRenderedFeatures(e.point, {
         layers: ['photo-spheres'],
       })[0];
+      const streetFeature = map.queryRenderedFeatures(e.point, {
+        layers: ['sv-streets'],
+      })[0];
       // UI indicator for clicking/hovering a point on the map
-      map.getCanvas().style.cursor = panoFeature ? 'pointer' : '';
+      map.getCanvas().style.cursor =
+        panoFeature || streetFeature ? 'pointer' : '';
       if (panoFeature) {
         if (panoramaPreview?.id !== panoFeature.properties['id']) {
           const pointFeature = panoFeature as unknown as GeoJSON.Feature<
             GeoJSON.Point,
-            { id: string; yaw: number; label: string }
+            { id: string; yaw: number; label: string; location: string }
           >;
           setPanoramaPreview({
             id: pointFeature.properties.id,
+            location: pointFeature.properties.location,
             point: pointFeature.geometry.coordinates as [number, number],
             yaw: pointFeature.properties.yaw,
             label: pointFeature.properties.label,
@@ -128,12 +287,38 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
       const panoFeature = map.queryRenderedFeatures(e.point, {
         layers: ['photo-spheres'],
       })[0];
-      if (!panoFeature || panoFeature.properties['cluster'] === true) {
+      if (panoFeature && panoFeature.properties['cluster'] !== true) {
+        setPanoramaPreview(null);
+        setPanorama(panoramaPreview == null ? null : [panoramaPreview]);
         return;
       }
 
-      setPanoramaPreview(null);
-      setPanorama(panoramaPreview);
+      const streetFeature = map.queryRenderedFeatures(e.point, {
+        layers: ['sv-streets'],
+      })[0];
+      if (streetFeature) {
+        setPanoramaPreview(null);
+        const lineId = (
+          streetFeature as unknown as StreetViewGeoJSON['features'][number]
+        ).properties.id;
+        const lineFeature = assertExists(
+          streetViewGeoJSON.features.find(f => f.properties.id === lineId),
+        ) as StreetViewFeature;
+        const nearestPointIndex = nearestPointOnLine(lineFeature, [
+          e.point.x,
+          e.point.y,
+        ]).properties.index;
+
+        setPanorama(
+          lineFeature.properties.panos.map((props, i) => ({
+            id: props.id,
+            active: i === nearestPointIndex ? true : undefined,
+            point: lineFeature.geometry.coordinates[i] as [number, number],
+            label: props.label,
+            location: lineFeature.properties.location,
+          })),
+        );
+      }
     };
 
     const handleEscape = (e: KeyboardEvent) => {
@@ -158,6 +343,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
     panorama,
     panoramaPreview,
     showPhotoSpheresUi,
+    streetViewGeoJSON,
   ]);
 
   const slippyMap = (
@@ -168,7 +354,6 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
         height: '100svh',
         display: panorama ? 'none' : undefined,
       }}
-      hash={true}
       minZoom={4}
       maxZoom={15}
       mapStyle={defaultMapStyle}
@@ -255,6 +440,25 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
               'circle-stroke-color': '#48f',
             }}
             filter={['in', '$type', 'Point']}
+          />
+          <Layer
+            id={'sv-streets-case'}
+            type={'line'}
+            paint={{
+              'line-color': '#aef',
+              'line-width': 2,
+              'line-gap-width': 4,
+            }}
+            filter={['in', '$type', 'LineString']}
+          />
+          <Layer
+            id={'sv-streets'}
+            type={'line'}
+            paint={{
+              'line-color': '#2ab',
+              'line-width': 4,
+            }}
+            filter={['in', '$type', 'LineString']}
           />
         </Source>
       )}
@@ -358,6 +562,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
             pixelRootUrl={pixelRootUrl}
             panorama={panorama}
             mode={mode}
+            onClose={clearPanorama}
           />
           <IconButton
             sx={{

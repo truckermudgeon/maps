@@ -985,3 +985,17 @@ export interface LabelMeta {
    */
   remark?: string | null;
 }
+
+export interface PanoramaMeta {
+  id: string;
+  location?: string;
+  point: [number, number];
+  label: string;
+  active?: true; // only relevant for arrays of `PanoramaMeta`s
+  // CW radians, with 0 as north, Pi/2 as east, etc.
+  yaw?: number;
+  // radians; 0 is no pitch, Pi/2 is up, -Pi/2 is down.
+  pitch?: number;
+  // [0, 1]
+  zoom?: number;
+}
