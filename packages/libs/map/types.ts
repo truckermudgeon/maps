@@ -1002,3 +1002,14 @@ export interface PanoramaMeta {
   // [0, 1]
   zoom?: number;
 }
+
+export interface StreetViewProperties {
+  id: string;
+  location: string;
+  panos: {
+    id: string;
+    driverId: number;
+    captureDate: string;
+    label: string;
+  }[];
+}
