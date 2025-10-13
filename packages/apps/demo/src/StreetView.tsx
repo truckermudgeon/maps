@@ -26,7 +26,7 @@ import {
 } from '@truckermudgeon/ui';
 import type { Mode } from '@truckermudgeon/ui/colors';
 import type { Marker as MapLibreGLMarker } from 'maplibre-gl';
-import { memo, useRef } from 'react';
+import { memo, useMemo, useRef, useState } from 'react';
 import type { MapRef } from 'react-map-gl/maplibre';
 import MapGl, { Marker } from 'react-map-gl/maplibre';
 import type { TilesAdapterSrc } from 'react-photo-sphere-viewer';
@@ -36,6 +36,17 @@ import {
 } from 'react-photo-sphere-viewer';
 import './StreetView.css';
 import { calculatePanoHash } from './url-hash-utils';
+
+const drivers = [
+  {
+    name: 'Trucker Mudgeon',
+    avatarUrl: 'https://avatars.githubusercontent.com/u/121829201?v=4',
+  },
+  {
+    name: 'San_Sany4',
+    avatarUrl: 'https://avatars.githubusercontent.com/u/3860505?v=4',
+  },
+];
 
 const makeSingleLevelPanoSrc = (pixelRootUrl: string, id: string) => {
   return {
@@ -103,6 +114,12 @@ export const StreetView = memo(
       pixelRootUrl,
       mode = 'light',
     } = props;
+    const [currentPano, setCurrentPano] = useState(
+      panos.find(p => p.active) ?? panos[0],
+    );
+    const [markerYaw, setMarkerYaw] = useState(
+      (((panos.find(p => p.active) ?? panos[0]).yaw ?? 0) / Math.PI) * 180,
+    );
     const mapRef = useRef<MapRef>(null);
     const viewerRef = useRef<ViewerAPI>(null);
     const markerRef = useRef<MapLibreGLMarker>(null);
@@ -129,14 +146,13 @@ export const StreetView = memo(
       }
       const panoHash = calculatePanoHash(viewer, panoId);
       const [mapHash] = window.location.hash.split('!');
+      setCurrentPano(assertExists(panos.find(p => p.id === panoId)));
       window.location.hash = mapHash + panoHash;
     };
     const debouncedHashUpdater = debounce(hashUpdater, 300);
 
     const onPitchYawChanged = (_pitch: number, yaw: number) => {
-      // use `?.` because it's possible for markerRef.current to be undefined when
-      // StreetView is dismissed in the middle of inertial pitch/yaw changes
-      markerRef.current?.setRotation((yaw / Math.PI) * 180);
+      setMarkerYaw((yaw / Math.PI) * 180);
       debouncedHashUpdater();
     };
 
@@ -147,8 +163,12 @@ export const StreetView = memo(
     const onNodeChanged = ({ node }: { node: VirtualTourNode }) => {
       const [lon, lat] = assertExists(node.gps);
       const pos: [number, number] = [lon, lat];
-      assertExists(mapRef.current).panTo(pos);
-      assertExists(markerRef.current).setLngLat(pos);
+      // use `?.` because it's possible for mapRef.current and markerRef.current
+      // to be undefined when StreetView is dismissed in the middle of pitch/yaw
+      // changes
+      mapRef.current?.panTo(pos);
+      markerRef.current?.setLngLat(pos);
+      setCurrentPano(assertExists(panos.find(p => p.id === node.id)));
     };
 
     const onReady = () => {
@@ -163,22 +183,31 @@ export const StreetView = memo(
     const pano = panos[0];
     const mlPano = makeMultiLevelPanoramaFn(pixelRootUrl);
 
-    const tourConfig: VirtualTourPluginConfig = {
-      positionMode: 'gps',
-      nodes: panos.map((p, i) => ({
-        id: p.id,
-        panorama:
-          panos.length === 1
-            ? makeSingleLevelPanoSrc(pixelRootUrl, p.id)
-            : mlPano(p.id),
-        gps: p.point,
-        links: [
-          { nodeId: panos[i - 1]?.id },
-          { nodeId: panos[i + 1]?.id },
-        ].filter(l => l.nodeId != null),
-      })),
-      startNodeId: panos.find(p => p.active)?.id,
-    };
+    const tourConfig: VirtualTourPluginConfig = useMemo(
+      () => ({
+        positionMode: 'gps',
+        nodes: panos.map((p, i) => ({
+          id: p.id,
+          panorama:
+            panos.length === 1
+              ? makeSingleLevelPanoSrc(pixelRootUrl, p.id)
+              : mlPano(p.id),
+          gps: p.point,
+          links: [
+            { nodeId: panos[i - 1]?.id },
+            { nodeId: panos[i + 1]?.id },
+          ].filter(l => l.nodeId != null),
+        })),
+        startNodeId: panos.find(p => p.active)?.id,
+      }),
+      [panos],
+    );
+    if (panos.length >= 3 && panos.some(p => p.loop)) {
+      const firstNode = tourConfig.nodes!.at(0)!;
+      const lastNode = tourConfig.nodes!.at(-1)!;
+      firstNode.links!.push({ nodeId: lastNode.id });
+      lastNode.links!.push({ nodeId: firstNode.id });
+    }
 
     const src = tourConfig.nodes!.at(0)!.panorama as TilesAdapterSrc;
 
@@ -217,43 +246,7 @@ export const StreetView = memo(
             <IconButton onClick={props.onClose}>
               <ArrowBack htmlColor={'#fff8'} />
             </IconButton>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <Typography level={'title-lg'} sx={{ lineHeight: 1 }}>
-                {pano.label}
-                <Typography level={'body-xs'} sx={{ opacity: 0.8 }}>
-                  <br />
-                  {pano.location}
-                </Typography>
-              </Typography>
-              <Stack
-                direction={'row'}
-                alignItems={'center'}
-                gap={1}
-                sx={{
-                  transformOrigin: 'left',
-                  transform: 'scale(0.8)',
-                  mt: -0.5,
-                }}
-              >
-                <Avatar
-                  src={
-                    panos.length === 1
-                      ? 'https://avatars.githubusercontent.com/u/121829201?v=4'
-                      : 'https://avatars.githubusercontent.com/u/3860505?v=4'
-                  }
-                  size={'sm'}
-                />
-                <Typography level={'title-sm'}>
-                  {panos.length === 1 ? 'Trucker Mudgeon' : 'San_Sany4'}
-                </Typography>
-              </Stack>
-              <Divider />
-              <Stack direction={'row'} gap={2}>
-                <Typography level={'body-xs'}>
-                  {panos.length === 1 ? 'August 2025' : 'September 2025'}
-                </Typography>
-              </Stack>
-            </Box>
+            <PanoMeta pano={currentPano} />
           </Stack>
         </Card>
         <div className={'credits'}>
@@ -274,22 +267,22 @@ export const StreetView = memo(
           minZoom={9}
           maxZoom={14}
           maxBounds={[
-            pano.point.map(v => v - 1) as [number, number], // southwest corner (lon, lat)
-            pano.point.map(v => v + 1) as [number, number], // southwest corner (lon, lat)
+            currentPano.point.map(v => v - 1) as [number, number], // southwest corner (lon, lat)
+            currentPano.point.map(v => v + 1) as [number, number], // southwest corner (lon, lat)
           ]}
           mapStyle={defaultMapStyle}
           attributionControl={false}
           initialViewState={{
-            longitude: pano.point[0],
-            latitude: pano.point[1],
+            longitude: currentPano.point[0],
+            latitude: currentPano.point[1],
             zoom: 10,
           }}
         >
           <Marker
             ref={markerRef}
-            longitude={pano.point[0]}
-            latitude={pano.point[1]}
-            rotation={((pano.yaw ?? 0) / Math.PI) * 180}
+            longitude={currentPano.point[0]}
+            latitude={currentPano.point[1]}
+            rotation={markerYaw}
             rotationAlignment={'map'}
           >
             <div className={'street-view-marker'} />
@@ -318,7 +311,38 @@ export const StreetView = memo(
     // HACK so hacky. but it works for now.
     const prev = JSON.stringify(prevProps.panorama.map(p => p.id));
     const next = JSON.stringify(nextProps.panorama.map(p => p.id));
-    console.log('streetview props equal:', prev === next);
     return prev === next;
   },
 );
+
+const PanoMeta = ({ pano }: { pano: PanoramaMeta }) => {
+  const { name, avatarUrl } = drivers[pano.driverId];
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+      <Typography level={'title-lg'} sx={{ lineHeight: 1 }}>
+        {pano.label}
+        <Typography level={'body-xs'} sx={{ opacity: 0.8 }}>
+          <br />
+          {pano.location}
+        </Typography>
+      </Typography>
+      <Stack
+        direction={'row'}
+        alignItems={'center'}
+        gap={1}
+        sx={{
+          transformOrigin: 'left',
+          transform: 'scale(0.8)',
+          mt: -0.5,
+        }}
+      >
+        <Avatar src={avatarUrl} size={'sm'} />
+        <Typography level={'title-sm'}>{name}</Typography>
+      </Stack>
+      <Divider />
+      <Stack direction={'row'} gap={2}>
+        <Typography level={'body-xs'}>{pano.captureDate}</Typography>
+      </Stack>
+    </Box>
+  );
+};

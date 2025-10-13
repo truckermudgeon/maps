@@ -57,6 +57,8 @@ const inRange = (n: number, [min, max]: [number, number]) =>
 
 interface PhotoSphereProperties {
   id: string;
+  driverId: number;
+  captureDate: string;
   yaw: number;
   label: string;
   location: string;
@@ -67,6 +69,8 @@ interface StreetViewProperties {
   location: string;
   panos: {
     id: string;
+    driverId: number;
+    captureDate: string;
     label: string;
   }[];
 }
@@ -202,6 +206,8 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
         setPanorama([
           {
             id: matchingPhotoSphere.properties.id,
+            driverId: matchingPhotoSphere.properties.driverId,
+            captureDate: matchingPhotoSphere.properties.captureDate,
             location: matchingPhotoSphere.properties.location,
             point: matchingPhotoSphere.geometry.coordinates as [number, number],
             label: matchingPhotoSphere.properties.label,
@@ -227,6 +233,8 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
         setPanorama(
           matchingStreetView.properties.panos.map((props, i) => ({
             id: props.id,
+            driverId: props.driverId,
+            captureDate: props.captureDate,
             active: props.id === id ? true : undefined,
             point: matchingStreetView.geometry.coordinates[i] as [
               number,
@@ -272,10 +280,12 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
         if (panoramaPreview?.id !== panoFeature.properties['id']) {
           const pointFeature = panoFeature as unknown as GeoJSON.Feature<
             GeoJSON.Point,
-            { id: string; yaw: number; label: string; location: string }
+            PhotoSphereProperties
           >;
           setPanoramaPreview({
             id: pointFeature.properties.id,
+            driverId: pointFeature.properties.driverId,
+            captureDate: pointFeature.properties.captureDate,
             location: pointFeature.properties.location,
             point: pointFeature.geometry.coordinates as [number, number],
             yaw: pointFeature.properties.yaw,
@@ -327,6 +337,8 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
         setPanorama(
           lineFeature.properties.panos.map((props, i) => ({
             id: props.id,
+            driverId: props.driverId,
+            captureDate: props.captureDate,
             active: i === nearestPointIndex ? true : undefined,
             point: lineFeature.geometry.coordinates[i] as [number, number],
             label: props.label,
@@ -569,11 +581,11 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
         }}
         size={'sm'}
       >
-        <Stack direction={'column'} gap={1}>
+        <Stack direction={'column'} gap={1} width={'100%'}>
           <Typography level={'title-md'}>Images</Typography>
           <Stack direction={'row'} justifyContent={'space-around'}>
             <Typography level={'body-sm'}>
-              <div
+              <span
                 style={{
                   display: 'inline-block',
                   width: '1.25em',
@@ -582,7 +594,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
                   position: 'relative',
                 }}
               >
-                <div
+                <span
                   style={{
                     position: 'absolute',
                     top: '50%',
@@ -592,11 +604,11 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
                     outline: '1px solid #aef',
                   }}
                 />
-              </div>
+              </span>
               Street View
             </Typography>
             <Typography level={'body-sm'} sx={{ position: 'relative' }}>
-              <div
+              <span
                 style={{
                   display: 'inline-block',
                   position: 'relative',
@@ -614,8 +626,6 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
           </Stack>
           <Typography level={'body-xs'}>
             Click highlighted areas to see images.
-            <br />
-            Note: Street Views are currently available for Iowa, only.
           </Typography>
         </Stack>
       </Snackbar>
