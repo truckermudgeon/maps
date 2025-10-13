@@ -9,7 +9,10 @@ import {
 import { assertExists } from '@truckermudgeon/base/assert';
 import { distance } from '@truckermudgeon/base/geom';
 import { AtsSelectableDlcs } from '@truckermudgeon/map/constants';
-import type { PanoramaMeta } from '@truckermudgeon/map/types';
+import type {
+  PanoramaMeta,
+  StreetViewProperties,
+} from '@truckermudgeon/map/types';
 import {
   allIcons,
   BaseMapStyle,
@@ -62,17 +65,6 @@ interface PhotoSphereProperties {
   yaw: number;
   label: string;
   location: string;
-}
-
-interface StreetViewProperties {
-  id: string;
-  location: string;
-  panos: {
-    id: string;
-    driverId: number;
-    captureDate: string;
-    label: string;
-  }[];
 }
 
 type PhotoSphereFeature = GeoJSON.Feature<GeoJSON.Point, PhotoSphereProperties>;
@@ -332,7 +324,12 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
           lngLat,
         );
         const nearestPointIndex =
-          distStart < distEnd ? nearestSegmentIndex : nearestSegmentIndex + 1;
+          distStart < distEnd
+            ? nearestSegmentIndex
+            : // handle "looped" line strings.
+              nearestSegmentIndex < lineFeature.properties.panos.length
+              ? nearestSegmentIndex + 1
+              : 0;
 
         setPanorama(
           lineFeature.properties.panos.map((props, i) => ({
