@@ -221,14 +221,8 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
           setShowStreetViewLayer(true);
         }
         setPanorama(
-          matchingStreetView.properties.panos.map((props, i) => ({
-            ...props,
-            location: matchingStreetView.properties.location,
-            point: matchingStreetView.geometry.coordinates[i] as [
-              number,
-              number,
-            ],
-            active: props.id === id,
+          matchingStreetView.properties.panos.map((pano, i) => ({
+            ...toPanoramaMeta(pano, i, matchingStreetView, pano.id === id),
             yaw,
             pitch,
             zoom,
@@ -323,12 +317,9 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
               : 0;
 
         setPanorama(
-          lineFeature.properties.panos.map((props, i) => ({
-            ...props,
-            location: lineFeature.properties.location,
-            point: lineFeature.geometry.coordinates[i] as [number, number],
-            active: i === nearestPointIndex,
-          })),
+          lineFeature.properties.panos.map((pano, i) =>
+            toPanoramaMeta(pano, i, lineFeature, i === nearestPointIndex),
+          ),
         );
       }
     };
@@ -649,6 +640,22 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
     </>
   );
 };
+
+function toPanoramaMeta(
+  pano: StreetViewProperties['panos'][number],
+  index: number,
+  feature: StreetViewFeature,
+  active: boolean,
+): PanoramaMeta {
+  return {
+    ...pano,
+    location: feature.properties.location,
+    point: feature.geometry.coordinates[index] as [number, number],
+    active,
+    // TODO add dlc guards to street view panos.
+    dlcGuard: 0,
+  };
+}
 
 function ensureValidMapValue(
   maybeMap: string | null | undefined,

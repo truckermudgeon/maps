@@ -33,7 +33,7 @@ import {
   ReactPhotoSphereViewer,
   type ViewerAPI,
 } from 'react-photo-sphere-viewer';
-import { PanoramaMeta } from './Demo';
+import type { PanoramaMeta } from './Demo';
 import './StreetView.css';
 import { calculatePanoHash } from './url-hash-utils';
 
