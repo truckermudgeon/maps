@@ -300,8 +300,9 @@ export const StreetView = memo(
       </>
     );
   },
+  // Without this id-based props check, navigating between pano nodes results
+  // in a re-render that resets the view to the initial pano node.
   (prevProps, nextProps) => {
-    // HACK so hacky. but it works for now.
     const prev = JSON.stringify(prevProps.panorama.map(p => p.id));
     const next = JSON.stringify(nextProps.panorama.map(p => p.id));
     return prev === next;
