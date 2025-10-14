@@ -51,7 +51,7 @@ import { StreetView } from './StreetView';
 import { PanoramaPreview } from './StreetViewPreview';
 import {
   calculateMapHash,
-  syncCameraToHash,
+  syncMapCameraToHash,
   toPanoCamera,
 } from './url-hash-utils';
 
@@ -151,7 +151,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
     }
 
     const map = mapRef.current;
-    syncCameraToHash(map, window.location.hash);
+    syncMapCameraToHash(map, window.location.hash);
     syncPanoToHash(window.location.hash.split('!')[1]);
 
     const updateHash = () => (window.location.hash = calculateMapHash(map));
@@ -164,7 +164,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
 
     const onHashChange = () => {
       const [mapHash, panoHash] = window.location.hash.split('!');
-      syncCameraToHash(map, mapHash);
+      syncMapCameraToHash(map, mapHash);
       syncPanoToHash(panoHash);
     };
     window.addEventListener('hashchange', onHashChange);

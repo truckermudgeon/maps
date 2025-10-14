@@ -20,7 +20,7 @@ export const calculateMapHash = (map: MapRef) => {
 const minMaxFov = [15, 90] as const;
 const fovRange = minMaxFov[1] - minMaxFov[0];
 
-export const toCamera = (hash: string) => {
+export const toMapCamera = (hash: string) => {
   const [zoom, lat, lng, b = '0', p = '0'] = hash.slice(1).split('/');
   // TODO validation. force invalid values to be valid?
   return {
@@ -31,7 +31,7 @@ export const toCamera = (hash: string) => {
   };
 };
 
-export const syncCameraToHash = (map: MapRef, hash: string) => {
+export const syncMapCameraToHash = (map: MapRef, hash: string) => {
   const [mapHash] = hash.split('!');
   if (!mapHash) {
     return;
@@ -40,7 +40,7 @@ export const syncCameraToHash = (map: MapRef, hash: string) => {
     return;
   }
 
-  const targetCamera = toCamera(mapHash);
+  const targetCamera = toMapCamera(mapHash);
   map.setZoom(targetCamera.zoom);
   map.setCenter(targetCamera.lngLat);
   map.setBearing(targetCamera.bearing);

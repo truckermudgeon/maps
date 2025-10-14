@@ -128,22 +128,17 @@ export const StreetView = memo(
       if (!viewer) {
         return;
       }
-      let panoId;
-      if (panos.length > 1) {
-        const tourPlugin = assertExists(
-          viewer.getPlugin<VirtualTourPlugin>(VirtualTourPlugin),
-        );
-        const currentNode =
-          tourPlugin.getCurrentNode() ??
-          tourConfig.nodes?.find(n => n.id === tourConfig.startNodeId);
-        if (!currentNode) {
-          console.log('no node');
-          return;
-        }
-        panoId = currentNode.id;
-      } else {
-        panoId = panos[0].id;
+      const tourPlugin = assertExists(
+        viewer.getPlugin<VirtualTourPlugin>(VirtualTourPlugin),
+      );
+      const currentNode =
+        tourPlugin.getCurrentNode() ??
+        tourConfig.nodes?.find(n => n.id === tourConfig.startNodeId);
+      if (!currentNode) {
+        console.warn('StreetView hashUpdater: could not find node');
+        return;
       }
+      const panoId = currentNode.id;
       const panoHash = calculatePanoHash(viewer, panoId);
       const [mapHash] = window.location.hash.split('!');
       setCurrentPano(assertExists(panos.find(p => p.id === panoId)));
@@ -180,8 +175,11 @@ export const StreetView = memo(
       hashUpdater();
     };
 
-    const pano = panos[0];
-    const mlPano = makeMultiLevelPanoramaFn(pixelRootUrl);
+    // use YPZ from the first pano as the defaults for the photo sphere viewer.
+    const { yaw, pitch, zoom } = panos[0];
+    const singleLevelPanoFor = (id: string) =>
+      makeSingleLevelPanoSrc(pixelRootUrl, id);
+    const multiLevelPanoFor = makeMultiLevelPanoramaFn(pixelRootUrl);
 
     const tourConfig: VirtualTourPluginConfig = useMemo(() => {
       const config = {
@@ -189,9 +187,12 @@ export const StreetView = memo(
         nodes: panos.map((p, i) => ({
           id: p.id,
           panorama:
-            panos.length === 1
-              ? makeSingleLevelPanoSrc(pixelRootUrl, p.id)
-              : mlPano(p.id),
+            // TODO PhotoSphereProperties should have a 'levels' field.
+            // (currently relying on the fact that my photo spheres are too
+            // low-res to create multi-level panos)
+            p.driverId === 0
+              ? singleLevelPanoFor(p.id)
+              : multiLevelPanoFor(p.id),
           gps: p.point,
           links: [
             { nodeId: panos[i - 1]?.id },
@@ -225,9 +226,9 @@ export const StreetView = memo(
           moveInertia={0.9}
           onPositionChange={onPitchYawChanged}
           onZoomChange={onZoomChange}
-          defaultYaw={pano.yaw}
-          defaultPitch={pano.pitch}
-          defaultZoomLvl={pano.zoom}
+          defaultYaw={yaw}
+          defaultPitch={pitch}
+          defaultZoomLvl={zoom}
           onReady={onReady}
         />
         <Card
