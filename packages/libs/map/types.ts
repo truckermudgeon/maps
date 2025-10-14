@@ -1010,6 +1010,7 @@ export interface StreetViewProperties {
     id: string;
     driverId: number;
     captureDate: string;
+    loop?: true;
     label: string;
   }[];
 }

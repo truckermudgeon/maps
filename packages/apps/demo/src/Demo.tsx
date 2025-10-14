@@ -339,6 +339,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
             active: i === nearestPointIndex ? true : undefined,
             point: lineFeature.geometry.coordinates[i] as [number, number],
             label: props.label,
+            loop: props.loop,
             location: lineFeature.properties.location,
           })),
         );
@@ -571,7 +572,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
       )}
       <ContextMenu />
       <Snackbar
-        open={showStreetViewLayer}
+        open={gameMap === 'usa' && showStreetViewLayer}
         anchorOrigin={{
           vertical: 'bottom',
           horizontal: 'center',

@@ -183,9 +183,9 @@ export const StreetView = memo(
     const pano = panos[0];
     const mlPano = makeMultiLevelPanoramaFn(pixelRootUrl);
 
-    const tourConfig: VirtualTourPluginConfig = useMemo(
-      () => ({
-        positionMode: 'gps',
+    const tourConfig: VirtualTourPluginConfig = useMemo(() => {
+      const config = {
+        positionMode: 'gps' as const,
         nodes: panos.map((p, i) => ({
           id: p.id,
           panorama:
@@ -199,15 +199,15 @@ export const StreetView = memo(
           ].filter(l => l.nodeId != null),
         })),
         startNodeId: panos.find(p => p.active)?.id,
-      }),
-      [panos],
-    );
-    if (panos.length >= 3 && panos.some(p => p.loop)) {
-      const firstNode = tourConfig.nodes!.at(0)!;
-      const lastNode = tourConfig.nodes!.at(-1)!;
-      firstNode.links!.push({ nodeId: lastNode.id });
-      lastNode.links!.push({ nodeId: firstNode.id });
-    }
+      };
+      if (panos.length >= 3 && panos.some(p => p.loop)) {
+        const firstNode = config.nodes.at(0)!;
+        const lastNode = config.nodes.at(-1)!;
+        firstNode.links.push({ nodeId: lastNode.id });
+        lastNode.links.push({ nodeId: firstNode.id });
+      }
+      return config;
+    }, [panos]);
 
     const src = tourConfig.nodes!.at(0)!.panorama as TilesAdapterSrc;
 
