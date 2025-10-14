@@ -497,6 +497,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
       <NavigationControl visualizePitch={true} />
       <PhotoSphereControl
         visible={gameMap === 'usa'}
+        active={showStreetViewLayer}
         onToggle={setShowStreetViewLayer}
       />
       <FullscreenControl containerId={'fsElem'} />

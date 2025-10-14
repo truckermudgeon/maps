@@ -1,17 +1,17 @@
 import { Vrpano } from '@mui/icons-material';
 import { IconButton } from '@mui/joy';
 import { assertExists } from '@truckermudgeon/base/assert';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef } from 'react';
 import { useControl } from 'react-map-gl/maplibre';
 
 export interface PhotoSphereControlProps {
   visible: boolean;
+  active: boolean;
   onToggle: (newValue: boolean) => void;
 }
 
 export const PhotoSphereControl = (props: PhotoSphereControlProps) => {
   const ref = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState<boolean>(false);
 
   useControl(() => ({
     onAdd: () => assertExists(ref.current),
@@ -19,9 +19,8 @@ export const PhotoSphereControl = (props: PhotoSphereControlProps) => {
   }));
 
   const togglePhotoSpheres = useCallback(() => {
-    setActive(!active);
-    props.onToggle(!active);
-  }, [active]);
+    props.onToggle(!props.active);
+  }, [props.active]);
 
   return (
     <div
@@ -35,11 +34,11 @@ export const PhotoSphereControl = (props: PhotoSphereControlProps) => {
           minWidth: 0,
           minHeight: 0,
           borderRadius: 0,
-          backgroundColor: active
+          backgroundColor: props.active
             ? 'var(--joy-palette-primary-softHoverBg) !important'
             : undefined,
         }}
-        variant={active ? 'soft' : 'plain'}
+        variant={props.active ? 'soft' : 'plain'}
         title={'Browse Street View images'}
         onClick={togglePhotoSpheres}
       >
