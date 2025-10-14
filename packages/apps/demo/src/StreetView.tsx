@@ -296,13 +296,6 @@ export const StreetView = memo(
             visibleIcons={allIcons}
             dlcs={AtsSelectableDlcs}
           />
-          <GameMapStyle
-            tileRootUrl={tileRootUrl}
-            game={'ets2'}
-            mode={mode}
-            enableIconAutoHide={true}
-            visibleIcons={allIcons}
-          />
         </MapGl>
       </>
     );
