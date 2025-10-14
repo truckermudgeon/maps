@@ -986,31 +986,21 @@ export interface LabelMeta {
   remark?: string | null;
 }
 
-export interface PanoramaMeta {
+export interface PhotoSphereProperties {
   id: string;
   driverId: number;
   captureDate: string;
-  location?: string;
-  point: [number, number];
   label: string;
-  active?: true; // only relevant for arrays of `PanoramaMeta`s
-  loop?: true; // only relevant for arrays of `PanoramaMeta`s
+  location: string;
   // CW radians, with 0 as north, Pi/2 as east, etc.
   yaw?: number;
-  // radians; 0 is no pitch, Pi/2 is up, -Pi/2 is down.
-  pitch?: number;
-  // [0, 1]
-  zoom?: number;
 }
 
 export interface StreetViewProperties {
   id: string;
   location: string;
-  panos: {
-    id: string;
-    driverId: number;
-    captureDate: string;
-    loop?: true;
-    label: string;
-  }[];
+  // If true, then first and last entries of `panos` should be linked in
+  // the street view UI so that `panos` can be traveled through in a loop.
+  loop?: true;
+  panos: Omit<PhotoSphereProperties, 'yaw' | 'location'>[];
 }

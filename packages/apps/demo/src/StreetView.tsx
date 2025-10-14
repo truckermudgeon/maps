@@ -17,7 +17,6 @@ import { VirtualTourPlugin } from '@photo-sphere-viewer/virtual-tour-plugin';
 import '@photo-sphere-viewer/virtual-tour-plugin/index.css';
 import { assertExists } from '@truckermudgeon/base/assert';
 import { AtsSelectableDlcs } from '@truckermudgeon/map/constants';
-import type { PanoramaMeta } from '@truckermudgeon/map/types';
 import {
   allIcons,
   BaseMapStyle,
@@ -34,6 +33,7 @@ import {
   ReactPhotoSphereViewer,
   type ViewerAPI,
 } from 'react-photo-sphere-viewer';
+import { PanoramaMeta } from './Demo';
 import './StreetView.css';
 import { calculatePanoHash } from './url-hash-utils';
 

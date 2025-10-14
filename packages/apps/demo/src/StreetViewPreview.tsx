@@ -1,8 +1,10 @@
 import { normalizeRadians } from '@truckermudgeon/base/geom';
-import type { PanoramaMeta } from '@truckermudgeon/map/types';
 
 export interface PanoramaPreviewProps {
-  panorama: PanoramaMeta;
+  panorama: {
+    id: string;
+    yaw?: number;
+  };
   pixelRootUrl: string;
 }
 

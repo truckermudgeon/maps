@@ -10,7 +10,7 @@ import { assertExists } from '@truckermudgeon/base/assert';
 import { distance } from '@truckermudgeon/base/geom';
 import { AtsSelectableDlcs } from '@truckermudgeon/map/constants';
 import type {
-  PanoramaMeta,
+  PhotoSphereProperties,
   StreetViewProperties,
 } from '@truckermudgeon/map/types';
 import {
@@ -58,25 +58,26 @@ import {
 const inRange = (n: number, [min, max]: [number, number]) =>
   !isNaN(n) && min <= n && n <= max;
 
-interface PhotoSphereProperties {
-  id: string;
-  driverId: number;
-  captureDate: string;
-  yaw: number;
-  label: string;
-  location: string;
-}
-
 type PhotoSphereFeature = GeoJSON.Feature<GeoJSON.Point, PhotoSphereProperties>;
 type StreetViewFeature = GeoJSON.Feature<
   GeoJSON.LineString,
   StreetViewProperties
 >;
 
-type StreetViewGeoJSON = GeoJSON.FeatureCollection<
-  GeoJSON.Point | GeoJSON.LineString,
-  StreetViewProperties
->;
+interface StreetViewGeoJSON {
+  type: 'FeatureCollection';
+  features: (PhotoSphereFeature | StreetViewFeature)[];
+}
+
+export type PanoramaMeta = PhotoSphereProperties & {
+  active: boolean;
+  point: [lng: number, lat: number];
+  // radians; 0 is no pitch, Pi/2 is up, -Pi/2 is down.
+  pitch?: number;
+  // [0, 1]
+  zoom?: number;
+  loop?: true;
+};
 
 const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
   const { tileRootUrl, pixelRootUrl } = props;
@@ -183,26 +184,24 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
 
       const { id, yaw, pitch, zoom } = toPanoCamera('!' + panoHash);
       if (panorama?.some(p => p.id === id)) {
+        // N.B.: changes from manually updating YPZ in browser URL are ignored,
+        // because not ignoring them requires more work than I'm willing to do.
         return;
       }
 
       // search photosphere points
       const matchingPhotoSphere = streetViewGeoJSON.features.find(
         f => f.properties.id === id && f.geometry.type === 'Point',
-      ) as unknown as PhotoSphereFeature;
+      ) as PhotoSphereFeature | undefined;
       if (matchingPhotoSphere) {
-        // HACK
         if (!showStreetViewLayer) {
           setShowStreetViewLayer(true);
         }
         setPanorama([
           {
-            id: matchingPhotoSphere.properties.id,
-            driverId: matchingPhotoSphere.properties.driverId,
-            captureDate: matchingPhotoSphere.properties.captureDate,
-            location: matchingPhotoSphere.properties.location,
+            ...matchingPhotoSphere.properties,
             point: matchingPhotoSphere.geometry.coordinates as [number, number],
-            label: matchingPhotoSphere.properties.label,
+            active: true,
             yaw,
             pitch,
             zoom,
@@ -215,25 +214,21 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
       const matchingStreetView = streetViewGeoJSON.features.find(
         f =>
           f.geometry.type === 'LineString' &&
-          f.properties.panos.some(p => p.id === id),
-      ) as StreetViewFeature;
+          (f as StreetViewFeature).properties.panos.some(p => p.id === id),
+      ) as StreetViewFeature | undefined;
       if (matchingStreetView) {
-        // HACK
         if (!showStreetViewLayer) {
           setShowStreetViewLayer(true);
         }
         setPanorama(
           matchingStreetView.properties.panos.map((props, i) => ({
-            id: props.id,
-            driverId: props.driverId,
-            captureDate: props.captureDate,
-            active: props.id === id ? true : undefined,
+            ...props,
+            location: matchingStreetView.properties.location,
             point: matchingStreetView.geometry.coordinates[i] as [
               number,
               number,
             ],
-            label: props.label,
-            location: matchingStreetView.properties.location,
+            active: props.id === id,
             yaw,
             pitch,
             zoom,
@@ -242,7 +237,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
         return;
       }
     },
-    [streetViewGeoJSON, panorama],
+    [streetViewGeoJSON, panorama, showStreetViewLayer],
   );
 
   useEffect(() => {
@@ -275,13 +270,9 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
             PhotoSphereProperties
           >;
           setPanoramaPreview({
-            id: pointFeature.properties.id,
-            driverId: pointFeature.properties.driverId,
-            captureDate: pointFeature.properties.captureDate,
-            location: pointFeature.properties.location,
+            ...pointFeature.properties,
             point: pointFeature.geometry.coordinates as [number, number],
-            yaw: pointFeature.properties.yaw,
-            label: pointFeature.properties.label,
+            active: true,
           });
         }
       } else {
@@ -333,14 +324,10 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
 
         setPanorama(
           lineFeature.properties.panos.map((props, i) => ({
-            id: props.id,
-            driverId: props.driverId,
-            captureDate: props.captureDate,
-            active: i === nearestPointIndex ? true : undefined,
-            point: lineFeature.geometry.coordinates[i] as [number, number],
-            label: props.label,
-            loop: props.loop,
+            ...props,
             location: lineFeature.properties.location,
+            point: lineFeature.geometry.coordinates[i] as [number, number],
+            active: i === nearestPointIndex,
           })),
         );
       }
