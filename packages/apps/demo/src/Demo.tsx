@@ -1,6 +1,18 @@
 import CloseIcon from '@mui/icons-material/Close';
-import { IconButton, useColorScheme } from '@mui/joy';
+import {
+  IconButton,
+  Snackbar,
+  Stack,
+  Typography,
+  useColorScheme,
+} from '@mui/joy';
+import { assertExists } from '@truckermudgeon/base/assert';
+import { distance } from '@truckermudgeon/base/geom';
 import { AtsSelectableDlcs } from '@truckermudgeon/map/constants';
+import type {
+  PhotoSphereProperties,
+  StreetViewProperties,
+} from '@truckermudgeon/map/types';
 import {
   allIcons,
   BaseMapStyle,
@@ -11,6 +23,7 @@ import {
   SceneryTownSource,
   trafficMapIcons,
 } from '@truckermudgeon/ui';
+import nearestPointOnLine from '@turf/nearest-point-on-line';
 import type { GeoJSON } from 'geojson';
 import type { MapMouseEvent } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -34,12 +47,37 @@ import { mapCenters, OmniBar } from './OmniBar';
 import { PhotoSphereControl } from './PhotoSphereControl';
 import { ShareControl } from './ShareControl';
 import { toStateCodes } from './state-codes';
-import type { PanoramaMeta } from './StreetView';
 import { StreetView } from './StreetView';
 import { PanoramaPreview } from './StreetViewPreview';
+import {
+  calculateMapHash,
+  syncMapCameraToHash,
+  toPanoCamera,
+} from './url-hash-utils';
 
 const inRange = (n: number, [min, max]: [number, number]) =>
   !isNaN(n) && min <= n && n <= max;
+
+type PhotoSphereFeature = GeoJSON.Feature<GeoJSON.Point, PhotoSphereProperties>;
+type StreetViewFeature = GeoJSON.Feature<
+  GeoJSON.LineString,
+  StreetViewProperties
+>;
+
+interface StreetViewGeoJSON {
+  type: 'FeatureCollection';
+  features: (PhotoSphereFeature | StreetViewFeature)[];
+}
+
+export type PanoramaMeta = PhotoSphereProperties & {
+  active: boolean;
+  point: [lng: number, lat: number];
+  // radians; 0 is no pitch, Pi/2 is up, -Pi/2 is down.
+  pitch?: number;
+  // [0, 1]
+  zoom?: number;
+  loop?: true;
+};
 
 const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
   const { tileRootUrl, pixelRootUrl } = props;
@@ -47,6 +85,15 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
   const mode = _maybeMode === 'system' ? systemMode : _maybeMode;
   const { longitude, latitude } =
     mapCenters[ensureValidMapValue(localStorage.getItem('tm-map'))];
+  if (!window.location.hash) {
+    window.location.hash =
+      '#' +
+      [
+        4, // default zoom
+        Number(latitude.toFixed(3)),
+        Number(longitude.toFixed(3)),
+      ].join('/');
+  }
 
   const [searchParams] = useSearchParams();
   const lat = Number(searchParams.get('mlat') ?? undefined);
@@ -82,18 +129,120 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
     localStorage.getItem('tm-secrets') !== 'hide',
   );
   const [showContours, setShowContours] = useState(false);
-  const [showPhotoSpheresUi, setShowPhotoSpheresUi] = useState(false);
 
   const mapRef = useRef<MapRef>(null);
   const [showStreetViewLayer, setShowStreetViewLayer] = useState(false);
-  const [panorama, setPanorama] = useState<PanoramaMeta | null>(null);
+  const [panorama, setPanorama] = useState<PanoramaMeta[] | null>(null);
   const [panoramaPreview, setPanoramaPreview] = useState<PanoramaMeta | null>(
     null,
   );
   const clearPanorama = useCallback(() => setPanorama(null), []);
 
+  const [streetViewGeoJSON, setStreetViewGeoJSON] =
+    useState<StreetViewGeoJSON | null>(null);
+
+  const [gameMap, setGameMap] = useState<'usa' | 'europe'>(
+    localStorage.getItem('tm-map') === 'europe' ? 'europe' : 'usa',
+  );
+
   useEffect(() => {
-    if (!mapRef.current || !showStreetViewLayer || !showPhotoSpheresUi) {
+    if (!mapRef.current || !streetViewGeoJSON) {
+      return;
+    }
+
+    const map = mapRef.current;
+    syncMapCameraToHash(map, window.location.hash);
+    syncPanoToHash(window.location.hash.split('!')[1]);
+
+    const updateHash = () => (window.location.hash = calculateMapHash(map));
+    const updateGameMap = () =>
+      setGameMap(
+        localStorage.getItem('tm-map') === 'europe' ? 'europe' : 'usa',
+      );
+    map.on('moveend', updateHash);
+    map.on('moveend', updateGameMap);
+
+    const onHashChange = () => {
+      const [mapHash, panoHash] = window.location.hash.split('!');
+      syncMapCameraToHash(map, mapHash);
+      syncPanoToHash(panoHash);
+    };
+    window.addEventListener('hashchange', onHashChange);
+
+    return () => {
+      window.removeEventListener('hashchange', onHashChange);
+      map.off('moveend', updateHash);
+      map.off('moveend', updateGameMap);
+    };
+  }, [mapRef.current, streetViewGeoJSON]);
+
+  const syncPanoToHash = useCallback(
+    (panoHash: string | undefined) => {
+      if (streetViewGeoJSON == null || panoHash == null) {
+        return;
+      }
+
+      const { id, yaw, pitch, zoom } = toPanoCamera('!' + panoHash);
+      if (panorama?.some(p => p.id === id)) {
+        // N.B.: changes from manually updating YPZ in browser URL are ignored,
+        // because not ignoring them requires more work than I'm willing to do.
+        return;
+      }
+
+      // search photosphere points
+      const matchingPhotoSphere = streetViewGeoJSON.features.find(
+        f => f.properties.id === id && f.geometry.type === 'Point',
+      ) as PhotoSphereFeature | undefined;
+      if (matchingPhotoSphere) {
+        if (!showStreetViewLayer) {
+          setShowStreetViewLayer(true);
+        }
+        setPanorama([
+          {
+            ...matchingPhotoSphere.properties,
+            point: matchingPhotoSphere.geometry.coordinates as [number, number],
+            active: true,
+            yaw,
+            pitch,
+            zoom,
+          },
+        ]);
+        return;
+      }
+
+      // search streetview linestrings
+      const matchingStreetView = streetViewGeoJSON.features.find(
+        f =>
+          f.geometry.type === 'LineString' &&
+          (f as StreetViewFeature).properties.panos.some(p => p.id === id),
+      ) as StreetViewFeature | undefined;
+      if (matchingStreetView) {
+        if (!showStreetViewLayer) {
+          setShowStreetViewLayer(true);
+        }
+        setPanorama(
+          matchingStreetView.properties.panos.map((pano, i) => ({
+            ...toPanoramaMeta(pano, i, matchingStreetView, pano.id === id),
+            yaw,
+            pitch,
+            zoom,
+          })),
+        );
+        return;
+      }
+    },
+    [streetViewGeoJSON, panorama, showStreetViewLayer],
+  );
+
+  useEffect(() => {
+    fetch('/street-view.geojson')
+      .then(res => res.json() as Promise<StreetViewGeoJSON>)
+      .then(json => setStreetViewGeoJSON(json))
+      .catch(err => console.error(err));
+  }, []);
+
+  useEffect(() => {
+    if (!mapRef.current || !showStreetViewLayer || !streetViewGeoJSON) {
       return;
     }
 
@@ -102,19 +251,22 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
       const panoFeature = map.queryRenderedFeatures(e.point, {
         layers: ['photo-spheres'],
       })[0];
+      const streetFeature = map.queryRenderedFeatures(e.point, {
+        layers: ['sv-streets'],
+      })[0];
       // UI indicator for clicking/hovering a point on the map
-      map.getCanvas().style.cursor = panoFeature ? 'pointer' : '';
+      map.getCanvas().style.cursor =
+        panoFeature || streetFeature ? 'pointer' : '';
       if (panoFeature) {
         if (panoramaPreview?.id !== panoFeature.properties['id']) {
           const pointFeature = panoFeature as unknown as GeoJSON.Feature<
             GeoJSON.Point,
-            { id: string; yaw: number; label: string }
+            PhotoSphereProperties
           >;
           setPanoramaPreview({
-            id: pointFeature.properties.id,
+            ...pointFeature.properties,
             point: pointFeature.geometry.coordinates as [number, number],
-            yaw: pointFeature.properties.yaw,
-            label: pointFeature.properties.label,
+            active: true,
           });
         }
       } else {
@@ -128,12 +280,48 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
       const panoFeature = map.queryRenderedFeatures(e.point, {
         layers: ['photo-spheres'],
       })[0];
-      if (!panoFeature || panoFeature.properties['cluster'] === true) {
+      if (panoFeature && panoFeature.properties['cluster'] !== true) {
+        setPanoramaPreview(null);
+        setPanorama(panoramaPreview == null ? null : [panoramaPreview]);
         return;
       }
 
-      setPanoramaPreview(null);
-      setPanorama(panoramaPreview);
+      const streetFeature = map.queryRenderedFeatures(e.point, {
+        layers: ['sv-streets'],
+      })[0];
+      if (streetFeature) {
+        setPanoramaPreview(null);
+        const lineId = (
+          streetFeature as unknown as StreetViewGeoJSON['features'][number]
+        ).properties.id;
+        const lineFeature = assertExists(
+          streetViewGeoJSON.features.find(f => f.properties.id === lineId),
+        ) as StreetViewFeature;
+        const lngLat = e.lngLat.toArray();
+        const nearestSegmentIndex = nearestPointOnLine(lineFeature, lngLat)
+          .properties.index;
+        const distStart = distance(
+          lineFeature.geometry.coordinates[nearestSegmentIndex],
+          lngLat,
+        );
+        const distEnd = distance(
+          lineFeature.geometry.coordinates[nearestSegmentIndex + 1],
+          lngLat,
+        );
+        const nearestPointIndex =
+          distStart < distEnd
+            ? nearestSegmentIndex
+            : // handle "looped" line strings.
+              nearestSegmentIndex < lineFeature.properties.panos.length
+              ? nearestSegmentIndex + 1
+              : 0;
+
+        setPanorama(
+          lineFeature.properties.panos.map((pano, i) =>
+            toPanoramaMeta(pano, i, lineFeature, i === nearestPointIndex),
+          ),
+        );
+      }
     };
 
     const handleEscape = (e: KeyboardEvent) => {
@@ -157,7 +345,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
     showStreetViewLayer,
     panorama,
     panoramaPreview,
-    showPhotoSpheresUi,
+    streetViewGeoJSON,
   ]);
 
   const slippyMap = (
@@ -168,7 +356,6 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
         height: '100svh',
         display: panorama ? 'none' : undefined,
       }}
-      hash={true}
       minZoom={4}
       maxZoom={15}
       mapStyle={defaultMapStyle}
@@ -226,7 +413,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
           enableAutoHide={autoHide}
         />
       )}
-      {showPhotoSpheresUi && showStreetViewLayer && (
+      {showStreetViewLayer && (
         <Source
           id={'street-view'}
           type={'geojson'}
@@ -255,6 +442,25 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
               'circle-stroke-color': '#48f',
             }}
             filter={['in', '$type', 'Point']}
+          />
+          <Layer
+            id={'sv-streets-case'}
+            type={'line'}
+            paint={{
+              'line-color': '#aef',
+              'line-width': 2,
+              'line-gap-width': 4,
+            }}
+            filter={['in', '$type', 'LineString']}
+          />
+          <Layer
+            id={'sv-streets'}
+            type={'line'}
+            paint={{
+              'line-color': '#2ab',
+              'line-width': 4,
+            }}
+            filter={['in', '$type', 'LineString']}
           />
         </Source>
       )}
@@ -290,7 +496,8 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
       </Source>
       <NavigationControl visualizePitch={true} />
       <PhotoSphereControl
-        visible={showPhotoSpheresUi}
+        visible={gameMap === 'usa'}
+        active={showStreetViewLayer}
         onToggle={setShowStreetViewLayer}
       />
       <FullscreenControl containerId={'fsElem'} />
@@ -324,8 +531,6 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
           },
           showContours,
           onContoursToggle: setShowContours,
-          showPhotoSpheresUi,
-          onPhotoSpheresToggleUi: setShowPhotoSpheresUi,
         }}
         atsDlcs={atsDlcsListProps}
       />
@@ -345,6 +550,62 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
         </Popup>
       )}
       <ContextMenu />
+      <Snackbar
+        open={gameMap === 'usa' && showStreetViewLayer}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'center',
+        }}
+        size={'sm'}
+      >
+        <Stack direction={'column'} gap={1} width={'100%'}>
+          <Typography level={'title-md'}>Images</Typography>
+          <Stack direction={'row'} justifyContent={'space-around'}>
+            <Typography level={'body-sm'}>
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: '1.25em',
+                  height: '1em',
+                  marginRight: '1ex',
+                  position: 'relative',
+                }}
+              >
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '50%',
+                    width: '100%',
+                    height: 1,
+                    border: '2px solid #2ab',
+                    outline: '1px solid #aef',
+                  }}
+                />
+              </span>
+              Street View
+            </Typography>
+            <Typography level={'body-sm'} sx={{ position: 'relative' }}>
+              <span
+                style={{
+                  display: 'inline-block',
+                  position: 'relative',
+                  top: 2,
+                  width: '1em',
+                  height: '1em',
+                  marginRight: '1ex',
+                  borderRadius: '50%',
+                  background: '#48f2',
+                  border: '2px solid #48f',
+                }}
+              />
+              Photo Sphere
+            </Typography>
+          </Stack>
+          <Typography level={'body-xs'}>
+            Click highlighted areas to see images.
+          </Typography>
+        </Stack>
+      </Snackbar>
     </MapGl>
   );
 
@@ -358,6 +619,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
             pixelRootUrl={pixelRootUrl}
             panorama={panorama}
             mode={mode}
+            onClose={clearPanorama}
           />
           <IconButton
             sx={{
@@ -379,6 +641,22 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
     </>
   );
 };
+
+function toPanoramaMeta(
+  pano: StreetViewProperties['panos'][number],
+  index: number,
+  feature: StreetViewFeature,
+  active: boolean,
+): PanoramaMeta {
+  return {
+    ...pano,
+    location: feature.properties.location,
+    point: feature.geometry.coordinates[index] as [number, number],
+    active,
+    // TODO add dlc guards to street view panos.
+    dlcGuard: 0,
+  };
+}
 
 function ensureValidMapValue(
   maybeMap: string | null | undefined,

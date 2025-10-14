@@ -985,3 +985,23 @@ export interface LabelMeta {
    */
   remark?: string | null;
 }
+
+export interface PhotoSphereProperties {
+  id: string;
+  driverId: number;
+  captureDate: string;
+  label: string;
+  location: string;
+  dlcGuard: number;
+  // CW radians, with 0 as north, Pi/2 as east, etc.
+  yaw?: number;
+}
+
+export interface StreetViewProperties {
+  id: string;
+  location: string;
+  // If true, then first and last entries of `panos` should be linked in
+  // the street view UI so that `panos` can be traveled through in a loop.
+  loop?: true;
+  panos: Omit<PhotoSphereProperties, 'yaw' | 'location' | 'dlcGuard'>[];
+}

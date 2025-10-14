@@ -90,7 +90,7 @@ export const OmniBar = (props: OmniBarProps) => {
     };
     map.on('moveend', setClosestMap);
     return () => void map.off('moveend', setClosestMap);
-  }, [map, gameMap, setGameMap]);
+  }, [map, gameMap]);
 
   const onPlaceSelect = React.useCallback(
     (option: PoiOption | null) => {

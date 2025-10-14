@@ -167,6 +167,13 @@ export function toRadians(deg: number) {
   return normalizeRadians((deg * Math.PI) / 180);
 }
 
+/**
+ * Converts radians to degrees, in the range of (-180, 180].
+ */
+export function toDegrees(rad: number) {
+  return (normalizeRadians(rad) * 180) / Math.PI;
+}
+
 function withPositionLike<T>(
   a: PositionLike,
   fn: (x1: number, y1: number) => T,
