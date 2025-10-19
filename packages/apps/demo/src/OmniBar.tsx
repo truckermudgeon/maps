@@ -177,12 +177,13 @@ export const OmniBar = (props: OmniBarProps) => {
     <div
       ref={ref}
       className={'maplibregl-ctrl'}
-      style={{ width: 'calc(100svw - 64px)' }}
+      style={{ width: 'calc(100svw - 64px)', pointerEvents: 'none' }}
     >
       <Stack
         direction={'row'}
         gap={1}
         sx={{
+          pointerEvents: 'auto',
           width: props.reserveRoomForSpecialEventButton
             ? 'calc(100% - 44px)'
             : undefined,
