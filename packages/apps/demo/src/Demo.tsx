@@ -46,6 +46,7 @@ import { ModeControl } from './ModeControl';
 import { mapCenters, OmniBar } from './OmniBar';
 import { PhotoSphereControl } from './PhotoSphereControl';
 import { ShareControl } from './ShareControl';
+import { SpecialEventControl } from './SpecialEventControl';
 import { toStateCodes } from './state-codes';
 import { StreetView } from './StreetView';
 import { PanoramaPreview } from './StreetViewPreview';
@@ -79,8 +80,12 @@ export type PanoramaMeta = PhotoSphereProperties & {
   loop?: true;
 };
 
-const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
-  const { tileRootUrl, pixelRootUrl } = props;
+const Demo = (props: {
+  tileRootUrl: string;
+  pixelRootUrl: string;
+  specialEvent?: 'halloween';
+}) => {
+  const { tileRootUrl, pixelRootUrl, specialEvent } = props;
   const { mode: _maybeMode, systemMode } = useColorScheme();
   const mode = _maybeMode === 'system' ? systemMode : _maybeMode;
   const { longitude, latitude } =
@@ -503,6 +508,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
       <FullscreenControl containerId={'fsElem'} />
       <ShareControl />
       <ModeControl />
+      <SpecialEventControl specialEvent={specialEvent} />
       <AttributionControl
         compact={true}
         style={{
@@ -511,6 +517,7 @@ const Demo = (props: { tileRootUrl: string; pixelRootUrl: string }) => {
         customAttribution="&copy; Trucker Mudgeon. scenery town data by <a href='https://github.com/nautofon/ats-towns'>nautofon</a> and <a href='https://forum.scssoft.com/viewtopic.php?p=1946956#p1946956'>krmarci</a>."
       />
       <OmniBar
+        reserveRoomForSpecialEventButton={specialEvent != null}
         visibleStates={visibleStates}
         visibleStateDlcs={visibleAtsDlcs}
       />

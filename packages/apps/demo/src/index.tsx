@@ -19,7 +19,13 @@ const router = createBrowserRouter(
   createRoutesFromElements([
     <Route
       path="/"
-      element={<Demo tileRootUrl={tileRootUrl} pixelRootUrl={pixelRootUrl} />}
+      element={
+        <Demo
+          tileRootUrl={tileRootUrl}
+          pixelRootUrl={pixelRootUrl}
+          specialEvent={'halloween'}
+        />
+      }
     />,
     <Route path="routes" element={<RoutesDemo tileRootUrl={tileRootUrl} />} />,
     <Route

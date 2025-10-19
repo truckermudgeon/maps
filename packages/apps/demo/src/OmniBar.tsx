@@ -32,7 +32,9 @@ export const mapCenters = {
 interface OmniBarProps {
   visibleStates: Set<StateCode>;
   visibleStateDlcs: Set<AtsSelectableDlc>;
+  reserveRoomForSpecialEventButton?: boolean;
 }
+
 export const OmniBar = (props: OmniBarProps) => {
   const ref = useRef<HTMLDivElement>(null);
   useControl(
@@ -177,7 +179,15 @@ export const OmniBar = (props: OmniBarProps) => {
       className={'maplibregl-ctrl'}
       style={{ width: 'calc(100svw - 64px)' }}
     >
-      <Stack direction={'row'} gap={1}>
+      <Stack
+        direction={'row'}
+        gap={1}
+        sx={{
+          width: props.reserveRoomForSpecialEventButton
+            ? 'calc(100% - 44px)'
+            : undefined,
+        }}
+      >
         <SearchBar
           selected={gameMap.value}
           onMapSelect={onMapSelect}
