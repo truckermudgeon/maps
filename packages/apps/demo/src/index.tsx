@@ -10,6 +10,7 @@ import {
 import Demo from './Demo';
 import './index.css';
 import RoutesDemo from './RoutesDemo';
+import { SpecialEventMap } from './SpecialEventMap';
 import StreetViewDemo from './StreetViewDemo';
 
 const tileRootUrl = import.meta.env.VITE_TILE_ROOT_URL;
@@ -32,6 +33,12 @@ const router = createBrowserRouter(
       path="street-view"
       element={
         <StreetViewDemo tileRootUrl={tileRootUrl} pixelRootUrl={pixelRootUrl} />
+      }
+    />,
+    <Route
+      path="brackenreach"
+      element={
+        <SpecialEventMap tileRootUrl={tileRootUrl} specialEvent={'halloween'} />
       }
     />,
   ]),
