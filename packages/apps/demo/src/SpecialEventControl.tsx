@@ -1,17 +1,33 @@
 import { Box, Link } from '@mui/joy';
 import { assertExists } from '@truckermudgeon/base/assert';
+import { christmasMapStyle, halloweenMapStyle } from '@truckermudgeon/ui';
 import { useRef } from 'react';
 import { useControl } from 'react-map-gl/maplibre';
 
-const eventMeta = {
+export const eventMeta = {
   halloween: {
     emoji: '🎃',
     mapName: 'Brackenreach',
     url: '/brackenreach',
+    centerLngLat: [-120.6266, 18.5926],
+    boundsDelta: 0.5,
+    minZoom: 10,
+    mapStyle: halloweenMapStyle,
+  },
+  christmas: {
+    emoji: '🎄',
+    mapName: 'Winterland',
+    url: '/winterland',
+    centerLngLat: [-123.075, 13.5243],
+    boundsDelta: 1,
+    minZoom: 8,
+    mapStyle: christmasMapStyle,
   },
 };
 
-export const SpecialEventControl = (props: { specialEvent?: 'halloween' }) => {
+export const SpecialEventControl = (props: {
+  specialEvent?: 'halloween' | 'christmas';
+}) => {
   const { specialEvent } = props;
   if (specialEvent == null) {
     return null;

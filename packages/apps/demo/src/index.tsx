@@ -10,13 +10,14 @@ import {
 import Demo from './Demo';
 import './index.css';
 import RoutesDemo from './RoutesDemo';
+import { eventMeta } from './SpecialEventControl';
 import { SpecialEventMap } from './SpecialEventMap';
 import StreetViewDemo from './StreetViewDemo';
 
 const tileRootUrl = import.meta.env.VITE_TILE_ROOT_URL;
 const pixelRootUrl = import.meta.env.VITE_PIXEL_ROOT_URL;
 
-const specialEvent: 'halloween' | undefined = 'halloween';
+const specialEvent: 'halloween' | 'christmas' | undefined = 'christmas';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -45,14 +46,14 @@ const router = createBrowserRouter(
         }
       />,
     ].concat(
-      specialEvent === 'halloween'
+      specialEvent != null
         ? [
             <Route
-              path="brackenreach"
+              path={eventMeta[specialEvent].url}
               element={
                 <SpecialEventMap
                   tileRootUrl={tileRootUrl}
-                  specialEvent={'halloween'}
+                  specialEvent={specialEvent}
                 />
               }
             />,

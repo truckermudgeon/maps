@@ -1,9 +1,5 @@
 import { Box, Link, useColorScheme } from '@mui/joy';
-import {
-  GameMapStyle,
-  halloweenMapStyle,
-  modeColors,
-} from '@truckermudgeon/ui';
+import { GameMapStyle, modeColors } from '@truckermudgeon/ui';
 import Color from 'color';
 import MapGl, {
   FullscreenControl,
@@ -11,10 +7,11 @@ import MapGl, {
   NavigationControl,
 } from 'react-map-gl/maplibre';
 import { ModeControl } from './ModeControl';
+import { eventMeta } from './SpecialEventControl';
 
 export const SpecialEventMap = (props: {
   tileRootUrl: string;
-  specialEvent: 'halloween';
+  specialEvent: 'halloween' | 'christmas';
 }) => {
   const { tileRootUrl, specialEvent } = props;
   const { mode: _maybeMode, systemMode } = useColorScheme();
@@ -25,25 +22,26 @@ export const SpecialEventMap = (props: {
   const worldEmoji = map === 'usa' ? '🌎' : '🌍';
 
   const colors = modeColors[mode];
-  const [longitude, latitude] = [-120.6266, 18.5926];
+  const meta = eventMeta[specialEvent];
+  const [longitude, latitude] = meta.centerLngLat;
   return (
     <MapGl
       style={{
         width: '100svw',
         height: '100svh',
       }}
-      minZoom={10}
+      minZoom={meta.minZoom}
       maxZoom={15}
-      mapStyle={halloweenMapStyle}
+      mapStyle={meta.mapStyle}
       attributionControl={false}
       initialViewState={{
         longitude,
         latitude,
-        zoom: 10.5,
+        zoom: meta.minZoom + 0.5,
       }}
       maxBounds={[
-        [longitude - 0.5, latitude - 0.5],
-        [longitude + 0.5, latitude + 0.5],
+        [longitude - meta.boundsDelta, latitude - meta.boundsDelta],
+        [longitude + meta.boundsDelta, latitude + meta.boundsDelta],
       ]}
     >
       <Layer

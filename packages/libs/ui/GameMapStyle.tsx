@@ -72,7 +72,7 @@ export type GameMapStyleProps = {
   showSecrets?: boolean;
   /** Defaults to 'light' */
   mode?: Mode;
-  specialEvent?: 'halloween';
+  specialEvent?: 'halloween' | 'christmas';
 } & (
   | {
       game: 'ats';
@@ -805,7 +805,7 @@ const FootprintsSource = ({
   tileRootUrl: string;
   color: string;
   mode: Mode;
-  specialEvent?: 'halloween';
+  specialEvent?: 'halloween' | 'christmas';
 }) => (
   <Source
     id={game + 'footprints'}

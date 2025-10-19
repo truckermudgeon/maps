@@ -83,7 +83,7 @@ export type PanoramaMeta = PhotoSphereProperties & {
 const Demo = (props: {
   tileRootUrl: string;
   pixelRootUrl: string;
-  specialEvent?: 'halloween';
+  specialEvent?: 'halloween' | 'christmas';
 }) => {
   const { tileRootUrl, pixelRootUrl, specialEvent } = props;
   const { mode: _maybeMode, systemMode } = useColorScheme();

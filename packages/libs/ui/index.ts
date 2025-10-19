@@ -59,3 +59,11 @@ export const halloweenMapStyle = new Proxy<StyleSpecification>(
   },
   styleSpecificationProxyHandler,
 );
+
+export const christmasMapStyle = new Proxy<StyleSpecification>(
+  {
+    ...baseMapStyle,
+    sprite: '/christmas-sprites',
+  },
+  styleSpecificationProxyHandler,
+);
