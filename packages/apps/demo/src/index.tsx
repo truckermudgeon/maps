@@ -16,32 +16,50 @@ import StreetViewDemo from './StreetViewDemo';
 const tileRootUrl = import.meta.env.VITE_TILE_ROOT_URL;
 const pixelRootUrl = import.meta.env.VITE_PIXEL_ROOT_URL;
 
+const specialEvent: 'halloween' | undefined = 'halloween';
+
 const router = createBrowserRouter(
-  createRoutesFromElements([
-    <Route
-      path="/"
-      element={
-        <Demo
-          tileRootUrl={tileRootUrl}
-          pixelRootUrl={pixelRootUrl}
-          specialEvent={'halloween'}
-        />
-      }
-    />,
-    <Route path="routes" element={<RoutesDemo tileRootUrl={tileRootUrl} />} />,
-    <Route
-      path="street-view"
-      element={
-        <StreetViewDemo tileRootUrl={tileRootUrl} pixelRootUrl={pixelRootUrl} />
-      }
-    />,
-    <Route
-      path="brackenreach"
-      element={
-        <SpecialEventMap tileRootUrl={tileRootUrl} specialEvent={'halloween'} />
-      }
-    />,
-  ]),
+  createRoutesFromElements(
+    [
+      <Route
+        path="/"
+        element={
+          <Demo
+            tileRootUrl={tileRootUrl}
+            pixelRootUrl={pixelRootUrl}
+            specialEvent={specialEvent}
+          />
+        }
+      />,
+      <Route
+        path="routes"
+        element={<RoutesDemo tileRootUrl={tileRootUrl} />}
+      />,
+      <Route
+        path="street-view"
+        element={
+          <StreetViewDemo
+            tileRootUrl={tileRootUrl}
+            pixelRootUrl={pixelRootUrl}
+          />
+        }
+      />,
+    ].concat(
+      specialEvent === 'halloween'
+        ? [
+            <Route
+              path="brackenreach"
+              element={
+                <SpecialEventMap
+                  tileRootUrl={tileRootUrl}
+                  specialEvent={'halloween'}
+                />
+              }
+            />,
+          ]
+        : [],
+    ),
+  ),
 );
 
 const theme = extendTheme({
