@@ -10,7 +10,8 @@ import {
 import Demo from './Demo';
 import './index.css';
 import RoutesDemo from './RoutesDemo';
-import { eventMeta, SpecialEvent } from './SpecialEventControl';
+import type { SpecialEvent } from './SpecialEventControl';
+import { eventMeta } from './SpecialEventControl';
 import { SpecialEventMap } from './SpecialEventMap';
 import StreetViewDemo from './StreetViewDemo';
 
