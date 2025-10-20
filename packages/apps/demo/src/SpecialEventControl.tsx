@@ -1,9 +1,13 @@
 import { Box, Link } from '@mui/joy';
 import { assertExists } from '@truckermudgeon/base/assert';
 import { christmasMapStyle, halloweenMapStyle } from '@truckermudgeon/ui';
-import { StyleSpecification } from 'maplibre-gl';
+import type { StyleSpecification } from 'maplibre-gl';
 import { useRef } from 'react';
 import { useControl } from 'react-map-gl/maplibre';
+
+// TODO since `ui` components know about 'halloween' and 'christmas', then
+//  special events should be first-class concepts (and these event-related
+//  types should be moved to `lib/maps`, _and_ `parser` should handle them).
 
 export type SpecialEvent = 'halloween' | 'christmas';
 
