@@ -80,7 +80,7 @@ const SwitchControl = (props: { emoji: string; onClick: () => void }) => {
   }));
 
   return (
-    <div ref={ref} style={{ position: 'absolute', top: 10, right: 52 }}>
+    <div ref={ref} style={{ position: 'absolute', top: 0, right: 44 }}>
       <div className={'maplibregl-ctrl maplibregl-ctrl-group'}>
         <Link
           component={'button'}
