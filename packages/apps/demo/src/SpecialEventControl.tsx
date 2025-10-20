@@ -1,10 +1,23 @@
 import { Box, Link } from '@mui/joy';
 import { assertExists } from '@truckermudgeon/base/assert';
 import { christmasMapStyle, halloweenMapStyle } from '@truckermudgeon/ui';
+import { StyleSpecification } from 'maplibre-gl';
 import { useRef } from 'react';
 import { useControl } from 'react-map-gl/maplibre';
 
-export const eventMeta = {
+export type SpecialEvent = 'halloween' | 'christmas';
+
+export interface SpecialEventMeta {
+  emoji: string;
+  mapName: string;
+  url: `/${string}`;
+  centerLngLat: [number, number];
+  boundsDelta: number;
+  minZoom: number;
+  mapStyle: StyleSpecification;
+}
+
+export const eventMeta: Record<SpecialEvent, SpecialEventMeta> = {
   halloween: {
     emoji: '🎃',
     mapName: 'Brackenreach',

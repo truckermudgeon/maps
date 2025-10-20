@@ -2,15 +2,15 @@ import { CssBaseline, CssVarsProvider, extendTheme } from '@mui/joy';
 import * as React from 'react';
 import { createRoot } from 'react-dom/client';
 import {
-  Route,
-  RouterProvider,
   createBrowserRouter,
   createRoutesFromElements,
+  Route,
+  RouterProvider,
 } from 'react-router-dom';
 import Demo from './Demo';
 import './index.css';
 import RoutesDemo from './RoutesDemo';
-import { eventMeta } from './SpecialEventControl';
+import { eventMeta, SpecialEvent } from './SpecialEventControl';
 import { SpecialEventMap } from './SpecialEventMap';
 import StreetViewDemo from './StreetViewDemo';
 
@@ -46,19 +46,17 @@ const router = createBrowserRouter(
         }
       />,
     ].concat(
-      specialEvent != null
-        ? [
-            <Route
-              path={eventMeta[specialEvent].url}
-              element={
-                <SpecialEventMap
-                  tileRootUrl={tileRootUrl}
-                  specialEvent={specialEvent}
-                />
-              }
-            />,
-          ]
-        : [],
+      Object.entries(eventMeta).map(([key, meta]) => (
+        <Route
+          path={meta.url}
+          element={
+            <SpecialEventMap
+              tileRootUrl={tileRootUrl}
+              specialEvent={key as SpecialEvent}
+            />
+          }
+        />
+      )),
     ),
   ),
 );
