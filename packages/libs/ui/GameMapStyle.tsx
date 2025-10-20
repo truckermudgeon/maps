@@ -72,6 +72,7 @@ export type GameMapStyleProps = {
   showSecrets?: boolean;
   /** Defaults to 'light' */
   mode?: Mode;
+  specialEvent?: 'halloween' | 'christmas';
 } & (
   | {
       game: 'ats';
@@ -93,9 +94,11 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
     enableIconAutoHide = true,
     showSecrets = true,
     mode = 'light',
+    specialEvent,
   } = props;
-  const dlcGuardFilter =
-    game === 'ats'
+  const dlcGuardFilter = specialEvent
+    ? true
+    : game === 'ats'
       ? createDlcGuardFilter(game, props.dlcs ?? AtsSelectableDlcs)
       : createDlcGuardFilter(game, props.dlcs ?? Ets2SelectableDlcs);
   const secretFilter: ExpressionSpecification | true = showSecrets
@@ -171,7 +174,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
     <Source
       id={game}
       type={'vector'}
-      url={`pmtiles://${tileRootUrl}/${game}.pmtiles`}
+      url={`pmtiles://${tileRootUrl}/${specialEvent ?? game}.pmtiles`}
     >
       <Layer
         id={game + 'mapAreas'}
@@ -217,6 +220,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
       />
       <FootprintsSource
         game={game}
+        specialEvent={specialEvent}
         tileRootUrl={tileRootUrl}
         mode={mode}
         color={colors.footprint}
@@ -795,16 +799,18 @@ const FootprintsSource = ({
   tileRootUrl,
   color,
   mode,
+  specialEvent,
 }: {
   game: 'ats' | 'ets2';
   tileRootUrl: string;
   color: string;
   mode: Mode;
+  specialEvent?: 'halloween' | 'christmas';
 }) => (
   <Source
     id={game + 'footprints'}
     type={'vector'}
-    url={`pmtiles://${tileRootUrl}/${game}-footprints.pmtiles`}
+    url={`pmtiles://${tileRootUrl}/${specialEvent ?? game}-footprints.pmtiles`}
   >
     <Layer
       id={game + 'footprints'}

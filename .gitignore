@@ -8,7 +8,7 @@ coverage
 packages/apps/*/public/*.geojson
 packages/apps/*/public/*.json
 packages/apps/*/public/*.pmtiles
-packages/apps/*/public/sprites*.*
+packages/apps/*/public/*sprites*.*
 
 .DS_Store
 npm-debug.log*
