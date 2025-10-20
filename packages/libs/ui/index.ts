@@ -22,8 +22,8 @@ const baseMapStyle: StyleSpecification = {
   // free font glyphs, required when adding text-fields.
   // https://github.com/openmaptiles/fonts
   glyphs: 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf',
-  // sources and layers are empty because they're declared as child
-  // components below.
+  // sources and layers are empty because they're declared as children
+  // of consuming `MapGl` components.
   sources: {},
   layers: [],
 };

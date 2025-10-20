@@ -1,10 +1,13 @@
 import { Box, Link, useColorScheme } from '@mui/joy';
+import { assertExists } from '@truckermudgeon/base/assert';
 import { GameMapStyle, modeColors } from '@truckermudgeon/ui';
 import Color from 'color';
+import { useRef } from 'react';
 import MapGl, {
   FullscreenControl,
   Layer,
   NavigationControl,
+  useControl,
 } from 'react-map-gl/maplibre';
 import { ModeControl } from './ModeControl';
 import { eventMeta } from './SpecialEventControl';
@@ -14,9 +17,8 @@ export const SpecialEventMap = (props: {
   specialEvent: 'halloween' | 'christmas';
 }) => {
   const { tileRootUrl, specialEvent } = props;
-  const { mode: _maybeMode, systemMode } = useColorScheme();
-  const mode =
-    _maybeMode === 'system' ? (systemMode ?? 'light') : (_maybeMode ?? 'light');
+  const { mode: _maybeMode = 'light', systemMode = 'light' } = useColorScheme();
+  const mode = _maybeMode === 'system' ? systemMode : _maybeMode;
 
   const map = ensureValidMapValue(localStorage.getItem('tm-map'));
   const worldEmoji = map === 'usa' ? '🌎' : '🌍';
@@ -62,23 +64,38 @@ export const SpecialEventMap = (props: {
       <NavigationControl visualizePitch={true} />
       <FullscreenControl containerId={'fsElem'} />
       <ModeControl />
-      <div style={{ position: 'absolute', top: 10, right: 52 }}>
-        <div className={'maplibregl-ctrl maplibregl-ctrl-group'}>
-          <Link
-            component={'button'}
-            underline={'none'}
-            title={`Switch to ATS/ETS2 Map`}
-            justifyContent={'center'}
-            onClick={() => (window.location.href = '/')}
-            sx={{
-              fontSize: '1.75em',
-            }}
-          >
-            <Box>{worldEmoji}</Box>
-          </Link>
-        </div>
-      </div>
+      <SwitchControl
+        emoji={worldEmoji}
+        onClick={() => (window.location.href = '/')}
+      />
     </MapGl>
+  );
+};
+
+const SwitchControl = (props: { emoji: string; onClick: () => void }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  useControl(() => ({
+    onAdd: () => assertExists(ref.current),
+    onRemove: () => assertExists(ref.current).remove(),
+  }));
+
+  return (
+    <div ref={ref} style={{ position: 'absolute', top: 10, right: 52 }}>
+      <div className={'maplibregl-ctrl maplibregl-ctrl-group'}>
+        <Link
+          component={'button'}
+          underline={'none'}
+          title={`Switch to ATS/ETS2 Map`}
+          justifyContent={'center'}
+          onClick={() => (window.location.href = '/')}
+          sx={{
+            fontSize: '1.75em',
+          }}
+        >
+          <Box>{props.emoji}</Box>
+        </Link>
+      </div>
+    </div>
   );
 };
 
