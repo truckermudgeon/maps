@@ -91,13 +91,16 @@ const Demo = (props: {
   const { longitude, latitude } =
     mapCenters[ensureValidMapValue(localStorage.getItem('tm-map'))];
   if (!window.location.hash) {
-    window.location.hash =
+    window.history.replaceState(
+      window.history.state,
+      '',
       '#' +
-      [
-        4, // default zoom
-        Number(latitude.toFixed(3)),
-        Number(longitude.toFixed(3)),
-      ].join('/');
+        [
+          4, // default zoom
+          Number(latitude.toFixed(3)),
+          Number(longitude.toFixed(3)),
+        ].join('/'),
+    );
   }
 
   const [searchParams] = useSearchParams();
@@ -159,7 +162,12 @@ const Demo = (props: {
     syncMapCameraToHash(map, window.location.hash);
     syncPanoToHash(window.location.hash.split('!')[1]);
 
-    const updateHash = () => (window.location.hash = calculateMapHash(map));
+    const updateHash = () =>
+      window.history.replaceState(
+        window.history.state,
+        '',
+        calculateMapHash(map),
+      );
     const updateGameMap = () =>
       setGameMap(
         localStorage.getItem('tm-map') === 'europe' ? 'europe' : 'usa',

@@ -142,7 +142,7 @@ export const StreetView = memo(
       const panoHash = calculatePanoHash(viewer, panoId);
       const [mapHash] = window.location.hash.split('!');
       setCurrentPano(assertExists(panos.find(p => p.id === panoId)));
-      window.location.hash = mapHash + panoHash;
+      window.history.replaceState(window.history.state, '', mapHash + panoHash);
     };
     const debouncedHashUpdater = debounce(hashUpdater, 300);
 
