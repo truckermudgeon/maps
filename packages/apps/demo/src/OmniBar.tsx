@@ -110,17 +110,17 @@ export const OmniBar = (props: OmniBarProps) => {
         const zoom = e.target.getZoom();
         const bearing = Number(e.target.getBearing().toFixed(1));
         const pitch = Math.round(e.target.getPitch());
+        let hash;
         if (pitch) {
-          window.location.hash = `${zoom}/${lat.toFixed(3)}/${lng.toFixed(
+          hash = `#${zoom}/${lat.toFixed(3)}/${lng.toFixed(
             3,
           )}/${bearing}/${pitch}`;
         } else if (bearing) {
-          window.location.hash = `${zoom}/${lat.toFixed(3)}/${lng.toFixed(
-            3,
-          )}/${bearing}`;
+          hash = `#${zoom}/${lat.toFixed(3)}/${lng.toFixed(3)}/${bearing}`;
         } else {
-          window.location.hash = `${zoom}/${lat.toFixed(3)}/${lng.toFixed(3)}`;
+          hash = `#${zoom}/${lat.toFixed(3)}/${lng.toFixed(3)}`;
         }
+        window.history.replaceState(window.history.state, '', hash);
       });
     },
     [map],
