@@ -100,8 +100,8 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
     if (!/^(city|country|company|ferry)\./.test(f) || !f.endsWith('.sii')) {
       continue;
     }
-    if (/\b(?:x_land|x_choco|xmas2023)\b/.test(f)) {
-      continue; // skip Winterland community event
+    if (/\b(?:x_land|x_choco|xmas2023|halloween)\b/.test(f)) {
+      continue; // skip Winterland and Halloween community event
     }
     const includePaths = parseIncludeOnlySii(`def/${f}`, entries);
     for (const path of includePaths) {
@@ -111,6 +111,12 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
         const partialCountry = processCountryJson(
           convertSiiToJson(path, entries, CountrySiiSchema),
         );
+
+        if (partialCountry?.token === 'halloween') {
+          logger.info('Skipping seasonal country: halloween');
+          continue; // skip Halloween community event
+        }
+        
         if (partialCountry) {
           const truckSpeedLimits = processSpeedLimitJson(
             convertSiiToJson(
