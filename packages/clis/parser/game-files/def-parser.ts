@@ -100,30 +100,9 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
     if (!/^(city|country|company|ferry)\./.test(f) || !f.endsWith('.sii')) {
       continue;
     }
-    if (/\b(?:x_land|x_choco|xmas2023|halloween)\b/.test(f)) {
-      continue; // skip Winterland community event
+    if (/\b(?:xmas2023|mod_halloween_2025_event)\b/.test(f)) {
+      continue; // skip Winterland, Halloween community events
     }
-    const includePaths = parseIncludeOnlySii(`def/${f}`, entries);
-    for (const path of includePaths) {
-      const fileObj = entries.files.get(path);
-      if (!fileObj) {
-        logger.warn('file missing while iterating includes:', path);
-        continue;
-      }
-      const rawText = fileObj.read().toString();
-
-      // PERMANENTLY SKIP halloween country and city tokens before parsing/validation
-      if (
-        /\bcity\.h_bracken\b/i.test(rawText) ||
-        /\bcountry\.data\.halloween\b/i.test(rawText) ||
-        /\bcountry\s*:\s*halloween\b/i.test(rawText) ||
-        /\/country\/halloween(\.sui|\/|$)/i.test(path) ||
-        /\/city\/h_bracken(\.sui|\/|$)/i.test(path)
-      ) {
-        logger.info(`Skipping seasonal file: ${path}...`);
-        continue;
-      }
-
       if (f.startsWith('city.')) {
         processAndAdd(path, CitySiiSchema, processCityJson, cities);
       } else if (f.startsWith('country.')) {
