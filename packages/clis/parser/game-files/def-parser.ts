@@ -103,6 +103,8 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
     if (/\b(?:xmas2023|mod_halloween_2025_event)\b/.test(f)) {
       continue; // skip Winterland, Halloween community events
     }
+    const includePaths = parseIncludeOnlySii(`def/${f}`, entries);
+    for (const path of includePaths) {
       if (f.startsWith('city.')) {
         processAndAdd(path, CitySiiSchema, processCityJson, cities);
       } else if (f.startsWith('country.')) {
