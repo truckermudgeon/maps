@@ -100,8 +100,8 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
     if (!/^(city|country|company|ferry)\./.test(f) || !f.endsWith('.sii')) {
       continue;
     }
-    if (/\b(?:x_land|x_choco|xmas2023)\b/.test(f)) {
-      continue; // skip Winterland community event
+    if (/\b(?:xmas2023|mod_halloween_2025_event)\b/.test(f)) {
+      continue; // skip Winterland, Halloween community events
     }
     const includePaths = parseIncludeOnlySii(`def/${f}`, entries);
     for (const path of includePaths) {
