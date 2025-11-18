@@ -1,4 +1,5 @@
 import { normalizeRadians } from '@truckermudgeon/base/geom';
+import { Preconditions } from '@truckermudgeon/base/precon';
 import {
   ItemType,
   MapAreaColorUtils,
@@ -527,10 +528,7 @@ const SectorNode = new r.Struct({
   rot: float4,
   backwardItemUid: uint64le,
   forwardItemUid: uint64le,
-  flags: r.uint8,
-  forwardCountryId: r.uint8,
-  backwardCountryId: r.uint8,
-  flags2: r.uint8,
+  flags: r.uint32le,
 });
 type SectorNode = BaseOf<typeof SectorNode>;
 
@@ -565,7 +563,7 @@ export function parseSector(
   ignoreNodeUids: ReadonlySet<bigint>,
 ) {
   const version = buffer.readUint32LE();
-  if (version !== 903) {
+  if (version !== 905) {
     if (!versionWarnings.has(version)) {
       logger.warn('unknown .base file version', version);
       logger.warn('errors may come up, and parse results may be inaccurate.');
@@ -883,7 +881,20 @@ function toNode(rawNode: SectorNode): Node {
     rotationQuat: rawNode.rot,
     forwardItemUid: rawNode.forwardItemUid,
     backwardItemUid: rawNode.backwardItemUid,
-    forwardCountryId: rawNode.forwardCountryId,
-    backwardCountryId: rawNode.backwardCountryId,
+    forwardCountryId: (rawNode.flags & 0x00_00_ff_00) >> 8,
+    backwardCountryId: (rawNode.flags & 0x00_ff_00_00) >> 16,
+    // playerVehicleTypeChange: isBitSetU32(rawNode.flags, 4) ? true : undefined,
+    // forwardTruck: isBitSetU32(rawNode.flags, 5),
+    // forwardBus: isBitSetU32(rawNode.flags, 6),
+    // forwardCar: isBitSetU32(rawNode.flags, 7),
+    // backwardTruck: isBitSetU32(rawNode.flags, 28),
+    // backwardBus: isBitSetU32(rawNode.flags, 29),
+    // backwardCar: isBitSetU32(rawNode.flags, 30),
   };
+}
+
+function isBitSetU32(flags: number, bitIndex: number): boolean {
+  Preconditions.checkArgument(0 <= bitIndex && bitIndex < 32);
+  Preconditions.checkArgument(flags === flags >>> 0);
+  return (flags & (1 << bitIndex)) !== 0;
 }
