@@ -509,10 +509,15 @@ function processPrefabJson(
       // Looks like there are spawn/no-spawn variants of prefabs that
       // reference the same pmg. Strip out the "_spawn" suffix when searching
       // for the associated pmg.
-      const pmgPath = path.replace(/(_spawn)?\.ppd$/, '.pmg');
+      const pmgPath = path.replace(
+        /(_spawn|_roof_trigger_rt|_rt|_trigger)?\.ppd$/,
+        '.pmg',
+      );
       const pmgFile = entries.files.get(pmgPath);
       if (!pmgFile) {
-        logger.warn(`could not find pmg file ${pmgPath} for ${token}`);
+        logger.warn(
+          `could not find pmg file ${pmgPath} for ${token} (${path})`,
+        );
       } else {
         //const pmg = parseModelPmg(pmgFile.read());
         //if (pmg) {
