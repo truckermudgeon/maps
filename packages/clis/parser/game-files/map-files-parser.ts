@@ -723,7 +723,7 @@ function postProcess(
         const pos = { x, y };
         const ferry = assertExists(defData.ferries.get(item.token));
         const label = ferry.nameLocalized
-          ? assertExists(l10n.get(ferry.nameLocalized.replaceAll('@', '')))
+          ? (l10n.get(ferry.nameLocalized.replaceAll('@', '')) ?? ferry.name)
           : ferry.name;
         pois.push({
           ...pos,
@@ -1018,13 +1018,18 @@ function toDefData(
 function createWithLocalizedName(l10n: Map<string, string>) {
   return <T extends { name: string; nameLocalized: string | undefined }>(
     o: T,
-  ) => ({
-    ...o,
-    nameLocalized: undefined,
-    name: o.nameLocalized
-      ? assertExists(l10n.get(o.nameLocalized.replaceAll('@', '')))
-      : o.name,
-  });
+  ) => {
+    if (o.nameLocalized && !l10n.has(o.nameLocalized.replaceAll('@', ''))) {
+      logger.warn('no localized name for', o.nameLocalized, `(${o.name})`);
+    }
+    return {
+      ...o,
+      nameLocalized: undefined,
+      name: o.nameLocalized
+        ? (l10n.get(o.nameLocalized.replaceAll('@', '')) ?? o.name)
+        : o.name,
+    };
+  };
 }
 
 function valuesWithTokens<V>(map: Map<string, V>): (V & { token: string })[] {
