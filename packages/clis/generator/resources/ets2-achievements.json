@@ -1,614 +1,638 @@
 {
   "meta": {
     "url": "https://steamdb.info/app/227300/stats/",
-    "cmd": "$$('div.achievement').map(div=>({id:div.id.split('-')[1],title:$('.achievement_name',div).textContent, desc:$('.achievement_desc',div).textContent.trim(),imgUrl:$('img',div).src})).sort((a,b) => a.id.localeCompare(b.id)); "
+    "cmd": "$$('div.achievement').map(div=>({id:div.id.split('-')[1],title:$('.achievement_name',div).textContent, desc:$('.achievement_desc',div).textContent.trim(),imgUrl:$('img.achievement_image',div).src})).sort((a,b) => a.id.localeCompare(b.id)); "
   },
   "data": [
     {
       "id": "5_jobs_in_a_row",
       "title": "Careerist",
       "desc": "Complete 5 jobs in a row - in-time, without taking any damage to cargo and without using autoparking",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/a65a5e2410b31bf81a712c9df37d9ecfdc634b76.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/b7c9b3a15d519ebefd573ae2893d05bfa4af0d0c.jpg"
     },
     {
       "id": "999_km_with_each_brand",
       "title": "Test Drive Limited",
       "desc": "Drive 999 km during jobs with each of at least 5 truck brands, only your owned trucks count",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/e38294e120c8144d8d8aadc8705c89ec2777ef95.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/c005b7fe1e6212340c2058f901312ec0d734e6d9.jpg"
     },
     {
       "id": "aca_consecutive",
       "title": "Failure Is Not an Option",
       "desc": "Complete any 5 scenarios in a row without failure from the third or fourth chapter in Truck Driving Basics (Driving Academy)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/551f77e942d440702384a1a9cb19da696a1933f9.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/1bd65ee14baa39264cb9aae06854b086f91a7a3f.jpg"
     },
     {
       "id": "aca_first",
       "title": "Get the Ball Rollin'",
       "desc": "Complete the first scenario of the first chapter in Truck Driving Basics (Driving Academy)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/a071f7e21f0779276e2f50be075bb06443e0ad3c.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/ff0eea2daa2ce71526105715e07f2e24bdcfee2e.jpg"
     },
     {
       "id": "aca_interior",
       "title": "Professional Driver",
       "desc": "Complete at least 6 scenarios in the fourth chapter of Truck Driving Basics while using only the interior camera (Driving Academy)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/5bb214f65a3fa78869980cf1fcec23efc382c462.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/cfece21d133920fd523c9a555f1b944e1c2d2112.jpg"
     },
     {
       "id": "aca_manual_transmission",
       "title": "Rowing Through the Gears",
       "desc": "Complete 20 scenarios in chapters two, three or four using manual transmission in Truck Driving Basics (Driving Academy)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/9297481d4bf4a199ae90ad5da2d2a888f34329ed.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/510799a8b947aba323b23de6c1a1745c81c9bfa1.jpg"
     },
     {
       "id": "aca_no_forward",
       "title": "One-Shottin' It",
       "desc": "Complete any scenario in fourth chapter of Truck Driving Basics in one attempt without correcting by driving forward (Driving Academy)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/e266da82b06ffd1740fa394ccb54a566daadd498.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/1d08fa0308dd77235a396ac6b023aaa809ea1c45.jpg"
     },
     {
       "id": "aca_pass_conditions",
       "title": "Advanced Student",
       "desc": "Complete the pass conditions in at least 23 scenarios in Truck Driving Proficiency (Driving Academy)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/b0a9787a6813bfe5802d2d574769f657efcee1e1.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/9b4e464dacb566d1c7f391bbe1fbbf07f996e415.jpg"
     },
     {
       "id": "aca_stars",
       "title": "Nerd of the Road",
       "desc": "Obtain 3 stars in at least 23 scenarios in Truck Driving Proficiency (Driving Academy)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/7bddb27a90a14d064c94da2558adf40d4344d140.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/8a312b428b6a0c33b5f3b1fa4af32324d1930eeb.jpg"
     },
     {
       "id": "aca_stars_consecutive",
       "title": "Shining Star",
       "desc": "Obtain 3 stars in any 3 scenarios played in a row in Truck Driving Proficiency (Driving Academy)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/ceddcf49386495ba21ea1ab2ab0a0f451122af8d.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/7173a98893175cd4c20aebea32eb4848633dc98a.jpg"
     },
     {
       "id": "aca_truck_driving",
       "title": "Dedicated Student",
       "desc": "Complete at least 28 scenarios in Truck Driving Basics including the final exams (Driving Academy)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/68d4a724010ce889cefc8938f31b5e8ea6055a5a.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/9cae7b5c64117ae5535e858da936d23393bee77a.jpg"
     },
     {
       "id": "ba_concrete",
       "title": "Concrete Jungle",
       "desc": "Complete 10 deliveries from concrete plants (requires Beyond the Baltic Sea DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/a6ebc22597118bbbf82a9a72209bf8596437cbf8.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/ad47560b665d7b48915dc421ebeb927b43b03b1a.jpg"
     },
     {
       "id": "ba_farm",
       "title": "Like a Farmer",
       "desc": "Deliver cargo to at least 4 farms in Beyond the Baltic Sea DLC (requires Beyond the Baltic Sea DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/65422df1d0734d29a5bfc347800ef69f3db29c78.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/9ec9012944943dd17d26943e6db079f8254bcbca.jpg"
     },
     {
       "id": "ba_industry",
       "title": "Industry Standard",
       "desc": "Make 2 deliveries to locomotive, furniture and paper mill factories (requires Beyond the Baltic Sea DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/7cbb0f2d46a46b2dc705de6c44c6b38deade9bfa.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/78d90b24298afe70f22b78c9b7b0dd6eda737400.jpg"
     },
     {
       "id": "ba_job_countries",
       "title": "Grand Tour",
       "desc": "Complete excellent deliveries between the following countries: Russia - Lithuania; Lithuania - Latvia; Latvia - Estonia; Estonia - Russia; Russia - Finland. Any order or direction counts (requires Beyond the Baltic Sea DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/5381b5f6d33f11a1f7c6bd65710d90098f33484b.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/98cf9dbd8f4a4ad15f4672b0975542752d4316a0.jpg"
     },
     {
       "id": "ba_to_russia",
       "title": "Exclave Transit",
       "desc": "Complete 5 deliveries from Kaliningrad to any other Russian city (requires Beyond the Baltic Sea DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/a505c176606b0cf03dda491c3a3924ba19a74dc2.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/14eaddd52a49e53196f22dfdad44d4f2bd65569e.jpg"
     },
     {
       "id": "ba_visit_cities",
       "title": "Baltic Tourist",
       "desc": "Discover at least 20 Beyond the Baltic Sea DLC cities (requires Beyond the Baltic Sea DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/7b07436fccedcec07bab23eb38334495220afca5.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/c25a5e2f58809a5d03373111a031361ca266584c.jpg"
     },
     {
       "id": "be_black_sea",
       "title": "Along the Black Sea",
       "desc": "Complete excellent deliveries between these coastal cities: Istanbul-Burgas, Burgas-Varna, Varna-Mangalia, MangaliaConstanța. Any order or direction counts (requires Road to the Black Sea DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/527750b63d338405062550d7e2b8fd3ad57b1a11.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/78b0389fe09487531dd782fcf3093a98d2fa61c1.jpg"
     },
     {
       "id": "be_blke_ferry",
       "title": "Ferryman",
       "desc": "Use a river ferry (requires Road to the Black Sea DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/399423fd95f9cd1cd05a61af869640a39301a021.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/7086e871da7fc2e76bedbf7c948ec76b73543d27.jpg"
     },
     {
       "id": "be_border_crossings",
       "title": "Ranger",
       "desc": "Visit at least 4 border crossings between Romania, Bulgaria and Turkey (requires Road to the Black Sea DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/963bafce66956e3a821e0ff7d1cb3eb20d862718.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/040ea2afddc1a96e8359f6ed3c49c4aa2738ecb9.jpg"
     },
     {
       "id": "be_express",
       "title": "Orient Express",
       "desc": "Complete deliveries between following cities, in this order and direction: Paris-Strasbourg, Strasbourg-Munich, Munich-Vienna, Vienna-Budapest, Budapest-Bucharest, Bucharest-Istanbul (requires Road to the Black Sea and Going East DLCs)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/0a1ba48b524bbb31376ed7b655f21619003a95e7.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/3a72f1d80e1acbad9b5e0e3ce823c5ac2f847654.jpg"
     },
     {
       "id": "be_istanbul_jobs",
       "title": "Turkish Delight",
       "desc": "Complete 3 deliveries from Istanbul which are at least 2,500 km long (requires Road to the Black Sea and Going East DLCs)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/5d312f33d09f3fea35473b96577079ad7dda53f1.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/cc409ab3eeb249ad1786cc7c609899bf8fb8942c.jpg"
     },
     {
       "id": "be_landmarks",
       "title": "Taking the Scenic Route",
       "desc": "Visit the following landmarks and locations: Iron Gates, Bran Castle (Romania), Pomorie Beach, Wall of Heroes in Varna (Bulgaria), Lake Küçükçekmece in Istanbul (Turkey) (requires Road to the Black Sea DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/eb8e30c20d67933cc019a5a33b2e64f6ddff1053.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/234b96071ec4d0faf1ea4cfb384c633e882c28be.jpg"
     },
     {
       "id": "be_visit_cities",
       "title": "Balkan Explorer",
       "desc": "Discover at least 20 Road to the Black Sea DLC cities (requires Road to the Black Sea DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/f213c6e260e5f8f2c819a285b6121c8bb00ce17d.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/aa5c81b012cd288a56f955f905920d214ac4a232.jpg"
     },
     {
       "id": "buy_truck_online",
       "title": "From the Comfort of Your Home",
       "desc": "Buy a truck online",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/4f4cfe13c5b74dc3e6c970568e4854eaf050ac31.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/e93a6b50924c6754bab19e1eaf734696d987964a.jpg"
     },
     {
       "id": "bw_coastline",
       "title": "Holiday Coastline",
       "desc": "Complete 3 deliveries along the coast in this order: Rijeka - Zadar - Split - Niksic (requires West Balkans DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/bce3af1fd0a289f011bdee13b8978e6acb6a9d0f.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/2c42e355cc51eb1240514938d0b39b3416f67202.jpg"
     },
     {
       "id": "bw_cutscenes",
       "title": "Grand Adventurer",
       "desc": "View cutscenes from at least 8 viewpoints in West Balkans (requires West Balkans DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/dd46bbdf6c3e3980349fb43a5752bf1c848e4c1f.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/e05419f1862a3de12154c3f5ca4166c5301eb815.jpg"
     },
     {
       "id": "bw_ore_caravans",
       "title": "Going Camping",
       "desc": "Deliver the following cargoes from companies in West Balkans to complete a production chain in this order: Ore, Aluminium Ingots, Electrical Wiring, Electronics, Campervans (requires West Balkans DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/47aea58015c86ecc94614d29f174197f105f4dcd.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/cc26a6cbd182f1039f557a7d563c51a4c45151e5.jpg"
     },
     {
       "id": "bw_pristina_bijelo_polje",
       "title": "Through the Serpentines",
       "desc": "Complete a perfect delivery (no damage, no fines, in-time) between Pristina and Bijelo Polje (requires West Balkans DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/42129e13f0d2c296bad593c261485941fa989c96.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/491121f07e606169ab22a5dc146ad26b9265e416.jpg"
     },
     {
       "id": "bw_visit_cities",
       "title": "Road to the Adriatics",
       "desc": "Discover at least 20 cities in West Balkans (requires West Balkans DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/8712c857fd1e83675c75be01e0da50c875a5760d.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/d267fefd59e5701b01ece51f2188faae7d6fe750.jpg"
     },
     {
       "id": "daily_profit",
       "title": "Swimming in Success",
       "desc": "Reach an average daily profit of €450,000",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/4b35cb975b3c567e2fb81b78a13ff79567d13f6e.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/f3e6f109fa3b3e3ce609f62172cf386c5e3de5a7.jpg"
     },
     {
       "id": "discover_all_agencies",
       "title": "Head Hunter",
       "desc": "Discover at least 40 recruitment agencies",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/2ad76ba28f4ddda566010a1fdbaf53bbef80b42c.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/ea9db52047a22e4ef36fa0c8dab14f82776fb5c8.jpg"
     },
     {
       "id": "fr_airports",
       "title": "Check-in, Check-out",
       "desc": "Deliver cargo to at least 3 cargo airport terminals in France (requires Vive la France ! DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/3ba82ebc15fe3a1092c65960db89161ead342408.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/464e4f6e37ec9f94883f24a665bf112c828c5d65.jpg"
     },
     {
       "id": "fr_landmarks",
       "title": "Landmark Tour",
       "desc": "Discover following landmarks of France: Carcassonne, Brotonne bridge, Tiger tank, Peyrat-le-Château, Château de Ventadour, Château d'Ussé (requires Vive la France ! DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/55e3c29bd691a914fc2b9166427c63998160996d.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/50124437706e66d74f570376926db3dc2a55d8f2.jpg"
     },
     {
       "id": "fr_nucplants",
       "title": "Go Nuclear!",
       "desc": "Deliver cargo to at least 3 nuclear plants in France (requires Vive la France ! DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/36679d962ef9ff0616c442a8769ad0dd530f7f41.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/331ebc2ac2729bf8dcfeb8e630506766df35d1b1.jpg"
     },
     {
       "id": "fr_truckstop",
       "title": "Gas Must Flow!",
       "desc": "Deliver diesel, LPG or petrol to at least 3 truck stops in France (requires Vive la France ! DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/68fe9d952b45d50818573e76d3ef3b205bc9f580.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/11e97af5bb22b4e11d971e57da82902ee57d8b43.jpg"
     },
     {
       "id": "fr_visit_cities",
       "title": "Bon Voyage!",
       "desc": "Discover at least 20 French cities (requires Vive la France ! DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/7146a0b50ed4b2a3223e7264dee867d8d63dce3e.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/0c31e8fd8c9cbf1315397ac4b233b9030b7355ba.jpg"
     },
     {
       "id": "fr_visit_corsica",
       "title": "All Around the Isle of Beauty",
       "desc": "Discover at least 4 Corsican cities (requires Vive la France ! DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/0586d2c0c1c72c332c17ed2d78b0b7b1a8ad395a.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/38ae692284abeac54966ad58c44182074e854d63.jpg"
     },
     {
       "id": "garage_in_every_city",
       "title": "Property Magnate",
       "desc": "Own at least 30 garages",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/6c1c4ad9a7a2e7962c8784289436df8842c5ac05.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/518178e5b04060025eaa3f9e8c9cb8154fb7641d.jpg"
     },
     {
       "id": "garages_in_hq_country",
       "title": "National Company",
       "desc": "Own at least one largest garage in your headquarter country",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/a8488de28323857eb26d7a578ef35f8e6372b486.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/9dd702488f81a73f43e5e4c999e540ad292cae17.jpg"
     },
     {
       "id": "gr_cutscenes",
       "title": "Sights and Legends",
       "desc": "View cutscenes from at least 8 viewpoints in Greece (requires Greece DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/2e9ca33ce5d4150eed1abab8035295336e34149a.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/8e1f8aa939bd97f9941b724f11730b15d2704ec6.jpg"
     },
     {
       "id": "gr_hotels",
       "title": "All Inclusive",
       "desc": "Deliver cargo to at least 4 unique hotels in Greece (requires Greece DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/da8efa52616908d4af9b0e97da795dacc3bb0197.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/68da889dc930ed66fdea66904b89626e7d5f3bd4.jpg"
     },
     {
       "id": "gr_marble",
       "title": "Temple Worthy",
       "desc": "Deliver 3 Marble Blocks and 3 undamaged Marble Slabs from Rock Eater Quarry in Greece (requires Greece DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/cc2cfc8d7bebf74843bdf766309a58ace9a436b3.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/430fff8418c6be87fef8d212e45a7c3ff90d5263.jpg"
     },
     {
       "id": "gr_olive",
       "title": "Gift of Athena",
       "desc": "Deliver olives or olive oil from Eliarchos Olive Farm to 5 different cities in Greece (requires Greece DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/55102e7c355ddfb0eefc4fe89f8c317bd95199e7.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/fd2567ef7125ae38357056145148ebabcbafad72.jpg"
     },
     {
       "id": "gr_visit_cities",
       "title": "Odyssean Voyager",
       "desc": "Discover at least 12 cities in Greece (requires Greece DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/97afbd32024d5e03f8cd5eca2a5278a7ba199c0e.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/3acb26e5fe3b68d655af3ccc7d8d5c47efbfcefe.jpg"
     },
     {
       "id": "hc_1000xps",
       "title": "You Bet I Can Park It!",
       "desc": "Collect 1,000 XP from parking on Heavy Cargo Pack deliveries (requires Heavy Cargo Pack DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/f3938536e8193baa0fcca6d892ff1e77dc316ab7.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/a20521620484bd6606c2b9988f1920e4805a34e4.jpg"
     },
     {
       "id": "hc_250t5jobs",
       "title": "No Pain No Gain",
       "desc": "Deliver total of 250 tons of cargo on 5 consecutive jobs (requires Heavy Cargo Pack DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/5fdc2163727db539f0c387ac11661b1507f46753.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/4e759f807bde1fe3e1e88e95fc3c5f3bbd96bcef.jpg"
     },
     {
       "id": "hc_allcargos",
       "title": "I Thought This Should Be Heavy?!",
       "desc": "Complete a delivery of at least 8 unique cargoes from the Heavy Cargo Pack (requires Heavy Cargo Pack DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/4caa5c7a123639c7077f1a943203edd357478ed5.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/fc6c5d9491c1a7bf8abb872753a1f70ea44e351c.jpg"
     },
     {
       "id": "hc_firstjob",
       "title": "Time for Big Hauling",
       "desc": "Deliver first Heavy Cargo (requires Heavy Cargo Pack DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/2a1b4db72304bf5359d79a6d37c6fd452b1f56d7.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/8550c4f133feeb6342466b0598f802cc73358f7c.jpg"
     },
     {
       "id": "hc_threeperf",
       "title": "Keep Calm and Haul Heavy",
       "desc": "Complete a perfect delivery (no damage, no fines, in-time) of 3 consecutive Heavy Cargo Pack jobs (requires Heavy Cargo Pack DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/4a175ec190de0e892e90645eb9b0566d771124b0.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/39de59af32ee49bbbe48bf470ce42fcd8a1e74a4.jpg"
     },
     {
       "id": "ib_a_coruna",
       "title": "Iberian Pilgrimage",
       "desc": "Complete a delivery from Lisbon, Seville, and Pamplona to A Coruña (requires Iberia DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/b7dd2cd5f18ee095f11d474cb75d2c1fe1a097a8.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/8f81676c845e230534f5dd0311195f69af1d3be8.jpg"
     },
     {
       "id": "ib_container_ports",
       "title": "Let's Get Shipping",
       "desc": "Deliver cargo to at least 4 container ports in Iberia (requires Iberia DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/3b9c0f2a5daa0c421b2d256977a79c3570227535.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/a132e65c01c6b04c488ff8017d36d4c10a73c05c.jpg"
     },
     {
       "id": "ib_cutscenes",
       "title": "Grand Tour Guide",
       "desc": "View cutscenes from at least 12 viewpoints in Iberia (requires Iberia DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/047b9a95037997a833531a89242f212951a8ea26.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/cf25738ea9c57f15e17dd4c77042ff738a2666ba.jpg"
     },
     {
       "id": "ib_shipyards",
       "title": "Fleet Builder",
       "desc": "Deliver cargo to at least 3 shipyards in Iberia (requires Iberia DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/17c62b6f4969c8c089e60d3d7d8d2f3eec340425.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/ae342752e2f59bc1c60eb2894dc930932575aa18.jpg"
     },
     {
       "id": "ib_solar_power_plants",
       "title": "Taste the Sun",
       "desc": "Deliver ADR cargo to at least 2 solar power plants in Iberia (requires Iberia DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/2eca5e841e8a3b41ef20de8eae05d3b6ffb8e5f6.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/ad30952a439dc237e90b2acfe6b43b4e4fa603d3.jpg"
     },
     {
       "id": "ib_visit_cities",
       "title": "Conquistador",
       "desc": "Discover at least 30 cities in Iberia (requires Iberia DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/b130cd056651cfa208d8725c50eb972a912fff18.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/35afb1d45e8842a77e94b6cf1138f4c7b1d214f2.jpg"
     },
     {
       "id": "it_garages",
       "title": "True Sicilian",
       "desc": "Own a garage in at least 2 Sicilian cities (requires Italia DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/1485d8d48eae900f68596dbb93cd1012873e5f45.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/302bd320bb7cda71535e944de90e38487d8ec915.jpg"
     },
     {
       "id": "it_quarry",
       "title": "Michelangelo",
       "desc": "Complete a delivery from Carrara quarry (requires Italia DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/d8b0c841417da2b67bbc0fd206da35372a6cacf3.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/d7c8680105ac08dde9a4fdf7d4565230c82fed00.jpg"
     },
     {
       "id": "it_roads_to_rome",
       "title": "Many Roads Lead to Rome",
       "desc": "Enter Rome from at least 3 corridors that lead to it (requires Italia DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/ad74ccf1e241fffca2d8d4ab284c26a4a682ba6a.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/427966287e94cc31692362ddff5c034e4d570feb.jpg"
     },
     {
       "id": "it_shipyards",
       "title": "Captain",
       "desc": "Deliver cargo to at least 1 Italian shipyard (requires Italia DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/58f0de3c7c2f7884dcd3e2e822bb1e30bf2b8fae.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/b1220951bfc8e43d74d07a6cc31bbf64f4fdcee5.jpg"
     },
     {
       "id": "it_visit_cities",
       "title": "Imperator",
       "desc": "Discover at least 15 Italian cities (requires Italia DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/79142df0f7fb4bb93aec8b4d5dc01e06bb74f6d9.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/aa23d376b6cf2feb101053a5531d08babed6e530.jpg"
     },
     {
       "id": "it_visit_sardinia",
       "title": "All Around the Blue Island",
       "desc": "Discover at least 2 Sardinian cities (requires Italia DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/798d1049315e168179d70d230f27f07c51f5889c.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/f8b76e43ea623bebed2aa2060402dbd2cf4ddbe6.jpg"
     },
     {
       "id": "it_volcanoes",
       "title": "Mind the Lava",
       "desc": "Visit Etna and Vesuvius volcanoes (requires Italia DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/87a30113c4bd1276e19b35f5f1c219edf553b7dd.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/71d9b4fad6d22ca496635153dd974d25252d09c8.jpg"
     },
     {
       "id": "job_15_companies",
       "title": "Reliable Contractor",
       "desc": "Perform jobs for at least 15 different companies in the game",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/7b922e7cdd652a4a16cf781c08465fd9ebcee2b4.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/61f293850fac749a05ae42480f910811e8a9a054.jpg"
     },
     {
       "id": "job_2000_km",
       "title": "Long Hauler",
       "desc": "Complete a delivery that was greater than 2,000 km",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/978573f4647e5e8cc2dbed75807281690b1c0a3c.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/377f8fcbf7547bc680ded9cda39cc0282fcbe647.jpg"
     },
     {
       "id": "job_all_trailer_types",
       "title": "Experience Beats All!",
       "desc": "Complete deliveries with following trailer types: Machinery, ADR cargo, Container, Refrigerated, Liquid cargo, Fragile cargo, Construction, Bulk cargo",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/3f9820393a8689a212a08a07d66ccecc60732d02.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/6bd97ee872ccfaa652ea6075527f482f9c82a1d3.jpg"
     },
     {
       "id": "job_no_ferry",
       "title": "Profit Hunter",
       "desc": "Complete a job worth over €130,000 and minimum 2,200 km",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/505cdf6f53eb6966db5991d6fa9a9b9bbe57d3e0.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/f470b399cea1d49dcbce0f1fa508ec5b5edf7e53.jpg"
     },
     {
       "id": "job_urgent",
       "title": "Just in Time!",
       "desc": "Take an urgent delivery for a minimum of 550 km and complete it with less than 30 minutes remaining",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/3768ff52ae9b771ddaced1a5b8fcbc5dc5d6e571.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/fb0271e7bc5a4ce6fa08eae7013f8d0c0b07631f.jpg"
     },
     {
       "id": "jobs_20k_xp",
       "title": "Minimaxer",
       "desc": "Gain 20,000 XP for several consecutive jobs with the total distance below 10,000 km",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/b08eb6bc39cf16fd32559f26e0e163af790f9675.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/0c763dbe210db521534213aae5d8d12e8a908826.jpg"
     },
     {
       "id": "jobs_30_cargo",
       "title": "All Is Possible",
       "desc": "Take and complete jobs with at least 30 different cargo",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/5a57c46e4652d63cea31c55a4dd03a4cfca29835.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/2f84524c74f5c3c78e62b0a9a4066bf5bfc6ee34.jpg"
     },
     {
       "id": "large_garage_productivity",
       "title": "Working with the Elite",
       "desc": "Achieve 100% of productivity for at least 5 large garages at the same time",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/aeaa7cfdd6caa890b64a08bf3a2c18b1becdf647.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/572e2d9c17a3ca70a24092a23d8e71204ae93077.jpg"
     },
     {
       "id": "map_discover_100",
       "title": "Pathfinder",
       "desc": "Discover at least 40,000 kilometers of roads",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/6d646a26ed7f235a52db733715e6f13d2b93f544.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/e403ff355f414e1d64d89c2f7fea3e7f7370deaa.jpg"
     },
     {
       "id": "map_discover_60",
       "title": "I Am a GPS",
       "desc": "Discover at least 20,000 kilometers of roads",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/764957db9071c4e682426cf15b6712e75ed07eae.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/3b81f57d767be58c0749789096c7ef47c6b28929.jpg"
     },
     {
       "id": "maxed_male_female",
       "title": "Aspects of Professionalism",
       "desc": "Have at least 10 female and 10 male employees of maximum level in your company",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/42d2fbc947d663cb7013c47e3a3287d1f7955ec4.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/11f8b67a3c6af57496f56503e254be853b8dcd94.jpg"
     },
     {
       "id": "metallic_multi_color_paint",
       "title": "My Precious",
       "desc": "Design and apply to your truck a custom multi-color metallic paint",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/031cce738650eff2d55a9b2d5a865bd1749b974d.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/622ae0f7e464bdabd32d455d6d4bad7326499eac.jpg"
+    },
+    {
+      "id": "pc_cutscenes",
+      "title": "Northern Secrets",
+      "desc": "View cutscenes from at least 12 viewpoints of Nordic Horizons regions (requires Nordic Horizons DLC)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/c07bda410e74a59faa9858e55e9fc2deb48869e7.jpg"
+    },
+    {
+      "id": "pc_polar_circle",
+      "title": "Above the Arctic Circle",
+      "desc": "Complete excellent deliveries in this order and direction: Ivalo - Kiruna - Svolvær (requires Nordic Horizons DLC)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/038abf05965be68653a7d6e2d1709440d1beb0ea.jpg"
+    },
+    {
+      "id": "pc_salm_fillet",
+      "title": "Salmon Run",
+      "desc": "Deliver 2 cargoes of Salmon Fillet from the city of Tromsø or Alta to 2 different countries (requires Nordic Horizons DLC)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/88a08254d8e602c0c04b91cc32b5ce9816e0989b.jpg"
+    },
+    {
+      "id": "pc_visit_cities",
+      "title": "Polar Explorer",
+      "desc": "Discover at least 20 cities in Nordic Horizons (requires Nordic Horizons DLC)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/13484d13c58ec74ae4c46f05172c0ebc4005152b.jpg"
     },
     {
       "id": "perfect_delivery",
       "title": "Job Is Only Worth It If It's Done Well!",
       "desc": "Complete a perfect delivery (no damage, no fines, in-time) for a job that is at least 1,000 km",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/d453a7c1dac1cf7a99f46307c59c87d017c89906.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/dd2fe803d22ac769c2c5ad93332309e557aa31b5.jpg"
     },
     {
       "id": "productivity_all_garages",
       "title": "Performance Optimizer",
       "desc": "Achieve at least 75% of the average garage productivity for 10 large garages in your company",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/c479776aa1cdfeeb1010917b611a465e1fb8ad45.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/d3dd9e755d981cf29e92d485d133f37371fc3f05.jpg"
     },
     {
       "id": "quick_travel_to_hq",
       "title": "Honey, I'm Home",
       "desc": "Use quick travel to return to your headquarters",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/58d227540f2fc9c3ee08822c2c4de72439581524.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/77e91c208ae0040fce83a469131d66fe5a13d221.jpg"
     },
     {
       "id": "sc_container_ports",
       "title": "Whatever Floats Your Boat",
       "desc": "Deliver cargo to at least 1 container port in Scandinavia DLC (requires Scandinavia DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/47a1bfba04d73522c100f3da1958f0171e77c3c7.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/49a597f2c043856ab944aa7490d483829f6ab748.jpg"
     },
     {
       "id": "sc_cows_to_farm",
       "title": "Cattle Drive",
       "desc": "Complete a cattle delivery to any company in Scandinavia DLC (requires Scandinavia DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/5861ff05709ca83d170978a7966e0fdda8eaebfe.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/ee04a02f9e49e8c6f7fdca97b132de8267b5bdf5.jpg"
     },
     {
       "id": "sc_deliver_marinas",
       "title": "Sailor",
       "desc": "Deliver yachts to all Scandinavian marinas (requires Scandinavia and High Power Cargo Pack DLCs)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/a796a737a54a3801896919ffac5eeb05608abca7.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/7472d3bc8ac6c01b94243db88ed714e771776452.jpg"
     },
     {
       "id": "sc_oresund_bridge",
       "title": "Aquaphobia",
       "desc": "Travel across the Øresund Bridge between Copenhagen and Malmö (requires Scandinavia DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/e334ea6618b26bd810c829fefb66b9e097cca614.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/a83498ab529dcbfc06542721c659769251eeb2e3.jpg"
     },
     {
       "id": "sc_quarries_cargo",
       "title": "Miner",
       "desc": "Complete delivery jobs to at least 3 quarries in Scandinavia DLC (requires Scandinavia DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/e4c4a02f60883a5723ac4456b1965fbd87d9bc38.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/55208219ef190402940658a1ca2b3f97a5e24fa1.jpg"
     },
     {
       "id": "sc_scania_cargo",
       "title": "Scania Trucks Lover",
       "desc": "Deliver truck cargo from Scania factory (requires Scandinavia DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/b21980827a2501204161b303a52dcfcca1861dfa.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/1b34bbe814bf405df324d7e734324b6ab1f3a373.jpg"
     },
     {
       "id": "sc_visit_cities",
       "title": "Sightseer",
       "desc": "Discover at least 15 Scandinavia DLC cities (requires Scandinavia DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/faee5ef1838cf1bb3885d9690309ef20c79c6ca7.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/409fb1f7a6a86f4a3822d16f94a0b2b3704d944a.jpg"
     },
     {
       "id": "sc_volvo_cargo",
       "title": "Volvo Trucks Lover",
       "desc": "Deliver truck cargo from Volvo Trucks factory (requires Scandinavia DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/326ddea5e3d5ccbcdac5c023369781f2ddc3ab12.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/2fcd53303c17ed104260d596f5321c25b94875c5.jpg"
     },
     {
       "id": "st_all_cargos",
       "title": "The Bigger the Better",
       "desc": "Complete at least 10 unique deliveries of oversize cargoes (requires Special Transport DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/a00d266a88dbb0214ddbd89b2c238a98066cdf29.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/655337efead000f0979e5072c9a0794055262f57.jpg"
     },
     {
       "id": "st_all_routes",
       "title": "Driver Exceptionnel",
       "desc": "Complete deliveries on at least 10 oversize routes in base game (requires Special Transport DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/941572d01acc220f96185acd35fa70e43cbd7421.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/ee9c2734a33f7f1bc84bb37e3430bf4fb22e86a9.jpg"
     },
     {
       "id": "st_cat_785c",
       "title": "Big Brother",
       "desc": "Complete delivery of the Haul Truck Chassis (requires Special Transport DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/b18b44468152e951181bd597bdf3e00212ddd337.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/99e3268f998605bfd9c7086cafd3e040243de3a2.jpg"
     },
     {
       "id": "st_first_cargo",
       "title": "Size Matters",
       "desc": "Deliver first oversize cargo (requires Special Transport DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/e99210a75dc713cec19da194706d9d9808462287.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/aae812bef97a7b5b3eca66583c819458ff395b40.jpg"
     },
     {
       "id": "st_mass",
       "title": "Mass-to-don",
       "desc": "Deliver at least 195 tons of oversized cargo in just 3 consecutive deliveries (requires Special Transport DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/4f14ce602448bca18b107d29858743c47522448b.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/c6883787329a0d83fdf7abf48b7f6f72823a7d74.jpg"
     },
     {
       "id": "st_no_damage",
       "title": "Not a Big Problem",
       "desc": "Complete 3 consecutive oversize jobs without any damage (requires Special Transport DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/724beeff90c133a5673b45a79b3dc4b88c2b3b68.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/ceffdd2411dbd144fe83d81b99eb213002bcd6a0.jpg"
     },
     {
       "id": "st_pilot_boat",
       "title": "Not a Canoe",
       "desc": "Complete delivery of the Service Boat (requires Special Transport DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/d96db6d0964281211d4cf8a8e3e79614d478e861.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/4dc1644ba36519a34e1228e4672cf364c96ec475.jpg"
     },
     {
       "id": "st_silo",
       "title": "Giant",
       "desc": "Complete delivery of the Silo cargo (requires Special Transport DLC)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/80d31a53d1fa03c34a5e92d37afe943001115821.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/08ea48ac4e6ebc0fb90e889043dcea36268b7d37.jpg"
     },
     {
       "id": "unload_difficulty",
       "title": "Parking Challenge",
       "desc": "Complete 20 deliveries choosing the trailer delivery option which requires reversing",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/74f08d5d5b6fc749d2dc0b645f63c29ed6d14e68.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/1bd5ca649dc6f78a9e0264f33d487a7a6e7b3115.jpg"
     },
     {
       "id": "use_all_ports",
       "title": "Successfully Docked",
       "desc": "Use at least 5 ports in the game (counts sea, river and train ports)",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/6889b4b686664e99e7a813016cc91b0a4a9449e5.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/e1ce75b73947ed370a9d658917f70644aac6c21a.jpg"
     },
     {
       "id": "use_automatic_parking",
       "title": "Friends Are Always Here to Help You",
       "desc": "Use automatic parking",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/0b931d84c98a8e47fc64b5f2d8d49ff5ab6eb8f5.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/a55845929f69a62fd6dba53f9f2a695d36223095.jpg"
     },
     {
       "id": "use_boat",
       "title": "Sardine",
       "desc": "Utilize a boat",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/77a4479d04a2983cc37db9fe7c16095243feda57.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/474b10334d07334503fd35ffce08ea672a0694a2.jpg"
     },
     {
       "id": "use_gas_station",
       "title": "Diesel, No Petrol!",
       "desc": "Use a filling station",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/d7166d96536e2ed2117b9cd4ada0bf92aa472789.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/03bb2fa5f8457019406c34edf4b90f3656b51b1e.jpg"
     },
     {
       "id": "use_rest_stop",
       "title": "Zzzzz",
       "desc": "Use a rest stop",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/385d2bcdd4853eaedf28b3be4c78df498b6434c3.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/d60a6f2ae564c92321a8e583aaeda28a85e21bdb.jpg"
     },
     {
       "id": "use_train",
       "title": "Choo-Choo",
       "desc": "Use the train to cross the channel",
-      "imgUrl": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/227300/fa4c3d27684b13ad93814a32ecf21f36074fefab.jpg"
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/bf03aee6c5acf3fa496eaf00c2be1200163ceffa.jpg"
     }
   ]
 }
