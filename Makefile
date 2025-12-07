@@ -31,7 +31,7 @@ MAP_FILES :=
 
 # Create base-layer world.pmtiles
 $(GENERATOR_OUT_DIR)/world.pmtiles: $(addprefix $(RESOURCES_DIR)/,water.geojson countries.geojson states.geojson)
-	tippecanoe -Z4 -z8 -b 10 -X -o $@ $^
+	tippecanoe -Z4 -z8 -y name -b 10 -X -o $@ $^
 
 MAP_FILES += $(GENERATOR_OUT_DIR)/world.pmtiles
 
