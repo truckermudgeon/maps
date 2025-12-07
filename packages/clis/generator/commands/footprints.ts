@@ -45,8 +45,8 @@ export const builder = (yargs: Argv) =>
       alias: 't',
       describe:
         'Type of files to write.\nSpecify multiple types with multiple -t arguments.',
-      choices: ['pmtiles', 'geojson'] as const,
-      default: ['pmtiles'] as ('pmtiles' | 'geojson')[],
+      choices: ['pmtiles', 'mbtiles', 'geojson'] as const,
+      default: ['pmtiles'] as ('pmtiles' | 'mbtiles' | 'geojson')[],
       defaultDescription: 'pmtiles',
     })
     .option('dryRun', {
@@ -62,16 +62,17 @@ export function handler(args: BuilderArguments<typeof builder>) {
       mapDataKeys: footprintsMapDataKeys,
     });
     const geoJson = convertToFootprintsGeoJson(tsMapData);
+    const types = Array.isArray(args.type) ? args.type : [args.type];
 
     let geoJsonPath: string | undefined;
     const gamePrefix = map === 'usa' ? 'ats' : 'ets2';
     const geojsonFilename = `${gamePrefix}-footprints.geojson`;
-    if (args.type.includes('geojson')) {
+    if (types.includes('geojson')) {
       geoJsonPath = path.join(args.outputDir, geojsonFilename);
       logger.log('writing', geoJsonPath + '...');
       writeGeojsonFile(geoJsonPath, geoJson);
     }
-    if (!args.type.includes('pmtiles')) {
+    if (!types.includes('pmtiles') && !types.includes('mbtiles')) {
       continue;
     }
 
@@ -83,39 +84,41 @@ export function handler(args: BuilderArguments<typeof builder>) {
       cleanupGeoJson = true;
     }
 
-    const pmtilesFilename = `${gamePrefix}-footprints.pmtiles`;
-    const minAttributes = ['type', 'height'];
-    // write to tmp dir, in case webpack-dev-server is watching (we don't
-    // want crazy reloads while the file is being written to)
-    const tmpPmTilesPath = path.join(os.tmpdir(), pmtilesFilename);
-    const tmpPmTilesLog = path.join(os.tmpdir(), `${pmtilesFilename}.log`);
-    const cmd =
-      // min-zoom 4, max-zoom 12.
-      `tippecanoe -Z4 -z12 ` +
-      minAttributes.map(a => `-y ${a}`).join(' ') +
-      ' ' +
-      '-l footprints ' + // hardcoded layer name, common to both ats/ets2 files
-      `-b 10 ` + // -b 10 helps with tile-boundary weirdness
-      `--force -o ${tmpPmTilesPath} ${geoJsonPath} ` +
-      `> ${tmpPmTilesLog} 2>&1`;
+    for (const type of types.filter(t => t.endsWith('tiles'))) {
+      const tilesFilename = `${gamePrefix}-footprints.${type}`;
+      const minAttributes = ['type', 'height'];
+      // write to tmp dir, in case webpack-dev-server is watching (we don't
+      // want crazy reloads while the file is being written to)
+      const tmpPmTilesPath = path.join(os.tmpdir(), tilesFilename);
+      const tmpPmTilesLog = path.join(os.tmpdir(), `${tilesFilename}.log`);
+      const cmd =
+        // min-zoom 4, max-zoom 12.
+        `tippecanoe -Z4 -z12 ` +
+        minAttributes.map(a => `-y ${a}`).join(' ') +
+        ' ' +
+        '-l footprints ' + // hardcoded layer name, common to both ats/ets2 files
+        `-b 10 ` + // -b 10 helps with tile-boundary weirdness
+        `--force -o ${tmpPmTilesPath} ${geoJsonPath} ` +
+        `> ${tmpPmTilesLog} 2>&1`;
 
-    logger.log('running tippecanoe to generate pmtiles file...');
-    logger.info('  ', cmd);
-    execSync(cmd);
-    logger.log(
-      '\n',
-      'tippecanoe output:\n',
-      fs
-        .readFileSync(tmpPmTilesLog, 'utf-8')
-        .split('\n')
-        .map(l => `  ${l}`)
-        .join('\n'),
-      '\n',
-    );
+      logger.log(`running tippecanoe to generate ${type} file...`);
+      logger.info('  ', cmd);
+      execSync(cmd);
+      logger.log(
+        '\n',
+        'tippecanoe output:\n',
+        fs
+          .readFileSync(tmpPmTilesLog, 'utf-8')
+          .split('\n')
+          .map(l => `  ${l}`)
+          .join('\n'),
+        '\n',
+      );
 
-    const pmTilesPath = path.join(args.outputDir, pmtilesFilename);
-    fs.renameSync(tmpPmTilesPath, pmTilesPath);
-    fs.rmSync(tmpPmTilesLog);
+      const tilesPath = path.join(args.outputDir, tilesFilename);
+      fs.renameSync(tmpPmTilesPath, tilesPath);
+      fs.rmSync(tmpPmTilesLog);
+    }
     if (cleanupGeoJson) {
       logger.log('deleting temporary GeoJSON files...');
       fs.rmSync(geoJsonPath);
