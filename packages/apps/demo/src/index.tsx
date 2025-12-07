@@ -18,7 +18,7 @@ import StreetViewDemo from './StreetViewDemo';
 const tileRootUrl = import.meta.env.VITE_TILE_ROOT_URL;
 const pixelRootUrl = import.meta.env.VITE_PIXEL_ROOT_URL;
 
-const specialEvent: 'halloween' | 'christmas' | undefined = 'halloween';
+const specialEvent: 'halloween' | 'christmas' | undefined = undefined;
 
 const router = createBrowserRouter(
   createRoutesFromElements(

@@ -100,8 +100,8 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
     if (!/^(city|country|company|ferry)\./.test(f) || !f.endsWith('.sii')) {
       continue;
     }
-    if (/\b(?:x_land|x_choco|xmas2023)\b/.test(f)) {
-      continue; // skip Winterland community event
+    if (/\b(?:xmas2023|mod_halloween_2025_event)\b/.test(f)) {
+      continue; // skip Winterland, Halloween community events
     }
     const includePaths = parseIncludeOnlySii(`def/${f}`, entries);
     for (const path of includePaths) {
@@ -509,10 +509,15 @@ function processPrefabJson(
       // Looks like there are spawn/no-spawn variants of prefabs that
       // reference the same pmg. Strip out the "_spawn" suffix when searching
       // for the associated pmg.
-      const pmgPath = path.replace(/(_spawn)?\.ppd$/, '.pmg');
+      const pmgPath = path.replace(
+        /(_spawn|_roof_trigger_rt|_rt|_trigger)?\.ppd$/,
+        '.pmg',
+      );
       const pmgFile = entries.files.get(pmgPath);
       if (!pmgFile) {
-        logger.warn(`could not find pmg file ${pmgPath} for ${token}`);
+        logger.warn(
+          `could not find pmg file ${pmgPath} for ${token} (${path})`,
+        );
       } else {
         //const pmg = parseModelPmg(pmgFile.read());
         //if (pmg) {

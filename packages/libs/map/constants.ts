@@ -8,6 +8,7 @@ export enum AtsDlc {
   Idaho,
   Iowa,
   Kansas,
+  Louisiana,
   Missouri,
   Montana,
   Nebraska,
@@ -39,6 +40,7 @@ export const AtsSelectableDlcs: ReadonlySet<AtsSelectableDlc> = new Set([
   AtsDlc.Arkansas,
   AtsDlc.Missouri,
   AtsDlc.Iowa,
+  AtsDlc.Louisiana,
 ]);
 export const AtsDlcInfo: Record<AtsSelectableDlc, string> = {
   [AtsDlc.Nevada]: 'Nevada',
@@ -58,33 +60,33 @@ export const AtsDlcInfo: Record<AtsSelectableDlc, string> = {
   [AtsDlc.Arkansas]: 'Arkansas',
   [AtsDlc.Missouri]: 'Missouri',
   [AtsDlc.Iowa]: 'Iowa',
+  [AtsDlc.Louisiana]: 'Louisiana',
 };
 
-// from /def/country.sii
-// values are based on country_id values in <state>.sui files.
+// values are based on country_id values in def/country/<state>.sui files.
 export enum AtsCountryId {
-  // Released
   California = 1,
   Nevada = 2,
   Arizona = 3,
-  Colorado = 7,
-  Idaho = 13,
-  Iowa = 21,
-  Nebraska = 18,
-  Arkansas = 19,
   NewMexico = 31,
   Oregon = 37,
-  Texas = 43,
   Utah = 44,
   Washington = 47,
-  Kansas = 17,
-  Montana = 27,
-  Oklahoma = 36,
+  Idaho = 13,
+  Colorado = 7,
   Wyoming = 50,
+  Montana = 27,
+  Texas = 43,
+  Oklahoma = 36,
+  Kansas = 17,
+  Nebraska = 18,
+  Arkansas = 19,
   Missouri = 26,
+  Iowa = 21,
+  Lousiana = 22,
 }
 
-export type AtsDlcGuard = Range<0, 47>;
+export type AtsDlcGuard = Range<0, 50>;
 
 // key/vals based on dlc guards dropdown in map editor UI
 export const AtsDlcGuards: Record<AtsDlcGuard, ReadonlySet<AtsDlc>> = {
@@ -135,6 +137,9 @@ export const AtsDlcGuards: Record<AtsDlcGuard, ReadonlySet<AtsDlc>> = {
   44: new Set([AtsDlc.Iowa]),
   45: new Set([AtsDlc.Iowa, AtsDlc.Missouri]),
   46: new Set([AtsDlc.Iowa, AtsDlc.Nebraska]),
+  47: new Set([AtsDlc.Louisiana]),
+  48: new Set([AtsDlc.Louisiana, AtsDlc.Arkansas]),
+  49: new Set([AtsDlc.Louisiana, AtsDlc.Texas]),
 } as const;
 
 // values are based on matching singleton sets in `AtsDlcGuards` map, e.g.:
@@ -160,6 +165,7 @@ export const AtsCountryIdToDlcGuard: Record<AtsCountryId, AtsDlcGuard> = {
   [AtsCountryId.Arkansas]: 36,
   [AtsCountryId.Missouri]: 39,
   [AtsCountryId.Iowa]: 44,
+  [AtsCountryId.Lousiana]: 47,
 };
 
 // sanity check to ensure values in record above refer to singleton sets.
@@ -199,6 +205,7 @@ enum Ets2Dlc {
   /** Feldbinder factory in Winsen, Germany. */
   Feldbinder,
   Greece,
+  NordicHorizons,
 }
 export type Ets2SelectableDlc = Exclude<
   Ets2Dlc,
@@ -214,9 +221,10 @@ export const Ets2SelectableDlcs: ReadonlySet<Ets2SelectableDlc> = new Set([
   Ets2Dlc.Iberia,
   Ets2Dlc.WestBalkans,
   Ets2Dlc.Greece,
+  Ets2Dlc.NordicHorizons,
 ]);
 
-export type Ets2DlcGuard = Range<0, 23>;
+export type Ets2DlcGuard = Range<0, 26>;
 
 export const Ets2DlcGuards: Record<number, ReadonlySet<Ets2SelectableDlc>> = {
   0: new Set(),
@@ -242,6 +250,9 @@ export const Ets2DlcGuards: Record<number, ReadonlySet<Ets2SelectableDlc>> = {
   20: new Set([Ets2Dlc.Greece]),
   21: new Set([Ets2Dlc.Greece, Ets2Dlc.GoingEast]),
   22: new Set([Ets2Dlc.Greece, Ets2Dlc.WestBalkans]),
+  23: new Set([Ets2Dlc.NordicHorizons]),
+  24: new Set([Ets2Dlc.NordicHorizons, Ets2Dlc.BeyondTheBalticSea]),
+  25: new Set([Ets2Dlc.NordicHorizons, Ets2Dlc.Scandinavia]),
 };
 
 export function toEts2DlcGuards(
