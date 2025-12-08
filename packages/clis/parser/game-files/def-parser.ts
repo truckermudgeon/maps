@@ -259,15 +259,13 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
   }
   logger.info('parsed', achievements.size, 'achievements');
 
-  let routes: Map<string, Route>;
-  if (entries.files.get('def/route.sii')) {
-    routes = processRouteJson(
-      convertSiiToJson('def/route.sii', entries, RouteSiiSchema),
-    );
-  } else {
-    // if `def/route.sii` doesn't exist, then the installation doesn't have the
-    // Special Transport DLC.
-    routes = new Map();
+  const routes = new Map<string, Route>();
+  for (const f of def.files) {
+    if (/^route\.(\w+\.)?sii$/.test(f)) {
+      processRouteJson(
+        convertSiiToJson('def/route.sii', entries, RouteSiiSchema),
+      ).forEach((v, k) => routes.set(k, v));
+    }
   }
   logger.info('parsed', routes.size, 'special transport routes');
 
@@ -696,6 +694,7 @@ function processAchievementsJson(
       achievements.set(a.achievementName, {
         type: 'visitCityData',
         cities: a.cities ?? [],
+        countryName: a.countryName,
       });
     }
   }
@@ -851,15 +850,14 @@ function processAchievementsJson(
     }
   }
 
-  //
-  // achievementOversizeRoutesData
-  //
-  if (obj.achievementOversizeRoutesData) {
-    for (const a of Object.values(obj.achievementOversizeRoutesData)) {
-      achievements.set(a.achievementName, {
-        type: 'oversizeRoutesData',
-      });
-    }
+  if (obj.achievementDelivery?.['.achievement.st_all_route']) {
+    const a = obj.achievementDelivery['.achievement.st_all_route'];
+    achievements.set(a.achievementName, {
+      type: 'delivery',
+      delivery: {
+        type: 'specialTransport',
+      },
+    });
   }
 
   //
@@ -869,7 +867,7 @@ function processAchievementsJson(
     for (const a of Object.values(obj.achievementFerryData)) {
       achievements.set(a.achievementName, {
         type: 'ferryData',
-        ...(a.ferryType === 'all'
+        ...(a.ferryType == null
           ? {
               ferryType: 'all',
               endpointA: assertExists(a.endpointA),
@@ -928,25 +926,13 @@ function processAchievementsJson(
   }
 
   //
-  // achievementCompareData
+  // achievementLimitData
   //
-  if (obj.achievementCompareData) {
-    for (const a of Object.values(obj.achievementCompareData)) {
+  if (obj.achievementLimitData) {
+    for (const a of Object.values(obj.achievementLimitData)) {
       achievements.set(a.achievementName, {
-        type: 'compareData',
+        type: 'limitData',
         achievementName: a.achievementName,
-      });
-    }
-  }
-
-  //
-  // achievementVisitPrefabData
-  //
-  if (obj.achievementVisitPrefabData) {
-    for (const a of Object.values(obj.achievementVisitPrefabData)) {
-      achievements.set(a.achievementName, {
-        type: 'visitPrefabData',
-        prefab: a.prefab,
       });
     }
   }

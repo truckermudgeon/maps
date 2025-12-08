@@ -157,6 +157,7 @@ export interface AchievementsSii {
     string,
     {
       cities?: string[];
+      countryName?: string;
       achievementName: string;
     }
   >;
@@ -219,12 +220,6 @@ export interface AchievementsSii {
       achievementName: string;
     }
   >;
-  achievementOversizeRoutesData?: Record<
-    string,
-    {
-      achievementName: string;
-    }
-  >;
   achievementDeliverCargoData?: Record<
     string,
     {
@@ -265,7 +260,9 @@ export interface AchievementsSii {
     string,
     {
       achievementName: string;
-      ferryType: 'all' | 'train' | 'ferry';
+      // absent in ATS
+      ferryType?: 'train' | 'ferry';
+      // absent in ETS2
       endpointA?: string;
       endpointB?: string;
     }
@@ -278,16 +275,9 @@ export interface AchievementsSii {
       cityName: string;
     }
   >;
-  achievementCompareData?: Record<
+  achievementLimitData?: Record<
     string,
     {
-      achievementName: string;
-    }
-  >;
-  achievementVisitPrefabData?: Record<
-    string,
-    {
-      prefab: string;
       achievementName: string;
     }
   >;
@@ -299,7 +289,8 @@ export const AchievementsSiiSchema: JSONSchemaType<AchievementsSii> = object(
       patternRecord(
         /^\.achievement\.[a-z]{2}_visit_[a-z]{3}$/,
         {
-          cities: nullable(stringArray), // Iowa pre-release data has missing `cities` field.
+          cities: nullable(stringArray), // if absent, `countryName` should be present
+          countryName: nullable(string), // if absent, `cities` should be present
           achievementName: string,
         },
         ['achievementName'],
@@ -354,11 +345,6 @@ export const AchievementsSiiSchema: JSONSchemaType<AchievementsSii> = object(
         achievementName: string,
       }),
     ),
-    achievementOversizeRoutesData: nullable(
-      patternRecord(/^\.achievement\.[0-9a-z_]{1,12}$/, {
-        achievementName: string,
-      }),
-    ),
     achievementDeliverCargoData: nullable(
       patternRecord(/^\.achievement\.[0-9a-z_]{1,12}$/, {
         targets: stringArray,
@@ -379,7 +365,7 @@ export const AchievementsSiiSchema: JSONSchemaType<AchievementsSii> = object(
           endpointA: nullable(token),
           endpointB: nullable(token),
           achievementName: string,
-          ferryType: stringEnum('all', 'ferry', 'train'),
+          ferryType: nullable(stringEnum('ferry', 'train')),
         },
         ['achievementName'],
       ),
@@ -390,14 +376,8 @@ export const AchievementsSiiSchema: JSONSchemaType<AchievementsSii> = object(
         cityName: token,
       }),
     ),
-    achievementCompareData: nullable(
+    achievementLimitData: nullable(
       patternRecord(/^\.achievement\.[0-9a-z_]{1,12}$/, {
-        achievementName: string,
-      }),
-    ),
-    achievementVisitPrefabData: nullable(
-      patternRecord(/^\.achievement\.[0-9a-z_]{1,12}$/, {
-        prefab: token,
         achievementName: string,
       }),
     ),

@@ -187,6 +187,7 @@ export type Achievement = Readonly<
   | {
       type: 'visitCityData';
       cities: readonly string[];
+      countryName?: string;
     }
   | {
       type: 'delivery';
@@ -204,6 +205,9 @@ export type Achievement = Readonly<
             cities: readonly Readonly<{
               cityToken: string;
             }>[];
+          }
+        | {
+            type: 'specialTransport';
           };
     }
   | {
@@ -237,9 +241,6 @@ export type Achievement = Readonly<
       targets: string[];
     }
   | {
-      type: 'oversizeRoutesData';
-    }
-  | {
       type: 'deliveryLogData';
       locations: (
         | {
@@ -257,12 +258,8 @@ export type Achievement = Readonly<
       cargos: string[];
     }
   | {
-      type: 'compareData';
+      type: 'limitData';
       achievementName: string;
-    }
-  | {
-      type: 'visitPrefabData';
-      prefab: string;
     }
 >;
 

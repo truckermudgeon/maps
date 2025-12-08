@@ -49,7 +49,6 @@ export function convertToAchievementsGeoJson(tsMapData: AchievementsMapData) {
     map,
     nodes,
     achievements,
-    prefabs,
     cities,
     triggers,
     cutscenes,
@@ -147,6 +146,8 @@ export function convertToAchievementsGeoJson(tsMapData: AchievementsMapData) {
         });
       case 'city':
         return delivery.cities.map(c => cityTokenToPoint(c.cityToken));
+      case 'specialTransport':
+        return routesToPoints();
       default:
         throw new UnreachableError(delivery);
     }
@@ -284,6 +285,10 @@ export function convertToAchievementsGeoJson(tsMapData: AchievementsMapData) {
     const points: Point[] = [];
     for (const t of trajectories.values()) {
       for (const c of t.checkpoints) {
+        if (!routes.has(c.route)) {
+          logger.warn('unknown special transport route:', c.route);
+          continue;
+        }
         const r = assertExists(routes.get(c.route));
         const cs = [r.fromCity, r.toCity].map(t => assertExists(cities.get(t)));
         const countryTokens = new Set<string>(cs.map(c => c.countryToken));
@@ -334,11 +339,22 @@ export function convertToAchievementsGeoJson(tsMapData: AchievementsMapData) {
     ([name, a]) => {
       const points: Point[] = [];
       switch (a.type) {
-        case 'visitCityData':
-          points.push(
-            ...a.cities.filter(t => cities.has(t)).map(cityTokenToPoint),
-          );
+        case 'visitCityData': {
+          if (a.cities.length) {
+            points.push(
+              ...a.cities.filter(t => cities.has(t)).map(cityTokenToPoint),
+            );
+          } else {
+            const countryName = assertExists(a.countryName);
+            points.push(
+              ...cities
+                .values()
+                .filter(c => c.countryToken === countryName)
+                .map(c => cityTokenToPoint(c.token)),
+            );
+          }
           break;
+        }
         case 'delivery':
           points.push(...deliveryAchievementToPoints(a));
           break;
@@ -375,13 +391,6 @@ export function convertToAchievementsGeoJson(tsMapData: AchievementsMapData) {
           points.push(...deliverPoints);
           break;
         }
-        case 'oversizeRoutesData':
-          if (routes.size === 0) {
-            logger.warn('ignoring empty special transports routes map');
-            break;
-          }
-          points.push(...routesToPoints());
-          break;
         case 'deliveryLogData':
           points.push(
             ...a.locations
@@ -398,7 +407,7 @@ export function convertToAchievementsGeoJson(tsMapData: AchievementsMapData) {
               .filter(exists),
           );
           break;
-        case 'compareData':
+        case 'limitData':
           if (a.achievementName === 'use_all_ports') {
             points.push(
               ...pois
@@ -420,21 +429,9 @@ export function convertToAchievementsGeoJson(tsMapData: AchievementsMapData) {
                 })),
             );
           } else {
-            logger.warn('unknown compareData achievement', a.achievementName);
+            logger.warn('unknown limitData achievement', a.achievementName);
           }
           break;
-        case 'visitPrefabData': {
-          const prefab = prefabs.values().find(p => p.token === a.prefab);
-          if (!prefab) {
-            logger.warn('unknown prefab', a.prefab, 'for achievement', a.token);
-            break;
-          }
-          points.push({
-            coordinates: prefab,
-            dlcGuard: getDlcGuard(prefab),
-          });
-          break;
-        }
         default:
           throw new UnreachableError(a);
       }
