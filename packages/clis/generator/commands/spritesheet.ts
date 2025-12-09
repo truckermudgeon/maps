@@ -1,11 +1,11 @@
 import { assert } from '@truckermudgeon/base/assert';
 import type { Poi } from '@truckermudgeon/map/types';
+import pack from 'bin-pack';
 import fs from 'fs';
 import type { JimpInstance } from 'jimp';
 import { Jimp } from 'jimp';
 import os from 'node:os';
 import path from 'path';
-import Spritesmith from 'spritesmith';
 import type { Argv, BuilderArguments } from 'yargs';
 import { logger } from '../logger';
 import { readMapData } from '../mapped-data';
@@ -90,7 +90,10 @@ async function createSpritesheet(
   pois: readonly Poi[],
   inputDir: string,
   resourcesDir: string,
-) {
+): Promise<{
+  image: Buffer;
+  coordinates: Record<string, SpriteLocation>;
+}> {
   // Notes:
   //   'dot.png' is a manually-created 20x20 off-white dot outlined in off-black
   //   'dotdot.png' is the above, but with a dot in the middle.
@@ -112,33 +115,45 @@ async function createSpritesheet(
 
   logger.log('preprocessing', origPngs.length, 'pngs...');
   const { allPngs, preprocessedPngs } = await preprocessPngs(origPngs);
+
   logger.log('arranging sprites...');
-  return new Promise<{
-    image: Buffer;
-    coordinates: Record<string, SpriteLocation>;
-  }>(resolve => {
-    Spritesmith.run(
-      { src: allPngs },
-      (_, { image, coordinates: coordsRaw, properties }) => {
-        logger.info('spritesheet size:', properties);
-        const coordinates = Object.entries(coordsRaw).reduce<
-          Record<string, SpriteLocation>
-        >((acc, [key, loc]) => {
-          acc[path.parse(key).name] = { ...loc, pixelRatio: 2 };
-          return acc;
-        }, {});
-        resolve({ image, coordinates });
-      },
-    );
-  }).finally(() => preprocessedPngs.forEach(png => fs.rmSync(png)));
+  const { width, height, items } = pack(allPngs);
+  logger.info('spritesheet size:', { width, height });
+  const sheet: JimpInstance = new Jimp({ width, height });
+  const coordinates: Record<string, SpriteLocation> = {};
+  for (const { x, y, width, height, item } of items) {
+    const sprite = await Jimp.read(item.path);
+    sheet.blit({ src: sprite, x, y });
+    coordinates[path.parse(item.path).name] = {
+      x,
+      y,
+      width,
+      height,
+      pixelRatio: 2,
+    };
+  }
+
+  logger.log('cleaning up temporary sprites...');
+  preprocessedPngs.forEach(png => fs.rmSync(png.path));
+
+  return {
+    image: await sheet.getBuffer('image/png'),
+    coordinates,
+  };
+}
+
+interface Png {
+  path: string;
+  width: number;
+  height: number;
 }
 
 async function preprocessPngs(pngPaths: string[]): Promise<{
-  allPngs: string[];
-  preprocessedPngs: string[];
+  allPngs: Png[];
+  preprocessedPngs: Png[];
 }> {
-  const allPngs: string[] = [];
-  const preprocessedPngs: string[] = [];
+  const allPngs: Png[] = [];
+  const preprocessedPngs: Png[] = [];
 
   const shrank = new Set<string>();
   const bordered = new Set<string>();
@@ -165,10 +180,19 @@ async function preprocessPngs(pngPaths: string[]): Promise<{
         const tmpFilePath = path.join(os.tmpdir(), basename);
         assert(tmpFilePath.endsWith('.png'));
         await image.write(tmpFilePath as `${string}.png`);
-        allPngs.push(tmpFilePath);
-        preprocessedPngs.push(tmpFilePath);
+        const png = {
+          path: tmpFilePath,
+          width: image.width,
+          height: image.height,
+        };
+        allPngs.push(png);
+        preprocessedPngs.push(png);
       } else {
-        allPngs.push(pngPath);
+        allPngs.push({
+          path: pngPath,
+          width: image.width,
+          height: image.height,
+        });
       }
     }),
   );
