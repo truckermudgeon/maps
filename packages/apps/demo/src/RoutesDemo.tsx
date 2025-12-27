@@ -28,7 +28,7 @@ import {
   ContoursStyle,
   GameMapStyle,
   SceneryTownSource,
-  allIcons,
+  atsIcons,
   defaultMapStyle,
 } from '@truckermudgeon/ui';
 import type { GeoJSONSource } from 'maplibre-gl';
@@ -52,7 +52,7 @@ const RoutesDemo = (props: { tileRootUrl: string }) => {
   const { mode: _maybeMode, systemMode } = useColorScheme();
   const mode = _maybeMode === 'system' ? systemMode : _maybeMode;
   const [autoHide, setAutoHide] = useState(true);
-  const [visibleIcons, setVisibleIcons] = useState(new Set(allIcons));
+  const [visibleIcons, setVisibleIcons] = useState(new Set(atsIcons));
   const [visibleAtsDlcs, setVisibleAtsDlcs] = useState(
     new Set(AtsSelectableDlcs),
   );
@@ -61,7 +61,7 @@ const RoutesDemo = (props: { tileRootUrl: string }) => {
   const iconsListProps = createListProps(
     visibleIcons,
     setVisibleIcons,
-    allIcons,
+    atsIcons,
   );
 
   const atsDlcsListProps = createListProps(

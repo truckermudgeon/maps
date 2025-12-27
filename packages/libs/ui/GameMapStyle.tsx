@@ -51,11 +51,25 @@ export const enum MapIcon {
   CityNames,
   Company,
   RoadNumber,
+  ExitNumber,
   Roadwork,
   RailCrossing,
 }
-export const allIcons: ReadonlySet<MapIcon> = new Set<MapIcon>(
-  Array.from({ length: 19 }, (_, i) => i as MapIcon),
+
+const atsOnlyIcons = new Set<MapIcon>([
+  MapIcon.AgricultureCheck,
+  MapIcon.ExitNumber,
+]);
+const ets2OnlyIcons = new Set<MapIcon>([MapIcon.Train, MapIcon.BorderCheck]);
+const allIcons: ReadonlySet<MapIcon> = new Set<MapIcon>(
+  Array.from({ length: 20 }, (_, i) => i as MapIcon),
+);
+
+export const atsIcons: ReadonlySet<MapIcon> = new Set<MapIcon>(
+  allIcons.difference(ets2OnlyIcons),
+);
+export const ets2Icons: ReadonlySet<MapIcon> = new Set<MapIcon>(
+  allIcons.difference(atsOnlyIcons),
 );
 
 export type GameMapStyleProps = {
@@ -90,7 +104,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
   const {
     game,
     tileRootUrl,
-    visibleIcons = allIcons,
+    visibleIcons = game === 'ats' ? atsIcons : ets2Icons,
     enableIconAutoHide = true,
     showSecrets = true,
     mode = 'light',
@@ -548,7 +562,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           layout={iconLayout(enableIconAutoHide, 0.4, 0.75, 1.25)}
         />
       )}
-      {visibleIcons.has(MapIcon.RoadNumber) && (
+      {visibleIcons.has(MapIcon.ExitNumber) && (
         <Layer
           id={game + 'exit-points'}
           source-layer={game}

@@ -3,8 +3,9 @@ export { BaseMapStyle } from './BaseMapStyle';
 export { modeColors } from './colors';
 export { ContoursStyle } from './Contours';
 export {
-  allIcons,
+  atsIcons,
   baseTextLayout,
+  ets2Icons,
   GameMapStyle,
   MapIcon,
   textVariableAnchor,

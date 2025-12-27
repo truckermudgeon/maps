@@ -58,10 +58,11 @@ const mapIconInfo: Record<MapIcon, { label: string; iconName: string }> = {
   [MapIcon.CityNames]: { iconName: 'city_names_ico', label: 'City names' },
   [MapIcon.Company]: { iconName: 'companies_ico', label: 'Companies' },
   [MapIcon.RoadNumber]: { iconName: 'road_numbers_ico', label: 'Road numbers' },
+  [MapIcon.ExitNumber]: { iconName: 'exit', label: 'Exit numbers' },
   [MapIcon.Roadwork]: { iconName: 'roadwork', label: 'Roadwork' },
   [MapIcon.RailCrossing]: { iconName: 'railcrossing', label: 'Rail Crossing' },
 };
-const mapIcons = new Map<MapIcon, string>(
+const allMapIcons = new Map<MapIcon, string>(
   Object.entries(mapIconInfo).map(([k, v]) => [Number(k), v.label]),
 );
 
@@ -70,17 +71,19 @@ const atsDlcs = new Map<AtsSelectableDlc, string>(
 );
 
 export interface ListProps<T> {
-  selectedItems: Set<T>;
+  selectedItems: ReadonlySet<T>;
+  allItems: ReadonlySet<T>;
   onSelectAllToggle: (newValue: boolean) => void;
   onItemToggle: (item: T, newValue: boolean) => void;
 }
 export function createListProps<T>(
-  selectedItems: Set<T>,
+  selectedItems: ReadonlySet<T>,
   setSelectedItems: (value: React.SetStateAction<Set<T>>) => void,
   allItems: ReadonlySet<T>,
 ) {
   return {
     selectedItems,
+    allItems,
     onSelectAllToggle: (all: boolean) =>
       setSelectedItems(new Set(all ? allItems : [])),
     onItemToggle: (item: T, newValue: boolean) => {
@@ -109,6 +112,9 @@ export const Legend = (props: LegendProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<number>(0);
+  const mapIcons = new Map<MapIcon, string>(
+    allMapIcons.entries().filter(([icon]) => props.icons.allItems.has(icon)),
+  );
 
   useControl(
     () => ({
@@ -266,7 +272,7 @@ const IconFooter = memo((props: IconFooterProps) => (
 
 interface CheckListProps<T> {
   items: Map<T, string>;
-  selectedItems: Set<T>;
+  selectedItems: ReadonlySet<T>;
   onItemToggle: (item: T, newValue: boolean) => void;
   icon?: (k: T) => ReactElement;
 }

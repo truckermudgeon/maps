@@ -14,10 +14,11 @@ import type {
   StreetViewProperties,
 } from '@truckermudgeon/map/types';
 import {
-  allIcons,
+  atsIcons,
   BaseMapStyle,
   ContoursStyle,
   defaultMapStyle,
+  ets2Icons,
   GameMapStyle,
   MapIcon,
   SceneryTownSource,
@@ -88,6 +89,12 @@ const Demo = (props: {
   const { tileRootUrl, pixelRootUrl, specialEvent } = props;
   const { mode: _maybeMode, systemMode } = useColorScheme();
   const mode = _maybeMode === 'system' ? systemMode : _maybeMode;
+  const [gameMap, setGameMap] = useState<'usa' | 'europe'>(
+    localStorage.getItem('tm-map') === 'europe' ? 'europe' : 'usa',
+  );
+  const [showSecrets, setShowSecrets] = useState<boolean>(
+    localStorage.getItem('tm-secrets') !== 'hide',
+  );
   const { longitude, latitude } =
     mapCenters[ensureValidMapValue(localStorage.getItem('tm-map'))];
   if (!window.location.hash) {
@@ -111,8 +118,9 @@ const Demo = (props: {
       ? { lat, lon }
       : undefined;
 
+  const gameIcons = gameMap === 'usa' ? atsIcons : ets2Icons;
   const allButTrafficIcons = new Set(
-    [...allIcons].filter(i => !trafficMapIcons.includes(i)),
+    [...gameIcons].filter(i => !trafficMapIcons.includes(i)),
   );
   const [autoHide, setAutoHide] = useState(true);
   const [visibleIcons, setVisibleIcons] = useState(allButTrafficIcons);
@@ -124,7 +132,7 @@ const Demo = (props: {
   const iconsListProps = createListProps(
     visibleIcons,
     setVisibleIcons,
-    allIcons,
+    gameIcons,
   );
 
   const atsDlcsListProps = createListProps(
@@ -133,9 +141,6 @@ const Demo = (props: {
     AtsSelectableDlcs,
   );
 
-  const [showSecrets, setShowSecrets] = useState<boolean>(
-    localStorage.getItem('tm-secrets') !== 'hide',
-  );
   const [showContours, setShowContours] = useState(false);
 
   const mapRef = useRef<MapRef>(null);
@@ -148,10 +153,6 @@ const Demo = (props: {
 
   const [streetViewGeoJSON, setStreetViewGeoJSON] =
     useState<StreetViewGeoJSON | null>(null);
-
-  const [gameMap, setGameMap] = useState<'usa' | 'europe'>(
-    localStorage.getItem('tm-map') === 'europe' ? 'europe' : 'usa',
-  );
 
   useEffect(() => {
     if (!mapRef.current || !streetViewGeoJSON) {

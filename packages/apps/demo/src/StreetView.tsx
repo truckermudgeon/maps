@@ -18,7 +18,7 @@ import '@photo-sphere-viewer/virtual-tour-plugin/index.css';
 import { assertExists } from '@truckermudgeon/base/assert';
 import { AtsSelectableDlcs } from '@truckermudgeon/map/constants';
 import {
-  allIcons,
+  atsIcons,
   BaseMapStyle,
   defaultMapStyle,
   GameMapStyle,
@@ -294,7 +294,7 @@ export const StreetView = memo(
             game={'ats'}
             mode={mode}
             enableIconAutoHide={true}
-            visibleIcons={allIcons}
+            visibleIcons={atsIcons}
             dlcs={AtsSelectableDlcs}
           />
         </MapGl>
