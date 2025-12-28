@@ -207,10 +207,7 @@ enum Ets2Dlc {
   Greece,
   NordicHorizons,
 }
-export type Ets2SelectableDlc = Exclude<
-  Ets2Dlc,
-  Ets2Dlc.HeartOfRussia | Ets2Dlc.Krone | Ets2Dlc.Feldbinder
->;
+export type Ets2SelectableDlc = Exclude<Ets2Dlc, Ets2Dlc.HeartOfRussia>;
 export const Ets2SelectableDlcs: ReadonlySet<Ets2SelectableDlc> = new Set([
   Ets2Dlc.GoingEast,
   Ets2Dlc.Scandinavia,
@@ -222,6 +219,8 @@ export const Ets2SelectableDlcs: ReadonlySet<Ets2SelectableDlc> = new Set([
   Ets2Dlc.WestBalkans,
   Ets2Dlc.Greece,
   Ets2Dlc.NordicHorizons,
+  Ets2Dlc.Krone,
+  Ets2Dlc.Feldbinder,
 ]);
 
 export type Ets2DlcGuard = Range<0, 26>;
@@ -242,11 +241,11 @@ export const Ets2DlcGuards: Record<number, ReadonlySet<Ets2SelectableDlc>> = {
   12: new Set([Ets2Dlc.Iberia, Ets2Dlc.ViveLaFrance]),
   //13: new Set([Ets2Dlc.HeartOfRussia]),
   //14: new Set([Ets2Dlc.HeartOfRussia, Ets2Dlc.BeyondTheBalticSea]),
-  //15: new Set([Ets2Dlc.Krone]),
+  15: new Set([Ets2Dlc.Krone]),
   16: new Set([Ets2Dlc.WestBalkans]),
   17: new Set([Ets2Dlc.WestBalkans, Ets2Dlc.GoingEast]),
   18: new Set([Ets2Dlc.WestBalkans, Ets2Dlc.BeyondTheBalticSea]),
-  //19: new Set([Ets2Dlc.Feldbinder]),
+  19: new Set([Ets2Dlc.Feldbinder]),
   20: new Set([Ets2Dlc.Greece]),
   21: new Set([Ets2Dlc.Greece, Ets2Dlc.GoingEast]),
   22: new Set([Ets2Dlc.Greece, Ets2Dlc.WestBalkans]),
