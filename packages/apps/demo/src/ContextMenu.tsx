@@ -52,11 +52,11 @@ type PointFeature = GeoJSON.Feature<GeoJSON.Point, { id: number }>;
 const extents = {
   ats: [
     [-124.477162, 25.767968].map(n => Math.floor(n)),
-    [-88.777474, 49.1223839].map(n => Math.ceil(n)),
+    [-88.928336, 49.122384].map(n => Math.ceil(n)),
   ].flat() as Extent,
   ets2: [
     [-10.025698, 34.897275].map(n => Math.floor(n)),
-    [33.284941, 61.881437].map(n => Math.ceil(n)),
+    [33.284941, 71.573102].map(n => Math.ceil(n)),
   ].flat() as Extent,
 };
 
