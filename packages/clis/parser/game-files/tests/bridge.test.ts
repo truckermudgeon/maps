@@ -1,5 +1,8 @@
 import { r } from '../bridge';
 
+const bufferFromHex = (hexString: string) =>
+  Buffer.from(hexString.replaceAll(' ', ''), 'hex');
+
 describe('parser bridge', () => {
   it('supports structs', () => {
     const s = new r.Struct({
@@ -18,9 +21,7 @@ describe('parser bridge', () => {
     });
 
     const res = s.decode(
-      new r.DecodeStream(
-        Buffer.from('0102 0304  0506 0708 01 0102'.replaceAll(' ', ''), 'hex'),
-      ),
+      new r.DecodeStream(bufferFromHex('0102 0304  0506 0708 01 0102')),
     );
 
     expect(res).toEqual({
@@ -42,11 +43,7 @@ describe('parser bridge', () => {
       r.uint8,
     );
 
-    const res = a.decode(
-      new r.DecodeStream(
-        Buffer.from('02 0102 0304'.replaceAll(' ', ''), 'hex'),
-      ),
-    );
+    const res = a.decode(new r.DecodeStream(bufferFromHex('02 0102 0304')));
 
     expect(res).toEqual([
       {
@@ -60,13 +57,7 @@ describe('parser bridge', () => {
 
   it('supports size-prefixed primitive arrays', () => {
     const a = new r.Array(r.uint16le, r.uint8);
-
-    const res = a.decode(
-      new r.DecodeStream(
-        Buffer.from('02 0102 0304'.replaceAll(' ', ''), 'hex'),
-      ),
-    );
-
+    const res = a.decode(new r.DecodeStream(bufferFromHex('02 0102 0304')));
     expect(res).toEqual([513, 1027]);
   });
 
@@ -78,9 +69,7 @@ describe('parser bridge', () => {
       2,
     );
 
-    const res = a.decode(
-      new r.DecodeStream(Buffer.from('0102 0304'.replaceAll(' ', ''), 'hex')),
-    );
+    const res = a.decode(new r.DecodeStream(bufferFromHex('0102 0304')));
 
     expect(res).toEqual([
       {
@@ -94,11 +83,7 @@ describe('parser bridge', () => {
 
   it('supports fixed-length primitive arrays', () => {
     const a = new r.Array(r.uint16le, 2);
-
-    const res = a.decode(
-      new r.DecodeStream(Buffer.from('0102 0304'.replaceAll(' ', ''), 'hex')),
-    );
-
+    const res = a.decode(new r.DecodeStream(bufferFromHex('0102 0304')));
     expect(res).toEqual([513, 1027]);
   });
 
@@ -119,9 +104,7 @@ describe('parser bridge', () => {
     });
 
     const res = s.decode(
-      new r.DecodeStream(
-        Buffer.from('0102 0304  0506 0708 01 0102'.replaceAll(' ', ''), 'hex'),
-      ),
+      new r.DecodeStream(bufferFromHex('0102 0304  0506 0708 01 0102')),
     );
 
     expect(res).toEqual({
@@ -143,17 +126,13 @@ describe('parser bridge', () => {
       ),
     });
 
-    const res1 = s.decode(
-      new r.DecodeStream(Buffer.from('0102 03'.replaceAll(' ', ''), 'hex')),
-    );
+    const res1 = s.decode(new r.DecodeStream(bufferFromHex('0102 03')));
     expect(res1).toEqual({
       nodeUids: [2],
       radius: 3,
     });
 
-    const res2 = s.decode(
-      new r.DecodeStream(Buffer.from('020203 04'.replaceAll(' ', ''), 'hex')),
-    );
+    const res2 = s.decode(new r.DecodeStream(bufferFromHex('020203 04')));
     expect(res2).toEqual({
       nodeUids: [2, 3],
       radius: undefined,
@@ -171,17 +150,13 @@ describe('parser bridge', () => {
       ),
     });
 
-    const res1 = s.decode(
-      new r.DecodeStream(Buffer.from('0102 03'.replaceAll(' ', ''), 'hex')),
-    );
+    const res1 = s.decode(new r.DecodeStream(bufferFromHex('0102 03')));
     expect(res1).toEqual({
       nodeUids: [2],
       radius: { foo: 3 },
     });
 
-    const res2 = s.decode(
-      new r.DecodeStream(Buffer.from('020203 04'.replaceAll(' ', ''), 'hex')),
-    );
+    const res2 = s.decode(new r.DecodeStream(bufferFromHex('020203 04')));
     expect(res2).toEqual({
       nodeUids: [2, 3],
       radius: undefined,
