@@ -51,12 +51,12 @@ type NumberPrimitive =
   | 'doublebe';
 
 class NumberBase extends Base<number> {
-  constructor(private readonly type: NumberPrimitive) {
+  constructor(readonly primitiveType: NumberPrimitive) {
     super();
   }
 
   override bind(name: string, parser: Parser): Parser {
-    parser[this.type](name);
+    parser[this.primitiveType](name);
     return parser;
   }
 }
@@ -88,9 +88,10 @@ type LengthArray<T, N, R extends T[] = []> = N extends number
 
 type SizeFn = (ctx: unknown) => number;
 
-class Array<T, N extends number | string | NumberBase | SizeFn> extends Base<
-  LengthArray<BaseOf<T>, N>
-> {
+class Array<
+  T,
+  N extends NumberBase | number /* | string | SizeFn */,
+> extends Base<LengthArray<BaseOf<T>, N>> {
   private readonly uid = crypto.randomUUID().replaceAll('-', '').slice(0, 8);
 
   constructor(
@@ -98,28 +99,65 @@ class Array<T, N extends number | string | NumberBase | SizeFn> extends Base<
     private readonly lengthField: N,
   ) {
     super();
-    if (this.type instanceof Base && this.lengthField instanceof Base) {
-      //
-    } else {
+    if (!(this.type instanceof Base)) {
       throw new Error('array: encountered unexpected type');
     }
   }
 
-  override bind(_name: string, _parser: Parser): Parser {
-    throw new Error('Method not implemented.');
-    //    const countField = '_count' + this.uid;
-    //    this.lengthField.bind(countField, parser);
-    //    return parser.array(name, { type: this.type.parser, length: countField });
+  override bind(name: string, parser: Parser): Parser {
+    const type = this.type as unknown as Base<T>;
+    if (this.lengthField instanceof NumberBase) {
+      const countField = '_count' + this.uid;
+      this.lengthField.bind(countField, parser);
+      return parser.array(name, {
+        type: type instanceof NumberBase ? type.primitiveType : type.parser,
+        length: countField,
+      });
+    } else {
+      return parser.array(name, {
+        type: type instanceof NumberBase ? type.primitiveType : type.parser,
+        length: this.lengthField,
+      });
+    }
   }
 }
 
 class Reserved extends Base<never> {
-  constructor(_type: unknown, _length = 1) {
+  constructor(
+    private readonly type: NumberBase,
+    private readonly count = 1,
+  ) {
     super();
   }
 
-  override bind(_name: string, _parser: Parser): Parser {
-    throw new Error('Method not implemented.');
+  override bind(_name: string, parser: Parser): Parser {
+    return parser.array('_skip', {
+      type: this.type.primitiveType,
+      length: this.count,
+    });
+  }
+}
+
+class Optional<T, P> extends Base<T | undefined> {
+  constructor(
+    private readonly type: Base<T>,
+    private readonly testFn: (parent: P) => boolean,
+  ) {
+    super();
+  }
+
+  override bind(name: string, parser: Parser): Parser {
+    const testFn = this.testFn;
+    return parser.array(name, {
+      type:
+        this.type instanceof NumberBase
+          ? this.type.primitiveType
+          : this.type.parser,
+      length: function () {
+        return testFn(this as unknown as P) ? 1 : 0;
+      },
+      formatter: (arr: BaseOf<typeof this.type>[]) => arr[0],
+    });
   }
 }
 
@@ -133,16 +171,6 @@ class VersionedStruct<H, T> extends Base<
   { version: keyof T } & StructType<VersionedStructEntry<H, T>>
 > {
   constructor(_tagType: unknown, _headerAndTypes: { header: H } & T) {
-    super();
-  }
-
-  override bind(_name: string, _parser: Parser): Parser {
-    throw new Error('Method not implemented.');
-  }
-}
-
-class Optional<T> extends Base<T | undefined> {
-  constructor(_type: unknown, _testFn: (ctx: never) => boolean) {
     super();
   }
 
