@@ -1,5 +1,3 @@
-import { Parser } from 'binary-parser';
-import type { BaseOf } from '../bridge';
 import { r } from '../bridge';
 
 describe('parser bridge', () => {
@@ -18,23 +16,21 @@ describe('parser bridge', () => {
         r.uint8,
       ),
     });
-    type S = BaseOf<typeof s>;
 
-    const parser = new Parser();
-    s.bind('struct', parser);
-    const res = parser.parse(
-      Buffer.from('0102 0304  0506 0708 01 0102'.replaceAll(' ', ''), 'hex'),
-    ) as unknown as S;
+    const res = s.decode(
+      new r.DecodeStream(
+        Buffer.from('0102 0304  0506 0708 01 0102'.replaceAll(' ', ''), 'hex'),
+      ),
+    );
+
     expect(res).toEqual({
-      struct: {
-        foo: 513,
-        bar: 1027,
-        nested: {
-          buzz: 2055,
-          fizz: 1541,
-        },
-        array: [{ foo: 513 }],
+      foo: 513,
+      bar: 1027,
+      nested: {
+        buzz: 2055,
+        fizz: 1541,
       },
+      array: [{ foo: 513 }],
     });
   });
 
@@ -45,37 +41,33 @@ describe('parser bridge', () => {
       }),
       r.uint8,
     );
-    type A = BaseOf<typeof a>;
 
-    const parser = new Parser();
-    a.bind('arrayTest', parser);
-    const res = parser.parse(
-      Buffer.from('02 0102 0304'.replaceAll(' ', ''), 'hex'),
-    ) as unknown as { arrayTest: A };
-    expect(res).toEqual({
-      arrayTest: [
-        {
-          foo: 513,
-        },
-        {
-          foo: 1027,
-        },
-      ],
-    });
+    const res = a.decode(
+      new r.DecodeStream(
+        Buffer.from('02 0102 0304'.replaceAll(' ', ''), 'hex'),
+      ),
+    );
+
+    expect(res).toEqual([
+      {
+        foo: 513,
+      },
+      {
+        foo: 1027,
+      },
+    ]);
   });
 
   it('supports size-prefixed primitive arrays', () => {
     const a = new r.Array(r.uint16le, r.uint8);
-    type A = BaseOf<typeof a>;
 
-    const parser = new Parser();
-    a.bind('arrayTest', parser);
-    const res = parser.parse(
-      Buffer.from('02 0102 0304'.replaceAll(' ', ''), 'hex'),
-    ) as unknown as A;
-    expect(res).toEqual({
-      arrayTest: [513, 1027],
-    });
+    const res = a.decode(
+      new r.DecodeStream(
+        Buffer.from('02 0102 0304'.replaceAll(' ', ''), 'hex'),
+      ),
+    );
+
+    expect(res).toEqual([513, 1027]);
   });
 
   it('supports fixed-length struct arrays', () => {
@@ -85,37 +77,29 @@ describe('parser bridge', () => {
       }),
       2,
     );
-    type A = BaseOf<typeof a>;
 
-    const parser = new Parser();
-    a.bind('arrayTest', parser);
-    const res = parser.parse(
-      Buffer.from('0102 0304'.replaceAll(' ', ''), 'hex'),
-    ) as unknown as { arrayTest: A };
-    expect(res).toEqual({
-      arrayTest: [
-        {
-          foo: 513,
-        },
-        {
-          foo: 1027,
-        },
-      ],
-    });
+    const res = a.decode(
+      new r.DecodeStream(Buffer.from('0102 0304'.replaceAll(' ', ''), 'hex')),
+    );
+
+    expect(res).toEqual([
+      {
+        foo: 513,
+      },
+      {
+        foo: 1027,
+      },
+    ]);
   });
 
   it('supports fixed-length primitive arrays', () => {
     const a = new r.Array(r.uint16le, 2);
-    type A = BaseOf<typeof a>;
 
-    const parser = new Parser();
-    a.bind('arrayTest', parser);
-    const res = parser.parse(
-      Buffer.from('0102 0304'.replaceAll(' ', ''), 'hex'),
-    ) as unknown as A;
-    expect(res).toEqual({
-      arrayTest: [513, 1027],
-    });
+    const res = a.decode(
+      new r.DecodeStream(Buffer.from('0102 0304'.replaceAll(' ', ''), 'hex')),
+    );
+
+    expect(res).toEqual([513, 1027]);
   });
 
   it('supports reserved fields', () => {
@@ -133,22 +117,20 @@ describe('parser bridge', () => {
         r.uint8,
       ),
     });
-    type S = BaseOf<typeof s>;
 
-    const parser = new Parser();
-    s.bind('struct', parser);
-    const res = parser.parse(
-      Buffer.from('0102 0304  0506 0708 01 0102'.replaceAll(' ', ''), 'hex'),
-    ) as unknown as S;
+    const res = s.decode(
+      new r.DecodeStream(
+        Buffer.from('0102 0304  0506 0708 01 0102'.replaceAll(' ', ''), 'hex'),
+      ),
+    );
+
     expect(res).toEqual({
-      struct: {
-        foo: 513,
-        nested: {
-          buzz: 2055,
-          fizz: 1541,
-        },
-        array: [{ foo: 513 }],
+      foo: 513,
+      nested: {
+        buzz: 2055,
+        fizz: 1541,
       },
+      array: [{ foo: 513 }],
     });
   });
 
@@ -161,25 +143,20 @@ describe('parser bridge', () => {
       ),
     });
 
-    const parser = new Parser();
-    s.bind('struct', parser);
-
-    expect(
-      parser.parse(Buffer.from('0102 03'.replaceAll(' ', ''), 'hex')),
-    ).toEqual({
-      struct: {
-        nodeUids: [2],
-        radius: 3,
-      },
+    const res1 = s.decode(
+      new r.DecodeStream(Buffer.from('0102 03'.replaceAll(' ', ''), 'hex')),
+    );
+    expect(res1).toEqual({
+      nodeUids: [2],
+      radius: 3,
     });
 
-    expect(
-      parser.parse(Buffer.from('020203 04'.replaceAll(' ', ''), 'hex')),
-    ).toEqual({
-      struct: {
-        nodeUids: [2, 3],
-        radius: undefined,
-      },
+    const res2 = s.decode(
+      new r.DecodeStream(Buffer.from('020203 04'.replaceAll(' ', ''), 'hex')),
+    );
+    expect(res2).toEqual({
+      nodeUids: [2, 3],
+      radius: undefined,
     });
   });
 
@@ -194,27 +171,20 @@ describe('parser bridge', () => {
       ),
     });
 
-    const parser = new Parser();
-    s.bind('struct', parser);
-
-    expect(
-      parser.parse(Buffer.from('0102 03'.replaceAll(' ', ''), 'hex')),
-    ).toEqual({
-      struct: {
-        nodeUids: [2],
-        radius: {
-          foo: 3,
-        },
-      },
+    const res1 = s.decode(
+      new r.DecodeStream(Buffer.from('0102 03'.replaceAll(' ', ''), 'hex')),
+    );
+    expect(res1).toEqual({
+      nodeUids: [2],
+      radius: { foo: 3 },
     });
 
-    expect(
-      parser.parse(Buffer.from('020203 04'.replaceAll(' ', ''), 'hex')),
-    ).toEqual({
-      struct: {
-        nodeUids: [2, 3],
-        radius: undefined,
-      },
+    const res2 = s.decode(
+      new r.DecodeStream(Buffer.from('020203 04'.replaceAll(' ', ''), 'hex')),
+    );
+    expect(res2).toEqual({
+      nodeUids: [2, 3],
+      radius: undefined,
     });
   });
 });

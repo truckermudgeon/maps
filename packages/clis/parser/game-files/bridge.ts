@@ -22,12 +22,18 @@ const p = () => new Parser();
 
 abstract class Base<T> {
   readonly parser = p();
-
-  decode(_stream: DecodeStream): T {
-    throw new Error();
-  }
+  readonly dummyT: T = undefined as T;
 
   abstract bind(name: string, parser: Parser): Parser;
+
+  decode(stream: DecodeStream): T {
+    const parser = new Parser();
+    this.bind('root', parser);
+    const res = parser.parse(stream.buffer) as unknown as {
+      root: T;
+    };
+    return res.root;
+  }
 }
 
 type NumberPrimitive =
@@ -75,6 +81,15 @@ class Struct<T extends Record<string, unknown>> extends Base<StructType<T>> {
 
   override bind(name: string, parser: Parser): Parser {
     return parser.nest(name, { type: this.parser });
+  }
+
+  override decode(stream: DecodeStream): StructType<T> {
+    const parser = new Parser();
+    this.bind('root', parser);
+    const res = parser.parse(stream.buffer) as unknown as {
+      root: StructType<T>;
+    };
+    return res.root;
   }
 }
 
