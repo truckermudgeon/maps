@@ -50,7 +50,7 @@ type NumberPrimitive =
   | 'doublele'
   | 'doublebe';
 
-class NumberBase extends Base<number> {
+class NumberBase<T extends number | bigint = number> extends Base<T> {
   constructor(readonly primitiveType: NumberPrimitive) {
     super();
   }
@@ -112,6 +112,10 @@ class Array<
       return parser.array(name, {
         type: type instanceof NumberBase ? type.primitiveType : type.parser,
         length: countField,
+        formatter: function (item: unknown) {
+          delete (this as Record<string, unknown>)[countField];
+          return item;
+        },
       });
     } else {
       return parser.array(name, {
@@ -134,6 +138,7 @@ class Reserved extends Base<never> {
     return parser.array('_skip', {
       type: this.type.primitiveType,
       length: this.count,
+      formatter: () => undefined,
     });
   }
 }
@@ -215,5 +220,5 @@ export const float4 = new r.Array(floatle, 4);
 export const paddedString = new Base();
 export const token64 = new Base();
 export const uint64String = new Base();
-export const uint64le = new Base();
 */
+export const uint64le = new NumberBase<bigint>('uint64le');

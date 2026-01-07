@@ -25,7 +25,7 @@ describe('parser bridge', () => {
     const res = parser.parse(
       Buffer.from('0102 0304  0506 0708 01 0102'.replaceAll(' ', ''), 'hex'),
     ) as unknown as S;
-    expect(res).toMatchObject({
+    expect(res).toEqual({
       struct: {
         foo: 513,
         bar: 1027,
@@ -52,7 +52,7 @@ describe('parser bridge', () => {
     const res = parser.parse(
       Buffer.from('02 0102 0304'.replaceAll(' ', ''), 'hex'),
     ) as unknown as { arrayTest: A };
-    expect(res).toMatchObject({
+    expect(res).toEqual({
       arrayTest: [
         {
           foo: 513,
@@ -73,7 +73,7 @@ describe('parser bridge', () => {
     const res = parser.parse(
       Buffer.from('02 0102 0304'.replaceAll(' ', ''), 'hex'),
     ) as unknown as A;
-    expect(res).toMatchObject({
+    expect(res).toEqual({
       arrayTest: [513, 1027],
     });
   });
@@ -113,7 +113,7 @@ describe('parser bridge', () => {
     const res = parser.parse(
       Buffer.from('0102 0304'.replaceAll(' ', ''), 'hex'),
     ) as unknown as A;
-    expect(res).toMatchObject({
+    expect(res).toEqual({
       arrayTest: [513, 1027],
     });
   });
@@ -140,7 +140,7 @@ describe('parser bridge', () => {
     const res = parser.parse(
       Buffer.from('0102 0304  0506 0708 01 0102'.replaceAll(' ', ''), 'hex'),
     ) as unknown as S;
-    expect(res).toMatchObject({
+    expect(res).toEqual({
       struct: {
         foo: 513,
         nested: {
@@ -166,7 +166,7 @@ describe('parser bridge', () => {
 
     expect(
       parser.parse(Buffer.from('0102 03'.replaceAll(' ', ''), 'hex')),
-    ).toMatchObject({
+    ).toEqual({
       struct: {
         nodeUids: [2],
         radius: 3,
@@ -175,7 +175,7 @@ describe('parser bridge', () => {
 
     expect(
       parser.parse(Buffer.from('020203 04'.replaceAll(' ', ''), 'hex')),
-    ).toMatchObject({
+    ).toEqual({
       struct: {
         nodeUids: [2, 3],
         radius: undefined,
@@ -199,7 +199,7 @@ describe('parser bridge', () => {
 
     expect(
       parser.parse(Buffer.from('0102 03'.replaceAll(' ', ''), 'hex')),
-    ).toMatchObject({
+    ).toEqual({
       struct: {
         nodeUids: [2],
         radius: {
@@ -210,7 +210,7 @@ describe('parser bridge', () => {
 
     expect(
       parser.parse(Buffer.from('020203 04'.replaceAll(' ', ''), 'hex')),
-    ).toMatchObject({
+    ).toEqual({
       struct: {
         nodeUids: [2, 3],
         radius: undefined,
