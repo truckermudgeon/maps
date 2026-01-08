@@ -10,7 +10,7 @@ import type {
 
 // This file exports `restructure` API symbols backed by `binary-parser`.
 // Note that the adapters in this class implement only the bare minimum of the
-// `restructure` API required in order for the `parser` project to work.
+// `restructure` API required in order for `sector-parser` to work.
 
 abstract class BinaryParserBase<T> implements Base<T> {
   abstract bind(name: string, parser: Parser): Parser;
@@ -31,8 +31,8 @@ abstract class BinaryParserBase<T> implements Base<T> {
     return res.root;
   }
 
-  fromBuffer(): T {
-    throw new Error('Method not implemented.');
+  fromBuffer(buffer: Buffer): T {
+    return this.decode(new DecodeStream(buffer));
   }
 
   size(): number {
@@ -73,6 +73,19 @@ class NumberBase<
   }
 }
 
+class String extends BinaryParserBase<string> {
+  constructor(private readonly length: number) {
+    super();
+  }
+
+  override bind(name: string, parser: Parser): Parser {
+    return parser.string(name, {
+      length: this.length,
+      encoding: 'ascii',
+    });
+  }
+}
+
 class Struct<T extends Record<string, unknown>> extends BinaryParserBase<
   StructType<T>
 > {
@@ -86,6 +99,7 @@ class Struct<T extends Record<string, unknown>> extends BinaryParserBase<
       if (val instanceof BinaryParserBase) {
         val.bind(key, sParser);
       } else {
+        console.error(key, val);
         throw new Error('struct: encountered unexpected type');
       }
     }
@@ -255,6 +269,7 @@ const uint32le = new NumberBase('uint32le');
 const uint8 = new NumberBase('uint8');
 
 export const r = {
+  String,
   Struct,
   Array,
   Reserved,
