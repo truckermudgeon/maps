@@ -1,4 +1,4 @@
-import { r } from '../bridge';
+import { paddedString, r, token64, uint64String } from '../bridge';
 
 const bufferFromHex = (hexString: string) =>
   Buffer.from(hexString.replaceAll(' ', ''), 'hex');
@@ -161,5 +161,72 @@ describe('parser bridge', () => {
       nodeUids: [2, 3],
       radius: undefined,
     });
+  });
+
+  it('supports padded strings', () => {
+    const s = new r.Struct({
+      foo: paddedString,
+    });
+
+    const res1 = s.decode(
+      new r.DecodeStream(bufferFromHex('0500 0000  0000 0000 68656c6c6f ffff')),
+    );
+    expect(res1).toEqual({ foo: 'hello' });
+
+    const res2 = paddedString.decode(
+      new r.DecodeStream(bufferFromHex('0000 0000 ffff')),
+    );
+    expect(res2).toEqual('');
+  });
+
+  it('supports uint64 strings', () => {
+    const s = new r.Struct({
+      foo: uint64String,
+    });
+
+    const res1 = s.decode(
+      new r.DecodeStream(bufferFromHex('0500 0000  0000 0000 68656c6c6f ffff')),
+    );
+    expect(res1).toEqual({ foo: 'hello' });
+
+    const res2 = paddedString.decode(
+      new r.DecodeStream(bufferFromHex('0000 0000 0000 0000 ffff')),
+    );
+    expect(res2).toEqual('');
+  });
+
+  it('supports tokens', () => {
+    const s = new r.Struct({
+      foo: token64,
+    });
+
+    const res = s.decode(
+      new r.DecodeStream(bufferFromHex('6865 6c6c 6fff 0000')),
+    );
+    expect(res).toEqual({ foo: '5ccrrzolp0' });
+  });
+
+  it('supports versioned structs', () => {
+    const s = new r.VersionedStruct(r.uint8, {
+      header: {
+        foo: r.int8,
+        bar: r.int8,
+      },
+      1: {
+        one: r.int8,
+      },
+      2: {
+        two: r.int8,
+        twoAgain: r.int8,
+      },
+    });
+
+    const res1 = s.decode(new r.DecodeStream(bufferFromHex('01 0102 0b')));
+    console.log(res1);
+    expect(res1).toEqual({ version: 1, foo: 1, bar: 2, one: 11 });
+
+    const res2 = s.decode(new r.DecodeStream(bufferFromHex('02 0102 1516')));
+    console.log(res2);
+    expect(res2).toEqual({ version: 2, foo: 1, bar: 2, two: 21, twoAgain: 22 });
   });
 });

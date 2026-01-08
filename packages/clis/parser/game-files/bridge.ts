@@ -187,15 +187,46 @@ type VersionedStructEntry<H, T, X = keyof T> = X extends 'header'
     ? { version: X } & H & T[X]
     : never;
 
-class VersionedStruct<H, T> extends Base<
-  { version: keyof T } & StructType<VersionedStructEntry<H, T>>
-> {
-  constructor(_tagType: unknown, _headerAndTypes: { header: H } & T) {
+class VersionedStruct<
+  H extends StructFields<Record<string, unknown>>,
+  T,
+> extends Base<{ version: keyof T } & StructType<VersionedStructEntry<H, T>>> {
+  private readonly types: Omit<{ header: H } & T, 'header'>;
+
+  constructor(
+    private readonly tagType: NumberBase,
+    headerAndTypes: { header: H } & T,
+  ) {
     super();
+    this.tagType.bind('version', this.parser);
+    const { header, ...types } = headerAndTypes;
+    this.types = types;
+
+    const headerStruct = new Struct(header);
+    headerStruct.bind(null as unknown as string, this.parser);
   }
 
-  override bind(_name: string, _parser: Parser): Parser {
-    throw new Error('Method not implemented.');
+  override bind(name: string, parser: Parser): Parser {
+    const vsParser = new Parser();
+    vsParser.nest(null as unknown as string, { type: this.parser });
+
+    const parserMap: Partial<Record<keyof T, Parser>> = {};
+    for (const key of Object.keys(this.types)) {
+      const structDef = this.types[key as keyof typeof this.types];
+      const struct = new Struct(
+        structDef as StructFields<Record<string, unknown>>,
+      );
+      const structParser = new Parser();
+      struct.bind(null as unknown as string, structParser);
+      parserMap[key as keyof T] = structParser;
+    }
+
+    vsParser.choice(null as unknown as string, {
+      tag: 'version',
+      choices: parserMap,
+    });
+
+    return parser.nest(name, { type: vsParser });
   }
 }
 
@@ -229,11 +260,80 @@ export const r = {
   int8,
 };
 
+class PaddedString extends Base<string> {
+  private readonly uid = crypto.randomUUID().replaceAll('-', '').slice(0, 8);
+
+  constructor() {
+    super();
+  }
+
+  bind(name: string, parser: Parser): Parser {
+    const sizeField = '_size' + this.uid;
+    return parser.uint32le(sizeField).wrapped(null as unknown as string, {
+      length: function () {
+        const thisRecord = this as Record<string, unknown>;
+        const length = thisRecord[sizeField] as number;
+        delete thisRecord[sizeField];
+        return length === 0 ? 0 : length + 4;
+      },
+      wrapper: buffer => buffer.subarray(4),
+      type: new Parser().string(name, {
+        greedy: true,
+        zeroTerminated: false,
+        encoding: 'ascii',
+      }),
+    });
+  }
+}
+
+class Uint64String extends Base<string> {
+  private readonly uid = crypto.randomUUID().replaceAll('-', '').slice(0, 8);
+
+  constructor() {
+    super();
+  }
+
+  bind(name: string, parser: Parser): Parser {
+    const sizeField = '_size' + this.uid;
+    return parser.uint64le(sizeField).wrapped(null as unknown as string, {
+      length: function () {
+        const thisRecord = this as Record<string, unknown>;
+        const length = Number(thisRecord[sizeField]);
+        delete thisRecord[sizeField];
+        return length;
+      },
+      wrapper: buffer => buffer,
+      type: new Parser().string(name, {
+        greedy: true,
+        zeroTerminated: false,
+        encoding: 'ascii',
+      }),
+    });
+  }
+}
+
+class Token extends Base<string> {
+  private static readonly tokenLetters = [
+    ...'\x000123456789abcdefghijklmnopqrstuvwxyz_',
+  ];
+
+  bind(name: string, parser: Parser): Parser {
+    return parser.uint64le(name, {
+      formatter: function (n: bigint) {
+        let str = '';
+        do {
+          str += Token.tokenLetters[Number(n % 38n)];
+          n /= 38n;
+        } while (n !== 0n);
+        return str.replaceAll('\x00', '');
+      },
+    });
+  }
+}
+
 export const float3 = new r.Array(floatle, 3);
 export const float4 = new r.Array(floatle, 4);
-/*
-export const paddedString = new Base();
-export const token64 = new Base();
-export const uint64String = new Base();
-*/
+export const paddedString = new PaddedString();
+export const token64 = new Token();
+export const uint64String = new Uint64String();
 export const uint64le = new NumberBase<bigint>('uint64le');
