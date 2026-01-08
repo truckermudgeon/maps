@@ -24,26 +24,27 @@ import type {
   TrajectoryItem,
   Trigger,
 } from '@truckermudgeon/map/types';
-import type { BaseOf } from 'restructure';
-import * as r from 'restructure';
+//import type { BaseOf } from 'restructure';
+//import * as r from 'restructure';
 import { logger } from '../logger';
-import {
-  float3,
-  float4,
-  paddedString,
-  token64,
-  uint64String,
-  uint64le,
-} from './restructure-helpers';
 //import {
 //  float3,
 //  float4,
 //  paddedString,
-//  r,
 //  token64,
 //  uint64String,
 //  uint64le,
-//} from './bridge';
+//} from './restructure-helpers';
+import type { BaseOf } from './bridge';
+import {
+  float3,
+  float4,
+  paddedString,
+  r,
+  token64,
+  uint64String,
+  uint64le,
+} from './bridge';
 
 // struct definitions derived from https://github.com/dariowouters/ts-map/blob/master/docs/structures/base/875/base-template.bt
 // https://github.com/sk-zk/map-docs/wiki/Map-format

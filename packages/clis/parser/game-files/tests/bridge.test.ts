@@ -166,12 +166,15 @@ describe('parser bridge', () => {
   it('supports padded strings', () => {
     const s = new r.Struct({
       foo: paddedString,
+      bar: r.uint16le,
     });
 
-    const res1 = s.decode(
-      new r.DecodeStream(bufferFromHex('0500 0000  0000 0000 68656c6c6f ffff')),
+    const stream1 = new r.DecodeStream(
+      bufferFromHex('0500 0000  0000 0000 68656c6c6f 0123'),
     );
+    const res1 = s.decode(stream1);
     expect(res1).toEqual({ foo: 'hello' });
+    expect(stream1.pos).toBe(1);
 
     const res2 = paddedString.decode(
       new r.DecodeStream(bufferFromHex('0000 0000 ffff')),
@@ -228,5 +231,33 @@ describe('parser bridge', () => {
     const res2 = s.decode(new r.DecodeStream(bufferFromHex('02 0102 1516')));
     console.log(res2);
     expect(res2).toEqual({ version: 2, foo: 1, bar: 2, two: 21, twoAgain: 22 });
+  });
+
+  it('supports arrays of versioned structs', () => {
+    const s = new r.Array(
+      new r.VersionedStruct(r.uint8, {
+        header: {
+          foo: r.int8,
+          bar: r.int8,
+        },
+        1: {
+          one: r.int8,
+        },
+        2: {
+          two: r.int8,
+          twoAgain: r.int8,
+        },
+      }),
+      r.uint8,
+    );
+
+    const res1 = s.decode(
+      new r.DecodeStream(bufferFromHex('02 01 0102 0b  02 0102 1516')),
+    );
+    console.log(JSON.stringify(res1, null, 2));
+    expect(res1).toEqual([
+      { version: 1, foo: 1, bar: 2, one: 11 },
+      { version: 2, foo: 1, bar: 2, two: 21, twoAgain: 22 },
+    ]);
   });
 });

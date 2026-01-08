@@ -21,7 +21,6 @@ export type BaseOf<T> = T extends Base<infer U> ? U : never;
 const p = () => new Parser();
 
 abstract class Base<T> {
-  readonly parser = p();
   readonly dummyT: T = undefined as T;
 
   abstract bind(name: string, parser: Parser): Parser;
@@ -29,6 +28,13 @@ abstract class Base<T> {
   decode(stream: DecodeStream): T {
     const parser = new Parser();
     this.bind('root', parser);
+    parser.saveOffset('_privateOffset').seek(function (
+      this: Record<string, unknown>,
+    ) {
+      stream.pos = this['_privateOffset'] as number;
+      return 0;
+    });
+
     const res = parser.parse(stream.buffer) as unknown as {
       root: T;
     };
@@ -70,26 +76,18 @@ class NumberBase<T extends number | bigint = number> extends Base<T> {
 class Struct<T extends Record<string, unknown>> extends Base<StructType<T>> {
   constructor(private readonly map: StructFields<T>) {
     super();
+  }
+
+  override bind(name: string, parser: Parser): Parser {
+    const sParser = new Parser();
     for (const [key, val] of Object.entries(this.map)) {
       if (val instanceof Base) {
-        val.bind(key, this.parser);
+        val.bind(key, sParser);
       } else {
         throw new Error('struct: encountered unexpected type');
       }
     }
-  }
-
-  override bind(name: string, parser: Parser): Parser {
-    return parser.nest(name, { type: this.parser });
-  }
-
-  override decode(stream: DecodeStream): StructType<T> {
-    const parser = new Parser();
-    this.bind('root', parser);
-    const res = parser.parse(stream.buffer) as unknown as {
-      root: StructType<T>;
-    };
-    return res.root;
+    return parser.nest(name, { type: sParser });
   }
 }
 
@@ -101,11 +99,12 @@ type LengthArray<T, N, R extends T[] = []> = N extends number
       : LengthArray<T, N, [T, ...R]>
   : T[];
 
-type SizeFn = (ctx: unknown) => number;
+type SizeFn<P> = (ctx: P) => number;
 
 class Array<
   T,
-  N extends NumberBase | number /* | string | SizeFn */,
+  N extends NumberBase | number | string | SizeFn<P>,
+  P = never,
 > extends Base<LengthArray<BaseOf<T>, N>> {
   private readonly uid = crypto.randomUUID().replaceAll('-', '').slice(0, 8);
 
@@ -120,21 +119,37 @@ class Array<
   }
 
   override bind(name: string, parser: Parser): Parser {
-    const type = this.type as unknown as Base<T>;
+    const itemType = this.type as unknown as Base<T>;
+    let type;
+    if (itemType instanceof NumberBase) {
+      type = itemType.primitiveType;
+    } else {
+      type = new Parser();
+      itemType.bind(null as unknown as string, type);
+    }
+
     if (this.lengthField instanceof NumberBase) {
       const countField = '_count' + this.uid;
       this.lengthField.bind(countField, parser);
       return parser.array(name, {
-        type: type instanceof NumberBase ? type.primitiveType : type.parser,
+        type,
         length: countField,
         formatter: function (item: unknown) {
-          delete (this as Record<string, unknown>)[countField];
+          //delete (this as Record<string, unknown>)[countField];
           return item;
+        },
+      });
+    } else if (this.lengthField instanceof Function) {
+      const lengthFn: (p: P) => number = this.lengthField;
+      return parser.array(name, {
+        type,
+        length: function () {
+          return lengthFn(this as unknown as P);
         },
       });
     } else {
       return parser.array(name, {
-        type: type instanceof NumberBase ? type.primitiveType : type.parser,
+        type,
         length: this.lengthField,
       });
     }
@@ -167,12 +182,18 @@ class Optional<T, P> extends Base<T | undefined> {
   }
 
   override bind(name: string, parser: Parser): Parser {
+    const itemType = this.type as unknown as Base<T>;
+    let type;
+    if (itemType instanceof NumberBase) {
+      type = itemType.primitiveType;
+    } else {
+      type = new Parser();
+      itemType.bind(null as unknown as string, type);
+    }
+
     const testFn = this.testFn;
     return parser.array(name, {
-      type:
-        this.type instanceof NumberBase
-          ? this.type.primitiveType
-          : this.type.parser,
+      type,
       length: function () {
         return testFn(this as unknown as P) ? 1 : 0;
       },
@@ -191,6 +212,7 @@ class VersionedStruct<
   H extends StructFields<Record<string, unknown>>,
   T,
 > extends Base<{ version: keyof T } & StructType<VersionedStructEntry<H, T>>> {
+  private readonly headerStruct: Struct<Record<string, unknown>>;
   private readonly types: Omit<{ header: H } & T, 'header'>;
 
   constructor(
@@ -198,17 +220,15 @@ class VersionedStruct<
     headerAndTypes: { header: H } & T,
   ) {
     super();
-    this.tagType.bind('version', this.parser);
     const { header, ...types } = headerAndTypes;
     this.types = types;
-
-    const headerStruct = new Struct(header);
-    headerStruct.bind(null as unknown as string, this.parser);
+    this.headerStruct = new Struct(header as Record<string, unknown>);
   }
 
   override bind(name: string, parser: Parser): Parser {
     const vsParser = new Parser();
-    vsParser.nest(null as unknown as string, { type: this.parser });
+    this.tagType.bind('version', vsParser);
+    this.headerStruct.bind(null as unknown as string, vsParser);
 
     const parserMap: Partial<Record<keyof T, Parser>> = {};
     for (const key of Object.keys(this.types)) {
@@ -231,6 +251,8 @@ class VersionedStruct<
 }
 
 class DecodeStream {
+  pos = 0;
+
   constructor(readonly buffer: Buffer) {}
 }
 
@@ -273,7 +295,7 @@ class PaddedString extends Base<string> {
       length: function () {
         const thisRecord = this as Record<string, unknown>;
         const length = thisRecord[sizeField] as number;
-        delete thisRecord[sizeField];
+        //delete thisRecord[sizeField];
         return length === 0 ? 0 : length + 4;
       },
       wrapper: buffer => buffer.subarray(4),
@@ -299,7 +321,7 @@ class Uint64String extends Base<string> {
       length: function () {
         const thisRecord = this as Record<string, unknown>;
         const length = Number(thisRecord[sizeField]);
-        delete thisRecord[sizeField];
+        //delete thisRecord[sizeField];
         return length;
       },
       wrapper: buffer => buffer,
