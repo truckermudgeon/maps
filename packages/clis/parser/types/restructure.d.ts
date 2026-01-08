@@ -126,7 +126,7 @@ declare module 'restructure' {
     size(): number;
   }
 
-  type VersionedStructEntry<H, T, X = keyof T> = X extends 'header'
+  export type VersionedStructEntry<H, T, X = keyof T> = X extends 'header'
     ? never
     : X extends keyof T
       ? { version: X } & H & T[X]

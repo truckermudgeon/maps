@@ -1,28 +1,18 @@
 import { Parser } from 'binary-parser';
+import type {
+  Base,
+  BaseOf,
+  LengthArray,
+  StructFields,
+  StructType,
+  VersionedStructEntry,
+} from 'restructure';
 
-type StructType<T extends Record<string, unknown>> = {
-  [K in keyof T]: T[K] extends Base<never>
-    ? undefined
-    : T[K] extends Base<infer U>
-      ? U
-      : T[K] extends () => infer V
-        ? V
-        : T[K];
-};
+// This file exports `restructure` API symbols backed by `binary-parser`.
+// Note that the adapters in this class implement only the bare minimum of the
+// `restructure` API required in order for the `parser` project to work.
 
-type StructFields<T extends Record<string, unknown>> = {
-  [K in keyof T]: T[K] extends () => infer V
-    ? (this: StructType<Omit<T, K>>) => V
-    : T[K];
-};
-
-export type BaseOf<T> = T extends Base<infer U> ? U : never;
-
-const p = () => new Parser();
-
-abstract class Base<T> {
-  readonly dummyT: T = undefined as T;
-
+abstract class BinaryParserBase<T> implements Base<T> {
   abstract bind(name: string, parser: Parser): Parser;
 
   decode(stream: DecodeStream): T {
@@ -39,6 +29,14 @@ abstract class Base<T> {
       root: T;
     };
     return res.root;
+  }
+
+  fromBuffer(): T {
+    throw new Error('Method not implemented.');
+  }
+
+  size(): number {
+    throw new Error('Method not implemented.');
   }
 }
 
@@ -62,7 +60,9 @@ type NumberPrimitive =
   | 'doublele'
   | 'doublebe';
 
-class NumberBase<T extends number | bigint = number> extends Base<T> {
+class NumberBase<
+  T extends number | bigint = number,
+> extends BinaryParserBase<T> {
   constructor(readonly primitiveType: NumberPrimitive) {
     super();
   }
@@ -73,7 +73,9 @@ class NumberBase<T extends number | bigint = number> extends Base<T> {
   }
 }
 
-class Struct<T extends Record<string, unknown>> extends Base<StructType<T>> {
+class Struct<T extends Record<string, unknown>> extends BinaryParserBase<
+  StructType<T>
+> {
   constructor(private readonly map: StructFields<T>) {
     super();
   }
@@ -81,7 +83,7 @@ class Struct<T extends Record<string, unknown>> extends Base<StructType<T>> {
   override bind(name: string, parser: Parser): Parser {
     const sParser = new Parser();
     for (const [key, val] of Object.entries(this.map)) {
-      if (val instanceof Base) {
+      if (val instanceof BinaryParserBase) {
         val.bind(key, sParser);
       } else {
         throw new Error('struct: encountered unexpected type');
@@ -91,21 +93,13 @@ class Struct<T extends Record<string, unknown>> extends Base<StructType<T>> {
   }
 }
 
-type LengthArray<T, N, R extends T[] = []> = N extends number
-  ? number extends N
-    ? T[]
-    : R['length'] extends N
-      ? R
-      : LengthArray<T, N, [T, ...R]>
-  : T[];
-
 type SizeFn<P> = (ctx: P) => number;
 
 class Array<
   T,
   N extends NumberBase | number | string | SizeFn<P>,
   P = never,
-> extends Base<LengthArray<BaseOf<T>, N>> {
+> extends BinaryParserBase<LengthArray<BaseOf<T>, N>> {
   private readonly uid = crypto.randomUUID().replaceAll('-', '').slice(0, 8);
 
   constructor(
@@ -113,13 +107,13 @@ class Array<
     private readonly lengthField: N,
   ) {
     super();
-    if (!(this.type instanceof Base)) {
+    if (!(this.type instanceof BinaryParserBase)) {
       throw new Error('array: encountered unexpected type');
     }
   }
 
   override bind(name: string, parser: Parser): Parser {
-    const itemType = this.type as unknown as Base<T>;
+    const itemType = this.type as unknown as BinaryParserBase<T>;
     let type;
     if (itemType instanceof NumberBase) {
       type = itemType.primitiveType;
@@ -156,7 +150,7 @@ class Array<
   }
 }
 
-class Reserved extends Base<never> {
+class Reserved extends BinaryParserBase<never> {
   constructor(
     private readonly type: NumberBase,
     private readonly count = 1,
@@ -173,16 +167,16 @@ class Reserved extends Base<never> {
   }
 }
 
-class Optional<T, P> extends Base<T | undefined> {
+class Optional<T, P> extends BinaryParserBase<T | undefined> {
   constructor(
-    private readonly type: Base<T>,
+    private readonly type: BinaryParserBase<T>,
     private readonly testFn: (parent: P) => boolean,
   ) {
     super();
   }
 
   override bind(name: string, parser: Parser): Parser {
-    const itemType = this.type as unknown as Base<T>;
+    const itemType = this.type as unknown as BinaryParserBase<T>;
     let type;
     if (itemType instanceof NumberBase) {
       type = itemType.primitiveType;
@@ -202,16 +196,12 @@ class Optional<T, P> extends Base<T | undefined> {
   }
 }
 
-type VersionedStructEntry<H, T, X = keyof T> = X extends 'header'
-  ? never
-  : X extends keyof T
-    ? { version: X } & H & T[X]
-    : never;
-
 class VersionedStruct<
   H extends StructFields<Record<string, unknown>>,
   T,
-> extends Base<{ version: keyof T } & StructType<VersionedStructEntry<H, T>>> {
+> extends BinaryParserBase<
+  { version: keyof T } & StructType<VersionedStructEntry<H, T>>
+> {
   private readonly headerStruct: Struct<Record<string, unknown>>;
   private readonly types: Omit<{ header: H } & T, 'header'>;
 
@@ -282,7 +272,7 @@ export const r = {
   int8,
 };
 
-class PaddedString extends Base<string> {
+class PaddedString extends BinaryParserBase<string> {
   private readonly uid = crypto.randomUUID().replaceAll('-', '').slice(0, 8);
 
   constructor() {
@@ -308,7 +298,7 @@ class PaddedString extends Base<string> {
   }
 }
 
-class Uint64String extends Base<string> {
+class Uint64String extends BinaryParserBase<string> {
   private readonly uid = crypto.randomUUID().replaceAll('-', '').slice(0, 8);
 
   constructor() {
@@ -334,7 +324,7 @@ class Uint64String extends Base<string> {
   }
 }
 
-class Token extends Base<string> {
+class Token extends BinaryParserBase<string> {
   private static readonly tokenLetters = [
     ...'\x000123456789abcdefghijklmnopqrstuvwxyz_',
   ];

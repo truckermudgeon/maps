@@ -1,4 +1,9 @@
-import { paddedString, r, token64, uint64String } from '../bridge';
+import {
+  paddedString,
+  r,
+  token64,
+  uint64String,
+} from '../binary-parser-adapter';
 
 const bufferFromHex = (hexString: string) =>
   Buffer.from(hexString.replaceAll(' ', ''), 'hex');
