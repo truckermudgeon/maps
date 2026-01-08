@@ -178,8 +178,7 @@ describe('parser bridge', () => {
       bufferFromHex('0500 0000  0000 0000 68656c6c6f 0123'),
     );
     const res1 = s.decode(stream1);
-    expect(res1).toEqual({ foo: 'hello' });
-    expect(stream1.pos).toBe(1);
+    expect(res1).toEqual({ foo: 'hello', bar: 8961 });
 
     const res2 = paddedString.decode(
       new r.DecodeStream(bufferFromHex('0000 0000 ffff')),

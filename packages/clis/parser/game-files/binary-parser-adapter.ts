@@ -105,7 +105,13 @@ class Struct<T extends Record<string, unknown>> extends BinaryParserBase<
         throw new Error('struct: encountered unexpected type');
       }
     }
-    return parser.nest(name, { type: sParser });
+    return parser.nest(name, {
+      type: sParser,
+      formatter: (item: Record<string, unknown>) => {
+        const { _tmp, ...rest } = item;
+        return rest;
+      },
+    });
   }
 }
 
@@ -116,8 +122,6 @@ class Array<
   N extends NumberBase | number | string | SizeFn<P>,
   P = never,
 > extends BinaryParserBase<LengthArray<BaseOf<T>, N>> {
-  private readonly uid = crypto.randomUUID().replaceAll('-', '').slice(0, 8);
-
   constructor(
     private readonly type: T,
     private readonly lengthField: N,
@@ -139,15 +143,11 @@ class Array<
     }
 
     if (this.lengthField instanceof NumberBase) {
-      const countField = '_count' + this.uid;
+      const countField = '_tmp';
       this.lengthField.bind(countField, parser);
       return parser.array(name, {
         type,
         length: countField,
-        formatter: function (item: unknown) {
-          //delete (this as Record<string, unknown>)[countField];
-          return item;
-        },
       });
     } else if (this.lengthField instanceof Function) {
       const lengthFn: (p: P) => number = this.lengthField;
@@ -175,7 +175,7 @@ class Reserved extends BinaryParserBase<never> {
   }
 
   override bind(_name: string, parser: Parser): Parser {
-    return parser.array('_skip', {
+    return parser.array('_tmp', {
       type: this.type.primitiveType,
       length: this.count,
       formatter: () => undefined,
@@ -290,19 +290,16 @@ export const r = {
 };
 
 class PaddedString extends BinaryParserBase<string> {
-  private readonly uid = crypto.randomUUID().replaceAll('-', '').slice(0, 8);
-
   constructor() {
     super();
   }
 
   bind(name: string, parser: Parser): Parser {
-    const sizeField = '_size' + this.uid;
+    const sizeField = '_tmp';
     return parser.uint32le(sizeField).wrapped(null as unknown as string, {
       length: function () {
         const thisRecord = this as Record<string, unknown>;
         const length = thisRecord[sizeField] as number;
-        //delete thisRecord[sizeField];
         return length === 0 ? 0 : length + 4;
       },
       wrapper: buffer => buffer.subarray(4),
@@ -316,20 +313,12 @@ class PaddedString extends BinaryParserBase<string> {
 }
 
 class Uint64String extends BinaryParserBase<string> {
-  private readonly uid = crypto.randomUUID().replaceAll('-', '').slice(0, 8);
-
-  constructor() {
-    super();
-  }
-
   bind(name: string, parser: Parser): Parser {
-    const sizeField = '_size' + this.uid;
+    const sizeField = '_tmp';
     return parser.uint64le(sizeField).wrapped(null as unknown as string, {
       length: function () {
         const thisRecord = this as Record<string, unknown>;
-        const length = Number(thisRecord[sizeField]);
-        //delete thisRecord[sizeField];
-        return length;
+        return Number(thisRecord[sizeField]);
       },
       wrapper: buffer => buffer,
       type: new Parser().string(name, {
