@@ -36,7 +36,9 @@ abstract class BinaryParserBase<T> implements Base<T> {
   }
 
   size(): number {
-    throw new Error('Method not implemented.');
+    const parser = new Parser();
+    this.bind('root', parser);
+    return parser.sizeOf();
   }
 }
 
