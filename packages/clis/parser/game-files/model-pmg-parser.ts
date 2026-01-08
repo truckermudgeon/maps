@@ -1,7 +1,6 @@
 import type { ModelDescription } from '@truckermudgeon/map/types';
-import * as r from 'restructure';
 import { logger } from '../logger';
-import { float3, uint64le } from './restructure-helpers';
+import { float3, r, uint64le } from './binary-parser';
 
 // based on https://github.com/sk-zk/TruckLib/blob/5b7ae044fef4d6541ff73dff39267231e6433810/TruckLib/Model/Model.cs
 

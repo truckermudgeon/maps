@@ -1,0 +1,357 @@
+import { Parser } from 'binary-parser';
+import type {
+  Base,
+  BaseOf,
+  LengthArray,
+  StructFields,
+  StructType,
+  VersionedStructEntry,
+} from 'restructure';
+
+// This file exports `restructure` API symbols backed by `binary-parser`.
+// Note that the adapters in this class implement only the bare minimum of the
+// `restructure` API required in order for `sector-parser` to work.
+
+abstract class BinaryParserBase<T> implements Base<T> {
+  abstract bind(name: string, parser: Parser): Parser;
+
+  decode(stream: DecodeStream): T {
+    const parser = new Parser();
+    this.bind('root', parser);
+    parser.saveOffset('_privateOffset').seek(function (
+      this: Record<string, unknown>,
+    ) {
+      stream.pos = this['_privateOffset'] as number;
+      return 0;
+    });
+
+    const res = parser.parse(stream.buffer) as unknown as {
+      root: T;
+    };
+    return res.root;
+  }
+
+  fromBuffer(buffer: Buffer): T {
+    return this.decode(new DecodeStream(buffer));
+  }
+
+  size(): number {
+    const parser = new Parser();
+    this.bind('root', parser);
+    return parser.sizeOf();
+  }
+}
+
+type NumberPrimitive =
+  | 'uint8'
+  | 'uint16le'
+  | 'uint16be'
+  | 'uint32le'
+  | 'uint32be'
+  | 'int8'
+  | 'int16le'
+  | 'int16be'
+  | 'int32le'
+  | 'int32be'
+  | 'int64be'
+  | 'int64le'
+  | 'uint64be'
+  | 'uint64le'
+  | 'floatle'
+  | 'floatbe'
+  | 'doublele'
+  | 'doublebe';
+
+class NumberBase<
+  T extends number | bigint = number,
+> extends BinaryParserBase<T> {
+  constructor(readonly primitiveType: NumberPrimitive) {
+    super();
+  }
+
+  override bind(name: string, parser: Parser): Parser {
+    parser[this.primitiveType](name);
+    return parser;
+  }
+}
+
+class String extends BinaryParserBase<string> {
+  constructor(private readonly length: number) {
+    super();
+  }
+
+  override bind(name: string, parser: Parser): Parser {
+    return parser.string(name, {
+      length: this.length,
+      encoding: 'ascii',
+    });
+  }
+}
+
+class Struct<T extends Record<string, unknown>> extends BinaryParserBase<
+  StructType<T>
+> {
+  constructor(private readonly map: StructFields<T>) {
+    super();
+  }
+
+  override bind(name: string, parser: Parser): Parser {
+    const sParser = new Parser();
+    for (const [key, val] of Object.entries(this.map)) {
+      if (val instanceof BinaryParserBase) {
+        val.bind(key, sParser);
+      } else {
+        console.error(key, val);
+        throw new Error('struct: encountered unexpected type');
+      }
+    }
+    return parser.nest(name, {
+      type: sParser,
+      formatter: (item: Record<string, unknown>) => {
+        const { _tmp, ...rest } = item;
+        return rest;
+      },
+    });
+  }
+}
+
+type SizeFn<P> = (ctx: P) => number;
+
+class Array<
+  T,
+  N extends NumberBase | number | string | SizeFn<P>,
+  P = never,
+> extends BinaryParserBase<LengthArray<BaseOf<T>, N>> {
+  constructor(
+    private readonly type: T,
+    private readonly lengthField: N,
+  ) {
+    super();
+    if (!(this.type instanceof BinaryParserBase)) {
+      throw new Error('array: encountered unexpected type');
+    }
+  }
+
+  override bind(name: string, parser: Parser): Parser {
+    const itemType = this.type as unknown as BinaryParserBase<T>;
+    let type;
+    if (itemType instanceof NumberBase) {
+      type = itemType.primitiveType;
+    } else {
+      type = new Parser();
+      itemType.bind(null as unknown as string, type);
+    }
+
+    if (this.lengthField instanceof NumberBase) {
+      const countField = '_tmp';
+      this.lengthField.bind(countField, parser);
+      return parser.array(name, {
+        type,
+        length: countField,
+      });
+    } else if (this.lengthField instanceof Function) {
+      const lengthFn: (p: P) => number = this.lengthField;
+      return parser.array(name, {
+        type,
+        length: function () {
+          return lengthFn(this as unknown as P);
+        },
+      });
+    } else {
+      return parser.array(name, {
+        type,
+        length: this.lengthField,
+      });
+    }
+  }
+}
+
+class Reserved extends BinaryParserBase<never> {
+  constructor(
+    private readonly type: NumberBase,
+    private readonly count = 1,
+  ) {
+    super();
+  }
+
+  override bind(_name: string, parser: Parser): Parser {
+    return parser.array('_tmp', {
+      type: this.type.primitiveType,
+      length: this.count,
+      formatter: () => undefined,
+    });
+  }
+}
+
+class Optional<T, P> extends BinaryParserBase<T | undefined> {
+  constructor(
+    private readonly type: BinaryParserBase<T>,
+    private readonly testFn: (parent: P) => boolean,
+  ) {
+    super();
+  }
+
+  override bind(name: string, parser: Parser): Parser {
+    const itemType = this.type as unknown as BinaryParserBase<T>;
+    let type;
+    if (itemType instanceof NumberBase) {
+      type = itemType.primitiveType;
+    } else {
+      type = new Parser();
+      itemType.bind(null as unknown as string, type);
+    }
+
+    const testFn = this.testFn;
+    return parser.array(name, {
+      type,
+      length: function () {
+        return testFn(this as unknown as P) ? 1 : 0;
+      },
+      formatter: (arr: BaseOf<typeof this.type>[]) => arr[0],
+    });
+  }
+}
+
+class VersionedStruct<
+  H extends StructFields<Record<string, unknown>>,
+  T,
+> extends BinaryParserBase<
+  { version: keyof T } & StructType<VersionedStructEntry<H, T>>
+> {
+  private readonly headerStruct: Struct<Record<string, unknown>>;
+  private readonly types: Omit<{ header: H } & T, 'header'>;
+
+  constructor(
+    private readonly tagType: NumberBase,
+    headerAndTypes: { header: H } & T,
+  ) {
+    super();
+    const { header, ...types } = headerAndTypes;
+    this.types = types;
+    this.headerStruct = new Struct(header as Record<string, unknown>);
+  }
+
+  override bind(name: string, parser: Parser): Parser {
+    const vsParser = new Parser();
+    this.tagType.bind('version', vsParser);
+    this.headerStruct.bind(null as unknown as string, vsParser);
+
+    const parserMap: Partial<Record<keyof T, Parser>> = {};
+    for (const key of Object.keys(this.types)) {
+      const structDef = this.types[key as keyof typeof this.types];
+      const struct = new Struct(
+        structDef as StructFields<Record<string, unknown>>,
+      );
+      const structParser = new Parser();
+      struct.bind(null as unknown as string, structParser);
+      parserMap[key as keyof T] = structParser;
+    }
+
+    vsParser.choice(null as unknown as string, {
+      tag: 'version',
+      choices: parserMap,
+    });
+
+    return parser.nest(name, { type: vsParser });
+  }
+}
+
+class DecodeStream {
+  pos = 0;
+
+  constructor(readonly buffer: Buffer) {}
+}
+
+const floatle = new NumberBase('floatle');
+const int16le = new NumberBase('int16le');
+const int32le = new NumberBase('int32le');
+const int8 = new NumberBase('int8');
+const uint16le = new NumberBase('uint16le');
+const uint32le = new NumberBase('uint32le');
+const uint8 = new NumberBase('uint8');
+
+export const r = {
+  String,
+  Struct,
+  Array,
+  Reserved,
+  Optional,
+  VersionedStruct,
+  //
+  DecodeStream,
+  //
+  uint16le,
+  uint32le,
+  floatle,
+  uint8,
+  int16le,
+  int32le,
+  int8,
+};
+
+class PaddedString extends BinaryParserBase<string> {
+  constructor() {
+    super();
+  }
+
+  bind(name: string, parser: Parser): Parser {
+    const sizeField = '_tmp';
+    return parser.uint32le(sizeField).wrapped(null as unknown as string, {
+      length: function () {
+        const thisRecord = this as Record<string, unknown>;
+        const length = thisRecord[sizeField] as number;
+        return length === 0 ? 0 : length + 4;
+      },
+      wrapper: buffer => buffer.subarray(4),
+      type: new Parser().string(name, {
+        greedy: true,
+        zeroTerminated: false,
+        encoding: 'ascii',
+      }),
+    });
+  }
+}
+
+class Uint64String extends BinaryParserBase<string> {
+  bind(name: string, parser: Parser): Parser {
+    const sizeField = '_tmp';
+    return parser.uint64le(sizeField).wrapped(null as unknown as string, {
+      length: function () {
+        const thisRecord = this as Record<string, unknown>;
+        return Number(thisRecord[sizeField]);
+      },
+      wrapper: buffer => buffer,
+      type: new Parser().string(name, {
+        greedy: true,
+        zeroTerminated: false,
+        encoding: 'ascii',
+      }),
+    });
+  }
+}
+
+class Token extends BinaryParserBase<string> {
+  private static readonly tokenLetters = [
+    ...'\x000123456789abcdefghijklmnopqrstuvwxyz_',
+  ];
+
+  bind(name: string, parser: Parser): Parser {
+    return parser.uint64le(name, {
+      formatter: function (n: bigint) {
+        let str = '';
+        do {
+          str += Token.tokenLetters[Number(n % 38n)];
+          n /= 38n;
+        } while (n !== 0n);
+        return str.replaceAll('\x00', '');
+      },
+    });
+  }
+}
+
+export const float3 = new r.Array(floatle, 3);
+export const float4 = new r.Array(floatle, 4);
+export const paddedString = new PaddedString();
+export const token64 = new Token();
+export const uint64String = new Uint64String();
+export const uint64le = new NumberBase<bigint>('uint64le');

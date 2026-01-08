@@ -25,16 +25,16 @@ import type {
   Trigger,
 } from '@truckermudgeon/map/types';
 import type { BaseOf } from 'restructure';
-import * as r from 'restructure';
 import { logger } from '../logger';
 import {
   float3,
   float4,
   paddedString,
+  r,
   token64,
   uint64String,
   uint64le,
-} from './restructure-helpers';
+} from './binary-parser';
 
 // struct definitions derived from https://github.com/dariowouters/ts-map/blob/master/docs/structures/base/875/base-template.bt
 // https://github.com/sk-zk/map-docs/wiki/Map-format
