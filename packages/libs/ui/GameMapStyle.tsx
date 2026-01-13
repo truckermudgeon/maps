@@ -19,6 +19,7 @@ import type {
   RoadType,
   TrafficProperties,
 } from '@truckermudgeon/map/types';
+import Color from 'color';
 import type {
   ExpressionSpecification,
   LineLayerSpecification,
@@ -72,6 +73,8 @@ export const ets2Icons: ReadonlySet<MapIcon> = new Set<MapIcon>(
   allIcons.difference(atsOnlyIcons),
 );
 
+export type SecretDisplay = 'showAsNormal' | 'showAsDashed' | 'hide';
+
 export type GameMapStyleProps = {
   /**
    * URL where .pmtiles are stored, without the trailing `/`, e.g.,
@@ -82,8 +85,8 @@ export type GameMapStyleProps = {
   visibleIcons?: ReadonlySet<MapIcon>;
   /** Defaults to true */
   enableIconAutoHide?: boolean;
-  /** Defaults to true */
-  showSecrets?: boolean;
+  /** Defaults to 'showAsNormal' */
+  showSecrets?: SecretDisplay;
   /** Defaults to 'light' */
   mode?: Mode;
   specialEvent?: 'halloween' | 'christmas';
@@ -106,7 +109,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
     tileRootUrl,
     visibleIcons = game === 'ats' ? atsIcons : ets2Icons,
     enableIconAutoHide = true,
-    showSecrets = true,
+    showSecrets = 'showAsNormal',
     mode = 'light',
     specialEvent,
   } = props;
@@ -115,9 +118,10 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
     : game === 'ats'
       ? createDlcGuardFilter(game, props.dlcs ?? AtsSelectableDlcs)
       : createDlcGuardFilter(game, props.dlcs ?? Ets2SelectableDlcs);
-  const secretFilter: ExpressionSpecification | true = showSecrets
-    ? true // show everything
-    : ['==', ['get', 'secret'], false]; // show only non-secret things
+  const secretFilter: ExpressionSpecification | true =
+    showSecrets !== 'hide'
+      ? true // show everything
+      : ['==', ['get', 'secret'], false]; // show only non-secret things
   const colors = modeColors[mode];
   addPmTilesProtocol();
 
@@ -258,6 +262,39 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
         }}
       />
       <Layer
+        id={game + 'secret-roads-case'}
+        source-layer={game}
+        type={'line'}
+        filter={[
+          'all',
+          ['==', ['geometry-type'], 'LineString'],
+          ['==', ['get', 'type'], 'road'],
+          ['!=', ['get', 'roadType'], 'train'],
+          ['==', ['get', 'hidden'], false],
+          ['==', ['get', 'secret'], showSecrets !== 'hide'], // show only secret roads
+          dlcGuardFilter,
+        ]}
+        layout={roadLineLayout}
+        paint={{
+          'line-color': roadCaseColor(mode, showSecrets === 'showAsDashed'),
+          'line-gap-width': roadLineWidth,
+          'line-width': [
+            'interpolate',
+            ['exponential', 1.5],
+            ['zoom'],
+            10,
+            1,
+            14,
+            2,
+            16,
+            3,
+          ],
+          ...(showSecrets === 'showAsDashed'
+            ? { 'line-dasharray': [2, 2] }
+            : {}),
+        }}
+      />
+      <Layer
         id={game + 'visible-roads-case'}
         source-layer={game}
         type={'line'}
@@ -267,12 +304,12 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           ['==', ['get', 'type'], 'road'],
           ['!=', ['get', 'roadType'], 'train'],
           ['==', ['get', 'hidden'], false],
+          ['==', ['get', 'secret'], false],
           dlcGuardFilter,
-          secretFilter,
         ]}
         layout={roadLineLayout}
         paint={{
-          'line-color': roadCaseColor(mode),
+          'line-color': roadCaseColor(mode, false),
           'line-gap-width': roadLineWidth,
           'line-width': [
             'interpolate',
@@ -1168,11 +1205,17 @@ const roadColor = (mode: 'light' | 'dark'): ExpressionSpecification => [
   ]) as Array7<string>),
   '#f0f', //fallback
 ];
-const roadCaseColor = (mode: 'light' | 'dark'): ExpressionSpecification => [
+const roadCaseColor = (
+  mode: 'light' | 'dark',
+  darken: boolean,
+): ExpressionSpecification => [
   'match',
   ['get', 'roadType'],
   ...(Object.entries(roadColors[mode]).flatMap(
-    ([roadType, [, casingColor]]) => [roadType, casingColor],
+    ([roadType, [, casingColor]]) => [
+      roadType,
+      darken ? Color(casingColor).darken(0.2).string() : casingColor,
+    ],
   ) as Array7<string>),
   '#b0b', // fallback
 ];

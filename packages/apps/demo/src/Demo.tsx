@@ -13,6 +13,7 @@ import type {
   PhotoSphereProperties,
   StreetViewProperties,
 } from '@truckermudgeon/map/types';
+import type { SecretDisplay } from '@truckermudgeon/ui';
 import {
   atsIcons,
   BaseMapStyle,
@@ -92,8 +93,8 @@ const Demo = (props: {
   const [gameMap, setGameMap] = useState<'usa' | 'europe'>(
     localStorage.getItem('tm-map') === 'europe' ? 'europe' : 'usa',
   );
-  const [showSecrets, setShowSecrets] = useState<boolean>(
-    localStorage.getItem('tm-secrets') !== 'hide',
+  const [showSecrets, setShowSecrets] = useState<SecretDisplay>(
+    ensureValidSecretsValue(localStorage.getItem('tm-secrets')),
   );
   const { longitude, latitude } =
     mapCenters[ensureValidMapValue(localStorage.getItem('tm-map'))];
@@ -538,12 +539,9 @@ const Demo = (props: {
         }}
         advanced={{
           showSecrets,
-          onSecretsToggle: newValue => {
+          onSecretsChange: newValue => {
             setShowSecrets(newValue);
-            localStorage.setItem(
-              'tm-secrets',
-              newValue ? 'showAsNormal' : 'hide',
-            );
+            localStorage.setItem('tm-secrets', newValue);
           },
           showContours,
           onContoursToggle: setShowContours,
@@ -672,6 +670,18 @@ function toPanoramaMeta(
     // TODO add dlc guards to street view panos.
     dlcGuard: 0,
   };
+}
+function ensureValidSecretsValue(
+  maybeSecret: string | null | undefined,
+): SecretDisplay {
+  if (
+    maybeSecret === 'showAsNormal' ||
+    maybeSecret === 'showAsDashed' ||
+    maybeSecret === 'hide'
+  ) {
+    return maybeSecret;
+  }
+  return 'showAsNormal';
 }
 
 function ensureValidMapValue(

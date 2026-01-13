@@ -23,6 +23,7 @@ import type {
   Neighbor,
   Neighbors,
 } from '@truckermudgeon/map/types';
+import type { SecretDisplay } from '@truckermudgeon/ui';
 import {
   BaseMapStyle,
   ContoursStyle,
@@ -70,7 +71,7 @@ const RoutesDemo = (props: { tileRootUrl: string }) => {
     AtsSelectableDlcs,
   );
 
-  const [showSecrets, setShowSecrets] = useState(true); // TODO localstorage
+  const [showSecrets, setShowSecrets] = useState<SecretDisplay>('showAsNormal'); // TODO localstorage
   const [showContours, setShowContours] = useState(false);
 
   return (
@@ -156,7 +157,7 @@ const RoutesDemo = (props: { tileRootUrl: string }) => {
         }}
         advanced={{
           showSecrets,
-          onSecretsToggle: setShowSecrets,
+          onSecretsChange: setShowSecrets,
           showContours,
           onContoursToggle: setShowContours,
         }}

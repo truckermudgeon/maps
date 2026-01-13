@@ -11,6 +11,7 @@ export {
   textVariableAnchor,
   trafficMapIcons,
 } from './GameMapStyle';
+export type { GameMapStyleProps, SecretDisplay } from './GameMapStyle';
 export {
   atsSceneryTownsUrl,
   ets2SceneryTownsUrl,
