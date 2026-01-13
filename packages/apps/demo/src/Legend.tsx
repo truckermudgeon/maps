@@ -25,6 +25,7 @@ import {
 import { assertExists } from '@truckermudgeon/base/assert';
 import type { AtsSelectableDlc } from '@truckermudgeon/map/constants';
 import { AtsDlcInfo } from '@truckermudgeon/map/constants';
+import type { SecretDisplay } from '@truckermudgeon/ui';
 import { MapIcon } from '@truckermudgeon/ui';
 import type { ReactElement } from 'react';
 import { memo, useRef, useState } from 'react';
@@ -325,8 +326,8 @@ const DlcFooter = memo((props: DlcFooterProps) => (
 ));
 
 interface AdvancedOptionsProps {
-  showSecrets: 'showAsNormal' | 'showAsDashed' | 'hide';
-  onSecretsChange: (newValue: 'showAsNormal' | 'showAsDashed' | 'hide') => void;
+  showSecrets: SecretDisplay;
+  onSecretsChange: (newValue: SecretDisplay) => void;
   showContours: boolean;
   onContoursToggle: (newValue: boolean) => void;
 }
