@@ -58,7 +58,7 @@ export const SpecialEventMap = (props: {
         game={'ats'}
         specialEvent={specialEvent}
         mode={mode}
-        showSecrets={true}
+        showSecrets={'showAsNormal'}
         enableIconAutoHide={false}
       />
       <NavigationControl visualizePitch={true} />

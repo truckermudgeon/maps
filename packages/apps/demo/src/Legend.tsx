@@ -11,6 +11,8 @@ import {
   List,
   ListItem,
   ModalClose,
+  Option,
+  Select,
   Sheet,
   Stack,
   Tab,
@@ -23,6 +25,7 @@ import {
 import { assertExists } from '@truckermudgeon/base/assert';
 import type { AtsSelectableDlc } from '@truckermudgeon/map/constants';
 import { AtsDlcInfo } from '@truckermudgeon/map/constants';
+import type { SecretDisplay } from '@truckermudgeon/ui';
 import { MapIcon } from '@truckermudgeon/ui';
 import type { ReactElement } from 'react';
 import { memo, useRef, useState } from 'react';
@@ -208,7 +211,7 @@ export const Legend = (props: LegendProps) => {
               <TabPanel sx={{ p: 0 }} value={2}>
                 <AdvancedOptions
                   showSecrets={props.advanced.showSecrets}
-                  onSecretsToggle={props.advanced.onSecretsToggle}
+                  onSecretsChange={props.advanced.onSecretsChange}
                   showContours={props.advanced.showContours}
                   onContoursToggle={props.advanced.onContoursToggle}
                 />
@@ -323,22 +326,23 @@ const DlcFooter = memo((props: DlcFooterProps) => (
 ));
 
 interface AdvancedOptionsProps {
-  showSecrets: boolean;
-  onSecretsToggle: (newValue: boolean) => void;
+  showSecrets: SecretDisplay;
+  onSecretsChange: (newValue: SecretDisplay) => void;
   showContours: boolean;
   onContoursToggle: (newValue: boolean) => void;
 }
 const AdvancedOptions = (props: AdvancedOptionsProps) => (
   <Stack mx={2} gap={2}>
     <Card>
-      <Checkbox
-        sx={{
-          flexDirection: 'row-reverse',
-        }}
-        label={'Show secret roads'}
-        checked={props.showSecrets}
-        onChange={e => props.onSecretsToggle(e.target.checked)}
-      />
+      <Typography level={'title-md'}>Secret roads</Typography>
+      <Select
+        defaultValue={props.showSecrets}
+        onChange={(_e, v) => v && props.onSecretsChange(v)}
+      >
+        <Option value={'showAsNormal'}>Show as normal roads</Option>
+        <Option value={'showAsDashed'}>Show as dashed lines</Option>
+        <Option value={'hide'}>Don't show</Option>
+      </Select>
     </Card>
     <Divider />
     <Typography mb={2} level={'title-lg'}>
