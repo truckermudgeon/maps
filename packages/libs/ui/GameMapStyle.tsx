@@ -276,7 +276,14 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
         ]}
         layout={roadLineLayout}
         paint={{
-          'line-color': roadCaseColor(mode, showSecrets === 'showAsDashed'),
+          'line-color': roadCaseColor(
+            mode,
+            showSecrets === 'showAsDashed'
+              ? mode === 'light'
+                ? 'darken'
+                : 'lighten'
+              : 'none',
+          ),
           'line-gap-width': roadLineWidth,
           'line-width': [
             'interpolate',
@@ -309,7 +316,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
         ]}
         layout={roadLineLayout}
         paint={{
-          'line-color': roadCaseColor(mode, false),
+          'line-color': roadCaseColor(mode),
           'line-gap-width': roadLineWidth,
           'line-width': [
             'interpolate',
@@ -1207,14 +1214,18 @@ const roadColor = (mode: 'light' | 'dark'): ExpressionSpecification => [
 ];
 const roadCaseColor = (
   mode: 'light' | 'dark',
-  darken: boolean,
+  adjust: 'darken' | 'lighten' | 'none' = 'none',
 ): ExpressionSpecification => [
   'match',
   ['get', 'roadType'],
   ...(Object.entries(roadColors[mode]).flatMap(
     ([roadType, [, casingColor]]) => [
       roadType,
-      darken ? Color(casingColor).darken(0.2).string() : casingColor,
+      adjust === 'darken'
+        ? Color(casingColor).darken(0.2).string()
+        : adjust === 'lighten'
+          ? '#ccc'
+          : casingColor,
     ],
   ) as Array7<string>),
   '#b0b', // fallback
