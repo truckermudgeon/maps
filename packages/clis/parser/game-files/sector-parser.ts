@@ -34,6 +34,7 @@ import {
   uint64String,
   uint64le,
 } from './binary-parser';
+import { debugStruct } from './restructure-helpers';
 
 // struct definitions derived from https://github.com/dariowouters/ts-map/blob/master/docs/structures/base/875/base-template.bt
 // https://github.com/sk-zk/map-docs/wiki/Map-format
@@ -94,6 +95,9 @@ const SimpleItemStruct = {
     // game versions.
     //debugStruct,
   },
+  //  [0]: {
+  //    debugStruct,
+  //  },
   [ItemType.Terrain]: {
     startNodeUid: uint64le,
     endNodeUid: uint64le,
@@ -139,6 +143,7 @@ const SimpleItemStruct = {
     rightEdgeLook: token64,
     leftEdge: token64,
     leftEdgeLook: token64,
+    debugStruct,
   },
   [ItemType.Building]: {
     scheme: token64,
@@ -149,6 +154,7 @@ const SimpleItemStruct = {
     seed: r.uint32le,
     stretchCoef: r.floatle,
     heightOffsets: new r.Array(r.floatle, r.uint32le),
+    debugStruct,
   },
   [ItemType.Road]: {
     flags1: r.uint8,
@@ -195,6 +201,7 @@ const SimpleItemStruct = {
     endNodeUid: uint64le,
 
     length: r.floatle,
+    debugStruct,
   },
   [ItemType.Prefab]: {
     model: token64,
@@ -212,6 +219,7 @@ const SimpleItemStruct = {
       (parent: { nodeUids: unknown[] }) => parent.nodeUids.length,
     ),
     semaphoreProfile: token64,
+    debugStruct,
   },
   [ItemType.Model]: {
     token: token64,
@@ -223,6 +231,7 @@ const SimpleItemStruct = {
     material: token64,
     color: r.uint32le,
     terrainRot: r.floatle,
+    debugStruct,
   },
   [ItemType.Company]: {
     cityName: token64,
@@ -236,14 +245,17 @@ const SimpleItemStruct = {
       }),
       r.uint32le,
     ),
+    debugStruct,
   },
   [ItemType.Service]: {
     nodeUid: uint64le,
     prefabUid: uint64le,
     subItemUids: new r.Array(uint64le, r.uint32le),
+    debugStruct,
   },
   [ItemType.CutPlane]: {
     nodeUids: new r.Array(uint64le, r.uint32le),
+    debugStruct,
   },
   [ItemType.Mover]: {
     tags: new r.Array(token64, r.uint32le),
@@ -256,6 +268,7 @@ const SimpleItemStruct = {
     count: r.uint32le,
     lengths: new r.Array(r.floatle, r.uint32le),
     nodeUids: new r.Array(uint64le, r.uint32le),
+    debugStruct,
   },
   [ItemType.NoWeather]: {
     width: r.floatle,
@@ -264,12 +277,14 @@ const SimpleItemStruct = {
     // new in v901.
     unknown: new r.Reserved(r.uint8, 16),
     nodeUid: uint64le,
+    debugStruct,
   },
   [ItemType.City]: {
     token: token64,
     width: r.floatle,
     height: r.floatle,
     nodeUid: uint64le,
+    debugStruct,
   },
   [ItemType.Hinge]: {
     token: token64,
@@ -277,16 +292,19 @@ const SimpleItemStruct = {
     nodeUid: uint64le,
     minRot: r.floatle,
     maxRot: r.floatle,
+    debugStruct,
   },
   [ItemType.MapOverlay]: {
     name: token64,
     nodeUid: uint64le,
+    debugStruct,
   },
   [ItemType.Ferry]: {
     ferryPort: token64,
     prefabUid: uint64le,
     nodeUid: uint64le,
     unloadOffset: float3,
+    debugStruct,
   },
   [ItemType.Garage]: {
     cityName: token64,
@@ -295,10 +313,12 @@ const SimpleItemStruct = {
     nodeUid: uint64le,
     prefabUid: uint64le,
     childItemUids: new r.Array(uint64le, r.uint32le),
+    debugStruct,
   },
   [ItemType.CameraPoint]: {
     tags: new r.Array(token64, r.uint32le),
     nodeUid: uint64le,
+    debugStruct,
   },
   [ItemType.Trigger]: {
     tags: new r.Array(token64, r.uint32le),
@@ -324,11 +344,13 @@ const SimpleItemStruct = {
       r.floatle,
       (parent: { nodeUids: unknown[] }) => parent.nodeUids.length === 1,
     ),
+    debugStruct,
   },
   [ItemType.FuelPump]: {
     nodeUid: uint64le,
     prefabUid: uint64le,
     childItemUids: new r.Array(uint64le, r.uint32le),
+    debugStruct,
   },
   [ItemType.Sign]: {
     token: token64,
@@ -346,6 +368,25 @@ const SimpleItemStruct = {
     overrideTemplate: uint64String,
     overrides: new r.Optional(
       new r.Struct({
+        boards: new r.Array(
+          new r.Struct({
+            areaName: token64,
+            flags: r.uint8,
+            offsets: new r.Optional(
+              new r.Struct({
+                x: r.int8,
+                y: r.int8,
+              }),
+              (parent: { flags: number }) => (parent.flags & 0x01) !== 0,
+            ),
+            token: new r.Optional(
+              token64,
+              (parent: { flags: number }) => (parent.flags & 0x02) !== 0,
+            ),
+            debugStruct,
+          }),
+          r.uint32le,
+        ),
         items: new r.Array(
           new r.Struct({
             id: r.uint32le,
@@ -387,6 +428,7 @@ const SimpleItemStruct = {
     cityName: token64,
     prefabUid: uint64le,
     nodeUid: uint64le,
+    debugStruct,
   },
   // Possibly useful for mapping?
   [ItemType.TrafficRule]: {
@@ -394,6 +436,7 @@ const SimpleItemStruct = {
     nodeUids: new r.Array(uint64le, r.uint32le),
     ruleId: token64,
     range: r.floatle,
+    debugStruct,
   },
   [ItemType.BezierPatch]: {
     controlPoints: new r.Array(float3, 16),
@@ -411,6 +454,7 @@ const SimpleItemStruct = {
     ),
     vegetationSpheres,
     quadInfo,
+    debugStruct,
   },
   [ItemType.TrajectoryItem]: {
     nodeUids: new r.Array(uint64le, r.uint32le),
@@ -432,10 +476,12 @@ const SimpleItemStruct = {
       r.uint32le,
     ),
     tags: new r.Array(token64, r.uint32le),
+    debugStruct,
   },
   [ItemType.MapArea]: {
     nodeUids: new r.Array(uint64le, r.uint32le),
     colorIndex: r.uint32le,
+    debugStruct,
   },
   [ItemType.FarModel]: {
     width: r.floatle,
@@ -449,6 +495,7 @@ const SimpleItemStruct = {
     ),
     childUids: new r.Array(uint64le, r.uint32le),
     nodeUids: new r.Array(uint64le, r.uint32le),
+    debugStruct,
   },
   [ItemType.Curve]: {
     model: token64,
@@ -468,6 +515,7 @@ const SimpleItemStruct = {
     centerPartVariation: token64,
     modelLook: token64,
     heightOffsets: new r.Array(r.floatle, r.uint32le),
+    debugStruct,
   },
   [ItemType.CameraPath]: {
     tags: new r.Array(token64, r.uint32le),
@@ -486,6 +534,7 @@ const SimpleItemStruct = {
       r.uint32le,
     ),
     speed: r.floatle,
+    debugStruct,
   },
   [ItemType.Cutscene]: {
     tags: new r.Array(token64, r.uint32le),
@@ -500,16 +549,19 @@ const SimpleItemStruct = {
       }),
       r.uint32le,
     ),
+    debugStruct,
   },
   [ItemType.Hookup]: {
     name: uint64String,
     nodeUid: uint64le,
+    debugStruct,
   },
   [ItemType.VisibilityArea]: {
     nodeUid: uint64le,
     width: r.floatle,
     height: r.floatle,
     childItemUids: new r.Array(uint64le, r.uint32le),
+    debugStruct,
   },
   [ItemType.Gate]: {
     model: token64,
@@ -521,6 +573,7 @@ const SimpleItemStruct = {
       }),
       2,
     ),
+    debugStruct,
   },
 };
 
@@ -542,6 +595,7 @@ const ComplexItem = new r.VersionedStruct(r.uint32le, {
     nodeUid: uint64le,
     childItems: new r.Array(SimpleItem, r.uint32le),
     childNodes: new r.Array(SectorNode, r.uint32le),
+    debugStruct,
   },
 });
 type SectorItemKey = BaseOf<typeof ComplexItem>['version'];
