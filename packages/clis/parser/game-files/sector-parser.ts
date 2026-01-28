@@ -397,6 +397,7 @@ const SimpleItemStruct = {
           }),
           r.uint32le,
         ),
+        //debugStruct,
       }),
       (parent: { overrideTemplate: string }) => parent.overrideTemplate != '',
     ),
