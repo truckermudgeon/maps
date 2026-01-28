@@ -1,4 +1,4 @@
-/** // delete trailing `/` to toggle between:
+/**/ // delete trailing `/` to toggle between:
 // - binary-parser
 // - restructure
 export {
