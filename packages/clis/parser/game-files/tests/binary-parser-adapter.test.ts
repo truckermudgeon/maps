@@ -1,9 +1,4 @@
-import {
-  paddedString,
-  r,
-  token64,
-  uint64String,
-} from '../binary-parser-adapter';
+import { r, token64, uint64String } from '../binary-parser-adapter';
 
 const bufferFromHex = (hexString: string) =>
   Buffer.from(hexString.replaceAll(' ', ''), 'hex');
@@ -168,24 +163,6 @@ describe('parser bridge', () => {
     });
   });
 
-  it('supports padded strings', () => {
-    const s = new r.Struct({
-      foo: paddedString,
-      bar: r.uint16le,
-    });
-
-    const stream1 = new r.DecodeStream(
-      bufferFromHex('0500 0000  0000 0000 68656c6c6f 0123'),
-    );
-    const res1 = s.decode(stream1);
-    expect(res1).toEqual({ foo: 'hello', bar: 8961 });
-
-    const res2 = paddedString.decode(
-      new r.DecodeStream(bufferFromHex('0000 0000 ffff')),
-    );
-    expect(res2).toEqual('');
-  });
-
   it('supports uint64 strings', () => {
     const s = new r.Struct({
       foo: uint64String,
@@ -196,7 +173,7 @@ describe('parser bridge', () => {
     );
     expect(res1).toEqual({ foo: 'hello' });
 
-    const res2 = paddedString.decode(
+    const res2 = uint64String.decode(
       new r.DecodeStream(bufferFromHex('0000 0000 0000 0000 ffff')),
     );
     expect(res2).toEqual('');

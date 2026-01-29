@@ -29,7 +29,6 @@ import { logger } from '../logger';
 import {
   float3,
   float4,
-  paddedString,
   r,
   token64,
   uint64String,
@@ -344,42 +343,45 @@ const SimpleItemStruct = {
       }),
       r.uint8,
     ),
-    overrideTemplate: paddedString,
-    overrides: new r.Struct({
-      items: new r.Array(
-        new r.Struct({
-          id: r.uint32le,
-          areaName: token64,
-          attributes: new r.Array(
-            new r.VersionedStruct(r.uint16le, {
-              header: {
-                index: r.uint32le,
-              },
-              1: {
-                value: r.int8,
-              },
-              2: {
-                value: r.int32le,
-              },
-              3: {
-                value: r.uint32le,
-              },
-              4: {
-                value: r.floatle,
-              },
-              5: {
-                value: uint64String,
-              },
-              6: {
-                value: uint64le,
-              },
-            }),
-            r.uint32le,
-          ),
-        }),
-        r.uint32le,
-      ),
-    }),
+    overrideTemplate: uint64String,
+    overrides: new r.Optional(
+      new r.Struct({
+        items: new r.Array(
+          new r.Struct({
+            id: r.uint32le,
+            areaName: token64,
+            attributes: new r.Array(
+              new r.VersionedStruct(r.uint16le, {
+                header: {
+                  index: r.uint32le,
+                },
+                1: {
+                  value: r.int8,
+                },
+                2: {
+                  value: r.int32le,
+                },
+                3: {
+                  value: r.uint32le,
+                },
+                4: {
+                  value: r.floatle,
+                },
+                5: {
+                  value: uint64String,
+                },
+                6: {
+                  value: uint64le,
+                },
+              }),
+              r.uint32le,
+            ),
+          }),
+          r.uint32le,
+        ),
+      }),
+      (parent: { overrideTemplate: string }) => parent.overrideTemplate != '',
+    ),
   },
   [ItemType.BusStop]: {
     cityName: token64,
@@ -787,7 +789,9 @@ function toTrigger(rawItem: SectorItem<ItemType.Trigger>): Trigger {
 // returns `undefined` if no text
 function toSignWithText(rawItem: SectorItem<ItemType.Sign>): Sign | undefined {
   const textItems = [];
-  for (const attr of rawItem.overrides.items.flatMap(item => item.attributes)) {
+  for (const attr of (rawItem.overrides ?? { items: [] }).items.flatMap(
+    item => item.attributes,
+  )) {
     if (attr.version === 5) {
       textItems.push(attr.value);
     }

@@ -77,27 +77,6 @@ class Token implements Base<string> {
 
 export const token64 = new Token();
 
-class PaddedString implements Base<string> {
-  fromBuffer(): string {
-    throw new Error('Method not implemented.');
-  }
-
-  decode(stream: r.DecodeStream): string {
-    const length = stream.readBuffer(4).readUint32LE();
-    if (length === 0) {
-      return '';
-    }
-    stream.readBuffer(4); // skip padding
-    return stream.readString(length).toString();
-  }
-
-  size(str: string) {
-    return str.length ? 8 + str.length : 4;
-  }
-}
-
-export const paddedString = new PaddedString();
-
 class Uint64String implements Base<string> {
   fromBuffer(): string {
     throw new Error('Method not implemented.');

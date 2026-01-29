@@ -289,29 +289,6 @@ export const r = {
   int8,
 };
 
-class PaddedString extends BinaryParserBase<string> {
-  constructor() {
-    super();
-  }
-
-  bind(name: string, parser: Parser): Parser {
-    const sizeField = '_tmp';
-    return parser.uint32le(sizeField).wrapped(null as unknown as string, {
-      length: function () {
-        const thisRecord = this as Record<string, unknown>;
-        const length = thisRecord[sizeField] as number;
-        return length === 0 ? 0 : length + 4;
-      },
-      wrapper: buffer => buffer.subarray(4),
-      type: new Parser().string(name, {
-        greedy: true,
-        zeroTerminated: false,
-        encoding: 'ascii',
-      }),
-    });
-  }
-}
-
 class Uint64String extends BinaryParserBase<string> {
   bind(name: string, parser: Parser): Parser {
     const sizeField = '_tmp';
@@ -351,7 +328,6 @@ class Token extends BinaryParserBase<string> {
 
 export const float3 = new r.Array(floatle, 3);
 export const float4 = new r.Array(floatle, 4);
-export const paddedString = new PaddedString();
 export const token64 = new Token();
 export const uint64String = new Uint64String();
 export const uint64le = new NumberBase<bigint>('uint64le');

@@ -4,7 +4,6 @@
 export {
   float3,
   float4,
-  paddedString,
   r,
   token64,
   uint64String,
@@ -15,7 +14,6 @@ export * as r from 'restructure';
 export {
   float3,
   float4,
-  paddedString,
   token64,
   uint64String,
   uint64le,
