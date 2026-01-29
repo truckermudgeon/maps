@@ -805,8 +805,10 @@ function canBeJoined(a: RoadSegment, b: RoadSegment): boolean {
   // that represent a fork from being joined into a single line segment.
   if (
     a.offset !== b.offset ||
-    a.lanesLeft !== b.lanesLeft ||
-    a.lanesRight !== b.lanesRight ||
+    !(
+      (a.lanesLeft === b.lanesLeft && a.lanesRight === b.lanesRight) ||
+      (a.lanesLeft === b.lanesRight && a.lanesRight === b.lanesLeft)
+    ) ||
     (a.points[0].navFlags.isStart &&
       b.points[0].navFlags.isStart &&
       distance(a.points[0], b.points[0]) < 2) ||

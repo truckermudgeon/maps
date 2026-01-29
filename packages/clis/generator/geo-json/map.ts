@@ -17,6 +17,7 @@ import {
   toMapPosition,
   toRoadStringsAndPolygons,
 } from '@truckermudgeon/map/prefabs';
+import { getRoadType } from '@truckermudgeon/map/roads';
 import type {
   AtsMapGeoJsonFeature,
   City,
@@ -122,6 +123,13 @@ export function convertToMapGeoJson(
   const normalizeFeature = createNormalizeFeature(map);
 
   const roadQuadTree = quadtree<{
+    x: number;
+    y: number;
+    roadLookToken: string;
+  }>()
+    .x(e => e.x)
+    .y(e => e.y);
+  const contextTree = quadtree<{
     x: number;
     y: number;
     roadLookToken: string;
@@ -247,6 +255,17 @@ export function convertToMapGeoJson(
     for (const f of fs) {
       roadFeatures.push(f);
       if (prefabNodeUids.has(r.startNodeUid)) {
+        const node = assertExists(nodes.get(r.startNodeUid));
+        contextTree.add({
+          x: node.x,
+          y: node.y,
+          roadLookToken: r.roadLookToken,
+        });
+        roadQuadTree.add({
+          x: f.geometry.coordinates[0][0],
+          y: f.geometry.coordinates[0][1],
+          roadLookToken: r.roadLookToken,
+        });
         roadQuadTree.add({
           x: f.geometry.coordinates[0][0],
           y: f.geometry.coordinates[0][1],
@@ -262,6 +281,12 @@ export function convertToMapGeoJson(
         lutSize++;
       }
       if (prefabNodeUids.has(r.endNodeUid)) {
+        const node = assertExists(nodes.get(r.endNodeUid));
+        contextTree.add({
+          x: node.x,
+          y: node.y,
+          roadLookToken: r.roadLookToken,
+        });
         roadQuadTree.add({
           x: f.geometry.coordinates.at(-1)![0],
           y: f.geometry.coordinates.at(-1)![1],
@@ -304,11 +329,11 @@ export function convertToMapGeoJson(
     const pf = prefabToFeatures(
       p,
       assertExists(prefabDescriptions.get(p.token)),
-      comps,
       nodes,
       roads,
       roadLooks,
       roadQuadTree,
+      contextTree,
       { allowUnknownRoadType: true },
     );
     if (pf.some(isUnknownRoad)) {
@@ -332,11 +357,11 @@ export function convertToMapGeoJson(
       const pf = prefabToFeatures(
         p,
         assertExists(prefabDescriptions.get(p.token)),
-        assertExists(prefabComponents.get(p.token)),
         nodes,
         roads,
         roadLooks,
         roadQuadTree,
+        contextTree,
         { allowUnknownRoadType: true },
       );
       if (pf.every(f => !isUnknownRoad(f))) {
@@ -350,11 +375,11 @@ export function convertToMapGeoJson(
     const pf = prefabToFeatures(
       p,
       assertExists(prefabDescriptions.get(p.token)),
-      assertExists(prefabComponents.get(p.token)),
       nodes,
       roads,
       roadLooks,
       roadQuadTree,
+      contextTree,
       { allowUnknownRoadType: false },
     );
     prefabAndRoadFeatures.push(...pf);
@@ -397,11 +422,11 @@ export function convertToMapGeoJson(
       const pf = prefabToFeatures(
         p,
         assertExists(prefabDescriptions.get(p.token)),
-        assertExists(prefabComponents.get(p.token)),
         nodes,
         roads,
         roadLooks,
         roadQuadTree,
+        contextTree,
         { allowUnknownRoadType: false },
       );
       assert(
@@ -1220,25 +1245,81 @@ function countryToFeature(country: Country): CountryFeature {
   };
 }
 
+function augmentWithRoadContext(
+  prefab: Prefab,
+  prefabDescription: PrefabDescription,
+  nodes: ReadonlyMap<bigint, Node>,
+  roadLookMap: ReadonlyMap<string, RoadLook>,
+  roadQuadTree: Quadtree<{ x: number; y: number; roadLookToken: string }>,
+): {
+  roadStrings: RoadString[];
+  polygons: Polygon[];
+} {
+  const tx = (pos: Position) =>
+    toMapPosition(pos, prefab, prefabDescription, nodes);
+
+  const augmentedPd = JSON.parse(
+    JSON.stringify(prefabDescription),
+  ) as PrefabDescription;
+
+  const roadPoints = augmentedPd.mapPoints.filter(p => p.type === 'road');
+  for (const n of augmentedPd.nodes) {
+    const matchingRoadPoint = roadPoints.find(
+      p => distance(tx([n.x, n.y]), tx([p.x, p.y])) < 2,
+    );
+    if (!matchingRoadPoint) {
+      continue;
+    }
+    const txRP = tx([matchingRoadPoint.x, matchingRoadPoint.y]);
+    const roadLookToken = roadQuadTree.find(txRP[0], txRP[1], 2)?.roadLookToken;
+    if (!roadLookToken) {
+      continue;
+    }
+
+    const roadLook = assertExists(roadLookMap.get(roadLookToken));
+    if (
+      roadLook.offset === matchingRoadPoint.offset ||
+      (roadLook.offset != null &&
+        Math.abs(matchingRoadPoint.offset - roadLook.offset) < 1)
+    ) {
+      continue;
+    }
+    //console.log('tweaking', prefab.uid, matchingRoadPoint, roadLook);
+    matchingRoadPoint.offset = roadLook.offset ?? 0;
+    if (matchingRoadPoint.offset > 0) {
+      const maxLanes = Math.max(
+        roadLook.lanesLeft.length,
+        roadLook.lanesRight.length,
+      );
+      matchingRoadPoint.lanesLeft = maxLanes;
+      matchingRoadPoint.lanesRight = maxLanes;
+    }
+  }
+
+  return toRoadStringsAndPolygons(augmentedPd);
+}
+
 function prefabToFeatures(
   prefab: Prefab,
   prefabDescription: PrefabDescription,
-  {
-    polygons,
-    roadStrings,
-  }: {
-    polygons: Polygon[];
-    roadStrings: RoadString[];
-  },
   nodes: ReadonlyMap<bigint, Node>,
   // TODO make use of this to better position roads within a prefab
   _roadMap: ReadonlyMap<bigint, Road>,
   roadLookMap: ReadonlyMap<string, RoadLook>,
   roadQuadTree: Quadtree<{ x: number; y: number; roadLookToken: string }>,
+  contextTree: Quadtree<{ x: number; y: number; roadLookToken: string }>,
   opts: {
     allowUnknownRoadType: boolean;
   },
 ): (PrefabFeature | RoadFeature)[] {
+  const { roadStrings, polygons } = augmentWithRoadContext(
+    prefab,
+    prefabDescription,
+    nodes,
+    roadLookMap,
+    contextTree,
+  );
+
   const tx = (pos: Position) =>
     toMapPosition(pos, prefab, prefabDescription, nodes);
 
@@ -1256,7 +1337,7 @@ function prefabToFeatures(
       const txPoints = polygon.points.map(tx);
       return {
         type: 'Feature',
-        id: prefab.uid + 'poly' + i,
+        id: prefab.uid.toString(16) + 'poly' + i,
         properties: {
           type: 'prefab',
           dlcGuard: prefab.dlcGuard,
@@ -1344,7 +1425,7 @@ function prefabToFeatures(
       }
       return {
         type: 'Feature',
-        id: prefab.uid + 'road' + i,
+        id: prefab.uid.toString(16) + 'road' + i,
         properties: {
           type: 'road',
           dlcGuard: prefab.dlcGuard,
@@ -1487,39 +1568,6 @@ function roadToFeature(
       },
     },
   ];
-}
-
-function getRoadType(look: RoadLook): RoadType {
-  const lanes = look.lanesLeft.concat(look.lanesRight);
-  if (lanes.length === 0) {
-    // logger.warn(
-    //   "trying to get road types without lane info. defaulting to 'local'"
-    // );
-    return 'local';
-  }
-
-  let roadType: RoadType = 'unknown';
-  // prioritize types. assumes road looks can contain multiple types.
-  if (lanes.some(l => l.includes('freeway') || l.includes('motorway'))) {
-    roadType = 'freeway';
-  } else if (
-    lanes.some(l => l.includes('divided') || l.includes('expressway'))
-  ) {
-    roadType = 'divided';
-  } else if (
-    lanes.some(l =>
-      ['local', 'no_vehicles', 'side_road', 'slow_road'].some(t =>
-        l.includes(t),
-      ),
-    )
-  ) {
-    roadType = 'local';
-  } else if (lanes.some(l => l.includes('tram'))) {
-    roadType = 'tram';
-  } else if (lanes.some(l => l.includes('train'))) {
-    roadType = 'train';
-  }
-  return roadType;
 }
 
 function roadLookToProperties(
