@@ -46,6 +46,8 @@ export const RouteItem = (props: {
 
 function toModeString(mode: Mode) {
   switch (mode) {
+    case 'fastest':
+      return 'Fastest';
     case 'shortest':
       return 'Shortest';
     case 'smallRoads':

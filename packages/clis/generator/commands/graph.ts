@@ -75,7 +75,7 @@ export async function handler(args: BuilderArguments<typeof builder>) {
     ],
   });
 
-  const res = generateGraph(tsMapData);
+  const { graphDebug, ...res } = generateGraph(tsMapData);
   if (args.check) {
     await checkGraph(res.graph, tsMapData);
   }
@@ -96,8 +96,8 @@ export async function handler(args: BuilderArguments<typeof builder>) {
   if (args.debugType != null) {
     const debugPath = path.join(args.outputDir, 'graph-debug.geojson');
     const geoJson = {
-      ...res.graphDebug,
-      features: res.graphDebug.features.filter(
+      ...graphDebug,
+      features: graphDebug.features.filter(
         f => f.properties.debugType === args.debugType,
       ),
     };

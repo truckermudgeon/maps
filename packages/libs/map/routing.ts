@@ -7,7 +7,12 @@ import PriorityQueue from 'priorityqueue';
 import type { PriorityQueueOption } from 'priorityqueue/lib/PriorityQueue';
 
 export type Direction = 'forward' | 'backward';
-export type Mode = 'shortest' | 'smallRoads';
+export type Mode = 'fastest' | 'shortest' | 'smallRoads';
+export const routingModes = new Set<Mode>([
+  'fastest',
+  'shortest',
+  'smallRoads',
+]);
 export type Route = {
   key: string;
   mode: Mode;
@@ -16,6 +21,9 @@ export type Route = {
       success: true;
       route: Neighbor[];
       distance: number;
+      duration: number;
+      /** the lower, the better. */
+      score: number;
     }
   | {
       success: false;
@@ -25,9 +33,55 @@ export type Route = {
 
 export type PartialNode = Pick<Node, 'x' | 'y'>;
 export interface Context {
-  nodeLUT: Map<bigint, PartialNode>;
-  graph: Map<bigint, Neighbors>;
-  enabledDlcGuards: Set<number>;
+  nodeLUT: ReadonlyMap<bigint, PartialNode>;
+  graph: ReadonlyMap<bigint, Neighbors>;
+  enabledDlcGuards: ReadonlySet<number>;
+}
+
+export type RouteKey = `${string}-${string}-${Direction}-${Mode}`;
+
+export function assertRouteKey(key: string): RouteKey {
+  const [startNodeUid, endNodeUid, direction, mode] = key.split('-');
+  Preconditions.checkExists(startNodeUid);
+  Preconditions.checkExists(endNodeUid);
+  Preconditions.checkExists(direction);
+  Preconditions.checkExists(mode);
+
+  Preconditions.checkArgument(/^[0-9a-f]{1,16}$/i.test(startNodeUid));
+  Preconditions.checkArgument(/^[0-9a-f]{1,16}$/i.test(endNodeUid));
+  Preconditions.checkArgument(
+    direction === 'forward' || direction === 'backward',
+  );
+  Preconditions.checkArgument(routingModes.has(mode as Mode));
+  return key as RouteKey;
+}
+
+export function createRouteKey(
+  startNodeUid: bigint,
+  endNodeUid: bigint,
+  direction: Direction,
+  mode: Mode,
+): RouteKey {
+  return `${startNodeUid.toString(16)}-${endNodeUid.toString(16)}-${direction}-${mode}`;
+}
+
+export function findRouteFromKey(key: RouteKey, context: Context): Route {
+  assertRouteKey(key);
+  const [startNodeUid, endNodeUid, direction, mode] = key.split('-');
+  console.log('finding route from key', key, {
+    startNodeUid,
+    endNodeUid,
+    direction,
+    mode,
+  });
+
+  return findRoute(
+    BigInt('0x' + startNodeUid),
+    BigInt('0x' + endNodeUid),
+    direction as Direction,
+    mode as Mode,
+    context,
+  );
 }
 
 export function findRoute(
@@ -37,7 +91,15 @@ export function findRoute(
   mode: Mode,
   context: Context,
 ): Route {
-  const key = `${startNodeUid}-${endNodeUid}-${direction}-${mode}`;
+  Preconditions.checkArgument(
+    context.graph.has(startNodeUid),
+    `cannot find route from unknown node ${startNodeUid.toString(16)}`,
+  );
+  Preconditions.checkArgument(
+    context.graph.has(endNodeUid),
+    `cannot find route to unknown node ${endNodeUid.toString(16)}`,
+  );
+  const key = createRouteKey(startNodeUid, endNodeUid, direction, mode);
   // console.log('finding route', startNodeUid, 'direction', endNodeUid);
   const { nodeLUT, graph } = context;
 
@@ -55,27 +117,32 @@ export function findRoute(
   const startAsNeighbor: Neighbor = {
     nodeUid: startNodeUid,
     distance: 0,
+    duration: 0,
     direction,
     dlcGuard: -1, // this value shouldn't be read.
   };
   openSet.push(startAsNeighbor);
   const cameFrom = new Map<Neighbor, Neighbor>();
 
+  // the score of the cheapest known path from start to `Neighbor`
   const gScore = new Map<Neighbor, number>();
   gScore.set(startAsNeighbor, 0);
 
-  //const h = (_n: PartialNode) => 0;
-  const h = (n: PartialNode) => distance(n, goal);
+  const h = (n: PartialNode) => (mode === 'fastest' ? 0 : distance(n, goal));
   const d = (_from: Neighbor, to: Neighbor) => {
     switch (mode) {
       case 'shortest':
         return to.distance;
       case 'smallRoads':
         return to.isOneLaneRoad ? to.distance : to.distance * 10;
+      case 'fastest':
+        return to.duration;
       default:
         throw new UnreachableError(mode);
     }
   };
+  // the current best guess as to how cheap a path could be from start to finish
+  // if it goes through `Neighbor`.
   const fScore = new Map<Neighbor, number>();
   fScore.set(startAsNeighbor, h(start));
 
@@ -88,6 +155,7 @@ export function findRoute(
         success: true,
         key,
         mode,
+        score: assertExists(gScore.get(current)),
         ...reconstructPath(cameFrom, current),
       };
     }
@@ -135,19 +203,21 @@ export function findRoute(
 function reconstructPath(
   cameFrom: Map<Neighbor, Neighbor>,
   current: Neighbor,
-): { route: Neighbor[]; distance: number } {
+): { route: Neighbor[]; distance: number; duration: number } {
   let distance = 0;
+  let duration = 0;
   const path: Neighbor[] = [current];
   while (cameFrom.has(current)) {
     current = cameFrom.get(current)!;
     path.unshift(current);
     distance += current.distance;
+    duration += current.duration;
   }
   if (path.length === 1) {
     path.push(path[0]);
   }
 
-  return { route: path, distance };
+  return { route: path, distance, duration };
 }
 
 /** PriorityQueue, but with a `.has(value)` method. */
