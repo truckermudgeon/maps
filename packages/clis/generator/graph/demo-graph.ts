@@ -117,6 +117,7 @@ function toDemoNeighbor(
   return {
     n: assertExists(nodeUidMap.get(neighbor.nodeUid)),
     l: Math.round(neighbor.distance),
+    m: Number(neighbor.duration.toFixed(1)),
     o: neighbor.isOneLaneRoad,
     d: neighbor.direction[0] as 'f' | 'b',
     g: neighbor.dlcGuard,

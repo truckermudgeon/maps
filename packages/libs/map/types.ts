@@ -787,8 +787,10 @@ export type SearchProperties = SearchPoiProperties | SearchCityProperties;
 export interface Neighbor {
   /** The id of this Neighbor's node (not of the origin node). */
   readonly nodeUid: bigint;
-  /** The distance between the origin node and this Neighbor's node. */
+  /** The distance between the origin node and this Neighbor's node (meters). */
   readonly distance: number;
+  /** The estimated duration to travel to this neighbor's node (seconds). */
+  readonly duration: number;
   /** True if this Neighbor's edge represents a one-lane road. */
   readonly isOneLaneRoad?: true;
   /** True if this Neighbor's edge represents a ferry route. */
@@ -833,6 +835,8 @@ export interface DemoNeighbor {
   n: string;
   /** distance */
   l: number;
+  /** duration */
+  m: number;
   /** isOneLaneRoad */
   o?: true;
   /** direction */

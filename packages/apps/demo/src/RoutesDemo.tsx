@@ -430,6 +430,7 @@ function toNeighbor(demoNeighbor: DemoNeighbor): Neighbor {
   return {
     nodeUid: BigInt(parseInt(demoNeighbor.n, 36)),
     distance: demoNeighbor.l,
+    duration: demoNeighbor.m,
     isOneLaneRoad: demoNeighbor.o,
     direction: demoNeighbor.d === 'f' ? 'forward' : 'backward',
     dlcGuard: demoNeighbor.g,

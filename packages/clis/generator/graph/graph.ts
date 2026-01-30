@@ -18,9 +18,11 @@ import {
   fromAtsCoordsToWgs84,
   fromEts2CoordsToWgs84,
 } from '@truckermudgeon/map/projections';
+import { getLaneSpeedClass } from '@truckermudgeon/map/roads';
 import type { Direction } from '@truckermudgeon/map/routing';
 import type {
   CompanyItem,
+  Country,
   FacilityIcon,
   GraphData,
   MapArea,
@@ -31,6 +33,7 @@ import type {
   PrefabDescription,
 } from '@truckermudgeon/map/types';
 import { lineString, point } from '@turf/helpers';
+import type { Quadtree } from 'd3-quadtree';
 import { quadtree } from 'd3-quadtree';
 import type { GeoJSON } from 'geojson';
 import { dlcGuardMapDataKeys, normalizeDlcGuards } from '../dlc-guards';
@@ -47,6 +50,7 @@ type GraphContextMappedData = MappedDataForKeys<
     'prefabDescriptions',
     'companies',
     'ferries',
+    'countries',
   ]
 >;
 
@@ -58,6 +62,12 @@ type DebugFC = GeoJSON.FeatureCollection<
 type Context = GraphContextMappedData & {
   prefabLanes: Map<string, Map<number, Lane[]>>;
   companiesByPrefabItemId: Map<bigint, CompanyItem>;
+  countriesById: Map<number, Country>;
+  roadQuadTree: Quadtree<{
+    x: number;
+    y: number;
+    roadLookToken: string;
+  }>;
   getDlcGuard: (node: Node) => number;
   graphDebug: DebugFC;
 };
@@ -68,6 +78,7 @@ export const graphMapDataKeys = [
   'ferries',
   'prefabDescriptions',
   'roadLooks',
+  'countries',
   'cities',
 ] satisfies MapDataKeys;
 
@@ -78,6 +89,7 @@ export function generateGraph(
 ): GraphData & { graphDebug: DebugFC } {
   const {
     map,
+    countries,
     nodes: _nodes,
     roads: _roads,
     prefabs: _prefabs,
@@ -145,6 +157,35 @@ export function generateGraph(
       );
     }),
   );
+
+  const countriesById = new Map<number, Country>(
+    countries.values().map(country => [country.id, country]),
+  );
+
+  const roadQuadTree = quadtree<{
+    x: number;
+    y: number;
+    roadLookToken: string;
+  }>()
+    .x(e => e.x)
+    .y(e => e.y);
+  for (const road of roads.values()) {
+    const startNode = assertExists(nodes.get(road.startNodeUid));
+    // TODO this is probably a bug, but may be a load-bearing bug. audit usages
+    //  of roadQuadTree during graph gen; whatever is using it may be better
+    //  accomplished in some other way.
+    const endNode = assertExists(nodes.get(road.startNodeUid));
+    roadQuadTree.add({
+      x: startNode.x,
+      y: startNode.y,
+      roadLookToken: road.roadLookToken,
+    });
+    roadQuadTree.add({
+      x: endNode.x,
+      y: endNode.y,
+      roadLookToken: road.roadLookToken,
+    });
+  }
 
   const toSectorKey = (o: { x: number; y: number }) =>
     `${Math.floor(o.x / 4000)},${Math.floor(o.y / 4000)}`;
@@ -234,6 +275,7 @@ export function generateGraph(
 
   const context: Context = {
     map,
+    countries,
     nodes,
     roads,
     roadLooks,
@@ -244,7 +286,9 @@ export function generateGraph(
     ),
     companies,
     companiesByPrefabItemId,
+    countriesById,
     ferries,
+    roadQuadTree,
     getDlcGuard,
     graphDebug,
   };
@@ -419,6 +463,7 @@ export function generateGraph(
     const hackNeighbors = assertExists(graph.get(0x3301e888d4055f5en));
     hackNeighbors.forward.push({
       nodeUid: 0x3301e888b6855e83n,
+      duration: calculateDurationSeconds(30, 32),
       distance: 32,
       direction: 'forward',
       dlcGuard: 13, // The DLC Guard value for Colorado, which is where Lamar is.
@@ -997,6 +1042,7 @@ function getNeighborsInDirection(
   const toNeighbor = (
     nextNode: Node,
     options: {
+      duration?: number;
       distance?: number;
       direction?: 'forward' | 'backward';
       isOneLaneRoad?: true;
@@ -1006,9 +1052,31 @@ function getNeighborsInDirection(
       options.distance ??
       distance([nextNode.x, nextNode.y], [originNode.x, originNode.y]);
     const dir = options.direction ?? direction;
+    const { roadLookToken } = assertExists(
+      context.roadQuadTree.find(nextNode.x, nextNode.y),
+    );
+    const speedClass = getLaneSpeedClass(
+      assertExists(context.roadLooks.get(roadLookToken)),
+    );
+
+    // TODO add support for ETS2
+    const nextCountry =
+      context.countriesById.get(
+        dir === 'forward'
+          ? nextNode.backwardCountryId
+          : nextNode.forwardCountryId,
+      ) ?? context.countriesById.get(1)!; // fallback to California
+
+    // TODO there's an urban limit value... use it if node is in a city area.
+    const speedMph =
+      nextCountry.truckSpeedLimits[speedClass]?.limit ??
+      nextCountry.truckSpeedLimits.localRoad?.limit ??
+      30;
+
     return {
       nodeUid: nextNode.uid,
       distance: dist,
+      duration: calculateDurationSeconds(speedMph, dist),
       direction: dir,
       isOneLaneRoad: options.isOneLaneRoad,
       dlcGuard: context.getDlcGuard(nextNode),
@@ -1100,6 +1168,7 @@ function getNeighborsInDirection(
               'detail',
             ),
           );
+          // TODO apply duration penalty for left turns
           return toNeighbor(nextNode, {
             distance,
             direction:
@@ -1233,15 +1302,18 @@ function createDebugLineString(
   );
 }
 
+// assumes speed of 30 mph
 function createNeighbor(
   from: { x: number; y: number },
   toNode: Node,
   direction: Direction,
   getDlcGuard: (n: Node) => number,
 ): Neighbor {
+  const dist = distance(from, toNode);
   return {
     nodeUid: toNode.uid,
-    distance: distance(from, toNode),
+    distance: dist,
+    duration: calculateDurationSeconds(30, dist),
     direction,
     dlcGuard: getDlcGuard(toNode),
   };
@@ -1360,4 +1432,12 @@ function largestFirstComparator(a: Extent, b: Extent) {
   const widthB = bMaxX - bMinX;
   const heightB = bMaxY - bMinY;
   return widthB * heightB - widthA * heightA;
+}
+
+function calculateDurationSeconds(
+  speedMph: number,
+  distanceMeters: number,
+): number {
+  const metersPerSecond = speedMph * 0.44704;
+  return distanceMeters / metersPerSecond;
 }
