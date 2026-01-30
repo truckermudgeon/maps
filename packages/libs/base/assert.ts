@@ -5,9 +5,9 @@ export function assertExists<T>(x: T, msg?: string): NonNullable<T> {
   return x;
 }
 
-export function assert(condition: boolean, msg?: string): condition is true {
+export function assert(condition: boolean, msg?: string): asserts condition {
   if (!condition) {
     throw new Error(`assertion failed: ${msg}`);
   }
-  return condition;
+  return;
 }

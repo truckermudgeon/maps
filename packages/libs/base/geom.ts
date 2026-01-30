@@ -75,6 +75,29 @@ export function center([minX, minY, maxX, maxY]: Extent): Position {
   return midPoint([minX, minY], [maxX, maxY]);
 }
 
+/** returns [0, PI/2] */
+export function angleBetweenPoints(a: PositionLike, b: PositionLike) {
+  return normalizeRadians(Math.acos(dot(a, b) / (magnitude(a) * magnitude(b))));
+}
+
+/**
+ * returns [-Pi, Pi].
+ *
+ * -Pi/2  means B is pointing 90 degrees CCW, relative to A
+ *     0  means B is pointing in same direction as A
+ * +Pi/2  means B is pointing 90 degrees CW, relative to A
+ */
+export function angleBetweenVectors(
+  [startA, endA]: [PositionLike, PositionLike],
+  [startB, endB]: [PositionLike, PositionLike],
+) {
+  const an = subtract(endA, startA);
+  const bn = subtract(endB, startB);
+  const rotA = Math.atan2(an[1], an[0]);
+  const b = rotate(bn, -rotA);
+  return normalizeRadians(Math.atan2(b[1], b[0]));
+}
+
 interface SplinePoint {
   position: Position;
   rotation: number;
@@ -128,7 +151,9 @@ export function getExtent(
   let maxX = Number.NEGATIVE_INFINITY;
   let maxY = Number.NEGATIVE_INFINITY;
 
+  let nonEmpty = false;
   for (const i of items) {
+    nonEmpty = true;
     if (Array.isArray(i)) {
       minX = Math.min(minX, i[0]);
       maxX = Math.max(maxX, i[0]);
@@ -142,13 +167,26 @@ export function getExtent(
     }
   }
 
+  Preconditions.checkArgument(nonEmpty);
   return [minX, minY, maxX, maxY];
 }
 
-export function contains(extent: Extent, position: PositionLike) {
+export function contains(extent: Readonly<Extent>, position: PositionLike) {
   const [minX, minY, maxX, maxY] = extent;
   const [x, y] = Array.isArray(position) ? position : [position.x, position.y];
   return minX <= x && x <= maxX && minY <= y && y <= maxY;
+}
+
+export function grow(extent: Readonly<Extent>, delta: number): Extent {
+  Preconditions.checkArgument(delta >= 0);
+
+  const [minX, minY, maxX, maxY] = extent;
+  return [
+    minX - delta, //
+    minY - delta,
+    maxX + delta,
+    maxY + delta,
+  ];
 }
 
 /**

@@ -16,6 +16,7 @@ import type {
 import { VirtualTourPlugin } from '@photo-sphere-viewer/virtual-tour-plugin';
 import '@photo-sphere-viewer/virtual-tour-plugin/index.css';
 import { assertExists } from '@truckermudgeon/base/assert';
+import { debounce } from '@truckermudgeon/base/debounce';
 import { AtsSelectableDlcs } from '@truckermudgeon/map/constants';
 import {
   atsIcons,
@@ -85,19 +86,6 @@ const makeMultiLevelPanoramaFn = (
       },
     ],
   });
-};
-
-const debounce = <T extends unknown[]>(
-  callback: (...args: T) => void,
-  delay: number,
-) => {
-  let timeoutTimer: ReturnType<typeof setTimeout>;
-  return (...args: T) => {
-    clearTimeout(timeoutTimer);
-    timeoutTimer = setTimeout(() => {
-      callback(...args);
-    }, delay);
-  };
 };
 
 export const StreetView = memo(
