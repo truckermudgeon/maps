@@ -4,8 +4,7 @@ export type Position = [number, number];
 
 type PositionLike = Position | number[] | { x: number; y: number };
 
-/** minX, minY, maxX, maxY */
-export type Extent = [number, number, number, number];
+export type Extent = [minX: number, minY: number, maxX: number, maxY: number];
 
 export function translate([x, y]: Position, [dx, dy]: Position): Position {
   return [x + dx, y + dy];
