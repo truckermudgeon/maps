@@ -171,10 +171,7 @@ export function generateGraph(
     .y(e => e.y);
   for (const road of roads.values()) {
     const startNode = assertExists(nodes.get(road.startNodeUid));
-    // TODO this is probably a bug, but may be a load-bearing bug. audit usages
-    //  of roadQuadTree during graph gen; whatever is using it may be better
-    //  accomplished in some other way.
-    const endNode = assertExists(nodes.get(road.startNodeUid));
+    const endNode = assertExists(nodes.get(road.endNodeUid));
     roadQuadTree.add({
       x: startNode.x,
       y: startNode.y,
