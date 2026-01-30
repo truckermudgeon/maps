@@ -1249,6 +1249,7 @@ function augmentWithRoadContext(
   prefab: Prefab,
   prefabDescription: PrefabDescription,
   nodes: ReadonlyMap<bigint, Node>,
+  // TODO replace these with a Map<bigint, RoadLook>, keyed by prefab node uids.
   roadLookMap: ReadonlyMap<string, RoadLook>,
   roadQuadTree: Quadtree<{ x: number; y: number; roadLookToken: string }>,
 ): {
@@ -1258,6 +1259,8 @@ function augmentWithRoadContext(
   const tx = (pos: Position) =>
     toMapPosition(pos, prefab, prefabDescription, nodes);
 
+  // HACK clone `prefabDescription`, so we can mutate its clone by augmenting
+  // its RoadMapPoints with contextual offset info.
   const augmentedPd = JSON.parse(
     JSON.stringify(prefabDescription),
   ) as PrefabDescription;
