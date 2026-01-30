@@ -339,7 +339,7 @@ function processCountryJson(obj: CountrySii) {
 function toLaneSpeedClass(str: string): LaneSpeedClass {
   const lsc = str.replace(/(_[a-z0-9])/g, g => g.substring(1).toUpperCase());
   assert(isLaneSpeedClass(lsc));
-  return lsc as LaneSpeedClass;
+  return lsc;
 }
 
 function processSpeedLimitJson(obj: SpeedLimitsSii) {

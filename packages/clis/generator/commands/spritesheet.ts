@@ -102,6 +102,9 @@ async function createSpritesheet(
     path.join(resourcesDir, 'dotdot.png'),
     path.join(resourcesDir, 'roadwork.png'),
     path.join(resourcesDir, 'railcrossing.png'),
+    path.join(resourcesDir, 'triangle.png'),
+    path.join(resourcesDir, 'stopsign.png'),
+    path.join(resourcesDir, 'trafficlight.png'),
   ];
   const poiPngPaths = [...new Set(pois.map(o => o.icon))].map(name =>
     path.join(inputDir, 'icons', name + '.png'),
@@ -159,13 +162,19 @@ async function preprocessPngs(pngPaths: string[]): Promise<{
   const bordered = new Set<string>();
   await Promise.all(
     pngPaths.map(async pngPath => {
-      const image: JimpInstance = (await Jimp.read(pngPath)) as JimpInstance;
       const basename = path.basename(pngPath);
+      const image: JimpInstance = (await Jimp.read(pngPath)) as JimpInstance;
       let modified = false;
       const probablyRoadShield =
         image.width === image.height && image.width >= 64;
       // probably an over-sized road shield, like the colorado ones.
-      if (probablyRoadShield && image.width > 64) {
+      if (
+        // make sure triangle.png isn't automatically bordered, because it's
+        // only used for route-step arrow heads (and it's auto-bordered there).
+        basename !== 'triangle.png' &&
+        probablyRoadShield &&
+        image.width > 64
+      ) {
         image.resize({ w: 64 });
         shrank.add(basename.replace('.png', ''));
         modified = true;

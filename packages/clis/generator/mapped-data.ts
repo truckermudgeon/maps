@@ -457,5 +457,5 @@ function bigintReviver(key: string, value: unknown): unknown {
 
 function toBigInt(v: unknown): bigint {
   assert(typeof v === 'string' && /^[0-9a-f]+$/.test(v));
-  return BigInt('0x' + (v as string));
+  return BigInt('0x' + v);
 }
