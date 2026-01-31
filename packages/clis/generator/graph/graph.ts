@@ -12,6 +12,7 @@ import {
   toAtsDlcGuards,
   toFacilityIcon,
 } from '@truckermudgeon/map/constants';
+import { toDealerLabel } from '@truckermudgeon/map/labels';
 import type { Lane } from '@truckermudgeon/map/prefabs';
 import { calculateLaneInfo, toMapPosition } from '@truckermudgeon/map/prefabs';
 import {
@@ -31,6 +32,8 @@ import type {
   Poi,
   Prefab,
   PrefabDescription,
+  ServiceArea,
+  WithPath,
 } from '@truckermudgeon/map/types';
 import { lineString, point } from '@turf/helpers';
 import type { Quadtree } from 'd3-quadtree';
@@ -525,11 +528,7 @@ export function generateGraph(
   const facilityNodes = new Map<
     // TODO should we include all of a prefab's node uids, instead of one?
     bigint, // one of the containing prefab's prefab node ids
-    {
-      facilities: Set<FacilityIcon>;
-      itemUid: bigint;
-      itemType: ItemType.Prefab | ItemType.MapArea;
-    }
+    ServiceArea
   >();
 
   // Connected facility prefabs
@@ -610,6 +609,14 @@ export function generateGraph(
           assertExists(prefabDescriptions.get(islandPrefab.token)),
         ),
       ]),
+      description:
+        value.description !== ''
+          ? value.description
+          : toServiceAreaDescription(
+              context.prefabDescriptions.get(
+                islandPrefab.token,
+              ) as WithPath<PrefabDescription>,
+            ),
     });
 
     logger.info(
@@ -678,12 +685,21 @@ export function generateGraph(
         facilities: getFacilities(prefabDesc),
         itemUid: containingMapArea.mapArea.uid,
         itemType: ItemType.MapArea,
+        description: toServiceAreaDescription(
+          prefabDesc as WithPath<PrefabDescription>,
+        ),
       },
       facilityNodes,
     );
     islandFacilities.forEach(f => facility.facilities.add(f));
     islandFacilityPrefabs.delete(islandPrefab);
   }
+  const facilityNodesByMapArea = new Map<bigint, ServiceArea>(
+    facilityNodes
+      .values()
+      .filter(v => v.itemType === ItemType.MapArea)
+      .map(v => [v.itemUid, v]),
+  );
 
   if (islandAreas.size > 0) {
     logger.log(
@@ -709,6 +725,7 @@ export function generateGraph(
   let ignoredCount = 0;
   let inPrefab = 0;
   let inArea = 0;
+  let inUnknownArea = 0;
   const uncontainedParking: Poi[] = [];
   for (const poi of pois) {
     if (poi.type !== 'facility' || poi.icon !== 'parking_ico') {
@@ -740,12 +757,26 @@ export function generateGraph(
     if (containingArea) {
       // link
       inArea++;
+      if (facilityNodesByMapArea.has(containingArea.mapArea.uid)) {
+        facilityNodesByMapArea
+          .get(containingArea.mapArea.uid)!
+          .facilities.add('parking_ico');
+      } else {
+        inUnknownArea++;
+      }
+
       continue;
     }
 
     uncontainedParking.push(poi);
   }
-  logger.info(inPrefab, inArea, ignoredCount, 'prefab, area, ignored');
+  logger.info(
+    inPrefab,
+    inArea,
+    ignoredCount,
+    inUnknownArea,
+    'prefab, area, ignored, unknown area',
+  );
   // parking spots not present in a prefab, or a map area.
   // list first 5.
   // maybe they can be associated with nearby prefabs / map areas? e.g.,
@@ -1354,11 +1385,7 @@ function getPrefabFacilitiesEntry(
   },
 ): {
   key: bigint;
-  value: {
-    facilities: Set<FacilityIcon>;
-    itemUid: bigint;
-    itemType: ItemType.Prefab | ItemType.MapArea;
-  };
+  value: ServiceArea;
 } {
   const { prefabDescriptions, nodes } = context;
   const pfns = prefab.nodeUids
@@ -1381,8 +1408,41 @@ function getPrefabFacilitiesEntry(
       facilities,
       itemUid: prefab.uid,
       itemType: ItemType.Prefab,
+      description: toServiceAreaDescription(
+        prefabDesc as WithPath<PrefabDescription>,
+      ),
     },
   };
+}
+
+function toServiceAreaDescription({ path }: WithPath<PrefabDescription>) {
+  if (path.startsWith('prefab/gas')) {
+    if (path.includes('gallon')) {
+      return 'Gallon Oil';
+    } else if (path.includes('_hearts_')) {
+      return 'Phoenix';
+    } else if (path.includes('chemron')) {
+      return 'Aron';
+    } else if (path.includes('vortex')) {
+      return 'Vortex';
+    } else if (path.includes('wp')) {
+      return 'WP';
+    } else if (path.includes('gp')) {
+      return 'NAF';
+    } else if (path.includes('greenpetrol')) {
+      return 'GreenPetrol';
+    } else if (path.includes('fusion')) {
+      return 'Fusion';
+    } else if (path.includes('driver')) {
+      return 'Driverse';
+    } else if (path.includes('driving')) {
+      return 'Haulett';
+    }
+  } else if (path.includes('/truck_dealer/')) {
+    return toDealerLabel(path);
+  }
+
+  return '';
 }
 
 function getFacilities(prefabDesc: PrefabDescription): Set<FacilityIcon> {
