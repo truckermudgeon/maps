@@ -694,14 +694,7 @@ export function generateGraph(
     islandFacilities.forEach(f => facility.facilities.add(f));
     islandFacilityPrefabs.delete(islandPrefab);
   }
-  const facilityNodesByMapArea = new Map<
-    bigint,
-    {
-      facilities: Set<FacilityIcon>;
-      itemUid: bigint;
-      itemType: ItemType.Prefab | ItemType.MapArea;
-    }
-  >(
+  const facilityNodesByMapArea = new Map<bigint, ServiceArea>(
     facilityNodes
       .values()
       .filter(v => v.itemType === ItemType.MapArea)
