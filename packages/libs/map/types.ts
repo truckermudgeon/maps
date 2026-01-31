@@ -855,6 +855,7 @@ export interface ServiceArea {
   facilities: Set<FacilityIcon>;
   itemUid: bigint;
   itemType: ItemType.Prefab | ItemType.MapArea;
+  description: string; // TODO narrow type to GasBrand | DealerBrand
 }
 
 export interface GraphData {

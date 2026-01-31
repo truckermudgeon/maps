@@ -501,7 +501,7 @@ function poiToSearchFeature(
         type: 'company',
         label: poi.label,
         sprite: poi.icon,
-        tags: ['company'],
+        tags: ['company', 'depot'],
       };
       break;
     }
