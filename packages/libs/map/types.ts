@@ -1,9 +1,11 @@
+import type { Extent } from '@truckermudgeon/base/geom';
 import type { GeoJSON } from 'geojson';
 import type {
   ItemType,
   MapAreaColor,
   MapOverlayType,
   SpawnPointType,
+  TrafficSemaphoreType,
 } from './constants';
 
 export type { MapAreaColor } from './constants';
@@ -35,8 +37,6 @@ export type City = Readonly<{
   areas: readonly CityArea[];
 }>;
 
-// Note: game .sii files contain interesting things, like
-// timezone data, fuel price, and mass limits
 export type Country = Readonly<{
   token: string;
   name: string;
@@ -45,6 +45,13 @@ export type Country = Readonly<{
   x: number;
   y: number;
   code: string;
+  fuelPrice: number;
+  timeZone: number;
+  timeZoneName: string;
+  secondaryTimeZones: readonly {
+    extent: Readonly<Extent>;
+    timeZone: number;
+  }[];
   truckSpeedLimits: SpeedLimits;
 }>;
 export type SpeedLimits = Partial<
@@ -82,6 +89,7 @@ export type FerryConnection = Readonly<{
   x: number;
   y: number;
   price: number;
+  /** in minutes */
   time: number;
   distance: number;
   intermediatePoints: {
@@ -92,11 +100,13 @@ export type FerryConnection = Readonly<{
 }>;
 
 export type Ferry = Readonly<{
+  uid: bigint;
   token: string;
   train: boolean;
   name: string;
   nameLocalized: string | undefined;
   nodeUid: bigint;
+  prefabUid: bigint;
   x: number;
   y: number;
   connections: FerryConnection[];
@@ -294,9 +304,13 @@ export type Prefab = BaseItem &
     dlcGuard: number;
     hidden?: true;
     secret?: true;
+    tunnel?: true;
+    customSemaphores?: true;
+    showSemaphores?: true;
     token: string;
     nodeUids: readonly bigint[];
     originNodeIndex: number;
+    ferryLinkUid?: bigint;
   }>;
 
 export type MapArea = BaseItem &
@@ -498,6 +512,8 @@ interface NavCurve {
   };
   nextLines: number[];
   prevLines: number[];
+  semaphoreId: number | undefined;
+  trafficRule: string | undefined;
 }
 export interface PrefabDescription {
   // prefab's entry/exit points
@@ -533,6 +549,26 @@ export interface PrefabDescription {
       targetNavNodeIndex: number;
       curveIndices: number[];
     }[];
+  }[];
+  signs: {
+    x: number;
+    y: number;
+    z: number;
+    rotation: number;
+    rotationQuat: [number, number, number, number];
+    model: string;
+    part: string;
+  }[];
+  semaphores: {
+    x: number;
+    y: number;
+    z: number;
+    rotation: number;
+    rotationQuat: [number, number, number, number];
+    type: TrafficSemaphoreType;
+    intervals: number[];
+    cycle: number;
+    profile: string;
   }[];
 }
 

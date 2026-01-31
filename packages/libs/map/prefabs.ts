@@ -1,11 +1,9 @@
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import type { Position } from '@truckermudgeon/base/geom';
 import {
+  angleBetweenPoints,
   distance,
-  dot,
-  magnitude,
   midPoint,
-  normalizeRadians,
   rotate,
   subtract,
   toRadians,
@@ -30,8 +28,6 @@ import type {
 
 /**
  * Transforms `position` (in `PrefabDescription` space) into map space.
- *
- * TODO move this function to some shared maplib
  */
 export function toMapPosition(
   position: Position,
@@ -614,12 +610,17 @@ export interface Lane {
   branches: {
     curvePoints: [number, number][]; // in prefab space
     targetNodeIndex: number;
+    semaphoresEncountered: { semaphoreId: number; curveIndex: number }[];
+    trafficRulesEncountered: { rule: string; curveIndex: number }[];
   }[];
 }
 
 /**
  * Returns a map of 0-based starting node indices to a list of `Lane`s
  * originating at that node index, ordered by closest-to-"divider" first.
+ *
+ * Note that all prefab nodes are represented in the map as keys, and the
+ * corresponding Lane lists may be empty.
  */
 export function calculateLaneInfo(
   prefabDesc: PrefabDescription,
@@ -645,8 +646,27 @@ function getLane(prefabDesc: PrefabDescription, inputLaneIndex: number): Lane {
     branches: getCurvePaths(prefabDesc, inputLaneIndex).map(p => {
       const cis = p.curvePathIndices;
       const curvePoints: [number, number][] = [];
+      const semaphoresEncountered: {
+        semaphoreId: number;
+        curveIndex: number;
+      }[] = [];
+      const trafficRulesEncountered: { rule: string; curveIndex: number }[] =
+        [];
       for (const ci of cis) {
         const curve = prefabDesc.navCurves[ci];
+        if (curve.semaphoreId != null) {
+          semaphoresEncountered.push({
+            semaphoreId: curve.semaphoreId,
+            curveIndex: ci,
+          });
+        }
+        if (curve.trafficRule != null) {
+          trafficRulesEncountered.push({
+            rule: curve.trafficRule,
+            curveIndex: ci,
+          });
+        }
+
         const points = toSplinePoints(
           {
             position: [curve.start.x, curve.start.y],
@@ -662,11 +682,13 @@ function getLane(prefabDesc: PrefabDescription, inputLaneIndex: number): Lane {
       const simplified = simplify(turf.lineString(curvePoints), {
         tolerance: 0.1,
         mutate: true,
-      });
+      }).geometry.coordinates as Position[];
 
       return {
-        curvePoints: simplified.geometry.coordinates as [number, number][],
+        curvePoints: simplified,
         targetNodeIndex: p.endingNodeIndex,
+        semaphoresEncountered,
+        trafficRulesEncountered,
       };
     }),
   };
@@ -795,9 +817,7 @@ function angleBetween(a: RoadSegment, b: RoadSegment) {
   } else {
     throw new Error('segments do not share a point');
   }
-  return normalizeRadians(
-    Math.acos(dot(an, bn) / (magnitude(an) * magnitude(bn))),
-  );
+  return angleBetweenPoints(an, bn);
 }
 
 function canBeJoined(a: RoadSegment, b: RoadSegment): boolean {

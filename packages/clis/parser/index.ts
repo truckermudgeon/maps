@@ -88,6 +88,11 @@ function main() {
     }
   }
 
+  fs.writeFileSync(
+    path.join(args.outputDir, `${map}-version.txt`),
+    result.version,
+  );
+
   logger.success('done.');
 }
 

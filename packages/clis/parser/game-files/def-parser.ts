@@ -1,4 +1,5 @@
 import { assert, assertExists } from '@truckermudgeon/base/assert';
+import type { Extent } from '@truckermudgeon/base/geom';
 import { Preconditions } from '@truckermudgeon/base/precon';
 import { isLaneSpeedClass } from '@truckermudgeon/map/constants';
 import type {
@@ -333,6 +334,17 @@ function processCountryJson(obj: CountrySii) {
     x: rawCountry.pos[0],
     y: rawCountry.pos[2],
     code: rawCountry.countryCode,
+    fuelPrice: rawCountry.fuelPrice,
+    timeZone: rawCountry.timeZone,
+    timeZoneName: rawCountry.timeZoneName,
+    secondaryTimeZones:
+      rawCountry.secondaryTimeZoneArea?.map((area, i) => {
+        const [minX, maxX, minY, maxY] = area;
+        return {
+          extent: [minX, minY, maxX, maxY] as Extent,
+          timeZone: rawCountry.secondaryTimeZone![i],
+        };
+      }) ?? [],
   };
 }
 

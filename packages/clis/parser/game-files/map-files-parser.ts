@@ -56,12 +56,14 @@ export function parseMapFiles(
   | {
       onlyDefs: false;
       map: string;
+      version: string;
       mapData: MapData;
       icons: Map<string, Buffer>;
     }
   | {
       onlyDefs: true;
       map: string;
+      version: string;
       defData: DefData;
     } {
   const requiredFiles = new Set([
@@ -91,6 +93,7 @@ export function parseMapFiles(
       return {
         onlyDefs: true,
         map: version.application === 'ats' ? 'usa' : 'europe',
+        version: version.version,
         defData: toDefData(defData, l10n),
       };
     }
@@ -99,6 +102,7 @@ export function parseMapFiles(
     const sectorData = parseSectorFiles(entries);
     return {
       onlyDefs: false,
+      version: version.version,
       ...postProcess(defData, sectorData, icons, l10n),
     };
   } finally {
@@ -818,7 +822,9 @@ function postProcess(
   // Augment partial ferry info from defs with start/end position info
   const ferries: Ferry[] = [];
   for (const [token, partialFerry] of defData.ferries) {
-    const { nodeUid, train } = assertExists(ferryItems.get(token));
+    const { nodeUid, prefabUid, train, uid } = assertExists(
+      ferryItems.get(token),
+    );
     const { x, y } = assertExists(nodesByUid.get(nodeUid));
 
     const connections: FerryConnection[] = partialFerry.connections
@@ -843,9 +849,11 @@ function postProcess(
     ferries.push(
       withLocalizedName({
         ...partialFerry,
+        uid,
         train,
         connections,
         nodeUid,
+        prefabUid,
         x,
         y,
       }),

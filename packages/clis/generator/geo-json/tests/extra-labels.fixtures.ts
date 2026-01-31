@@ -25,12 +25,24 @@ function mapOfCountry(array: CountryFixture[]): Map<string, Country> {
       {
         nameLocalized: undefined,
         truckSpeedLimits: {},
+        fuelPrice: 0,
+        timeZone: 0,
+        timeZoneName: 'UTC',
+        secondaryTimeZones: [],
         ...country,
       },
     ]),
   );
 }
-type CountryFixture = Omit<Country, 'nameLocalized' | 'truckSpeedLimits'>;
+type CountryFixture = Omit<
+  Country,
+  | 'nameLocalized'
+  | 'truckSpeedLimits'
+  | 'fuelPrice'
+  | 'timeZone'
+  | 'timeZoneName'
+  | 'secondaryTimeZones'
+>;
 
 export const ar_ftsmith_ = mapOf<MileageTarget>([
   {
