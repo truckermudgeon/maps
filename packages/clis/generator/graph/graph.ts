@@ -957,95 +957,88 @@ function updateGraphWithFerries(
   >,
   context: Context,
 ) {
-  const { nodes, roads, prefabs, prefabDescriptions, ferries, getDlcGuard } =
-    context;
-  const roadQuadtree = quadtree<{
-    x: number;
-    y: number;
-    nodeUid: bigint;
-  }>()
-    .x(e => e.x)
-    .y(e => e.y);
-
-  const maybeAddNode = (nid: bigint) => {
-    const maybeNode = nodes.get(nid);
-    if (maybeNode) {
-      roadQuadtree.add({
-        x: maybeNode.x,
-        y: maybeNode.y,
-        nodeUid: nid,
-      });
-    }
-  };
-
-  for (const road of roads.values()) {
-    maybeAddNode(road.startNodeUid);
-    maybeAddNode(road.endNodeUid);
-  }
-  for (const prefab of prefabs.values()) {
-    // HACK ignore troublesome prefab near priwall ferry station:
-    //   "token": "14004"
-    //   "path": "prefab2/fork_temp/invis/invis_r1_fork_tmpl.ppd"
-    // (navCurves data has empty nextLines and prevLines arrays)
-    if (context.map === 'europe' && prefab.uid === 0x4cd14de4b6e67ccfn) {
-      continue;
-    }
-    const desc = assertExists(prefabDescriptions.get(prefab.token));
-    if (
-      desc.mapPoints.every(p => p.type === 'road') &&
-      desc.navCurves.length > 0
-    ) {
-      for (const nid of prefab.nodeUids) {
-        maybeAddNode(nid);
-      }
-    }
-  }
+  const { nodes, prefabs, ferries, getDlcGuard } = context;
+  const newGraphNode = (): { forward: Neighbor[]; backward: Neighbor[] } => ({
+    forward: [],
+    backward: [],
+  });
 
   for (const ferry of ferries.values()) {
-    const ferryNodeUid = ferry.nodeUid;
-    const ferryNode = assertExists(nodes.get(ferryNodeUid));
-    const road = assertExists(roadQuadtree.find(ferry.x, ferry.y));
+    const ferryNode = assertExists(nodes.get(ferry.nodeUid));
+    let ferryEntrance: Node;
+    let ferryExit: Node;
+    if (ferry.prefabUid != null) {
+      const ferryPrefab = assertExists(
+        prefabs.get(ferry.prefabUid),
+        `no prefab for ferry:\nn${JSON.stringify(ferry, null, 2)}`,
+      );
+      const prefabNodesInGraph = ferryPrefab.nodeUids.filter(nid =>
+        graph.has(nid),
+      );
+      assert(prefabNodesInGraph.length === 1);
 
-    // establish edges from closest road to ferry
-    // TODO look into simplying graph by only having one direction to/from ferry
-    const roadToFerryEdges: readonly Neighbor[] = [
-      createNeighbor(road, ferryNode, 'forward', getDlcGuard),
-      createNeighbor(road, ferryNode, 'backward', getDlcGuard),
-    ];
-    const roadNeighbors = assertExists(graph.get(road.nodeUid));
-    roadNeighbors.forward.push(...roadToFerryEdges);
-    roadNeighbors.backward.push(...roadToFerryEdges);
+      ferryEntrance = assertExists(nodes.get(prefabNodesInGraph[0]));
+      const potentialFerryExits = ferryPrefab.nodeUids
+        .map(nid => assertExists(nodes.get(nid)))
+        .filter(node => node.backwardItemUid === 0n);
+      // pick the exit node closest to ferry icon
+      ferryExit = potentialFerryExits.sort(
+        (a, b) => distance(a, ferryNode) - distance(b, ferryNode),
+      )[0];
+    } else {
+      ferryEntrance = assertExists(nodes.get(ferry.nodeUid));
+      ferryExit = ferryEntrance;
+    }
+    //console.log('ferry', {
+    //  token: ferry.token,
+    //  ferryEntrance: ferryEntrance.uid.toString(16),
+    //  ferryExit: ferryExit.uid.toString(16),
+    //});
 
-    assert(graph.get(ferryNodeUid) == null);
-    graph.set(ferryNodeUid, { forward: [], backward: [] });
-    const ferryNeighbors = assertExists(graph.get(ferryNodeUid));
-    const roadNode = assertExists(nodes.get(road.nodeUid));
-    // establish edges from origin ferry to closet road
-    const ferryToRoadEdges: readonly Neighbor[] = [
-      createNeighbor(ferryNode, roadNode, 'forward', getDlcGuard),
-      createNeighbor(ferryNode, roadNode, 'backward', getDlcGuard),
-    ];
-    ferryNeighbors.forward.push(...ferryToRoadEdges);
-    ferryNeighbors.backward.push(...ferryToRoadEdges);
+    // create prefab exit graph node
+    const exitGraphNode = newGraphNode();
+    graph.set(ferryExit.uid, exitGraphNode);
 
+    // establish edges between prefab entrance and prefab exit
+    const entranceGraphNode = assertExists(graph.get(ferryEntrance.uid));
+    // TODO look into simplifying graph by having minimal edges created, based
+    //  on how entrance graph node is reached.
+    entranceGraphNode.forward.push(
+      createNeighbor(ferryEntrance, ferryExit, 'forward', getDlcGuard),
+    );
+    entranceGraphNode.backward.push(
+      createNeighbor(ferryEntrance, ferryExit, 'forward', getDlcGuard),
+    );
+    exitGraphNode.backward.push(
+      createNeighbor(ferryExit, ferryEntrance, 'forward', getDlcGuard),
+      createNeighbor(ferryExit, ferryEntrance, 'backward', getDlcGuard),
+    );
+
+    // create ferry graph node
+    // N.B.: may already exist, e.g., for Port Fourchon
+    const ferryGraphNode = putIfAbsent(ferry.nodeUid, newGraphNode(), graph);
+
+    // establish edges between prefab exit and ferry node
+    exitGraphNode.forward.push(
+      createNeighbor(ferryExit, ferryNode, 'forward', getDlcGuard),
+    );
+    ferryGraphNode.forward.push(
+      createNeighbor(ferryNode, ferryExit, 'backward', getDlcGuard),
+    );
+    ferryGraphNode.backward.push(
+      createNeighbor(ferryNode, ferryExit, 'backward', getDlcGuard),
+    );
+
+    // establish edges from ferry node to ferry connections
     for (const connection of ferry.connections) {
-      const otherFerryNodeUid = connection.nodeUid;
-      const otherFerryNode = assertExists(nodes.get(otherFerryNodeUid));
-      // establish edges from origin ferry to destination ferry
-      const ferryToFerryEdges: readonly Neighbor[] = [
-        {
-          ...createNeighbor(ferryNode, otherFerryNode, 'forward', getDlcGuard),
-          distance: connection.distance,
-          isFerry: true,
-        },
-        {
-          ...createNeighbor(ferryNode, otherFerryNode, 'backward', getDlcGuard),
-          distance: connection.distance,
-          isFerry: true,
-        },
-      ];
-      ferryNeighbors.forward.push(...ferryToFerryEdges);
-      ferryNeighbors.backward.push(...ferryToFerryEdges);
+      const otherFerryNode = assertExists(nodes.get(connection.nodeUid));
+      ferryGraphNode.forward.push({
+        ...createNeighbor(ferryNode, otherFerryNode, 'forward', getDlcGuard),
+        distance: connection.distance * 100,
+        // TODO how to reconcile in-game time taken vs. IRL time?
+        // duration: connection.time * 60,
+        isFerry: true,
+      });
     }
   }
 }
