@@ -485,19 +485,47 @@ export interface CountrySii {
       countryCode: string;
       countryId: number;
       pos: [number, number, number];
+      fuelPrice: number;
+      timeZone: number;
+      timeZoneName: string;
+      secondaryTimeZoneArea?: [
+        minX: number,
+        maxX: number,
+        minY: number,
+        maxY: number,
+      ][];
+      secondaryTimeZone?: number[];
     }
   >;
 }
 export const CountrySiiSchema: JSONSchemaType<CountrySii> = object(
   {
     countryData: nullable(
-      patternRecord(/^country\.data\.[0-9a-z_]{1,12}$/, {
-        name: string,
-        nameLocalized: localeToken,
-        countryCode: string,
-        countryId: integer,
-        pos: numberTriple,
-      }),
+      patternRecord(
+        /^country\.data\.[0-9a-z_]{1,12}$/,
+        {
+          name: string,
+          nameLocalized: localeToken,
+          countryCode: string,
+          countryId: integer,
+          pos: numberTriple,
+          fuelPrice: number,
+          timeZone: integer,
+          timeZoneName: localeToken,
+          secondaryTimeZoneArea: nullable(arrayOf(numberQuadruple)),
+          secondaryTimeZone: nullable(arrayOf(integer)),
+        },
+        [
+          'name',
+          'nameLocalized',
+          'countryCode',
+          'countryId',
+          'pos',
+          'fuelPrice',
+          'timeZone',
+          'timeZoneName',
+        ],
+      ),
     ),
   },
   [],
@@ -642,15 +670,27 @@ export const FerryConnectionSiiSchema: JSONSchemaType<FerryConnectionSii> =
   });
 
 export interface PrefabSii {
-  prefabModel?: Record<string, { prefabDesc: string; modelDesc: string }>;
+  prefabModel?: Record<
+    string,
+    {
+      prefabDesc: string;
+      modelDesc: string;
+      semaphoreProfile?: string[];
+    }
+  >;
 }
 export const PrefabSiiSchema: JSONSchemaType<PrefabSii> = object(
   {
     prefabModel: nullable(
-      patternRecord(/^prefab\.[0-9a-z_]{1,12}$/, {
-        prefabDesc: string,
-        modelDesc: string,
-      }),
+      patternRecord(
+        /^prefab\.[0-9a-z_]{1,12}$/,
+        {
+          prefabDesc: string,
+          modelDesc: string,
+          semaphoreProfile: nullable(arrayOf(token)),
+        },
+        ['prefabDesc', 'modelDesc'],
+      ),
     ),
   },
   [],

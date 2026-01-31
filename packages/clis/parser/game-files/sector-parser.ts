@@ -699,6 +699,13 @@ function toPrefab(rawItem: SectorItem<ItemType.Prefab>): Prefab {
     hidden: (rawItem.flags & 0x00_02_00_00) !== 0 ? true : undefined,
     //                                  ┌─ bit 5 (0-based)
     secret: (rawItem.flags & 0x00_00_00_20) !== 0 ? true : undefined,
+    //                                   ┌─ bit 0 (0-based)
+    tunnel: (rawItem.flags & 0x00_00_00_01) !== 0 ? true : undefined,
+    //                                             ┌─ bit 1 (0-based)
+    customSemaphores: (rawItem.flags & 0x00_00_00_02) !== 0 ? true : undefined,
+    //                                     ┌─ bit 19 (0-based)
+    showSemaphores: (rawItem.flags & 0x00_08_00_00) !== 0 ? true : undefined,
+    ferryLinkUid: rawItem.ferryLink || undefined,
     nodeUids: rawItem.nodeUids,
     originNodeIndex: rawItem.originIndex,
   };

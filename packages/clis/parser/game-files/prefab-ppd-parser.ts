@@ -416,6 +416,8 @@ export function parsePrefabPpd(buffer: Buffer): PrefabDescription {
         startRot,
         endPos,
         endRot,
+        semaphoreId,
+        trafficRule,
       } = rc;
       const start = getXYZR(startPos, startRot);
       const end = getXYZR(endPos, endRot);
@@ -425,6 +427,8 @@ export function parsePrefabPpd(buffer: Buffer): PrefabDescription {
         end,
         nextLines: rc.nextLines.slice(0, countNext),
         prevLines: rc.prevLines.slice(0, countPrev),
+        semaphoreId: semaphoreId === -1 ? undefined : semaphoreId,
+        trafficRule: trafficRule === '' ? undefined : trafficRule,
       };
     }),
     navNodes: rawPrefab.navNodes.map(rn => {
@@ -443,8 +447,24 @@ export function parsePrefabPpd(buffer: Buffer): PrefabDescription {
           .slice(0, connectionCount),
       };
     }),
-    //signs: rawPrefab.signs,
-    //semaphores: rawPrefab.semaphores,
+    signs: rawPrefab.signs.map(rs => {
+      const { pos, rot, model, part } = rs;
+      return {
+        ...getXYZR(pos, rot),
+        model,
+        part,
+      };
+    }),
+    semaphores: rawPrefab.semaphores.map(rs => {
+      const { pos, rot, type, intervals, cycle, profile } = rs;
+      return {
+        ...getXYZR(pos, rot),
+        type,
+        intervals,
+        cycle,
+        profile,
+      };
+    }),
   };
 }
 

@@ -527,6 +527,10 @@ function createFakeMapData(arrays: PartialMapData): MappedData<'usa'> {
     truckSpeedLimits: {},
     x: 0,
     y: 0,
+    fuelPrice: 0,
+    timeZone: 0,
+    timeZoneName: 'UTC',
+    secondaryTimeZones: [],
   };
 
   return {
