@@ -107,40 +107,43 @@ const RoutesDemo = (props: { tileRootUrl: string }) => {
         visibleIcons={visibleIcons}
         dlcs={visibleAtsDlcs}
         showSecrets={showSecrets}
-      />
-      <SceneryTownSource
-        game={'ats'}
-        mode={mode}
-        enableAutoHide={autoHide}
-        enabledStates={visibleStates}
-      />
-      <Source
-        id={'route1'}
-        type={'geojson'}
-        data={
-          {
-            type: 'FeatureCollection',
-            features: [],
-          } as GeoJSON.FeatureCollection
-        }
       >
-        <Layer
-          type={'line'}
-          paint={{
-            'line-color': [
-              'match',
-              ['get', 'mode'],
-              'shortest',
-              '#f00',
-              'smallRoads',
-              '#0f0',
-              '#f0f',
-            ],
-            'line-width': 3,
-            'line-opacity': 0.7,
-          }}
-        />
-      </Source>
+        <>
+          <SceneryTownSource
+            game={'ats'}
+            mode={mode}
+            enableAutoHide={autoHide}
+            enabledStates={visibleStates}
+          />
+          <Source
+            id={'route1'}
+            type={'geojson'}
+            data={
+              {
+                type: 'FeatureCollection',
+                features: [],
+              } as GeoJSON.FeatureCollection
+            }
+          >
+            <Layer
+              type={'line'}
+              paint={{
+                'line-color': [
+                  'match',
+                  ['get', 'mode'],
+                  'shortest',
+                  '#f00',
+                  'smallRoads',
+                  '#0f0',
+                  '#f0f',
+                ],
+                'line-width': 3,
+                'line-opacity': 0.7,
+              }}
+            />
+          </Source>
+        </>
+      </GameMapStyle>
       <NavigationControl visualizePitch={true} />
       <FullscreenControl />
       <ModeControl />
