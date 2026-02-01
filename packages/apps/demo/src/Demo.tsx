@@ -404,7 +404,69 @@ const Demo = (props: {
         visibleIcons={visibleIcons}
         showSecrets={showSecrets}
         dlcs={visibleAtsDlcs}
-      />
+      >
+        <>
+          {visibleIcons.has(MapIcon.CityNames) && (
+            <SceneryTownSource
+              game={'ats'}
+              mode={mode}
+              enableAutoHide={autoHide}
+              enabledStates={visibleStates}
+            />
+          )}
+          {showStreetViewLayer && (
+            <Source
+              id={'street-view'}
+              type={'geojson'}
+              data={'/street-view.geojson'}
+              cluster={false} // TODO: re-enable once mouse-event handling on clusters is fixed.
+              clusterMaxZoom={7}
+              clusterRadius={10}
+            >
+              <Layer
+                id={'photo-spheres-halo'}
+                type={'circle'}
+                paint={{
+                  'circle-radius': 10,
+                  'circle-color': mode === 'light' ? '#fff8' : '#8884',
+                  'circle-blur': 0.75,
+                }}
+                filter={['in', '$type', 'Point']}
+              />
+              <Layer
+                id={'photo-spheres'}
+                type={'circle'}
+                paint={{
+                  'circle-radius': 5,
+                  'circle-color': '#48f2',
+                  'circle-stroke-width': 2,
+                  'circle-stroke-color': '#48f',
+                }}
+                filter={['in', '$type', 'Point']}
+              />
+              <Layer
+                id={'sv-streets-case'}
+                type={'line'}
+                paint={{
+                  'line-color': '#aef',
+                  'line-width': 2,
+                  'line-gap-width': 4,
+                }}
+                filter={['in', '$type', 'LineString']}
+              />
+              <Layer
+                id={'sv-streets'}
+                type={'line'}
+                paint={{
+                  'line-color': '#2ab',
+                  'line-width': 4,
+                }}
+                filter={['in', '$type', 'LineString']}
+              />
+            </Source>
+          )}
+        </>
+      </GameMapStyle>
       <GameMapStyle
         tileRootUrl={tileRootUrl}
         game={'ets2'}
@@ -412,73 +474,15 @@ const Demo = (props: {
         enableIconAutoHide={autoHide}
         visibleIcons={visibleIcons}
         showSecrets={showSecrets}
-      />
-      {visibleIcons.has(MapIcon.CityNames) && (
-        <SceneryTownSource
-          game={'ats'}
-          mode={mode}
-          enableAutoHide={autoHide}
-          enabledStates={visibleStates}
-        />
-      )}
-      {visibleIcons.has(MapIcon.CityNames) && (
-        <SceneryTownSource
-          game={'ets2'}
-          mode={mode}
-          enableAutoHide={autoHide}
-        />
-      )}
-      {showStreetViewLayer && (
-        <Source
-          id={'street-view'}
-          type={'geojson'}
-          data={'/street-view.geojson'}
-          cluster={false} // TODO: re-enable once mouse-event handling on clusters is fixed.
-          clusterMaxZoom={7}
-          clusterRadius={10}
-        >
-          <Layer
-            id={'photo-spheres-halo'}
-            type={'circle'}
-            paint={{
-              'circle-radius': 10,
-              'circle-color': mode === 'light' ? '#fff8' : '#8884',
-              'circle-blur': 0.75,
-            }}
-            filter={['in', '$type', 'Point']}
+      >
+        {visibleIcons.has(MapIcon.CityNames) && (
+          <SceneryTownSource
+            game={'ets2'}
+            mode={mode}
+            enableAutoHide={autoHide}
           />
-          <Layer
-            id={'photo-spheres'}
-            type={'circle'}
-            paint={{
-              'circle-radius': 5,
-              'circle-color': '#48f2',
-              'circle-stroke-width': 2,
-              'circle-stroke-color': '#48f',
-            }}
-            filter={['in', '$type', 'Point']}
-          />
-          <Layer
-            id={'sv-streets-case'}
-            type={'line'}
-            paint={{
-              'line-color': '#aef',
-              'line-width': 2,
-              'line-gap-width': 4,
-            }}
-            filter={['in', '$type', 'LineString']}
-          />
-          <Layer
-            id={'sv-streets'}
-            type={'line'}
-            paint={{
-              'line-color': '#2ab',
-              'line-width': 4,
-            }}
-            filter={['in', '$type', 'LineString']}
-          />
-        </Source>
-      )}
+        )}
+      </GameMapStyle>
       <Source
         id={'measure'}
         type={'geojson'}

@@ -1,4 +1,3 @@
-import type { DataDrivenPropertyValueSpecification } from '@maplibre/maplibre-gl-style-spec';
 import { Preconditions } from '@truckermudgeon/base/precon';
 import type {
   AtsDlcGuard,
@@ -21,12 +20,13 @@ import type {
 } from '@truckermudgeon/map/types';
 import Color from 'color';
 import type {
+  DataDrivenPropertyValueSpecification,
   ExpressionSpecification,
   LineLayerSpecification,
   PaddingSpecification,
   SymbolLayerSpecification,
 } from 'maplibre-gl';
-import { useEffect } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import { Layer, Source, useMap } from 'react-map-gl/maplibre';
 import type { Mode } from './colors';
 import { modeColors } from './colors';
@@ -90,6 +90,8 @@ export type GameMapStyleProps = {
   /** Defaults to 'light' */
   mode?: Mode;
   specialEvent?: 'halloween' | 'christmas';
+  /** N.B.: multiple children aren't allowed; wrap them in a `<></>` */
+  children?: ReactNode;
 } & (
   | {
       game: 'ats';
@@ -462,6 +464,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           'line-dasharray': [0.1, 1],
         }}
       />
+      {props.children}
       <Layer
         id={game + 'ferry-labels'}
         source-layer={game}
