@@ -41,3 +41,24 @@ export const Merge: Story = {
     activeBranch: BranchType.MERGE,
   },
 };
+
+export const Depart: Story = {
+  args: {
+    branches: [BranchType.DEPART],
+    activeBranch: BranchType.DEPART,
+  },
+};
+
+export const Arrive: Story = {
+  args: {
+    branches: [BranchType.ARRIVE],
+    activeBranch: BranchType.ARRIVE,
+  },
+};
+
+export const Ferry: Story = {
+  args: {
+    branches: [BranchType.FERRY],
+    activeBranch: BranchType.FERRY,
+  },
+};

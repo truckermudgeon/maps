@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { BranchType } from '@truckermudgeon/navigation/constants';
 import { Directions } from './Directions';
+import { toLengthAndUnit } from './text';
 
 const meta = {
   title: 'Route/Directions',
@@ -10,27 +11,33 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+let { length, unit } = toLengthAndUnit(40);
 export const Default: Story = {
   args: {
     direction: BranchType.RIGHT,
-    distanceMeters: 40,
+    length,
+    unit,
   },
 };
 
+({ length, unit } = toLengthAndUnit(40 * 10));
 export const WithNameText: Story = {
   args: {
     ...Default.args,
-    distanceMeters: Default.args.distanceMeters * 10,
-    name: {
+    length,
+    unit,
+    banner: {
       text: 'Main St',
     },
   },
 };
 
+({ length, unit } = toLengthAndUnit(40 * 10));
 export const WithLaneHint: Story = {
   args: {
     ...Default.args,
-    distanceMeters: Default.args.distanceMeters * 10,
+    length,
+    unit,
     laneHint: {
       lanes: [
         {
@@ -52,20 +59,24 @@ export const WithLaneHint: Story = {
   },
 };
 
+({ length, unit } = toLengthAndUnit(40 * 1000));
 export const WithThenHint: Story = {
   args: {
     ...Default.args,
-    distanceMeters: Default.args.distanceMeters * 1000,
+    length,
+    unit,
     thenHint: {
       direction: BranchType.SLIGHT_LEFT,
     },
   },
 };
 
+({ length, unit } = toLengthAndUnit(40 * 10_000));
 export const WithLaneAndThenHints: Story = {
   args: {
     ...WithLaneHint.args,
     ...WithThenHint.args,
-    distanceMeters: Default.args.distanceMeters * 10000,
+    length,
+    unit,
   },
 };

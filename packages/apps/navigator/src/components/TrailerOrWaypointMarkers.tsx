@@ -1,3 +1,5 @@
+import polyline from '@mapbox/polyline';
+import { Box } from '@mui/joy';
 import { assertExists } from '@truckermudgeon/base/assert';
 import type { Route } from '@truckermudgeon/navigation/types';
 import { Marker } from 'react-map-gl/maplibre';
@@ -11,7 +13,7 @@ export const TrailerOrWaypointMarkers = (props: {
   if (props.trailerPoint) {
     return (
       <Marker
-        color={'#0f0'}
+        color={'#0c0'}
         longitude={props.trailerPoint[0]}
         latitude={props.trailerPoint[1]}
       />
@@ -24,7 +26,8 @@ export const TrailerOrWaypointMarkers = (props: {
   const numSegments = props.activeRoute.segments.length;
   for (let i = 0; i < numSegments; i++) {
     const segment = props.activeRoute.segments[i];
-    const segmentEnd = assertExists(segment.lonLats.at(-1));
+    const segmentEndPoints = polyline.decode(segment.steps.at(-1)!.geometry);
+    const segmentEnd = assertExists(segmentEndPoints.at(-1));
     const isLastSegment = i === numSegments - 1;
     waypoints.push(
       <Marker
@@ -32,7 +35,25 @@ export const TrailerOrWaypointMarkers = (props: {
         color={isLastSegment ? 'red' : 'blue'}
         longitude={segmentEnd[0]}
         latitude={segmentEnd[1]}
-      />,
+      >
+        {isLastSegment ? null : (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 'bolder',
+              borderRadius: '50%',
+              width: '1.6em',
+              height: '1.6em',
+              border: '0.15em solid',
+              backgroundColor: 'background.surface',
+            }}
+          >
+            {i + 1}
+          </Box>
+        )}
+      </Marker>,
     );
   }
   return waypoints;

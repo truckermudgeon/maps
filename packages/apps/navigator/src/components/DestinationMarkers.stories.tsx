@@ -4,6 +4,7 @@ import * as React from 'react';
 import { DestinationMarkers } from './DestinationMarkers';
 import { SlippyMap } from './SlippyMap';
 import { Default as SlippyMapDefault } from './SlippyMap.stories';
+import { aSearchResultWith } from './story-builders';
 
 const meta = {
   title: 'Map/Destination Markers',
@@ -30,18 +31,12 @@ const fakeLon = -114.806;
 
 export const Default: Story = {
   args: {
-    destinations: Array.from({ length: 10 }, (_, i) => ({
-      nodeUid: i.toString(),
-      lonLat: [fakeLon + Math.random(), fakeLat + Math.random()],
-      distanceMeters: 0,
-      bearing: 0,
-      name: '',
-      logoUrl: '',
-      city: '',
-      state: '',
-      isCityStateApproximate: false,
-      facilityUrls: [],
-    })),
+    destinations: Array.from({ length: 10 }, (_, i) =>
+      aSearchResultWith({
+        nodeUid: i.toString(),
+        lonLat: [fakeLon + Math.random(), fakeLat + Math.random()],
+      }),
+    ),
     selectedDestinationNodeUid: undefined,
     forceDisplay: true,
     onDestinationClick: fn(),

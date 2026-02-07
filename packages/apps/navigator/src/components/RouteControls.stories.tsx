@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
 
 import { RouteControls } from './RouteControls';
+import { toLengthAndUnit } from './text';
 
 const meta = {
   title: 'Route/RouteControls',
@@ -12,26 +13,29 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+const requiredEventHandlers = {
+  onExpandedToggle: fn(),
+  onSearchAlongRouteClick: fn(),
+  onRoutePreviewClick: fn(),
+  onRouteDirectionsClick: fn(),
+  onRouteEndClick: fn(),
+};
+
+const { length, unit } = toLengthAndUnit(4000);
+
 export const Default: Story = {
   args: {
     summary: {
       minutes: 123,
-      distanceMeters: 4000,
+      distance: { length, unit },
     },
-    expanded: false,
-    onDisclosureClick: fn(),
-    onRouteEndClick: fn(),
+    ...requiredEventHandlers,
   },
 };
 
-export const Expanded: Story = {
+export const WithManageStops: Story = {
   args: {
-    summary: {
-      minutes: 123,
-      distanceMeters: 4000,
-    },
-    expanded: true,
-    onDisclosureClick: fn(),
-    onRouteEndClick: fn(),
+    ...Default.args,
+    onManageStopsClick: fn(),
   },
 };

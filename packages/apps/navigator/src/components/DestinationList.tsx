@@ -1,10 +1,13 @@
 import { List } from '@mui/joy';
-import type { SearchResult } from '@truckermudgeon/navigation/types';
+import type {
+  SearchResult,
+  SearchResultWithRelativeTruckInfo,
+} from '@truckermudgeon/navigation/types';
 import type { ReactElement } from 'react';
 import { DestinationItem } from './DestinationItem';
 
 export const DestinationList = (props: {
-  destinations: SearchResult[];
+  destinations: SearchResultWithRelativeTruckInfo[];
   onDestinationHighlight: (dest: SearchResult) => void;
   CollapsibleButtonBar: (props: { destination: SearchResult }) => ReactElement;
 }) => {

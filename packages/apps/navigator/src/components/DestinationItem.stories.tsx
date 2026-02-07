@@ -3,6 +3,7 @@ import { fn } from '@storybook/test';
 import { CollapsibleButtonBar } from './CollapsibleButtonBar';
 import { Hidden, Visible } from './CollapsibleButtonBar.stories';
 import { DestinationItem } from './DestinationItem';
+import { aSearchResultWith } from './story-builders';
 
 const meta = {
   title: 'Search/Destination Item',
@@ -15,16 +16,14 @@ type Story = StoryObj<typeof meta>;
 export const Selected: Story = {
   args: {
     destination: {
-      nodeUid: 'nodeUid',
-      lonLat: [1, 2],
-      distanceMeters: 1234,
+      ...aSearchResultWith({
+        type: 'company',
+        label: 'Cool Destination',
+        sprite: 'hau_oil_gst',
+        facilityUrls: ['/icons/gas_ico.png', 'icons/service_ico.png'],
+      }),
+      distance: 1234,
       bearing: 125,
-      name: 'Cool Destination',
-      logoUrl: '/icons/hau_oil_gst.png',
-      city: 'City',
-      state: 'NV',
-      isCityStateApproximate: false,
-      facilityUrls: ['/icons/gas_ico.png', 'icons/service_ico.png'],
     },
     index: 0,
     onDestinationHighlight: fn(),
@@ -34,20 +33,7 @@ export const Selected: Story = {
 
 export const Unselected: Story = {
   args: {
-    destination: {
-      nodeUid: 'nodeUid',
-      lonLat: [1, 2],
-      distanceMeters: 1234,
-      bearing: 125,
-      name: 'Cool Destination',
-      logoUrl: '/icons/hau_oil_gst.png',
-      city: 'City',
-      state: 'NV',
-      isCityStateApproximate: false,
-      facilityUrls: ['/icons/gas_ico.png', 'icons/service_ico.png'],
-    },
-    index: 0,
-    onDestinationHighlight: fn(),
+    ...Selected.args,
     CollapsibleButtonBar: () => <CollapsibleButtonBar {...Hidden.args} />,
   },
 };

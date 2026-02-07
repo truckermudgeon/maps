@@ -5,9 +5,6 @@
       "path": "packages/apis/navigation"
     },
     {
-      "path": "packages/apis/telemetry"
-    },
-    {
       "path": "packages/apps/demo"
     },
     {

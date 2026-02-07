@@ -6,12 +6,12 @@ import {
   extendTheme as materialExtendTheme,
 } from '@mui/material/styles';
 import { createTRPCProxyClient, createWSClient, wsLink } from '@trpc/client';
-import type { AppRouter } from '@truckermudgeon/navigation';
+
+import { AppRouter } from '@truckermudgeon/navigation/types';
 import * as mobx from 'mobx';
 import * as React from 'react';
 import { createRoot } from 'react-dom/client';
 import { createApp } from './create-app';
-import { fakeAppClient } from './fake-app-client';
 import './index.css';
 
 // https://mobx.js.org/configuration.html#linting-options
@@ -28,21 +28,35 @@ const materialTheme = materialExtendTheme();
 const container = document.getElementById('root')!;
 const root = createRoot(container);
 
-const params = new URLSearchParams(window.location.search);
-const fake = params.has('fake');
-const host = params.get('host') ?? 'localhost';
-const port = params.get('port') ?? 62840;
-const appClient = fake
-  ? fakeAppClient
-  : createTRPCProxyClient<AppRouter>({
-      links: [
-        wsLink({
-          client: createWSClient({
-            url: `ws://${host}:${port}`,
-          }),
-        }),
-      ],
-    });
+const appClient = createTRPCProxyClient<AppRouter>({
+  links: [
+    wsLink({
+      client: createWSClient({
+        url: import.meta.env.VITE_WS_URL,
+        connectionParams: () => {
+          const viewerId = localStorage.getItem('viewerId');
+          return viewerId ? { viewerId } : null;
+        },
+        onOpen: () => {
+          // set state. indicates that connection established, so if
+          // there's an error, it's probably not because the server's down.
+          console.log('opening...');
+        },
+        onError: err => console.error('ws client error', err),
+        onClose: cause => console.error('socket closed', cause),
+        // roughly tied to the rate of allowed upgrade requests.
+        retryDelayMs: attemptIndex =>
+          Math.min(Math.pow(2, attemptIndex + 1) * 1_000, 15_000),
+        // TODO add onOpen/onClose events to power a computed "connection" status thingy.
+        keepAlive: {
+          enabled: true,
+          intervalMs: 30_000,
+          pongTimeoutMs: 5_000,
+        },
+      }),
+    }),
+  ],
+}).app;
 
 const { App } = createApp({
   appClient,

@@ -1,8 +1,13 @@
+import {
+  DirectionsBoat,
+  KeyboardDoubleArrowUp,
+  PlaceOutlined,
+} from '@mui/icons-material';
 import { assert } from '@truckermudgeon/base/assert';
 import { UnreachableError } from '@truckermudgeon/base/precon';
 import { BranchType } from '@truckermudgeon/navigation/constants';
 
-interface LaneIconProps {
+export interface LaneIconProps {
   branches: BranchType[];
   activeBranch?: BranchType;
   highlightColor?: string;
@@ -268,6 +273,33 @@ export const LaneIcon = (props: LaneIconProps) => {
           <Merge
             key={index}
             color={type === activeBranch ? highlightColor : dimColor}
+          />
+        );
+      case BranchType.DEPART:
+        assert(branches.length === 1, 'DEPART must appear alone');
+        return (
+          <KeyboardDoubleArrowUp
+            viewBox={'-5 -5 34 34'}
+            style={{ fill: dimColor }}
+            key={index}
+          />
+        );
+      case BranchType.ARRIVE:
+        assert(branches.length === 1, 'ARRIVE must appear alone');
+        return (
+          <PlaceOutlined
+            viewBox={'-5 -5 34 34'}
+            style={{ fill: dimColor }}
+            key={index}
+          />
+        );
+      case BranchType.FERRY:
+        assert(branches.length === 1, 'FERRY must appear alone');
+        return (
+          <DirectionsBoat
+            viewBox={'-5 -5 34 34'}
+            style={{ fill: dimColor }}
+            key={index}
           />
         );
       default:

@@ -1,3 +1,4 @@
+import { toPosAndBearing } from '@truckermudgeon/navigation/helpers';
 import { action, makeAutoObservable } from 'mobx';
 import { toCompassPoint } from '../base/to-compass-point';
 import { CameraMode } from './constants';
@@ -35,9 +36,21 @@ export class ControlsControllerImpl implements ControlsController {
   startListening(store: ControlsStore, appClient: AppClient) {
     appClient.onPositionUpdate.subscribe(undefined, {
       onData: action(gameState => {
-        store.direction = toCompassPoint(gameState.bearing);
+        const { speed, position, heading } = gameState;
+        const { bearing } = toPosAndBearing({
+          position: {
+            X: position.x,
+            Y: position.z,
+            Z: position.y,
+          },
+          orientation: {
+            heading,
+          },
+        });
+        const speedMph = Math.abs(Math.round(speed * 2.236936));
+        store.direction = toCompassPoint(bearing);
         store.limitMph = gameState.speedLimit;
-        store.speedMph = gameState.speedMph;
+        store.speedMph = speedMph;
       }),
     });
   }

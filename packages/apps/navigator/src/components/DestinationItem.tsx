@@ -6,13 +6,18 @@ import {
   Stack,
   Typography,
 } from '@mui/joy';
-import type { SearchResult } from '@truckermudgeon/navigation/types';
+import { UnreachableError } from '@truckermudgeon/base/precon';
+import type {
+  SearchResult,
+  SearchResultWithRelativeTruckInfo,
+} from '@truckermudgeon/navigation/types';
 import type { ReactElement } from 'react';
 import { toCompassPoint } from '../base/to-compass-point';
+import { toLengthAndUnit, toLocationString } from './text';
 
 export const DestinationItem = (props: {
-  destination: SearchResult;
-  index: number;
+  destination: SearchResultWithRelativeTruckInfo;
+  index: number | undefined;
   onDestinationHighlight: () => void;
   CollapsibleButtonBar: () => ReactElement;
 }) => {
@@ -29,13 +34,18 @@ export const DestinationItem = (props: {
           }}
         >
           <Stack direction={'row'} gap={1}>
-            <Box width={'1em'} mr={1}>
-              <Typography fontSize={'lg'} textAlign={'right'}>
-                {props.index + 1}.
-              </Typography>
-            </Box>
+            {props.index != null && (
+              <Box width={'1em'} mr={1}>
+                <Typography fontSize={'lg'} textAlign={'right'}>
+                  {props.index + 1}.
+                </Typography>
+              </Box>
+            )}
             <Box marginTop={0.5}>
-              <img src={props.destination.logoUrl} style={{ width: '4rem' }} />
+              <img
+                src={toImgUrl(props.destination)}
+                style={{ width: '4rem' }}
+              />
             </Box>
             <Stack flexDirection={'column'} flexGrow={1}>
               <Stack
@@ -44,7 +54,7 @@ export const DestinationItem = (props: {
                 justifyContent={'space-between'}
               >
                 <Typography fontSize={'lg'}>
-                  {props.destination.name}
+                  {props.destination.label}
                 </Typography>
                 <Stack direction={'row'} alignItems={'center'} gap={0.5}>
                   {props.destination.facilityUrls.map(url => (
@@ -60,14 +70,13 @@ export const DestinationItem = (props: {
                   flexGrow={1}
                   width={100}
                 >
-                  {props.destination.isCityStateApproximate ? 'Near ' : ''}
-                  {props.destination.city}, {props.destination.state}
+                  {toLocationString(props.destination)}
                 </Typography>
                 <Typography color={'neutral'} fontSize={'md'} flexGrow={0}>
-                  {Number(
-                    (props.destination.distanceMeters / 1609.344).toFixed(1),
-                  ).toLocaleString()}
-                  <Typography fontSize={'xs'}>mi</Typography>
+                  {toLengthAndUnit(props.destination.distance).length}
+                  <Typography fontSize={'xs'}>
+                    {toLengthAndUnit(props.destination.distance).unit}
+                  </Typography>
                 </Typography>
                 <Typography
                   color={'neutral'}
@@ -88,3 +97,20 @@ export const DestinationItem = (props: {
     </>
   );
 };
+
+function toImgUrl(search: SearchResult): string {
+  switch (search.type) {
+    case 'city':
+    case 'scenery':
+      return `/icons/city_names_ico.png`;
+    case 'company':
+    case 'landmark':
+    case 'viewpoint':
+    case 'ferry':
+    case 'train':
+    case 'dealer':
+      return `/icons/${search.sprite}.png`;
+    default:
+      throw new UnreachableError(search);
+  }
+}
