@@ -5,8 +5,7 @@
   "license": "GPL-3.0-or-later",
   "type": "module",
   "scripts": {
-    "start": "npx tsx index.ts",
-    "test": "vitest"
+    "start": "npx tsx index.ts"
   },
   "exports": {
     "./constants": "./constants.ts",
