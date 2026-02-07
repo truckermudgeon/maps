@@ -6,8 +6,7 @@ import {
   extendTheme as materialExtendTheme,
 } from '@mui/material/styles';
 import { createTRPCProxyClient, createWSClient, wsLink } from '@trpc/client';
-
-import { AppRouter } from '@truckermudgeon/navigation/types';
+import type { AppRouter } from '@truckermudgeon/navigation/types';
 import * as mobx from 'mobx';
 import * as React from 'react';
 import { createRoot } from 'react-dom/client';
