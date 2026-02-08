@@ -1,0 +1,24 @@
+{
+  "private": true,
+  "name": "@truckermudgeon/navigator-client",
+  "version": "0.0.0",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "bin": "./index.ts",
+  "scripts": {
+    "test": "vitest",
+    "build": "bun build --compile --define \"process.env.NODE_ENV='production'\" index.ts --outfile ../../../out/trucksim-navigator"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.11",
+    "@types/node": "^22.7.4",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@trpc/client": "^11.8.1",
+    "@truckermudgeon/base": "0.0.0",
+    "@truckermudgeon/navigation": "0.0.0",
+    "steam-locate": "^1.0.6",
+    "trucksim-telemetry": "^0.22.1"
+  }
+}
