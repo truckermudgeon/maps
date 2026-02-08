@@ -20,6 +20,9 @@
       "path": "packages/clis/parser"
     },
     {
+      "path": "packages/clis/navigator"
+    },
+    {
       "path": "packages/libs/base"
     },
     {
