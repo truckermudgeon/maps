@@ -16,9 +16,9 @@
   },
   "dependencies": {
     "@truckermudgeon/base": "0.0.0",
-    "@turf/helpers": "^7.0.0",
+    "@turf/helpers": "^7.2.0",
     "@turf/line-intersect": "^7.0.0",
-    "@turf/line-offset": "^7.0.0",
+    "@turf/line-offset": "^7.2.0",
     "@turf/simplify": "^7.0.0",
     "priorityqueue": "^2.0.0",
     "proj4": "^2.9.2",

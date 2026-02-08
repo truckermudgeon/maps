@@ -1,4 +1,8 @@
+import polyline from '@mapbox/polyline';
 import type { Meta, StoryContext, StoryObj } from '@storybook/react';
+import type { Position } from '@truckermudgeon/base/geom';
+import { BranchType } from '@truckermudgeon/navigation/constants';
+import type { RouteStep } from '@truckermudgeon/navigation/types';
 import * as React from 'react';
 import { SlippyMap } from './SlippyMap';
 import { Default as SlippyMapDefault } from './SlippyMap.stories';
@@ -34,16 +38,23 @@ export const NoStops: Story = {
       id: '',
       segments: [
         {
-          key: '',
-          lonLats: [
-            [fakeLon, fakeLat],
-            [fakeLon + 1, fakeLat + 1],
+          key: '0-0-forward-fastest',
+          steps: [
+            aStepWith({
+              geometry: [
+                [fakeLon, fakeLat],
+                [fakeLon + 1, fakeLat + 1],
+              ],
+            }),
           ],
-          distance: 0,
-          time: 0,
+          distanceMeters: 1,
+          duration: 1,
           strategy: 'shortest',
+          score: 0,
         },
       ],
+      distanceMeters: 1,
+      duration: 1,
     },
   },
 };
@@ -55,36 +66,53 @@ export const WithStops: Story = {
       id: 'id',
       segments: [
         {
-          key: '',
-          lonLats: [
-            [fakeLon, fakeLat],
-            [fakeLon + 0.5, fakeLat - 0.3],
+          key: '0-0-forward-fastest',
+          steps: [
+            aStepWith({
+              geometry: [
+                [fakeLon, fakeLat],
+                [fakeLon + 0.5, fakeLat + 0.5],
+              ],
+            }),
           ],
-          distance: 0,
-          time: 0,
+          distanceMeters: 1,
+          duration: 1,
           strategy: 'shortest',
+          score: 0,
         },
         {
-          key: '',
-          lonLats: [
-            [fakeLon + 0.5, fakeLat - 0.3],
-            [fakeLon + 0.7, fakeLat + 0.5],
+          key: '0-0-forward-fastest',
+          steps: [
+            aStepWith({
+              geometry: [
+                [fakeLon + 0.5, fakeLat - 0.3],
+                [fakeLon + 0.7, fakeLat + 0.5],
+              ],
+            }),
           ],
-          distance: 0,
-          time: 0,
+          distanceMeters: 1,
+          duration: 1,
           strategy: 'shortest',
+          score: 0,
         },
         {
-          key: '',
-          lonLats: [
-            [fakeLon + 0.7, fakeLat + 0.5],
-            [fakeLon + 1, fakeLat + 1],
+          key: '0-0-forward-fastest',
+          steps: [
+            aStepWith({
+              geometry: [
+                [fakeLon + 0.7, fakeLat + 0.5],
+                [fakeLon + 1, fakeLat + 1],
+              ],
+            }),
           ],
-          distance: 0,
-          time: 0,
+          distanceMeters: 1,
+          duration: 1,
           strategy: 'shortest',
+          score: 0,
         },
       ],
+      distanceMeters: 3,
+      duration: 3,
     },
   },
 };
@@ -95,3 +123,21 @@ export const Trailer: Story = {
     activeRoute: undefined,
   },
 };
+
+function aStepWith(
+  step: Partial<Omit<RouteStep, 'geometry'>> & { geometry: Position[] },
+): RouteStep {
+  const geometry = polyline.encode(step.geometry);
+  return {
+    maneuver: {
+      direction: BranchType.RIGHT,
+      lonLat: step.geometry[0],
+    },
+    distanceMeters: 1,
+    duration: 1,
+    nodesTraveled: 1,
+    trafficIcons: [],
+    ...step,
+    geometry,
+  };
+}

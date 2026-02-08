@@ -23,4 +23,16 @@ export const enum BranchType {
   SHARP_RIGHT,
   U_TURN_RIGHT,
   MERGE = -1,
+  DEPART = -2,
+  ARRIVE = -3,
+  FERRY = -4,
 }
+
+export const turnBranchTypes: ReadonlySet<BranchType> = new Set<BranchType>([
+  BranchType.SLIGHT_LEFT,
+  BranchType.LEFT,
+  BranchType.SHARP_LEFT,
+  BranchType.SLIGHT_RIGHT,
+  BranchType.RIGHT,
+  BranchType.SHARP_RIGHT,
+]);

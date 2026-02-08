@@ -2,26 +2,20 @@ import { Box, Stack } from '@mui/joy';
 import { Collapse, Slide } from '@mui/material';
 import { useMeasure } from '@uidotdev/usehooks';
 import type { ReactElement } from 'react';
-import { useCallback, useState } from 'react';
-import { RouteControls } from './RouteControls';
+import { useState } from 'react';
 
 export const RouteStack = (props: {
   Guidance: () => ReactElement;
-  onRouteEndClick: () => void;
+  RouteControls: (props: {
+    onExpandedToggle: (expanded: boolean) => void;
+  }) => ReactElement;
+  SegmentCompleteToast: () => ReactElement;
 }) => {
-  const { Guidance, onRouteEndClick } = props;
+  const { Guidance, RouteControls, SegmentCompleteToast } = props;
   const [stackRef, { height: stackHeight }] = useMeasure();
   //const [guidanceRef, { height: guidanceHeight }] = useMeasure();
   //const [routeControlsRef, { height: routeControlsHeight }] = useMeasure();
   const [expanded, setExpanded] = useState(false);
-  const toggleDisclosure = useCallback(
-    () => setExpanded(!expanded),
-    [expanded],
-  );
-  const handleRouteEndClick = () => {
-    onRouteEndClick();
-    setExpanded(false);
-  };
   // HACK until there's a nice way to figure this out for real.
   const needsExpanding = (stackHeight ?? 0) < 520;
 
@@ -31,6 +25,7 @@ export const RouteStack = (props: {
         height={'100%'}
         style={{
           transition: 'all 0.5s ease',
+          position: 'relative',
         }}
         justifyContent={'space-between'}
       >
@@ -50,13 +45,9 @@ export const RouteStack = (props: {
             maxHeight: `calc(${stackHeight}px - 1em)`,
           }}
         >
-          <RouteControls
-            summary={{ minutes: 95, distanceMeters: 1234 }}
-            expanded={expanded}
-            onDisclosureClick={toggleDisclosure}
-            onRouteEndClick={handleRouteEndClick}
-          />
+          <RouteControls onExpandedToggle={setExpanded} />
         </Box>
+        <SegmentCompleteToast />
       </Stack>
     </Box>
   );

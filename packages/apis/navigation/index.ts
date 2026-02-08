@@ -1,83 +1,11 @@
-import { createHTTPServer } from '@trpc/server/adapters/standalone';
-import { applyWSSHandler } from '@trpc/server/adapters/ws';
-import { observable } from '@trpc/server/observable';
-import type { TruckSimTelemetry } from '@truckermudgeon/telemetry/types';
-import { WebSocketServer } from 'ws';
-import { z } from 'zod';
-import { PoiType, ScopeType } from './constants';
-import { toGameState } from './game-state';
-import { listenToTelemetry } from './telemetry';
-import { publicProcedure, router } from './trpc';
-import type {
-  GameState,
-  Route,
-  RouteDirection,
-  SearchResult,
-  TrailerState,
-} from './types';
+import './bootstrap-env';
 
-const { telemetryEventEmitter } = listenToTelemetry();
+import * as path from 'node:path';
+import * as url from 'node:url';
+import { startServer } from './server';
 
-const appRouter = router({
-  search: publicProcedure
-    .input(
-      z.object({
-        type: z.nativeEnum(PoiType),
-        scope: z.nativeEnum(ScopeType),
-      }),
-    )
-    .query<SearchResult[]>(() => {
-      return [];
-    }),
-  previewRoutes: publicProcedure
-    .input(
-      z.object({
-        toNodeUid: z.string(),
-      }),
-    )
-    .query<Route[]>(() => {
-      return [];
-    }),
-  setActiveRoute: publicProcedure
-    .input(z.optional(z.array(z.string())))
-    .mutation(() => void 0),
-  onPositionUpdate: publicProcedure.subscription(() =>
-    observable<GameState>(emit => {
-      const onTelemetry = (telemetry: TruckSimTelemetry) =>
-        emit.next(toGameState(telemetry));
-      telemetryEventEmitter.on('telemetry', onTelemetry);
-      return () => telemetryEventEmitter.off('telemetry', onTelemetry);
-    }),
-  ),
-  onRouteUpdate: publicProcedure.subscription(() =>
-    observable<Route | undefined>(() => {
-      return () => void 0;
-    }),
-  ),
-  onThemeModeUpdate: publicProcedure.subscription(() =>
-    observable<'light' | 'dark'>(() => {
-      return () => void 0;
-    }),
-  ),
-  onDirectionUpdate: publicProcedure.subscription(() =>
-    observable<RouteDirection | undefined>(() => {
-      return () => void 0;
-    }),
-  ),
-  onTrailerUpdate: publicProcedure.subscription(() =>
-    observable<TrailerState | undefined>(() => {
-      return () => void 0;
-    }),
-  ),
-});
+const __filename = url.fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const outDir = path.join(__dirname, '../../../out');
 
-// Export type router type signature, this is used by the client.
-export type AppRouter = typeof appRouter;
-
-const httpServer = createHTTPServer({ router: appRouter });
-applyWSSHandler<AppRouter>({
-  wss: new WebSocketServer({ server: httpServer.server }),
-  router: appRouter,
-});
-httpServer.listen(3000);
-console.log('navigation server listening at http://localhost:3000');
+startServer(process.argv.slice(2)[0] ?? outDir);

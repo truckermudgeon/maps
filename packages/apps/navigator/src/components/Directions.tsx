@@ -1,13 +1,21 @@
 import { Box, Divider, Stack, Typography } from '@mui/joy';
-import type { RouteDirection } from '@truckermudgeon/navigation/types';
+import type { BranchType } from '@truckermudgeon/navigation/constants';
+import type { StepManeuver } from '@truckermudgeon/navigation/types';
 import Color from 'color';
+import { memo } from 'react';
 import { LaneIcon } from './LaneIcon';
 
 const bgColor = Color('hsl(151,82%,35%)');
 
-export const Directions = (props: RouteDirection) => {
+type DirectionsProps = Pick<
+  StepManeuver,
+  'direction' | 'banner' | 'laneHint' | 'thenHint'
+> & { length: number; unit: string };
+
+export const Directions = memo((props: DirectionsProps) => {
+  console.log('render Directions');
   const hasHint = !!props.laneHint || !!props.thenHint;
-  const { length, unit } = toLengthAndUnit(props.distanceMeters);
+  const { length, unit } = props;
   return (
     <Stack fontSize={'0.75rem'}>
       <Stack
@@ -22,7 +30,11 @@ export const Directions = (props: RouteDirection) => {
         <Stack>
           <Stack direction={'row'} alignItems={'center'} gap={1}>
             <Box width={'6em'}>
-              <LaneIcon branches={[props.direction]} dimColor={'#fff'} />
+              <LaneIcon
+                // TODO take into account 'depart' and 'arrive'
+                branches={[props.direction as unknown as BranchType]}
+                dimColor={'#fff'}
+              />
             </Box>
             <Typography
               level={'h1'}
@@ -33,9 +45,9 @@ export const Directions = (props: RouteDirection) => {
               {length} {unit}
             </Typography>
           </Stack>
-          {props.name && (
+          {props.banner && (
             <Typography level={'h2'} fontWeight={'normal'} textColor={'#fff'}>
-              {props.name.text}
+              {props.banner.text}
             </Typography>
           )}
         </Stack>
@@ -46,10 +58,10 @@ export const Directions = (props: RouteDirection) => {
       {props.thenHint && <ThenHint hint={props.thenHint} />}
     </Stack>
   );
-};
+});
 
 const LaneHint = (props: {
-  hint: NonNullable<RouteDirection['laneHint']>;
+  hint: NonNullable<StepManeuver['laneHint']>;
   roundBottomLeft: boolean;
 }) => {
   return (
@@ -77,20 +89,21 @@ const LaneHint = (props: {
         borderRadius={`0 0 1em ${props.roundBottomLeft ? '1em' : 0}`}
       >
         {props.hint.lanes.map(({ branches, activeBranch }, i) => (
-          <LaneIcon
-            key={i}
-            branches={branches}
-            activeBranch={activeBranch}
-            dimColor={bgColor.mix(Color('gray'), 0.5).string()}
-            highlightColor={'#fff'}
-          />
+          <Box width={44} key={i}>
+            <LaneIcon
+              branches={branches}
+              activeBranch={activeBranch}
+              dimColor={bgColor.mix(Color('gray'), 0.5).string()}
+              highlightColor={'#fff'}
+            />
+          </Box>
         ))}
       </Stack>
     </Box>
   );
 };
 
-const ThenHint = (props: { hint: NonNullable<RouteDirection['thenHint']> }) => {
+const ThenHint = (props: { hint: NonNullable<StepManeuver['thenHint']> }) => {
   return (
     <Box>
       <Stack
@@ -118,30 +131,3 @@ const ThenHint = (props: { hint: NonNullable<RouteDirection['thenHint']> }) => {
     </Box>
   );
 };
-
-function toLengthAndUnit(meters: number): { length: number; unit: string } {
-  const feet = meters * 3.28084;
-  if (feet <= 500) {
-    return {
-      length: Number(Math.round(feet).toPrecision(2)),
-      unit: 'ft',
-    };
-  }
-  const miles = meters * 0.0006213712;
-  if (miles <= 1) {
-    return {
-      length: Number(miles.toPrecision(1)),
-      unit: 'mi',
-    };
-  }
-  if (miles <= 10) {
-    return {
-      length: Number(miles.toPrecision(2)),
-      unit: 'mi',
-    };
-  }
-  return {
-    length: Math.round(miles),
-    unit: 'mi',
-  };
-}
