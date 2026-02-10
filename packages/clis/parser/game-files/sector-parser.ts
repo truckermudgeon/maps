@@ -346,6 +346,24 @@ const SimpleItemStruct = {
     overrideTemplate: uint64String,
     overrides: new r.Optional(
       new r.Struct({
+        boards: new r.Array(
+          new r.Struct({
+            areaName: token64,
+            flags: r.uint8,
+            offsets: new r.Optional(
+              new r.Struct({
+                x: r.int8,
+                y: r.int8,
+              }),
+              (parent: { flags: number }) => (parent.flags & 0x01) !== 0,
+            ),
+            token: new r.Optional(
+              token64,
+              (parent: { flags: number }) => (parent.flags & 0x02) !== 0,
+            ),
+          }),
+          r.uint32le,
+        ),
         items: new r.Array(
           new r.Struct({
             id: r.uint32le,
@@ -379,6 +397,7 @@ const SimpleItemStruct = {
           }),
           r.uint32le,
         ),
+        //debugStruct,
       }),
       (parent: { overrideTemplate: string }) => parent.overrideTemplate != '',
     ),
@@ -565,7 +584,7 @@ export function parseSector(
   ignoreNodeUids: ReadonlySet<bigint>,
 ) {
   const version = buffer.readUint32LE();
-  if (version !== 905) {
+  if (version !== 906) {
     if (!versionWarnings.has(version)) {
       logger.warn('unknown .base file version', version);
       logger.warn('errors may come up, and parse results may be inaccurate.');
