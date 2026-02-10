@@ -584,7 +584,7 @@ export function parseSector(
   ignoreNodeUids: ReadonlySet<bigint>,
 ) {
   const version = buffer.readUint32LE();
-  if (version !== 905) {
+  if (version !== 906) {
     if (!versionWarnings.has(version)) {
       logger.warn('unknown .base file version', version);
       logger.warn('errors may come up, and parse results may be inaccurate.');

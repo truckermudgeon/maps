@@ -8,8 +8,6 @@ import { createTelemetryReader } from './get-telemetry';
 import { startTelemetryLoop } from './start-telemetry-loop';
 import { getTelemetryId } from './telemetry-id';
 
-// @ts-expect-error use dot access instead of indexed access so bun compiles
-//  with --define correctly.
 const NODE_ENV = process.env.NODE_ENV ?? 'development';
 const apiUrl =
   NODE_ENV === 'development'
