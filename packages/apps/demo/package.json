@@ -37,7 +37,7 @@
     "@turf/nearest-point-on-line": "^7.2.0",
     "color": "^4.2.3",
     "fuse.js": "^7.1.0",
-    "maplibre-gl": "^5.16.0",
+    "maplibre-gl": "^5.18.0",
     "object.groupby": "^1.0.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
