@@ -208,6 +208,20 @@ export function convertToMapGeoJson(
     countriesByCityName.set('Piraeus', gr);
     countriesByCityName.set('Lixouri', gr);
   }
+  if (countries.has('norway')) {
+    const no = countries.get('norway')!;
+    countriesByCityName.set('Anda', no);
+    countriesByCityName.set('Lote', no);
+    countriesByCityName.set('Ytre Oppedal', no);
+    countriesByCityName.set('Lavik', no);
+    countriesByCityName.set('Bognes', no);
+    countriesByCityName.set('Skarberget', no);
+    countriesByCityName.set('Halsa', no);
+    countriesByCityName.set('Kanestraum', no);
+    countriesByCityName.set('Molde', no);
+    countriesByCityName.set('Vestnes', no);
+    countriesByCityName.set('Skutvik', no);
+  }
   const ferryFeatures: FerryFeature[] = uniqFerries.map(f =>
     ferryToFeature(map, f, cities, countries, countriesByCityName),
   );
