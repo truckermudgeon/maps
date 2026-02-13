@@ -43,7 +43,7 @@ jobs:
       - name: Archive macOS / Linux
         if: runner.os != 'Windows'
         run: |
-          tar -czf $${ env.BINARY_NAME }}-${{ runner.os }}-${{ runner.arch }}.tar.gz -C dist .
+          tar -czf $${{ env.BINARY_NAME }}-${{ runner.os }}-${{ runner.arch }}.tar.gz -C dist .
 
       - name: Archive Windows
         if: runner.os == 'Windows'
