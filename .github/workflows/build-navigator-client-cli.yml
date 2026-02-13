@@ -1,0 +1,59 @@
+name: build navigator client (CLI)
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: true
+
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+
+    steps:
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 23
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set binary name
+        run: echo "BINARY_NAME=trucksim-navigator" >> $GITHUB_ENV
+
+      - name: Build
+        run: npm run build -w packages/clis/navigator -- --outfile dist/${{ env.BINARY_NAME }}
+
+      - name: Add .exe extension (Windows)
+        if: runner.os == 'Windows'
+        run: Rename-Item dist/${{ env.BINARY_NAME }} dist/${{ env.BINARY_NAME }}.exe
+        shell: pwsh
+
+      - name: Archive macOS / Linux
+        if: runner.os != 'Windows'
+        run: |
+          tar -czf $${ env.BINARY_NAME }}-${{ runner.os }}-${{ runner.arch }}.tar.gz -C dist .
+
+      - name: Archive Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path dist\* -DestinationPath ${{ env.BINARY_NAME }}-${{ runner.os }}-${{ runner.arch }}.zip
+
+      - name: Upload to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} \
+            dist/* \
+            --clobber
