@@ -31,7 +31,7 @@ export const ChooseDestination: Story = {
       }),
       aSearchResultWith({
         label: 'Driverse',
-        type: 'company',
+        type: 'serviceArea',
         sprite: 'dri_oil_gst',
         facilityUrls: ['/icons/gas_ico.png', 'icons/parking_ico.png'],
       }),

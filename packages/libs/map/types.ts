@@ -791,7 +791,14 @@ interface BaseSearchProperties {
 }
 
 export type SearchPoiProperties = BaseSearchProperties & {
-  type: 'company' | 'landmark' | 'viewpoint' | 'ferry' | 'train' | 'dealer';
+  type:
+    | 'company'
+    | 'landmark'
+    | 'viewpoint'
+    | 'ferry'
+    | 'train'
+    | 'dealer'
+    | 'serviceArea';
   city: {
     name: string;
     stateCode: string;

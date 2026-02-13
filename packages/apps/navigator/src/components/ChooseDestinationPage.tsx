@@ -153,6 +153,25 @@ const Decorator = ({
   if (position === 'end') {
     if (option.type === 'company') {
       return <SpriteImage spriteName={option.sprite} includeMargin={true} />;
+    } else if (
+      option.type === 'serviceArea' &&
+      isGasOrDealerBrandSprite(option.sprite)
+    ) {
+      return (
+        <Stack direction={'row'} alignItems={'center'}>
+          {option.facilityUrls.map(url => (
+            <img
+              src={url}
+              key={url}
+              style={{
+                transformOrigin: '0 0',
+                transform: 'scale(0.8)',
+              }}
+            />
+          ))}
+          <SpriteImage spriteName={option.sprite} includeMargin={true} />
+        </Stack>
+      );
     }
     return null;
   }
@@ -173,6 +192,48 @@ const Decorator = ({
     case 'train':
       spriteName = option.sprite;
       break;
+    case 'serviceArea': {
+      // either:
+      // - gas ico (based on label)
+      // - dealer ico (based on label)
+      // - garage, gas station, rest area
+      // - unknown (fallback to first facility url)
+      switch (option.label) {
+        case 'Gallon Oil':
+        case 'Phoenix':
+        case 'Aron':
+        case 'Vortex':
+        case 'WP':
+        case 'GreenPetrol':
+        case 'Fusion':
+        case 'Driverse':
+        case 'Haulett':
+          spriteName = 'gas_ico';
+          break;
+        case 'Western Star':
+        case 'Kenworth':
+        case 'Peterbilt':
+        case 'Volvo':
+        case 'Freightliner':
+        case 'International':
+        case 'Mack':
+          spriteName = 'dealer_ico';
+          break;
+        case 'Garage':
+          spriteName = 'garage_large_ico';
+          break;
+        case 'Gas Station':
+          spriteName = 'gas_ico';
+          break;
+        case 'Rest Area':
+          spriteName = 'parking_ico';
+          break;
+        default:
+          spriteName = option.facilityUrls[0] ?? 'unknown';
+          break;
+      }
+      break;
+    }
     default:
       throw new UnreachableError(option);
   }
@@ -237,7 +298,8 @@ const Content = ({ option }: { option: SearchResult }) => {
     case 'viewpoint':
     case 'dealer':
     case 'ferry':
-    case 'train': {
+    case 'train':
+    case 'serviceArea': {
       let locationText: string;
       const location = classifyLocation(option.label, option.city);
       switch (location) {

@@ -331,6 +331,8 @@ const Decorator = ({
     case 'train':
       spriteName = option.poi.properties.sprite;
       break;
+    case 'serviceArea':
+      throw new Error('facility search results unsupported in demo app.');
     default:
       throw new UnreachableError(option.poi.properties.type);
   }
@@ -377,6 +379,8 @@ function getOptionLabel(option: string | PoiSearchOption): string {
           throw new UnreachableError(location);
       }
     }
+    case 'serviceArea':
+      throw new Error('facility search results unsupported in demo app.');
     default:
       throw new UnreachableError(meta);
   }
@@ -424,6 +428,8 @@ const Content = ({ option }: { option: PoiSearchOption }) => {
         </ListItemContent>
       );
     }
+    case 'serviceArea':
+      throw new Error('service area search results unsupported in demo app.');
     default:
       throw new UnreachableError(meta);
   }
@@ -461,6 +467,7 @@ const searchPropertyPriority: Record<SearchProperties['type'], number> = {
   dealer: 4,
   ferry: 5,
   train: 6,
+  serviceArea: 7,
 };
 
 function sortSearchResults(
