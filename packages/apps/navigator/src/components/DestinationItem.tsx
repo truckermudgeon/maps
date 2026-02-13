@@ -109,6 +109,7 @@ function toImgUrl(search: SearchResult): string {
     case 'ferry':
     case 'train':
     case 'dealer':
+    case 'serviceArea':
       return `/icons/${search.sprite}.png`;
     default:
       throw new UnreachableError(search);

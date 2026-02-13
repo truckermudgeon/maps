@@ -288,7 +288,8 @@ export function toLocationString(search: SearchResult): string {
     case 'viewpoint':
     case 'ferry':
     case 'train':
-    case 'dealer': {
+    case 'dealer':
+    case 'serviceArea': {
       const location = classifyLocation(search.label, search.city);
       switch (location) {
         case LocationType.IN_CITY:
