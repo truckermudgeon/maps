@@ -6,6 +6,10 @@ on:
   workflow_dispatch:
   pull_request:
 
+env:
+  BINARY_NAME: trucksim-navigator
+  NAV_DIR: packages/clis/navigator
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -28,12 +32,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Set binary name
-        run: echo "BINARY_NAME=trucksim-navigator" >> $GITHUB_ENV
-
-      - name: Set navigator package directory
-        run: echo "NAV_DIR=packages/clis/navigator" >> $GITHUB_ENV
 
       - name: Build
         run: npm run build -w ${{ env.NAV_DIR }} -- --outfile dist/${{ env.BINARY_NAME }}
