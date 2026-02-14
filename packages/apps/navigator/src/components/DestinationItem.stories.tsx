@@ -17,7 +17,7 @@ export const Selected: Story = {
   args: {
     destination: {
       ...aSearchResultWith({
-        type: 'company',
+        type: 'serviceArea',
         label: 'Cool Destination',
         sprite: 'hau_oil_gst',
         facilityUrls: ['/icons/gas_ico.png', 'icons/service_ico.png'],
