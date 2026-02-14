@@ -43,21 +43,10 @@ jobs:
         run: Rename-Item ${{ env.NAV_DIR }}/dist/${{ env.BINARY_NAME }} ${{ env.NAV_DIR }}/dist/${{ env.BINARY_NAME }}.exe
         shell: pwsh
 
-      - name: Archive macOS / Linux
-        if: runner.os != 'Windows'
-        run: |
-          tar -czf ${{ env.BINARY_NAME }}-${{ runner.os }}-${{ runner.arch }}.tar.gz -C ${{ env.NAV_DIR }}/dist .
-
-      - name: Archive Windows
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          Compress-Archive -Path ${{ env.NAV_DIR }}/dist/* -DestinationPath ${{ env.BINARY_NAME }}-${{ runner.os }}-${{ runner.arch }}.zip
-
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: test-${{ matrix.os }}
+          name: ${{ env.BINARY_NAME }}-${{ runner.os }}-${{ runner.arch }}
           path: ${{ env.NAV_DIR }}/dist/*
 
       # - name: Upload to GitHub Release
