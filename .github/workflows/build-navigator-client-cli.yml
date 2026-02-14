@@ -54,10 +54,16 @@ jobs:
         run: |
           Compress-Archive -Path ${{ env.NAV_DIR }}/dist/* -DestinationPath ${{ env.BINARY_NAME }}-${{ runner.os }}-${{ runner.arch }}.zip
 
-      - name: Upload to GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload ${{ github.event.release.tag_name }} \
-            ${{ env.NAV_DIR }}/dist/* \
-            --clobber
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-${{ matrix.os }}
+          path: ${{ env.NAV_DIR }}/dist/*
+
+      # - name: Upload to GitHub Release
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   run: |
+      #     gh release upload ${{ github.event.release.tag_name }} \
+      #       ${{ env.NAV_DIR }}/dist/* \
+      #       --clobber
