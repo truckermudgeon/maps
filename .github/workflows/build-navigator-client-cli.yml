@@ -34,12 +34,7 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: npm run build -w ${{ env.NAV_DIR }} -- --outfile dist/${{ env.BINARY_NAME }}
-
-      - name: Add .exe extension (Windows)
-        if: runner.os == 'Windows'
-        run: Rename-Item ${{ env.NAV_DIR }}/dist/${{ env.BINARY_NAME }} ${{ env.NAV_DIR }}/dist/${{ env.BINARY_NAME }}.exe
-        shell: pwsh
+        run: npm run build -w ${{ env.NAV_DIR }} '--' --outfile dist/${{ env.BINARY_NAME }}
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
