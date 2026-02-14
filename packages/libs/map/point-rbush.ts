@@ -69,10 +69,6 @@ export class PointRBush<T extends { x: number; y: number }> extends RBush<T> {
     } = {},
   ): T | undefined {
     const { radius = Infinity } = options;
-    const result = this.findAll(x, y, { ...options, radius, maxResults: 1 })[0];
-    if (Number.isFinite(radius) && !result) {
-      throw new Error('unexpected no results. Is the RBush empty?');
-    }
-    return result;
+    return this.findAll(x, y, { ...options, radius, maxResults: 1 })[0];
   }
 }

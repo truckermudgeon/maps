@@ -91,6 +91,7 @@ export type FerryConnection = Readonly<{
   price: number;
   /** in minutes */
   time: number;
+  /** in... 100s of meters? */
   distance: number;
   intermediatePoints: {
     x: number;
