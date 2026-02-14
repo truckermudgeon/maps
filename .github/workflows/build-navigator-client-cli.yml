@@ -32,29 +32,32 @@ jobs:
       - name: Set binary name
         run: echo "BINARY_NAME=trucksim-navigator" >> $GITHUB_ENV
 
+      - name: Set navigator package directory
+        run: echo "NAV_DIR=packages/clis/navigator" >> $GITHUB_ENV
+
       - name: Build
-        run: npm run build -w packages/clis/navigator -- --outfile dist/${{ env.BINARY_NAME }}
+        run: npm run build -w ${{ env.NAV_DIR }} -- --outfile dist/${{ env.BINARY_NAME }}
 
       - name: Add .exe extension (Windows)
         if: runner.os == 'Windows'
-        run: Rename-Item dist/${{ env.BINARY_NAME }} dist/${{ env.BINARY_NAME }}.exe
+        run: Rename-Item ${{ env.NAV_DIR }}/dist/${{ env.BINARY_NAME }} ${{ env.NAV_DIR }}/dist/${{ env.BINARY_NAME }}.exe
         shell: pwsh
 
       - name: Archive macOS / Linux
         if: runner.os != 'Windows'
         run: |
-          tar -czf ${{ env.BINARY_NAME }}-${{ runner.os }}-${{ runner.arch }}.tar.gz -C dist .
+          tar -czf ${{ env.BINARY_NAME }}-${{ runner.os }}-${{ runner.arch }}.tar.gz -C ${{ env.NAV_DIR }}/dist .
 
       - name: Archive Windows
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          Compress-Archive -Path dist\* -DestinationPath ${{ env.BINARY_NAME }}-${{ runner.os }}-${{ runner.arch }}.zip
+          Compress-Archive -Path ${{ env.NAV_DIR }}/dist/* -DestinationPath ${{ env.BINARY_NAME }}-${{ runner.os }}-${{ runner.arch }}.zip
 
       - name: Upload to GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload ${{ github.event.release.tag_name }} \
-            dist/* \
+            ${{ env.NAV_DIR }}/dist/* \
             --clobber
