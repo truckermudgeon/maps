@@ -21,7 +21,6 @@ export const HudStack = (props: {
         <props.SpeedLimit />
       </Stack>
       <Stack
-        gap={2}
         alignSelf={'end'}
         alignItems={'center'}
         sx={{ pointerEvents: 'auto' }}

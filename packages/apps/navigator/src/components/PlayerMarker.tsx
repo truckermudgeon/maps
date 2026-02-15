@@ -13,7 +13,7 @@ export interface PlayerMarkerProps extends RefAttributes<MapLibreGLMarker> {
  * Setting these props should only be done in storybooks, because callers of
  * PlayerMarker should be using the Marker ref to set its position / rotation.
  */
-interface PropsForTestingOnly {
+export interface PropsForTestingOnly {
   longitude?: number;
   latitude?: number;
 }

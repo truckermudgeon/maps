@@ -7,7 +7,7 @@ import { bbox } from '@turf/bbox';
 import bearing from '@turf/bearing';
 import type { Marker as MapLibreGLMarker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { action, comparer, computed, reaction } from 'mobx';
+import { action, comparer, computed, reaction, when } from 'mobx';
 import { observer } from 'mobx-react-lite';
 import type { ReactElement } from 'react';
 import type { MapRef } from 'react-map-gl/maplibre';
@@ -38,7 +38,10 @@ export function createApp({
 }: {
   appClient: AppClient;
   transitionDurationMs: number;
-}) {
+}): {
+  App: () => ReactElement;
+  store: Pick<AppStore, 'readyToLoad'>;
+} {
   const store = new AppStoreImpl();
   const controller = new AppControllerImpl();
   controller.setupWakeLock();
@@ -252,11 +255,19 @@ export function createApp({
     />
   );
 
-  const onMapLoad = action((map: MapRef, marker?: MapLibreGLMarker) => {
-    controller.onMapLoad(map, marker);
-    controller.startListening(store, appClient);
-    controlsController.startListening(controlsStore, appClient);
-  });
+  const onMapLoad = (map: MapRef, marker: MapLibreGLMarker) => {
+    console.log('waiting for readyToLoad signal');
+    when(
+      () => store.readyToLoad,
+      () => {
+        console.log('readyToLoad signal received.');
+        store.mapLoaded = true;
+        controller.onMapLoad(map, marker);
+        controller.startListening(store, appClient);
+        controlsController.startListening(controlsStore, appClient);
+      },
+    );
+  };
   const _Destinations = observer(() => (
     <DestinationMarkers
       destinations={navSheetStore.destinations}
@@ -400,6 +411,12 @@ export function createApp({
   );
 
   const _WaitingForTelemetry = observer(() => {
+    if (!store.readyToLoad) {
+      // assume some other component will show "waiting to load" UI
+      return <></>;
+    }
+    // TODO show "Loading map..." UI if map hasn't loaded yet, instead of
+    //  showing "Waiting for telemetry..." UI.
     return !store.isReceivingTelemetry ? <WaitingForTelemetry /> : <></>;
   });
 
@@ -415,6 +432,7 @@ export function createApp({
         WaitingForTelemetry={_WaitingForTelemetry}
       />
     ),
+    store,
   };
 }
 

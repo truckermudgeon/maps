@@ -100,7 +100,7 @@ export const RouteControls = (props: RouteControlsProps) => {
           <DisclosureIcon sx={{ transform: 'scale(1.25)' }} />
         </IconButton>
       </Stack>
-      <Box overflow={'scroll'}>
+      <Box sx={{ overflowY: 'scroll' }}>
         <ExpandedControls
           expanded={expanded}
           onManageStopsClick={

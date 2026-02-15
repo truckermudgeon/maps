@@ -1,4 +1,7 @@
 import { assertExists } from '@truckermudgeon/base/assert';
+import type { Extent } from '@truckermudgeon/base/geom';
+import { center as calculateCenter } from '@truckermudgeon/base/geom';
+import { routingModes } from '@truckermudgeon/map/routing';
 import {
   BaseMapStyle,
   defaultMapStyle,
@@ -12,6 +15,20 @@ import type { MapRef } from 'react-map-gl/maplibre';
 import MapGl, { Layer, Source } from 'react-map-gl/maplibre';
 import type { PlayerMarkerProps } from './PlayerMarker';
 import './SlippyMap.css';
+
+const tileRootUrl = import.meta.env.VITE_TILE_ROOT_URL;
+
+// TODO read these values from the .pmtiles files at runtime.
+const extents = {
+  ats: [
+    [-124.477162, 25.767968].map(n => Math.floor(n)),
+    [-88.928336, 49.122384].map(n => Math.ceil(n)),
+  ].flat() as Extent,
+  ets2: [
+    [-10.025698, 34.897275].map(n => Math.floor(n)),
+    [33.284941, 71.573102].map(n => Math.ceil(n)),
+  ].flat() as Extent,
+};
 
 export const SlippyMap = (props: {
   center?: [lon: number, lat: number];
@@ -27,15 +44,12 @@ export const SlippyMap = (props: {
     Destinations,
     TrailerOrWaypointMarkers,
     PlayerMarker,
-    center = [0, 0],
+    center = calculateCenter(extents.ats),
     mode = 'light',
   } = props;
-  // HACK hardcode tileRootUrl so that it uses the `navigator`'s webserver root,
-  // because it's still under development and no public-facing hosted version
-  // exists yet.
-  const tileRootUrl = '';
   const mapRef = useRef<MapRef>(null);
   const playerMarkerRef = useRef<MapLibreGLMarker>(null);
+
   return (
     <MapGl
       ref={mapRef}
@@ -43,12 +57,12 @@ export const SlippyMap = (props: {
         longitude: center[0],
         latitude: center[1],
       }}
-      onLoad={() =>
+      onLoad={() => {
         props.onLoad(
           assertExists(mapRef.current),
-          assertExists(playerMarkerRef.current),
-        )
-      }
+          assertExists(playerMarkerRef?.current),
+        );
+      }}
       onDragStart={() => props.onDragStart()}
       onZoomStart={e => {
         // we only care about zoom start events triggered by user input, not
@@ -70,63 +84,146 @@ export const SlippyMap = (props: {
       attributionControl={false}
     >
       <BaseMapStyle tileRootUrl={tileRootUrl} mode={mode} />
-      <GameMapStyle tileRootUrl={tileRootUrl} mode={mode} game={'ats'} />
-      <GameMapStyle tileRootUrl={tileRootUrl} mode={mode} game={'ets2'} />
-      <SceneryTownSource mode={mode} game={'ats'} />
-      <SceneryTownSource mode={mode} game={'ets2'} />
-      <Source
-        id={'activeRoute'}
-        type={'geojson'}
-        data={
-          {
-            type: 'FeatureCollection',
-            features: [],
-          } as GeoJSON.FeatureCollection
-        }
-      >
-        <Layer
-          id={'activeRouteLayer-case'}
-          type={'line'}
-          paint={{
-            'line-color': 'hsl(204,100%,40%)',
-            'line-gap-width': 8,
-            'line-width': 4,
-            'line-opacity': 1,
-          }}
-        />
-        <Layer
-          id={'activeRouteLayer'}
-          type={'line'}
-          paint={{
-            'line-color': 'hsl(204,100%,50%)',
-            'line-width': 10,
-            'line-opacity': 1,
-          }}
-        />
-      </Source>
-      {Array.from({ length: 2 }, (_, i) => (
-        <Source
-          key={`previewRoute-${i}`}
-          id={`previewRoute-${i}`}
-          type={'geojson'}
-          data={
-            {
-              type: 'FeatureCollection',
-              features: [],
-            } as GeoJSON.FeatureCollection
-          }
-        >
-          <Layer
-            id={`previewRouteLayer-${i}`}
-            type={'line'}
-            paint={{
-              'line-color': '#f00',
-              'line-width': 10,
-              'line-opacity': 1,
-            }}
-          />
-        </Source>
-      ))}
+      <GameMapStyle tileRootUrl={tileRootUrl} mode={mode} game={'ats'}>
+        <>
+          <SceneryTownSource mode={mode} game={'ats'} />
+          <Source
+            id={'activeRoute'}
+            type={'geojson'}
+            data={
+              {
+                type: 'FeatureCollection',
+                features: [],
+              } as GeoJSON.FeatureCollection
+            }
+          >
+            <Layer
+              id={'activeRouteLayer-case'}
+              type={'line'}
+              paint={{
+                'line-color': 'hsl(204,100%,40%)',
+                'line-gap-width': 8,
+                'line-width': 4,
+                'line-opacity': 1,
+              }}
+            />
+            <Layer
+              id={'activeRouteLayer'}
+              type={'line'}
+              paint={{
+                'line-color': 'hsl(204,100%,50%)',
+                'line-width': 10,
+                'line-opacity': 1,
+              }}
+            />
+          </Source>
+          {Array.from({ length: routingModes.size }, (_, i) => (
+            <Source
+              key={`previewRoute-${i}`}
+              id={`previewRoute-${i}`}
+              type={'geojson'}
+              data={
+                {
+                  type: 'FeatureCollection',
+                  features: [],
+                } as GeoJSON.FeatureCollection
+              }
+            >
+              <Layer
+                id={`previewRouteLayer-${i}-case`}
+                type={'line'}
+                paint={{
+                  'line-color': 'hsl(204,100%,40%)',
+                  'line-gap-width': 8,
+                  'line-width': 4,
+                  'line-opacity': 1,
+                }}
+              />
+              <Layer
+                id={`previewRouteLayer-${i}`}
+                type={'line'}
+                paint={{
+                  'line-color': 'hsl(204,100%,50%)',
+                  'line-width': 10,
+                  'line-opacity': 1,
+                }}
+              />
+            </Source>
+          ))}
+          <Source
+            key={`previewStepArrow`}
+            id={`previewStepArrow`}
+            type={'geojson'}
+            data={
+              {
+                type: 'FeatureCollection',
+                features: [],
+              } as GeoJSON.FeatureCollection
+            }
+          >
+            <Layer
+              id={`previewStepArrowCase`}
+              type={'line'}
+              layout={{
+                'line-cap': 'round',
+              }}
+              paint={{
+                'line-color': '#444',
+                'line-gap-width': 11,
+                'line-width': 2,
+                'line-opacity': 1,
+              }}
+              filter={['in', '$type', 'LineString']}
+            />
+            <Layer
+              id={`previewStepArrowArrow`}
+              type={'symbol'}
+              layout={{
+                'icon-image': 'triangle',
+                'icon-allow-overlap': true,
+                'icon-pitch-alignment': 'map',
+                'icon-rotation-alignment': 'map',
+                'icon-rotate': ['get', 'bearing'],
+              }}
+              filter={['in', '$type', 'Point']}
+            />
+            <Layer
+              id={`previewStepArrowLine`}
+              type={'line'}
+              layout={{
+                'line-cap': 'round',
+              }}
+              paint={{
+                'line-color': '#fff',
+                'line-width': 11,
+                'line-opacity': 1,
+              }}
+              filter={['in', '$type', 'LineString']}
+            />
+          </Source>
+          <Source
+            id={'activeRouteIcons'}
+            type={'geojson'}
+            data={
+              {
+                type: 'FeatureCollection',
+                features: [],
+              } as GeoJSON.FeatureCollection
+            }
+          >
+            <Layer
+              id={'activeRouteIconsLayer'}
+              type={'symbol'}
+              layout={{
+                'icon-image': '{sprite}',
+                'icon-allow-overlap': true,
+              }}
+              minzoom={10}
+              filter={['in', '$type', 'Point']}
+            />
+          </Source>
+        </>
+      </GameMapStyle>
       <Destinations />
       <TrailerOrWaypointMarkers />
       <PlayerMarker mode={props.mode} ref={playerMarkerRef} />

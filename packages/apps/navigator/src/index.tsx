@@ -9,7 +9,9 @@ import { createTRPCProxyClient, createWSClient, wsLink } from '@trpc/client';
 import type { AppRouter } from '@truckermudgeon/navigation/types';
 import * as mobx from 'mobx';
 import * as React from 'react';
+import { memo } from 'react';
 import { createRoot } from 'react-dom/client';
+import { SessionGate } from './components/SessionGate';
 import { createApp } from './create-app';
 import './index.css';
 
@@ -57,17 +59,23 @@ const appClient = createTRPCProxyClient<AppRouter>({
   ],
 }).app;
 
-const { App } = createApp({
+const { App, store } = createApp({
   appClient,
   transitionDurationMs: materialTheme.transitions.duration.standard,
 });
+
+const MemoApp = memo(() => <App />);
 
 root.render(
   <React.StrictMode>
     <MaterialCssVarsProvider theme={{ [MATERIAL_THEME_ID]: materialTheme }}>
       <CssVarsProvider>
         <CssBaseline />
-        <App />
+        <SessionGate
+          appClient={appClient}
+          readyToLoadStore={store}
+          App={MemoApp}
+        ></SessionGate>
       </CssVarsProvider>
     </MaterialCssVarsProvider>
   </React.StrictMode>,

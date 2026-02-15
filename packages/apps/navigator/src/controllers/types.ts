@@ -26,6 +26,7 @@ export interface AppStore {
   trailerPoint: readonly [lon: number, lat: number] | undefined;
   showNavSheet: boolean;
   isReceivingTelemetry: boolean;
+  readyToLoad: boolean;
 
   // TODO naming.
   activeRoute: Route | undefined;

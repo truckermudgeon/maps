@@ -33,6 +33,8 @@ export class AppStoreImpl implements AppStore {
   truckPoint: [lon: number, lat: number] = [0, 0];
   trailerPoint: [lon: number, lat: number] | undefined;
   showNavSheet = false;
+  readyToLoad = false;
+  mapLoaded = false;
 
   currentJob: JobState | undefined;
 
@@ -367,7 +369,7 @@ export class AppControllerImpl implements AppController {
     });
   }
 
-  onMapLoad(map: MapRef, player?: Marker) {
+  onMapLoad(map: MapRef, player: Marker) {
     Preconditions.checkState(this.map == null);
     Preconditions.checkState(this.playerMarker == null);
     this.map = map;

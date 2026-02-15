@@ -8,6 +8,7 @@ export default defineConfig(() => {
   return {
     build: {
       outDir: 'build',
+      copyPublicDir: false,
     },
     server: {
       open: true,
