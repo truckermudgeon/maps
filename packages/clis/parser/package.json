@@ -8,7 +8,7 @@
   "bin": "./index.ts",
   "scripts": {
     "build": "node-gyp configure && node-gyp build",
-    "postinstall": "ln -sf ../../packages/clis/parser/index.ts ../../../node_modules/.bin/parser",
+    "postinstall": "npx tsx -e \"const { rmSync, symlinkSync } = require('node:fs'); const t = '../../../node_modules/.bin/parser'; rmSync(t, { force: true }); symlinkSync('../../packages/clis/parser/index.ts', t);\"",
     "gen:types": "npx tsx -e 'import { generateVisitorDts } from \"./game-files/sii-parser\"; console.log(generateVisitorDts());' | npx prettier --parser typescript > types/sii-visitor.d.ts",
     "test": "vitest"
   },

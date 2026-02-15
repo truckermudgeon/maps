@@ -1,0 +1,46 @@
+name: build navigator client (CLI)
+
+on:
+  workflow_dispatch:
+
+env:
+  BINARY_NAME: trucksim-navigator
+  NAV_DIR: packages/clis/navigator
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: true
+
+      matrix:
+        os:
+          - windows-latest
+          - ubuntu-latest
+          # macOS builds are disabled, because running unsigned binaries on macOS leads to issues with Gatekeeper.
+          # mac users will be encouraged to build a client from source, until i decide to cave in and sign up for an
+          # Apple Developer account 😕
+          # - macos-latest
+
+    steps:
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 23
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build -w ${{ env.NAV_DIR }} '--' --outfile dist/${{ env.BINARY_NAME }}
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BINARY_NAME }}-${{ runner.os }}-${{ runner.arch }}
+          path: ${{ env.NAV_DIR }}/dist/*

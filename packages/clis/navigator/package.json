@@ -7,7 +7,7 @@
   "bin": "./index.ts",
   "scripts": {
     "test": "vitest",
-    "build": "bun build --compile --define \"process.env.NODE_ENV='production'\" index.ts --outfile ../../../out/trucksim-navigator"
+    "build": "bun build --compile --define \"process.env.NODE_ENV='production'\" index.ts"
   },
   "devDependencies": {
     "@types/jest": "^29.5.11",
