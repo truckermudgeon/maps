@@ -451,6 +451,8 @@ function postProcess(
       case ItemType.Model:
         // sector parsing returns _all_ models, but
         // def parsing only cares about the ones it thinks are buildings.
+        // TODO include model descriptions for models that are referenced by
+        //  photo trophies.
         if (!defData.models.has(item.token)) {
           if (defData.vegetation.has(item.token)) {
             elevationNodeUids.add(item.nodeUid);
@@ -633,17 +635,21 @@ function postProcess(
             });
             break;
           case MapOverlayType.Landmark: {
-            const label =
-              // Note: tried to treat this similar to viewpoints by searching
-              // for entries in def files and matching item.uids, but item.uids
-              // didn't match what was in the def files. Guessing landmark
-              // object uids correspond to model uids, and not map overlay uids.
-              l10n.get(`landmark_${item.token}`);
+            const token = `landmark_${item.token}`;
+            let label = l10n.get(token);
             if (label == null) {
-              logger.warn(
-                'missing landmark info for item',
-                item.uid.toString(16),
-              );
+              const maybeToken: string | undefined = defData.viewpoints
+                .values()
+                .filter(vpToken => vpToken.startsWith(token))
+                .toArray()[0];
+              label = l10n.get(maybeToken);
+              if (label == null) {
+                logger.warn(
+                  'missing landmark info for item',
+                  item.token,
+                  item.uid.toString(16),
+                );
+              }
             }
             pois.push({
               ...mapOverlayMeta,
