@@ -184,6 +184,13 @@ async function preprocessPngs(pngPaths: string[]): Promise<{
         bordered.add(basename.replace('.png', ''));
         modified = true;
       }
+      if (!modified) {
+        const { width, height } = image;
+        image.autocrop();
+        if (width !== image.width || height !== image.height) {
+          modified = true;
+        }
+      }
 
       if (modified) {
         const tmpFilePath = path.join(os.tmpdir(), basename);

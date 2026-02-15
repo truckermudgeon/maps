@@ -13,6 +13,7 @@ import type {
 } from '@truckermudgeon/navigation/types';
 import type { ReactElement } from 'react';
 import { toCompassPoint } from '../base/to-compass-point';
+import { SpriteImage } from './SpriteImage';
 import { toLengthAndUnit, toLocationString } from './text';
 
 export const DestinationItem = (props: {
@@ -41,11 +42,12 @@ export const DestinationItem = (props: {
                 </Typography>
               </Box>
             )}
-            <Box marginTop={0.5}>
-              <img
-                src={toImgUrl(props.destination)}
-                style={{ width: '4rem' }}
-              />
+            <Box
+              sx={{
+                width: 'calc(0.8 * 128px)',
+              }}
+            >
+              <SpriteImage spriteName={toImgUrl(props.destination)} />
             </Box>
             <Stack flexDirection={'column'} flexGrow={1}>
               <Stack
@@ -56,9 +58,9 @@ export const DestinationItem = (props: {
                 <Typography fontSize={'lg'}>
                   {props.destination.label}
                 </Typography>
-                <Stack direction={'row'} alignItems={'center'} gap={0.5}>
+                <Stack direction={'row'} alignItems={'center'}>
                   {props.destination.facilityUrls.map(url => (
-                    <img src={url} key={url} style={{ width: '1.5rem' }} />
+                    <SpriteImage key={url} spriteName={url} />
                   ))}
                 </Stack>
               </Stack>

@@ -111,6 +111,7 @@ const RouteSummary = ({
                 ].join(' ')
               : undefined,
           }}
+          // TODO convert to SpriteImage if/when RouteSummary is a thing again.
           src={`/icons/${road}.png`}
           alt={road}
         />

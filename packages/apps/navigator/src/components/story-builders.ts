@@ -6,7 +6,7 @@ export function aSearchResultWith(result: Partial<SearchResult>): SearchResult {
     nodeUid: Math.random() + '',
     lonLat: [0, 0],
     facilityUrls: [],
-    type: 'company',
+    type: 'serviceArea',
     city: {
       name: 'city',
       stateCode: 'ST',

@@ -4,7 +4,7 @@ import * as proj4 from 'proj4';
 // The Earth radius is canceled out in the coordinate calculation, so the exact
 // value doesn't matter. The chosen radius is the Clarke 1866 Authalic Sphere.
 const earthRadiusMeters = 6_370_997;
-const lengthOfDegree = (earthRadiusMeters * Math.PI) / 180;
+export const lengthOfDegree = (earthRadiusMeters * Math.PI) / 180;
 
 // from def/climate.sii
 const atsDefData = {

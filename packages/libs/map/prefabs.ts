@@ -2,6 +2,7 @@ import { assert, assertExists } from '@truckermudgeon/base/assert';
 import type { Position } from '@truckermudgeon/base/geom';
 import {
   angleBetweenPoints,
+  angleBetweenVectors,
   distance,
   midPoint,
   rotate,
@@ -610,6 +611,7 @@ export interface Lane {
   branches: {
     curvePoints: [number, number][]; // in prefab space
     targetNodeIndex: number;
+    angle: number;
     semaphoresEncountered: { semaphoreId: number; curveIndex: number }[];
     trafficRulesEncountered: { rule: string; curveIndex: number }[];
   }[];
@@ -687,6 +689,10 @@ function getLane(prefabDesc: PrefabDescription, inputLaneIndex: number): Lane {
       return {
         curvePoints: simplified,
         targetNodeIndex: p.endingNodeIndex,
+        angle: angleBetweenVectors(
+          simplified.slice(0, 2) as [Position, Position],
+          simplified.slice(-2) as [Position, Position],
+        ),
         semaphoresEncountered,
         trafficRulesEncountered,
       };
