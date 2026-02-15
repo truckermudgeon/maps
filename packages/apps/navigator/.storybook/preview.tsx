@@ -9,6 +9,7 @@ import type { Preview, StoryContext } from '@storybook/react';
 import type { ReactNode } from 'react';
 import * as React from 'react';
 import { useEffect } from 'react';
+import { SpriteProvider } from '../src/components/SpriteProvider';
 
 const preview: Preview = {
   parameters: {
@@ -51,7 +52,9 @@ export const decorators = [
         <CssVarsProvider>
           <CssBaseline />
           <ThemedStoryWrapper theme={theme as 'light' | 'dark'}>
-            <Story />
+            <SpriteProvider>
+              <Story />
+            </SpriteProvider>
           </ThemedStoryWrapper>
         </CssVarsProvider>
       </MaterialCssVarsProvider>
