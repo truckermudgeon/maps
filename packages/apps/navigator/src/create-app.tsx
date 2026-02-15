@@ -41,6 +41,7 @@ export function createApp({
 }) {
   const store = new AppStoreImpl();
   const controller = new AppControllerImpl();
+  controller.setupWakeLock();
 
   const {
     NavSheet,

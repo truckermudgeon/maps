@@ -268,6 +268,35 @@ export class AppControllerImpl implements AppController {
         unsubscribeOnMove: () => void;
       }
     | undefined;
+  private wakeLock?: WakeLockSentinel = undefined;
+
+  setupWakeLock() {
+    Preconditions.checkState(this.wakeLock == null);
+
+    const requestWakeLock = async () => {
+      try {
+        this.wakeLock = await navigator.wakeLock.request();
+      } catch (err) {
+        if (err instanceof Error) {
+          console.error(
+            `error requestion wakelock: ${err.name}, ${err.message}`,
+          );
+        } else {
+          console.error('unknown error requesting wakelock:', err);
+        }
+      }
+    };
+
+    const handleVisibilityChange = async () => {
+      if (this.wakeLock !== null && document.visibilityState === 'visible') {
+        await requestWakeLock();
+      }
+    };
+
+    void requestWakeLock();
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+  }
 
   addMapDragEndListener(
     cb: (centerLngLat: [number, number]) => void,
