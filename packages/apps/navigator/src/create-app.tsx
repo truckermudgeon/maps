@@ -18,6 +18,7 @@ import { RouteControls } from './components/RouteControls';
 import { RouteStack } from './components/RouteStack';
 import { SegmentCompleteToast } from './components/SegmentCompleteToast';
 import { SlippyMap } from './components/SlippyMap';
+import { SpriteProvider } from './components/SpriteProvider';
 import { toLengthAndUnit } from './components/text';
 import { TrailerOrWaypointMarkers } from './components/TrailerOrWaypointMarkers';
 import { WaitingForTelemetry } from './components/WaitingForTelemetry';
@@ -434,7 +435,7 @@ const App = (props: {
   );
 
   return (
-    <>
+    <SpriteProvider>
       <SlippyMap />
       <Grid
         columns={3}
@@ -508,7 +509,7 @@ const App = (props: {
         </Grid>
       </Grid>
       <WaitingForTelemetry />
-    </>
+    </SpriteProvider>
   );
 };
 

@@ -23,6 +23,7 @@ import type { PoiType } from '@truckermudgeon/navigation/constants';
 import type { SearchResult } from '@truckermudgeon/navigation/types';
 import { memo } from 'react';
 import { DestinationTypes } from './DestinationTypes';
+import { SpriteImage } from './SpriteImage';
 import { toLocationString } from './text';
 
 export type ChooseDestinationPageMode = 'chooseDestination' | 'searchAlong';
@@ -130,6 +131,7 @@ const OptionContent = memo(({ option }: { option: SearchResult }) => (
       sx={{
         display: 'flex',
         justifyContent: 'center',
+        alignItems: 'center',
         mx: 0,
       }}
     >
@@ -160,14 +162,7 @@ const Decorator = ({
       return (
         <Stack direction={'row'} alignItems={'center'}>
           {option.facilityUrls.map(url => (
-            <img
-              src={url}
-              key={url}
-              style={{
-                transformOrigin: '0 0',
-                transform: 'scale(0.8)',
-              }}
-            />
+            <SpriteImage key={url} spriteName={url} />
           ))}
           <SpriteImage spriteName={option.sprite} includeMargin={true} />
         </Stack>
@@ -229,7 +224,7 @@ const Decorator = ({
           spriteName = 'parking_ico';
           break;
         default:
-          spriteName = option.facilityUrls[0] ?? 'unknown';
+          spriteName = option.sprite ?? option.facilityUrls[0] ?? 'unknown';
           break;
       }
       break;
@@ -239,27 +234,6 @@ const Decorator = ({
   }
   return <SpriteImage spriteName={spriteName} />;
 };
-
-const SpriteImage = ({
-  spriteName,
-  includeMargin,
-}: {
-  spriteName: string;
-  includeMargin?: true;
-}) => (
-  <div>
-    <img
-      src={`/icons/${spriteName}.png`}
-      alt={spriteName}
-      style={{
-        padding: 0,
-        margin: 0,
-        transform: 'scale(0.8)',
-        marginRight: includeMargin ? '1em' : undefined,
-      }}
-    />
-  </div>
-);
 
 const enum LocationType {
   IN_CITY,
