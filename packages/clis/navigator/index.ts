@@ -1,5 +1,6 @@
 #!/usr/bin/env -S npx tsx
 
+import { renderANSI } from 'uqr';
 import { checkIsServerUp } from './check-server';
 import { connectToServer } from './connect-to-server';
 import { createTelemetryClient } from './create-telemetry-client';
@@ -19,6 +20,10 @@ const healthUrl =
   NODE_ENV === 'development'
     ? 'http://localhost:62840/health'
     : 'https://api.truckermudgeon.com/health';
+const navigatorUrl =
+  NODE_ENV === 'development'
+    ? 'http://localhost:5173'
+    : 'https://navigator.truckermudgeon.com';
 
 async function main() {
   const telemetryReaderOptions = parseArguments(process.argv);
@@ -52,10 +57,16 @@ async function main() {
     telemetryId,
     onPairingCodeReceived: pairingCode => {
       console.log(
-        'visit https://navigator.truckermudgeon.com and enter pairing code:\n\n        ',
+        `visit ${navigatorUrl} and enter pairing code:
+
+        `,
         pairingCode,
         '\n\n',
       );
+      if (NODE_ENV === 'production') {
+        console.log('or scan this qr code:\n\n');
+        console.log(renderANSI(`${navigatorUrl}/?pair=${pairingCode}`));
+      }
     },
   });
 

@@ -151,6 +151,31 @@ const Form = memo(
     const [error, setError] = useState<string | null>(null);
     const [code, setCode] = useState('');
     const [submitting, setSubmitting] = useState(false);
+
+    useEffect(() => {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has('pair')) {
+        const otp = url.searchParams
+          .get('pair')!
+          .toLowerCase()
+          .replaceAll(/[^a-z]/gi, '');
+
+        // don't want to save the URL with the query param in history; if user
+        // visits navigator, they should be able to bookmark the query-less
+        // version of the URL.
+        window.history.replaceState(
+          {},
+          document.title,
+          window.location.pathname,
+        );
+
+        if (otp.length === CODE_LENGTH) {
+          console.log('using code from query param', otp);
+          setCode(otp);
+        }
+      }
+    }, []);
+
     function onChange(otp: string) {
       otp = otp.replaceAll(/[^a-z]/gi, '');
       setCode(otp.toLowerCase());

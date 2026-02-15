@@ -19,6 +19,7 @@
     "@truckermudgeon/base": "0.0.0",
     "@truckermudgeon/navigation": "0.0.0",
     "steam-locate": "^1.0.6",
-    "trucksim-telemetry": "^0.22.1"
+    "trucksim-telemetry": "^0.22.1",
+    "uqr": "^0.1.2"
   }
 }
