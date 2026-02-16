@@ -21,7 +21,7 @@ export default [
       'out',
       '**/build',
       '**/public',
-      '**/find-route-worker-wrapper.js',
+      '**/*-worker-wrapper.js',
     ],
   },
   ...compat.extends(
