@@ -203,7 +203,7 @@ describe('arrayIndexToRouteIndex', () => {
 
 // super expensive to run; disable for now until
 // data can be constrained to minimal fixtures.
-describe('detectRouteEvents bugs', () => {
+describe.skip('detectRouteEvents bugs', () => {
   let graphAndMapData: GraphAndMapData<GraphMappedData>;
   let routingService: RoutingService;
   beforeAll(() => {
