@@ -26,6 +26,15 @@ function scoreLineSigned(
     return 0;
   }
 
+  if (
+    line.coordinates.length > 0 &&
+    line.coordinates.every(
+      ([x, y]) => line.coordinates[0][0] === x && line.coordinates[0][1] === y,
+    )
+  ) {
+    return 0;
+  }
+
   const lineHeading = localLineHeadingRadians(truckPos, line);
   const alignment = signedHeadingAlignment(truckHeading, lineHeading);
   return alignment * weight; // [-1, 1]
