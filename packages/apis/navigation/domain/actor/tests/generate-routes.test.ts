@@ -220,7 +220,9 @@ describe('getDirectionOnRoad', () => {
   });
 });
 
-describe('getDirectionOnPrefab', () => {
+// TODO re-enable when tests are written against checked-in fixtures instead of
+//  an entire dump of parser-generated JSON files.
+describe.skip('getDirectionOnPrefab', () => {
   // i think this is all fixed now, after adding roadstrings to prefabs for
   // consideration.
   describe('bugs', () => {
@@ -325,7 +327,7 @@ describe('getDirectionOnPrefab', () => {
 
 // super expensive to run; disable for now until
 // data can be constrained to minimal fixtures.
-describe('generateRoutes bugs', () => {
+describe.skip('generateRoutes bugs', () => {
   let graphAndMapData: GraphAndMapData<GraphMappedData>;
   let routingService: RoutingService;
   beforeAll(() => {

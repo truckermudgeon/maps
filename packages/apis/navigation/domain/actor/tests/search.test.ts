@@ -32,7 +32,9 @@ const dummyEventSink: DomainEventSink = {
   publish: () => void 0,
 };
 
-describe('searchPoi', () => {
+// TODO re-enable when tests are written against checked-in fixtures instead of
+//  an entire dump of parser-generated JSON files.
+describe.skip('searchPoi', () => {
   let graphAndMapData: GraphAndMapData<GraphMappedData>;
   let searchData: ProcessedSearchData;
   let routingService: RoutingService;
