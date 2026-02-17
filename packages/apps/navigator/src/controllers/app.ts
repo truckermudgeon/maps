@@ -272,16 +272,21 @@ export class AppControllerImpl implements AppController {
     | undefined;
   private wakeLock?: WakeLockSentinel = undefined;
 
-  setupWakeLock() {
-    Preconditions.checkState(this.wakeLock == null);
+  requestWakeLock() {
+    if (this.wakeLock != null && !this.wakeLock.released) {
+      console.log('already have a wakelock');
+      return;
+    }
 
     const requestWakeLock = async () => {
       try {
+        console.log('requesting wake lock');
         this.wakeLock = await navigator.wakeLock.request();
+        console.log('wake lock released?:', this.wakeLock.released);
       } catch (err) {
         if (err instanceof Error) {
           console.error(
-            `error requestion wakelock: ${err.name}, ${err.message}`,
+            `error requesting wakelock: ${err.name}, ${err.message}`,
           );
         } else {
           console.error('unknown error requesting wakelock:', err);
@@ -289,15 +294,7 @@ export class AppControllerImpl implements AppController {
       }
     };
 
-    const handleVisibilityChange = async () => {
-      if (this.wakeLock !== null && document.visibilityState === 'visible') {
-        await requestWakeLock();
-      }
-    };
-
     void requestWakeLock();
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    document.addEventListener('visibilitychange', handleVisibilityChange);
   }
 
   addMapDragEndListener(

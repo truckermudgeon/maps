@@ -44,7 +44,6 @@ export function createApp({
 } {
   const store = new AppStoreImpl();
   const controller = new AppControllerImpl();
-  controller.setupWakeLock();
 
   const {
     NavSheet,
@@ -243,12 +242,17 @@ export function createApp({
   });
   const _Controls = () => (
     <Controls
-      onRecenterFabClick={action(() => controller.setFollow(store))}
+      onRecenterFabClick={action(() => {
+        controller.requestWakeLock();
+        controller.setFollow(store);
+      })}
       onRouteFabClick={action(() => {
+        controller.requestWakeLock();
         navSheetController.startChooseDestinationFlow(navSheetStore);
         store.showNavSheet = true;
       })}
       onSearchFabClick={action(() => {
+        controller.requestWakeLock();
         navSheetController.startSearchAlongFlow(navSheetStore);
         store.showNavSheet = true;
       })}
