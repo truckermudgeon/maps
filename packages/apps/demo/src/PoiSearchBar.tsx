@@ -219,7 +219,7 @@ export const PoiSearchBar = (props: SearchBarProps) => {
           onSelect(null);
         } else if (typeof newValue === 'string') {
           setValue(newValue);
-        } else if (newValue && newValue.type === 'poi') {
+        } else if (newValue?.type === 'poi') {
           setNumSearchResults(1);
           setValue(newValue);
           onSelect(newValue);

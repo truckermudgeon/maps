@@ -1,13 +1,14 @@
 {
   "compilerOptions": {
     "strict": true,
+    "composite": true,
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
     //"exactOptionalPropertyTypes": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
     "noImplicitReturns": true,
-    "noPropertyAccessFromIndexSignature": true,
+    "noPropertyAccessFromIndexSignature": false, // temporary, until i figure out why eslint complains.
     //"noUncheckedIndexedAccess": true,
     //"noUnusedLocals": true,
     "noUnusedParameters": true,

@@ -20,6 +20,7 @@ export default [
       '.idea',
       'out',
       '**/build',
+      '**/dist',
       '**/public',
       '**/*-worker-wrapper.js',
     ],
@@ -53,6 +54,7 @@ export default [
     },
 
     rules: {
+      '@typescript-eslint/dot-notation': 'warn',
       '@typescript-eslint/consistent-type-imports': 'error',
       '@typescript-eslint/no-unused-vars': [
         'warn',

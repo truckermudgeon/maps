@@ -30,7 +30,7 @@
     "typescript": "^5.9.2",
     "vite": "^7.1.5",
     "vite-plugin-eslint": "^1.8.1",
-    "vite-plugin-pwa": "^0.21.1",
+    "vite-plugin-pwa": "^1.2.0",
     "vite-tsconfig-paths": "^5.1.4"
   },
   "dependencies": {

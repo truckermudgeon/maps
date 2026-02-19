@@ -2,9 +2,7 @@ import { assertExists } from '@truckermudgeon/base/assert';
 import { distance } from '@truckermudgeon/base/geom';
 import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
 import type { Neighbor, Neighbors, Node } from '@truckermudgeon/map/types';
-import type { PriorityQueueInstance } from 'priorityqueue';
-import PriorityQueue from 'priorityqueue';
-import type { PriorityQueueOption } from 'priorityqueue/lib/PriorityQueue';
+import TinyQueue from 'tinyqueue';
 
 export type Direction = 'forward' | 'backward';
 export type Mode = 'fastest' | 'shortest' | 'smallRoads';
@@ -147,7 +145,7 @@ export function findRoute(
   fScore.set(startAsNeighbor, h(start));
 
   let numIters = 0;
-  while (!openSet.isEmpty()) {
+  while (openSet.length) {
     numIters++;
     const current = openSet.pop();
     if (current.nodeUid === endNodeUid) {
@@ -220,12 +218,12 @@ function reconstructPath(
   return { route: path, distance, duration };
 }
 
-/** PriorityQueue, but with a `.has(value)` method. */
-class Queue<T> extends PriorityQueue<T> {
+/** TinyQueue, but with a `.has(value)` method. */
+class Queue<T> extends TinyQueue<T> {
   private readonly items = new Set<T>();
 
-  constructor(options: PriorityQueueOption<T>) {
-    super(options);
+  constructor(options: { comparator: (a: T, b: T) => number }) {
+    super([], options.comparator);
   }
 
   has(value: T) {
@@ -239,21 +237,10 @@ class Queue<T> extends PriorityQueue<T> {
   }
 
   override pop(): T {
-    const top = super.pop();
+    Preconditions.checkState(this.length > 0);
+    const top = super.pop()!;
     Preconditions.checkState(this.items.has(top));
     this.items.delete(top);
     return top;
-  }
-
-  override clear() {
-    super.clear();
-    this.items.clear();
-  }
-
-  override merge<Instance extends PriorityQueueInstance<T>>(other: Instance) {
-    super.merge(other);
-    for (const value of this.collection) {
-      this.items.add(value);
-    }
   }
 }
