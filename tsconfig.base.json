@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "strict": true,
+    "composite": true,
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
     //"exactOptionalPropertyTypes": true,

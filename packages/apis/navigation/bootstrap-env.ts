@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const NODE_ENV = process.env['NODE_ENV'] ?? 'development';
+const NODE_ENV = process.env.NODE_ENV ?? 'development';
 
 const files = [
   '.env',

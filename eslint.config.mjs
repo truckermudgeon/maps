@@ -20,6 +20,7 @@ export default [
       '.idea',
       'out',
       '**/build',
+      '**/dist',
       '**/public',
       '**/*-worker-wrapper.js',
     ],

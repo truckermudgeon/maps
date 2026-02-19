@@ -32,8 +32,8 @@
     "coverage": "npm run --workspaces --if-present test -- --run --coverage"
   },
   "engines": {
-    "node": ">=22.9.0",
-    "npm": ">=10.9.0"
+    "node": ">=24.13.1",
+    "npm": ">=11.8.0"
   },
   "lint-staged": {
     "**/*.ts": [

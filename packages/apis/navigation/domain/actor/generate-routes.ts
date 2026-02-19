@@ -360,7 +360,7 @@ export async function generateRoutes(
     isCompanyPrefab(location)
   ) {
     const nearestRoad =
-      location != null && location.type === ItemType.Road
+      location?.type === ItemType.Road
         ? // truck is on a road
           location
         : // truck is in a company prefab or unknown location.

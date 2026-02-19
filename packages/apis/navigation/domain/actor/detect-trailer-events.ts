@@ -45,8 +45,7 @@ export function detectTrailerEvents(opts: {
       const becameUnattached =
         newTrailerIsValid &&
         !newTrailer.attached &&
-        (unattachedState == null ||
-          unattachedState.positionGameCoords[0] !== newTrailerPos[0] ||
+        (unattachedState?.positionGameCoords[0] !== newTrailerPos[0] ||
           unattachedState.positionGameCoords[1] !== newTrailerPos[1]);
       if (!becameAttached && !becameUnattached) {
         return;

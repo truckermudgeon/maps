@@ -4,7 +4,6 @@ import { colors } from 'consola/utils';
 // "default" logger
 const _logger = createConsola({
   formatOptions: { compact: true, colors: true, date: false },
-  fancy: true,
 });
 
 // logger that overrides how WARN and ERROR messages are output by making them
