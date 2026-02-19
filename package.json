@@ -32,7 +32,7 @@
     "coverage": "npm run --workspaces --if-present test -- --run --coverage"
   },
   "engines": {
-    "node": ">=24.13.1",
+    "node": ">=24.13.0",
     "npm": ">=11.6.2"
   },
   "lint-staged": {
