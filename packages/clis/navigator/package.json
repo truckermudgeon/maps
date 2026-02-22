@@ -9,6 +9,10 @@
     "test": "vitest",
     "build": "bun build --compile --define \"process.env.NODE_ENV='production'\" index.ts"
   },
+  "exports": {
+    "./constants": "./constants.ts",
+    "./helpers": "./helpers.ts"
+  },
   "devDependencies": {
     "@types/jest": "^29.5.11",
     "@types/node": "^22.7.4",
