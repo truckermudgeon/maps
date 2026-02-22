@@ -14,6 +14,7 @@ export async function checkIsServerUp(healthUrl: string) {
   }
   if (!ok) {
     console.error('server is down. try again later.');
-    process.exit(1);
   }
+
+  return ok;
 }

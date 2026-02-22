@@ -8,6 +8,7 @@ export function createTelemetryClient(options: {
   apiUrl: string;
   onError: (maybeEvent: Event | undefined) => void;
   onClose: (cause: { code?: number } | undefined) => void;
+  onOpen?: () => void;
 }): TelemetryClient {
   return createTRPCProxyClient<AppRouter>({
     links: [
@@ -16,6 +17,7 @@ export function createTelemetryClient(options: {
           url: options.apiUrl,
           onError: options.onError,
           onClose: options.onClose,
+          onOpen: options?.onOpen,
           keepAlive: {
             enabled: true,
             intervalMs: 30_000,

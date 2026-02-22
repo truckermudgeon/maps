@@ -1,34 +1,27 @@
 #!/usr/bin/env -S npx tsx
 
 import { renderANSI } from 'uqr';
-import { checkIsServerUp } from './check-server';
-import { connectToServer } from './connect-to-server';
-import { createTelemetryClient } from './create-telemetry-client';
-import type { TelemetryReaderOptions } from './get-telemetry';
-import { createTelemetryReader } from './get-telemetry';
-import { startTelemetryLoop } from './start-telemetry-loop';
-import { getTelemetryId } from './telemetry-id';
-
-const NODE_ENV = process.env.NODE_ENV ?? 'development';
-const apiUrl =
-  NODE_ENV === 'development'
-    ? 'ws://localhost:62840/telemetry'
-    : 'wss://api.truckermudgeon.com/telemetry';
-const healthUrl =
-  NODE_ENV === 'development'
-    ? 'http://localhost:62840/health'
-    : 'https://api.truckermudgeon.com/health';
-const navigatorUrl =
-  NODE_ENV === 'development'
-    ? 'http://localhost:5173'
-    : 'https://navigator.truckermudgeon.com';
+import { apiUrl, healthUrl, navigatorUrl, NODE_ENV } from './constants';
+import type { TelemetryReaderOptions } from './helpers';
+import {
+  checkIsServerUp,
+  connectToServer,
+  createTelemetryClient,
+  createTelemetryReader,
+  getTelemetryId,
+  startTelemetryLoop,
+} from './helpers';
 
 async function main() {
   const telemetryReaderOptions = parseArguments(process.argv);
   const getTelemetry = createTelemetryReader(telemetryReaderOptions);
   //checkIsPluginInstalled();
 
-  await checkIsServerUp(healthUrl);
+  const isServerUp = await checkIsServerUp(healthUrl);
+  if (!isServerUp) {
+    process.exit(1);
+  }
+
   // TODO add simple check if client is outdated
   const telemetryClient = createTelemetryClient({
     apiUrl,

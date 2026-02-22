@@ -9,6 +9,8 @@ export function startTelemetryLoop(options: {
   getTelemetry: TelemetryReader;
   telemetryClient: TRPCClient<AppRouter>['telemetry'];
   onError: (err: unknown) => void;
+  onTelemetry?: (type: 'undefined' | 'allZeroes' | 'normal') => void;
+  onDelta?: (deltaMs: number) => void;
 }) {
   const { getTelemetry, telemetryClient, onError } = options;
 
@@ -31,6 +33,7 @@ export function startTelemetryLoop(options: {
         telemetry.truck.position.Z === 0)
     ) {
       // game isn't running yet, or game is running but truck hasn't been placed
+      options.onTelemetry?.(!telemetry ? 'undefined' : 'allZeroes');
       updatePushState('waitingForTelemetry');
       setTimeout(pushTelemetry, 500);
       return;
@@ -43,12 +46,14 @@ export function startTelemetryLoop(options: {
     }
 
     updatePushState('pushed');
+    options.onTelemetry?.('normal');
     lastPushed = Date.now();
     telemetryClient.push
       .mutate({ data: strip(telemetry) })
       .then(() => {
         const delta = Date.now() - lastPushed;
         deltas.push(delta);
+        options.onDelta?.(delta);
         setTimeout(pushTelemetry, clamp(500 - delta, 0, 500));
       })
       .catch(onError);
