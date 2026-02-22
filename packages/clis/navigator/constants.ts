@@ -1,5 +1,3 @@
-//// @ts-expect-error use dot access instead of indexed access so bun compiles
-//  with --define correctly.
 export const NODE_ENV = process.env.NODE_ENV ?? 'development';
 export const apiUrl =
   NODE_ENV === 'development'
