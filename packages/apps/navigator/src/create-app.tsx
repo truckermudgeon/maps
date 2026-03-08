@@ -321,7 +321,7 @@ export function createApp({
 
     useEffect(() => {
       return reaction(
-        () => store.activeRouteDirection?.direction,
+        () => store.activeRouteDirection,
         maybeDirection => {
           if (!maybeDirection) {
             return;
@@ -334,21 +334,20 @@ export function createApp({
           }
 
           const outgoingClone = current.cloneNode(true) as HTMLDivElement;
-          current.classList.add('enter');
-          current.classList.add('directions');
+          current.classList.add('enter', 'directions');
 
           container.appendChild(outgoingClone);
           container.classList.add('animate');
           outgoingClone.style.top = -current.clientHeight + 'px';
 
           requestAnimationFrame(() => {
-            outgoingClone.classList.add('exit');
-            outgoingClone.classList.add('directions');
+            outgoingClone.classList.add('exit', 'directions');
             outgoingClone.style.top = -current.clientHeight + 'px';
           });
 
           const cleanup = () => {
             container.classList.remove('animate');
+            current.classList.remove('enter', 'directions');
             outgoingClone.remove();
           };
 
