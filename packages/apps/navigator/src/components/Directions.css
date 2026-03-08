@@ -1,0 +1,17 @@
+.container {
+  overflow: hidden;
+}
+
+.container.animate .directions {
+  position: relative;
+  transition: transform 200ms linear;
+}
+
+.container .exit {
+  transform: translateX(-110%);
+}
+
+.container.animate .enter {
+  left: 110%;
+  transform: translateX(-110%);
+}

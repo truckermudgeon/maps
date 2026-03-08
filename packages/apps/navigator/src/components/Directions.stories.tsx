@@ -24,7 +24,7 @@ export const Default: Story = {
 export const WithNameText: Story = {
   args: {
     ...Default.args,
-    length,
+    length: length * 5,
     unit,
     banner: {
       text: 'Main St',
