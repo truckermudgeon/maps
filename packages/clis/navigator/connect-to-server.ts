@@ -11,8 +11,10 @@ export async function connectToServer(options: {
   telemetryClient: TelemetryClient;
   telemetryId: string | undefined;
   onPairingCodeReceived: (code: string) => void;
+  onReconnect?: () => void;
 }) {
-  const { telemetryClient, telemetryId, onPairingCodeReceived } = options;
+  const { telemetryClient, telemetryId, onPairingCodeReceived, onReconnect } =
+    options;
 
   if (!telemetryId) {
     await doPairingFlow(telemetryClient, onPairingCodeReceived);
@@ -20,7 +22,9 @@ export async function connectToServer(options: {
     console.log('reconnecting with telemetry id', telemetryId);
     const req = await createReconnectRequest();
     const ok = await telemetryClient.reconnect.mutate(req);
-    if (!ok) {
+    if (ok) {
+      onReconnect?.();
+    } else {
       console.log('reconnect failed.');
       await doPairingFlow(telemetryClient, onPairingCodeReceived);
     }

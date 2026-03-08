@@ -17,8 +17,8 @@ async function main() {
   const getTelemetry = createTelemetryReader(telemetryReaderOptions);
   //checkIsPluginInstalled();
 
-  const isServerUp = await checkIsServerUp(healthUrl);
-  if (!isServerUp) {
+  const healthCheck = await checkIsServerUp(healthUrl);
+  if (!healthCheck.ok) {
     process.exit(1);
   }
 
