@@ -605,6 +605,8 @@ function getDirectionOnRoad(
   return score >= 0 ? 'forward' : 'backward';
 }
 
+let lastPrefabTokenAndUidReported: string | undefined;
+
 export function getDirectionOnPrefab(
   truck: TruckSimTelemetry['truck'],
   prefab: Prefab,
@@ -643,16 +645,20 @@ export function getDirectionOnPrefab(
   // TODO handle this better. fromNode should be based on whether or not truck
   // is facing toward/away.
   if (potentialInputIndices.length === 0) {
-    domainEventSink?.publish({
-      type: 'assertionFailed',
-      where: 'getDirectionOnPrefab',
-      data: {
-        truckGamePos: [truck.position.X, truck.position.Y, truck.position.Z],
-        truckHeading: truck.orientation.heading,
-        prefabUid: prefab.uid.toString(16),
-        prefabToken: prefab.token,
-      },
-    });
+    const prefabTokenAndUid = prefab.token + prefab.uid.toString(16);
+    if (prefabTokenAndUid !== lastPrefabTokenAndUidReported) {
+      domainEventSink?.publish({
+        type: 'assertionFailed',
+        where: 'getDirectionOnPrefab',
+        data: {
+          truckGamePos: [truck.position.X, truck.position.Y, truck.position.Z],
+          truckHeading: truck.orientation.heading,
+          prefabUid: prefab.uid.toString(16),
+          prefabToken: prefab.token,
+        },
+      });
+      lastPrefabTokenAndUidReported = prefabTokenAndUid;
+    }
     const truckPos = [truck.position.X, truck.position.Z];
     const fromNodes = targetNodeUids
       .map(uid => assertExists(nodes.get(uid)))
