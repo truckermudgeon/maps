@@ -2,7 +2,8 @@ import { Box, Divider, Stack, Typography } from '@mui/joy';
 import type { BranchType } from '@truckermudgeon/navigation/constants';
 import type { StepManeuver } from '@truckermudgeon/navigation/types';
 import Color from 'color';
-import { memo } from 'react';
+import type { ForwardedRef, Ref } from 'react';
+import { forwardRef, memo } from 'react';
 import { LaneIcon } from './LaneIcon';
 
 const bgColor = Color('hsl(151,82%,35%)');
@@ -10,55 +11,57 @@ const bgColor = Color('hsl(151,82%,35%)');
 type DirectionsProps = Pick<
   StepManeuver,
   'direction' | 'banner' | 'laneHint' | 'thenHint'
-> & { length: number; unit: string };
+> & { length: number; unit: string; ref?: Ref<HTMLDivElement> };
 
-export const Directions = memo((props: DirectionsProps) => {
-  console.log('render Directions');
-  const hasHint = !!props.laneHint || !!props.thenHint;
-  const { length, unit } = props;
-  return (
-    <Stack fontSize={'0.75rem'}>
-      <Stack
-        direction={'row'}
-        alignItems={'center'}
-        px={2}
-        py={1}
-        spacing={2}
-        bgcolor={bgColor.string()}
-        borderRadius={hasHint ? '1em 1em 1em 0' : '1em'}
-      >
-        <Stack>
-          <Stack direction={'row'} alignItems={'center'} gap={1}>
-            <Box width={'6em'}>
-              <LaneIcon
-                // TODO take into account 'depart' and 'arrive'
-                branches={[props.direction as unknown as BranchType]}
-                dimColor={'#fff'}
-              />
-            </Box>
-            <Typography
-              level={'h1'}
-              textColor={'#fff'}
-              textAlign={'center'}
-              display={'block'}
-            >
-              {length} {unit}
-            </Typography>
+export const Directions = memo(
+  forwardRef((props: DirectionsProps, ref: ForwardedRef<HTMLDivElement>) => {
+    console.log('render Directions');
+    const hasHint = !!props.laneHint || !!props.thenHint;
+    const { length, unit } = props;
+    return (
+      <Stack fontSize={'0.75rem'} ref={ref}>
+        <Stack
+          direction={'row'}
+          alignItems={'center'}
+          px={2}
+          py={1}
+          spacing={2}
+          bgcolor={bgColor.string()}
+          borderRadius={hasHint ? '1em 1em 1em 0' : '1em'}
+        >
+          <Stack>
+            <Stack direction={'row'} alignItems={'center'} gap={1}>
+              <Box width={'6em'}>
+                <LaneIcon
+                  // TODO take into account 'depart' and 'arrive'
+                  branches={[props.direction as unknown as BranchType]}
+                  dimColor={'#fff'}
+                />
+              </Box>
+              <Typography
+                level={'h1'}
+                textColor={'#fff'}
+                textAlign={'center'}
+                display={'block'}
+              >
+                {length} {unit}
+              </Typography>
+            </Stack>
+            {props.banner && (
+              <Typography level={'h2'} fontWeight={'normal'} textColor={'#fff'}>
+                {props.banner.text}
+              </Typography>
+            )}
           </Stack>
-          {props.banner && (
-            <Typography level={'h2'} fontWeight={'normal'} textColor={'#fff'}>
-              {props.banner.text}
-            </Typography>
-          )}
         </Stack>
+        {props.laneHint ? (
+          <LaneHint roundBottomLeft={!props.thenHint} hint={props.laneHint} />
+        ) : null}
+        {props.thenHint && <ThenHint hint={props.thenHint} />}
       </Stack>
-      {props.laneHint ? (
-        <LaneHint roundBottomLeft={!props.thenHint} hint={props.laneHint} />
-      ) : null}
-      {props.thenHint && <ThenHint hint={props.thenHint} />}
-    </Stack>
-  );
-});
+    );
+  }),
+);
 
 const LaneHint = (props: {
   hint: NonNullable<StepManeuver['laneHint']>;
