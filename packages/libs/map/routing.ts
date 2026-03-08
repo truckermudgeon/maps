@@ -109,7 +109,7 @@ export function findRoute(
       const fa = fScore.get(a) ?? Infinity;
       const fb = fScore.get(b) ?? Infinity;
       // sort smallest values first
-      return fb - fa;
+      return fa - fb;
     },
   });
   const startAsNeighbor: Neighbor = {
