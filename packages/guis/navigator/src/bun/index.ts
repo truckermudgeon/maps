@@ -1,3 +1,7 @@
+import type {
+  ApplicationMenuItemConfig,
+  WindowOptionsType,
+} from 'electrobun/bun';
 import {
   ApplicationMenu,
   BrowserView,
@@ -39,6 +43,15 @@ const rpc = BrowserView.defineRPC<TelemetryGuiRPC>({
         if (telemetryClientStarted) {
           return;
         }
+        if (process.platform === 'win32') {
+          // for some reason, Windows doesn't show the app's footer on initial
+          // display, even when the browser window is constructed with a larger
+          // `frame.height`. forcing a window resize seems to fix things.
+          mainWindow.setSize(
+            browserWindowOptions.frame.width,
+            browserWindowOptions.frame.height + 60,
+          );
+        }
         telemetryClientStarted = true;
         await startTelemetryClient(rpc);
       },
@@ -49,29 +62,13 @@ const rpc = BrowserView.defineRPC<TelemetryGuiRPC>({
   },
 });
 
-const url = await getMainViewUrl();
-
-// must be called _immediately after_ `await` above.
-// see https://github.com/blackboardsh/electrobun/issues/136#issuecomment-3993930745
-ApplicationMenu.setApplicationMenu([
-  {
-    submenu: [
-      // { label: 'Hide TruckSim Navigator', role: 'hide' },
-      // { role: 'hideOthers' },
-      // { role: 'showAll' },
-      // { type: 'separator' },
-      { label: 'Quit TruckSim Navigator', role: 'quit', accelerator: 'q' },
-    ],
-  },
-]);
-
-const mainWindow = new BrowserWindow({
+const browserWindowOptions = {
   title: 'TruckSim Navigator',
-  url,
+  url: await getMainViewUrl(),
   styleMask: {
     Resizable: false,
   },
-  titleBarStyle: 'hiddenInset',
+  titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
   frame: {
     width: 640,
     height: 440,
@@ -79,7 +76,35 @@ const mainWindow = new BrowserWindow({
     y: 200,
   },
   rpc,
-});
+} as const satisfies Partial<WindowOptionsType<typeof rpc>>;
+
+const applicationMenu: ApplicationMenuItemConfig[] = [];
+switch (process.platform) {
+  case 'darwin':
+    applicationMenu.push({
+      submenu: [
+        // { label: 'Hide TruckSim Navigator', role: 'hide' },
+        // { role: 'hideOthers' },
+        // { role: 'showAll' },
+        // { type: 'separator' },
+        { label: 'Quit TruckSim Navigator', role: 'quit', accelerator: 'q' },
+      ],
+    });
+    break;
+  case 'win32':
+  default:
+    applicationMenu.push({
+      label: 'File',
+      submenu: [{ label: 'Exit', role: 'quit' }],
+    });
+    break;
+}
+
+// must be called _immediately before_ `BrowserWindow` ctor below.
+// see https://github.com/blackboardsh/electrobun/issues/136#issuecomment-3993930745
+ApplicationMenu.setApplicationMenu(applicationMenu);
+
+const mainWindow = new BrowserWindow(browserWindowOptions);
 
 // Quit the app when the main window is closed
 mainWindow.on('close', () => {
