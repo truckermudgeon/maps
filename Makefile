@@ -30,8 +30,8 @@ RESOURCES_DIR := packages/clis/generator/resources
 DEMO_FILES :=
 # files required by the navigator webapp
 NAVIGATOR_FILES :=
-# files required by the navigation server, _in addition to_ ATS_PARSER_JSON_FILES
-NAVIGATION_FILES :=
+# files required by the navigation server
+NAVIGATION_FILES := $(ATS_PARSER_JSON_FILES)
 
 #### pmtiles files
 
@@ -40,6 +40,7 @@ $(GENERATOR_OUT_DIR)/world.pmtiles: $(addprefix $(RESOURCES_DIR)/,water.geojson 
 	tippecanoe -Z4 -z8 -y name -b 10 -X -o $@ $^
 
 DEMO_FILES += $(GENERATOR_OUT_DIR)/world.pmtiles
+NAVIGATOR_FILES += $(GENERATOR_OUT_DIR)/world.pmtiles
 
 
 # Create ATS and ETS2 pmtiles files
@@ -50,6 +51,7 @@ $(GENERATOR_OUT_DIR)/ets2.pmtiles: $(ETS2_PARSER_JSON_FILES)
 
 DEMO_FILES += $(GENERATOR_OUT_DIR)/ats.pmtiles
 DEMO_FILES += $(GENERATOR_OUT_DIR)/ets2.pmtiles
+NAVIGATOR_FILES += $(GENERATOR_OUT_DIR)/ats.pmtiles
 
 
 # Create ATS and ETS2 footprints pmtiles files
@@ -60,6 +62,7 @@ $(GENERATOR_OUT_DIR)/ets2-footprints.pmtiles: $(ETS2_PARSER_JSON_FILES)
 
 DEMO_FILES += $(GENERATOR_OUT_DIR)/ats-footprints.pmtiles
 DEMO_FILES += $(GENERATOR_OUT_DIR)/ets2-footprints.pmtiles
+NAVIGATOR_FILES += $(GENERATOR_OUT_DIR)/ats-footprints.pmtiles
 
 
 # Create ATS and ETS2 contours (aka elevations) pmtiles files
