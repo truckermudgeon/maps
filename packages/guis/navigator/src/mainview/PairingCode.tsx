@@ -33,7 +33,7 @@ export const PairingCode = (props: PairingCodeProps) => {
       >
         <Typography
           level={'h1'}
-          fontFamily={'ui-monospace'}
+          fontFamily={'monospace'}
           sx={{
             cursor: 'text',
             userSelect: 'text',
