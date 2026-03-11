@@ -68,6 +68,7 @@ export const Help = (props: HelpProps) => {
         </Alert>
         <Alert
           startDecorator={<InfoIcon />}
+          color={'primary'}
           sx={{
             alignItems: 'flex-start',
           }}
@@ -76,26 +77,25 @@ export const Help = (props: HelpProps) => {
             <div>A telemetry plugin is required</div>
             <Typography
               level="body-sm"
-              color={'neutral'}
               sx={{ marginTop: 1, marginRight: '2em' }}
             >
               If you haven't already, download and install either:
             </Typography>
             <UL>
               <li>
-                <Typography level="body-sm" color={'warning'}>
+                <Typography level="body-sm">
                   <_Link page={'github-rencloud-scs-sdk-plugin-repo'}>
                     RenCloud's scs-sdk-plugin
                   </_Link>{' '}
-                  if you're on Windows, or{' '}
+                  if you're on Windows
                 </Typography>
               </li>
               <li>
-                <Typography level="body-sm" color={'warning'}>
+                <Typography level="body-sm">
                   <_Link page={'github-truckermudgeon-scs-sdk-plugin-repo'}>
                     my cross-platform fork
                   </_Link>{' '}
-                  if you're on macOS or Linux.
+                  if you're on Windows, macOS or Linux
                 </Typography>
               </li>
             </UL>
@@ -106,13 +106,11 @@ export const Help = (props: HelpProps) => {
           sx={{
             alignItems: 'flex-start',
           }}
-          color={'primary'}
         >
           <div>
             <div>TruckSim Navigator is open source</div>
             <Typography
               level="body-sm"
-              color={'neutral'}
               sx={{ marginTop: 1, marginRight: '2em' }}
             >
               View the code, contribute, or report issues on{' '}
