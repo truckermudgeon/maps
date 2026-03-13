@@ -420,19 +420,23 @@ export const navigatorRouter = router({
         });
       }
 
-      const generator = subscribeSession(
+      const { generator, unsubscribe } = subscribeSession(
         ctx.sessionActor,
         signal,
         ctx.services.lookups.graphAndMapData.tsMapData,
-      )();
-      while (true) {
-        // touch actor to keep it alive and prevent it from being swept.
-        ctx.services.sessionActors.get(telemetryId);
+      );
+      try {
+        while (true) {
+          // touch actor to keep it alive and prevent it from being swept.
+          ctx.services.sessionActors.get(telemetryId);
 
-        const res = await generator.next();
-        if (!res.done) {
-          yield res.value;
+          const res = await generator.next();
+          if (!res.done) {
+            yield res.value;
+          }
         }
+      } finally {
+        unsubscribe();
       }
     }),
   /** @deprecated use `subscribeToDevice` instead */
