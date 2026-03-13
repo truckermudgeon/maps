@@ -428,6 +428,7 @@ export const navigatorRouter = router({
       while (true) {
         // touch actor to keep it alive and prevent it from being swept.
         ctx.services.sessionActors.get(telemetryId);
+
         const res = await generator.next();
         if (!res.done) {
           yield res.value;
