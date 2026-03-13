@@ -3,6 +3,7 @@
 node_modules
 dist
 build
+artifacts
 coverage
 
 # generated files used by web apps

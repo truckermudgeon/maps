@@ -20,9 +20,9 @@
     "@turf/line-intersect": "^7.0.0",
     "@turf/line-offset": "^7.2.0",
     "@turf/simplify": "^7.0.0",
-    "tinyqueue": "^3.0.0",
     "proj4": "^2.9.2",
     "rbush": "^4.0.1",
-    "rbush-knn": "^4.0.0"
+    "rbush-knn": "^4.0.0",
+    "tinyqueue": "^3.0.0"
   }
 }
