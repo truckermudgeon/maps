@@ -406,6 +406,7 @@ export const navigatorRouter = router({
   subscribeToDevice: navigatorSessionProcedure
     .use(subscriptionLimitMiddleware(1))
     .subscription(async function* ({
+      path,
       ctx,
       signal,
     }): AsyncGenerator<ActorEvent, void, void> {
@@ -435,6 +436,19 @@ export const navigatorRouter = router({
             yield res.value;
           }
         }
+      } catch (err) {
+        logger.error('actor subscription error', {
+          trpc: {
+            path,
+            type: 'subscription',
+          },
+          request: {
+            type: ctx.type,
+            clientId: ctx.clientId,
+          },
+          error:
+            err instanceof Error ? `${err.name}: ${err.message}` : String(err),
+        });
       } finally {
         unsubscribe();
       }
