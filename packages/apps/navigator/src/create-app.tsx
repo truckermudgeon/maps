@@ -596,6 +596,8 @@ const HudStackGridItem = observer(
   }) => {
     const showRouteStack =
       !props.store.showNavSheet && props.store.activeRoute != null;
+    const dirHasLabel = props.store.activeRouteDirection?.banner?.text != null;
+    const portraitPt = dirHasLabel ? 18 : 14;
     return (
       <Grid
         container
@@ -604,8 +606,8 @@ const HudStackGridItem = observer(
           // apply top/bottom padding for portrait orientations, so that hud
           // controls don't overlap route controls.
           pt: {
-            xs: showRouteStack ? 14 : 0,
-            sm: props.isLargePortrait && showRouteStack ? 14 : 0,
+            xs: showRouteStack ? portraitPt : 0,
+            sm: props.isLargePortrait && showRouteStack ? portraitPt : 0,
           },
           pb: {
             xs: showRouteStack ? 13 : 0,
