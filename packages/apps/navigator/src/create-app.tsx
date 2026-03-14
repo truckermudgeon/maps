@@ -30,7 +30,7 @@ import {
   toFeatureCollection,
 } from './controllers/app';
 import { CameraMode, NavPageKey } from './controllers/constants';
-import type { AppClient, AppStore } from './controllers/types';
+import type { AppClient, AppStore, NavSheetStore } from './controllers/types';
 import { createControls } from './create-controls';
 import { createNavSheet } from './create-nav-sheet';
 
@@ -475,6 +475,7 @@ export function createApp({
     App: () => (
       <App
         store={store}
+        navSheetStore={navSheetStore}
         transitionDurationMs={transitionDurationMs}
         SlippyMap={_SlippyMap}
         NavSheet={_NavSheet}
@@ -487,105 +488,152 @@ export function createApp({
   };
 }
 
-const App = (props: {
-  store: AppStore;
-  transitionDurationMs: number;
-  SlippyMap: () => ReactElement;
-  NavSheet: () => ReactElement;
-  RouteStack: () => ReactElement;
-  Controls: () => ReactElement;
-  WaitingForTelemetry: () => ReactElement;
-}) => {
-  console.log('render app');
-  const { SlippyMap, NavSheet, RouteStack, Controls, WaitingForTelemetry } =
-    props;
-  const theme = useTheme();
-  const isLargePortrait = useMediaQuery(
-    theme.breakpoints.up('sm') + ' and (orientation: portrait)',
-  );
+const navSheetPagesRequiringMapVisibility = new Set<NavPageKey>([
+  NavPageKey.CHOOSE_ON_MAP,
+  NavPageKey.DESTINATIONS,
+  NavPageKey.ROUTES,
+  NavPageKey.MANAGE_STOPS,
+]);
+const maxPortraitSheetCssHeight = '40vh';
 
-  return (
-    <SpriteProvider>
-      <SlippyMap />
-      <Grid
-        columns={3}
-        container={true}
-        sx={{
-          flexGrow: 1,
-          position: 'absolute',
-          top: 0,
-          right: 0,
-          pointerEvents: 'none',
-        }}
-        padding={2}
-        paddingBlockEnd={3}
-        height={'100vh'}
-      >
-        <HudStackGridItem
-          store={props.store}
-          isLargePortrait={isLargePortrait}
-          transitionDurationMs={props.transitionDurationMs}
-        >
-          <Controls />
-        </HudStackGridItem>
-      </Grid>
-      <Grid
-        container={true}
-        sx={{
-          flexGrow: 1,
-          pointerEvents: 'none',
-        }}
-        padding={2}
-        paddingBlockEnd={3}
-        height={'100vh'}
-        justifyContent={'space-between'}
-      >
+const App = observer(
+  (props: {
+    store: AppStore;
+    navSheetStore: NavSheetStore;
+    transitionDurationMs: number;
+    SlippyMap: () => ReactElement;
+    NavSheet: () => ReactElement;
+    RouteStack: () => ReactElement;
+    Controls: () => ReactElement;
+    WaitingForTelemetry: () => ReactElement;
+  }) => {
+    console.log('render app');
+    const {
+      store,
+      navSheetStore,
+      SlippyMap,
+      NavSheet,
+      RouteStack,
+      Controls,
+      WaitingForTelemetry,
+    } = props;
+    const theme = useTheme();
+    const isLargePortrait = useMediaQuery(
+      theme.breakpoints.up('sm') + ' and (orientation: portrait)',
+    );
+    const isMapVisibilityRequired = computed(
+      () =>
+        store.showNavSheet &&
+        navSheetPagesRequiringMapVisibility.has(navSheetStore.currentPageKey),
+    );
+
+    return (
+      <SpriteProvider>
+        <SlippyMap />
         <Grid
-          size={{ xs: 12, sm: isLargePortrait ? 12 : 5 }}
-          maxWidth={isLargePortrait ? undefined : 600}
+          columns={3}
+          container={true}
           sx={{
-            zIndex: 999, // so it renders over hud stack
+            flexGrow: 1,
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            pointerEvents: 'none',
           }}
+          padding={2}
+          paddingBlockEnd={3}
+          height={'100vh'}
         >
-          <RouteStackContainer store={props.store}>
-            <RouteStack />
-          </RouteStackContainer>
+          <HudStackGridItem
+            store={props.store}
+            isLargePortrait={isLargePortrait}
+            transitionDurationMs={props.transitionDurationMs}
+          >
+            <Controls />
+          </HudStackGridItem>
         </Grid>
-      </Grid>
-      <Grid
-        container={true}
-        sx={{
-          flexGrow: 1,
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          pointerEvents: 'none',
-          p: {
-            xs: 0,
-            sm: 2,
-          },
-        }}
-        padding={2}
-        paddingBlockEnd={3}
-        height={'100vh'}
-      >
         <Grid
-          size={{ xs: 12, sm: isLargePortrait ? 12 : 5 }}
-          maxWidth={isLargePortrait ? undefined : 600}
+          container={true}
           sx={{
-            maxHeight: '100%',
+            flexGrow: 1,
+            pointerEvents: 'none',
           }}
+          padding={2}
+          paddingBlockEnd={3}
+          height={'100vh'}
+          justifyContent={'space-between'}
         >
-          <NavSheetContainer store={props.store}>
-            <NavSheet />
-          </NavSheetContainer>
+          <Grid
+            size={{ xs: 12, sm: isLargePortrait ? 12 : 5 }}
+            maxWidth={isLargePortrait ? undefined : 600}
+            sx={{
+              zIndex: 999, // so it renders over hud stack
+            }}
+          >
+            <RouteStackContainer store={props.store}>
+              <RouteStack />
+            </RouteStackContainer>
+          </Grid>
         </Grid>
-      </Grid>
-      <WaitingForTelemetry />
-    </SpriteProvider>
-  );
-};
+        <Grid
+          container={true}
+          sx={{
+            flexGrow: 1,
+            position: 'absolute',
+            ...(isMapVisibilityRequired.get() ? { bottom: 0 } : { top: 0 }),
+            left: 0,
+            right: 0,
+            pointerEvents: 'none',
+            p: {
+              xs: 0,
+              sm: 2,
+            },
+            height: {
+              xs: isMapVisibilityRequired.get() ? 'fit-content' : '100vh',
+              sm:
+                isMapVisibilityRequired.get() && isLargePortrait
+                  ? 'fit-content'
+                  : '100vh',
+            },
+            maxHeight: {
+              xs: isMapVisibilityRequired.get()
+                ? maxPortraitSheetCssHeight
+                : '100vh',
+              sm:
+                isMapVisibilityRequired.get() && isLargePortrait
+                  ? maxPortraitSheetCssHeight
+                  : '100vh',
+            },
+            overflow: 'auto',
+          }}
+          padding={2}
+          paddingBlockEnd={3}
+        >
+          <Grid
+            size={{ xs: 12, sm: isLargePortrait ? 12 : 5 }}
+            maxWidth={isLargePortrait ? undefined : 600}
+            sx={{
+              maxHeight: {
+                xs: isMapVisibilityRequired.get()
+                  ? maxPortraitSheetCssHeight
+                  : '100%',
+                sm:
+                  isMapVisibilityRequired.get() && isLargePortrait
+                    ? maxPortraitSheetCssHeight
+                    : '100%',
+              },
+            }}
+          >
+            <NavSheetContainer store={props.store}>
+              <NavSheet />
+            </NavSheetContainer>
+          </Grid>
+        </Grid>
+        <WaitingForTelemetry />
+      </SpriteProvider>
+    );
+  },
+);
 
 const HudStackGridItem = observer(
   (props: {

@@ -17,7 +17,11 @@ export const NavSheet = (props: {
       <Stack gap={2} height={'100%'} overflow={'hidden'}>
         <props.TitleControls />
         <Divider />
-        <Box overflow={'auto'} display={'flex'} justifyContent={'center'}>
+        <Box
+          sx={{ overflowX: 'hidden', overflowY: 'auto' }}
+          display={'flex'}
+          justifyContent={'center'}
+        >
           <props.CurrentPage />
         </Box>
       </Stack>

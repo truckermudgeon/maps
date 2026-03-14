@@ -4,7 +4,9 @@ export const enum CameraMode {
 }
 
 export const enum NavPageKey {
+  /** shows search bar and destination types */
   CHOOSE_DESTINATION,
+  /** shows search bar and destination types */
   SEARCH_ALONG,
   /** shows instructions for panning/zooming map to choose */
   CHOOSE_ON_MAP,
