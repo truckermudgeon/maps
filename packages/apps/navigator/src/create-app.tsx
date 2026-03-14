@@ -561,6 +561,10 @@ const App = (props: {
           left: 0,
           right: 0,
           pointerEvents: 'none',
+          p: {
+            xs: 0,
+            sm: 2,
+          },
         }}
         padding={2}
         paddingBlockEnd={3}
