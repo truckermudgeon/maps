@@ -594,10 +594,18 @@ const HudStackGridItem = observer(
     isLargePortrait: boolean;
     children: ReactElement;
   }) => {
-    const showRouteStack =
-      !props.store.showNavSheet && props.store.activeRoute != null;
-    const dirHasLabel = props.store.activeRouteDirection?.banner?.text != null;
-    const portraitPt = dirHasLabel ? 18 : 14;
+    const showRouteStack = computed(
+      () => !props.store.showNavSheet && props.store.activeRoute != null,
+    );
+    const portraitPt = computed(() => {
+      if (!showRouteStack.get()) {
+        return 0;
+      }
+      const dirHasLabel =
+        props.store.activeRouteDirection?.banner?.text != null;
+      return dirHasLabel ? 18 : 14;
+    });
+    const portraitPb = computed(() => (showRouteStack.get() ? 13 : 0));
     return (
       <Grid
         container
@@ -606,12 +614,12 @@ const HudStackGridItem = observer(
           // apply top/bottom padding for portrait orientations, so that hud
           // controls don't overlap route controls.
           pt: {
-            xs: showRouteStack ? portraitPt : 0,
-            sm: props.isLargePortrait && showRouteStack ? portraitPt : 0,
+            xs: portraitPt.get(),
+            sm: props.isLargePortrait ? portraitPt.get() : 0,
           },
           pb: {
-            xs: showRouteStack ? 13 : 0,
-            sm: props.isLargePortrait && showRouteStack ? 13 : 0,
+            xs: portraitPb.get(),
+            sm: props.isLargePortrait ? portraitPb.get() : 0,
           },
           zIndex: 999, // needed so it's drawn over any highlighted destination map markers.
           transition: `${props.transitionDurationMs}ms padding ease`,
