@@ -14,6 +14,7 @@ import {
   Stack,
   Typography,
 } from '@mui/joy';
+import { action, runInAction } from 'mobx';
 import React, { memo, useEffect, useRef, useState } from 'react';
 import OtpInput from 'react-otp-input';
 import type { AppClient } from '../controllers/types';
@@ -50,17 +51,17 @@ export const SessionGate = (props: {
           setStatus('loggedOut');
         } else {
           setStatus('loggedIn');
-          readyToLoadStore.readyToLoad = true;
+          runInAction(() => (readyToLoadStore.readyToLoad = true));
         }
       }
     };
     void checkAuth();
   }, []);
 
-  const onLoggedIn = () => {
+  const onLoggedIn = action(() => {
     setStatus('loggedIn');
     readyToLoadStore.readyToLoad = true;
-  };
+  });
 
   return (
     <>
