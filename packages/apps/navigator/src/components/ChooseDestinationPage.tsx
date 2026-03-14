@@ -50,7 +50,7 @@ const strings: Record<ChooseDestinationPageMode, { categoriesTitle: string }> =
 
 export const ChooseDestinationPage = (props: ChooseDestinationPageProps) => {
   return (
-    <Stack direction={'column'} gap={2} flexGrow={1}>
+    <Stack direction={'column'} gap={2} flexGrow={1} maxWidth={'100%'}>
       <Card size={'lg'} variant={'soft'}>
         <DestinationSearchBar
           loading={props.showSearchLoading}
