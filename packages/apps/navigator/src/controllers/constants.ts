@@ -21,3 +21,12 @@ export const enum NavPageKey {
   /** re-order and/or delete waypoints in the active route. */
   MANAGE_STOPS,
 }
+
+export const navSheetPagesRequiringMapVisibility = new Set<NavPageKey>([
+  NavPageKey.CHOOSE_ON_MAP,
+  NavPageKey.DESTINATIONS,
+  NavPageKey.ROUTES,
+  NavPageKey.MANAGE_STOPS,
+]);
+
+export const maxPortraitSheetCssHeight = '40vh';

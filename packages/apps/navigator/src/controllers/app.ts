@@ -271,17 +271,13 @@ export class AppControllerImpl implements AppController {
       }
     | undefined;
   private wakeLock?: WakeLockSentinel = undefined;
-  private padding? = {
+  private padding = {
     left: 0,
     right: 0,
     top: 0,
     bottom: 0,
   };
-  // private mapPaddingStore?: MapPaddingStore = undefined;
-  //
-  // setMapPaddingStore(mapPaddingStore: MapPaddingStore) {
-  //   this.mapPaddingStore = mapPaddingStore;
-  // }
+  private offset: [number, number] = [0, 0];
 
   setPadding(padding: {
     left: number;
@@ -289,11 +285,17 @@ export class AppControllerImpl implements AppController {
     top: number;
     bottom: number;
   }) {
-    if (!this.map) {
-      return;
-    }
     this.padding = padding;
-    this.map.easeTo({ padding });
+    if (this.map) {
+      this.map.easeTo({ padding });
+    }
+  }
+
+  setOffset(offset: [number, number]) {
+    this.offset = offset;
+    if (this.map) {
+      this.map.easeTo({ offset });
+    }
   }
 
   requestWakeLock() {
@@ -338,9 +340,8 @@ export class AppControllerImpl implements AppController {
     this.map.panTo(this.map.getCenter(), {
       duration: 500,
       pitch: 0,
-      zoom: 11.5,
+      zoom: 10,
       bearing: 0,
-      //padding: { left: store.showNavSheet ? 400 : 0, top: 0 },
     });
   }
 
@@ -381,16 +382,13 @@ export class AppControllerImpl implements AppController {
       camera.center = this.playerMarker.getLngLat().toArray();
     }
 
-    // Offset
-    //of the target center relative to real map container center at the end of animation.
-
     this.map.easeTo({
       duration: 500,
       ...camera,
-      padding: 0,
+      zoom: camera.zoom! - 1,
       pitch: 0,
       bearing: 0,
-      //padding: { left: store.showNavSheet ? 220 : 0, bottom: 100, top: 0 },
+      padding: this.padding,
     });
   }
 
@@ -405,8 +403,8 @@ export class AppControllerImpl implements AppController {
       pitch: 0,
       zoom: 13,
       bearing,
-      // TODO
-      padding: 50,
+      padding: this.padding,
+      offset: this.offset,
     });
   }
 
@@ -563,10 +561,7 @@ export class AppControllerImpl implements AppController {
             ...toCameraOptions(center, bearing, speedMph),
             duration,
             padding: this.padding,
-            //padding: {
-            //  left: store.showNavSheet || store.activeRoute ? 440 : 0,
-            //  top: 550,
-            //},
+            offset: this.offset,
             easing: t => {
               // HACK update marker here
               markerPosition[0] =

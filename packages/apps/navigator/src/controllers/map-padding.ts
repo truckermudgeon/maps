@@ -1,4 +1,5 @@
 import { computed, makeAutoObservable } from 'mobx';
+import { navSheetPagesRequiringMapVisibility } from './constants';
 import type {
   AppStore,
   MapPaddingStore,
@@ -8,6 +9,7 @@ import type {
 
 const directionBannerBottom = 120;
 const routeStackBottom = 90;
+const verticalPadding = 40;
 
 export class MapPaddingStoreImpl implements MapPaddingStore {
   constructor(
@@ -17,6 +19,7 @@ export class MapPaddingStoreImpl implements MapPaddingStore {
   ) {
     makeAutoObservable(this, {
       padding: computed.struct,
+      offset: computed.struct,
     });
   }
 
@@ -26,15 +29,23 @@ export class MapPaddingStoreImpl implements MapPaddingStore {
     readonly top: number;
     readonly bottom: number;
   } {
+    const showingPartialHeightNavSheet =
+      this.appStore.showNavSheet &&
+      navSheetPagesRequiringMapVisibility.has(this.navStore.currentPageKey);
+
     return {
       left:
-        this.appStore.showNavSheet &&
+        (this.appStore.showNavSheet || this.appStore.activeRoute) &&
         this.navSheetWidth !== this.uiEnvStore.width
           ? this.navSheetWidth
           : 0,
       right: 0,
       top: this.appStore.activeRoute ? directionBannerBottom : 0,
-      bottom: this.appStore.activeRoute ? routeStackBottom : 0,
+      bottom: showingPartialHeightNavSheet
+        ? Math.round(this.uiEnvStore.height * 0.4)
+        : this.appStore.activeRoute
+          ? routeStackBottom
+          : 0,
     };
   }
 
@@ -47,21 +58,29 @@ export class MapPaddingStoreImpl implements MapPaddingStore {
         : this.uiEnvStore.isLargePortrait
           ? 12
           : 5;
-    const maxWidth = this.uiEnvStore.isLargePortrait ? Infinity : 600;
-    console.log(this.uiEnvStore.breakpoints);
-    console.log('numGridCols', numGridCols);
-    console.log('maxWidth', maxWidth);
-    console.log('envWidth', this.uiEnvStore.width);
+    const maxWidth = this.uiEnvStore.isLargePortrait
+      ? this.uiEnvStore.width
+      : 600;
     return Math.min(
       maxWidth,
-      this.uiEnvStore.width,
       Math.floor((this.uiEnvStore.width / 12) * numGridCols),
     );
   }
 
   //of the target center relative to real map container center at the end of animation.
   get offset(): [number, number] {
-    //const mapCenterY = this.uiEnvStore.height / 2;
-    return [0, -100];
+    const markerHeight = 50;
+    const routeStackHeight =
+      this.uiEnvStore.orientation === 'portrait' && this.appStore.activeRoute
+        ? routeStackBottom
+        : 0;
+    const padding = this.appStore.activeRoute
+      ? markerHeight + verticalPadding
+      : markerHeight + verticalPadding / 2;
+    const offsetY = this.uiEnvStore.height / 2 - routeStackHeight - padding;
+    console.log({
+      offsetY,
+    });
+    return [0, offsetY];
   }
 }

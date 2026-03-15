@@ -30,7 +30,12 @@ import {
   AppStoreImpl,
   toFeatureCollection,
 } from './controllers/app';
-import { CameraMode, NavPageKey } from './controllers/constants';
+import {
+  CameraMode,
+  maxPortraitSheetCssHeight,
+  NavPageKey,
+  navSheetPagesRequiringMapVisibility,
+} from './controllers/constants';
 import { MapPaddingStoreImpl } from './controllers/map-padding';
 import type { AppClient, AppStore, NavSheetStore } from './controllers/types';
 import { UiEnvironmentStoreImpl } from './controllers/ui-environment';
@@ -119,9 +124,8 @@ export function createApp({
     store,
     navSheetStore,
   );
-  //controller.setMapPaddingStore(mapPaddingStore);
   autorun(() => {
-    console.log('mapPaddingStore navWidth', mapPaddingStore.navSheetWidth);
+    controller.setOffset(mapPaddingStore.offset);
     controller.setPadding(mapPaddingStore.padding);
   });
 
@@ -503,14 +507,6 @@ export function createApp({
     store,
   };
 }
-
-const navSheetPagesRequiringMapVisibility = new Set<NavPageKey>([
-  NavPageKey.CHOOSE_ON_MAP,
-  NavPageKey.DESTINATIONS,
-  NavPageKey.ROUTES,
-  NavPageKey.MANAGE_STOPS,
-]);
-const maxPortraitSheetCssHeight = '40vh';
 
 const App = observer(
   (props: {
