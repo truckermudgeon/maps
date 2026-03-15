@@ -77,11 +77,12 @@ export const SessionGate = (props: {
           width={'100%'}
           height={'100vh'}
           bgcolor={'#0008'}
+          p={2}
         >
           <Card
             ref={containerRef}
             size={'lg'}
-            sx={{ boxShadow: 'lg', overflow: 'hidden' }}
+            sx={{ boxShadow: 'lg', overflow: 'hidden', maxWidth: '100%' }}
           >
             <Header />
             <Divider />
@@ -127,6 +128,12 @@ const Header = memo(() => {
       <Typography
         level={'h1'}
         alignSelf={'center'}
+        sx={{
+          fontSize: {
+            xs: 30,
+            sm: 36,
+          },
+        }}
         startDecorator={
           <IconButton
             color={'primary'}
