@@ -31,6 +31,7 @@ import {
   toFeatureCollection,
 } from './controllers/app';
 import { CameraMode, NavPageKey } from './controllers/constants';
+import { MapPaddingStoreImpl } from './controllers/map-padding';
 import type { AppClient, AppStore, NavSheetStore } from './controllers/types';
 import { UiEnvironmentStoreImpl } from './controllers/ui-environment';
 import { createControls } from './create-controls';
@@ -48,15 +49,6 @@ export function createApp({
   App: () => ReactElement;
   store: Pick<AppStore, 'readyToLoad'>;
 } {
-  const uiEnvStore = new UiEnvironmentStoreImpl(joyTheme.breakpoints.values);
-
-  autorun(() => {
-    console.log(uiEnvStore.width);
-    console.log(uiEnvStore.height);
-    console.log(uiEnvStore.orientation);
-    console.log(uiEnvStore.isLargePortrait);
-  });
-
   const store = new AppStoreImpl();
   const controller = new AppControllerImpl();
 
@@ -121,6 +113,17 @@ export function createApp({
       })}
     />
   );
+
+  const mapPaddingStore = new MapPaddingStoreImpl(
+    new UiEnvironmentStoreImpl(joyTheme.breakpoints.values),
+    store,
+    navSheetStore,
+  );
+  //controller.setMapPaddingStore(mapPaddingStore);
+  autorun(() => {
+    console.log('mapPaddingStore navWidth', mapPaddingStore.navSheetWidth);
+    controller.setPadding(mapPaddingStore.padding);
+  });
 
   // TODO remove these reactions.
   // they're hacks while i figure out a better way to structure stores and controllers.

@@ -1,7 +1,7 @@
 import polyline from '@mapbox/polyline';
 import { assertExists } from '@truckermudgeon/base/assert';
 import type { Position } from '@truckermudgeon/base/geom';
-import { getExtent } from '@truckermudgeon/base/geom';
+import { center, getExtent } from '@truckermudgeon/base/geom';
 import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
 import { toPosAndBearing } from '@truckermudgeon/navigation/helpers';
 import type {
@@ -271,6 +271,30 @@ export class AppControllerImpl implements AppController {
       }
     | undefined;
   private wakeLock?: WakeLockSentinel = undefined;
+  private padding? = {
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+  };
+  // private mapPaddingStore?: MapPaddingStore = undefined;
+  //
+  // setMapPaddingStore(mapPaddingStore: MapPaddingStore) {
+  //   this.mapPaddingStore = mapPaddingStore;
+  // }
+
+  setPadding(padding: {
+    left: number;
+    right: number;
+    top: number;
+    bottom: number;
+  }) {
+    if (!this.map) {
+      return;
+    }
+    this.padding = padding;
+    this.map.easeTo({ padding });
+  }
 
   requestWakeLock() {
     if (this.wakeLock != null && !this.wakeLock.released) {
@@ -308,7 +332,7 @@ export class AppControllerImpl implements AppController {
   }
 
   // used for choose-on-map ui
-  clearPitchAndBearing(store: AppStore) {
+  clearPitchAndBearing(_store: AppStore) {
     console.log('clear pitch and bearing');
     Preconditions.checkState(this.map != null);
     this.map.panTo(this.map.getCenter(), {
@@ -316,7 +340,7 @@ export class AppControllerImpl implements AppController {
       pitch: 0,
       zoom: 11.5,
       bearing: 0,
-      padding: { left: store.showNavSheet ? 400 : 0, top: 0 },
+      //padding: { left: store.showNavSheet ? 400 : 0, top: 0 },
     });
   }
 
@@ -332,22 +356,42 @@ export class AppControllerImpl implements AppController {
     ]);
     const sw = [extent[0], extent[1]] as [number, number];
     const ne = [extent[2], extent[3]] as [number, number];
-    console.log('fitting to', sw, ne);
-    this.map.fitBounds([sw, ne], {
+    const camera = this.map.cameraForBounds([sw, ne], {
+      padding: 0,
+      pitch: 0,
+      bearing: 0,
+    });
+    console.log('fitting to', { bounds: [sw, ne], camera });
+    if (!camera) {
+      console.warn(
+        'could not calculate camera for bounds. falling back to center of BB.',
+      );
+      this.map.easeTo({
+        duration: 500,
+        center: center(extent),
+        zoom: this.map.getZoom() - 2,
+        pitch: 0,
+        bearing: 0,
+      });
+      return;
+    }
+
+    // HACK until map files are re-built to support lower zoom levels.
+    if (camera.zoom! < this.map.getMinZoom()) {
+      camera.center = this.playerMarker.getLngLat().toArray();
+    }
+
+    // Offset
+    //of the target center relative to real map container center at the end of animation.
+
+    this.map.easeTo({
       duration: 500,
-      linear: true,
+      ...camera,
+      padding: 0,
       pitch: 0,
       bearing: 0,
       //padding: { left: store.showNavSheet ? 220 : 0, bottom: 100, top: 0 },
-      offset: [0, -100],
     });
-    //this.map.fitBounds([sw, ne], {
-    //  curve: 1,
-    //  //center: this.playerMarker.getLngLat(),
-    //  pitch: 0,
-    //  bearing: 0,
-    //  padding: { left: 100, bottom: 200, right: 100 },
-    //});
   }
 
   flyTo(_store: AppStore, lonLat: [number, number], bearing = 0) {
@@ -518,10 +562,11 @@ export class AppControllerImpl implements AppController {
           map.easeTo({
             ...toCameraOptions(center, bearing, speedMph),
             duration,
-            padding: {
-              left: store.showNavSheet || store.activeRoute ? 440 : 0,
-              top: 550,
-            },
+            padding: this.padding,
+            //padding: {
+            //  left: store.showNavSheet || store.activeRoute ? 440 : 0,
+            //  top: 550,
+            //},
             easing: t => {
               // HACK update marker here
               markerPosition[0] =

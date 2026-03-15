@@ -147,8 +147,11 @@ export interface UIEnvironmentStore {
 }
 
 export interface MapPaddingStore {
-  readonly left: number;
-  readonly right: number;
-  readonly top: number;
-  readonly bottom: number;
+  readonly padding: {
+    readonly left: number;
+    readonly right: number;
+    readonly top: number;
+    readonly bottom: number;
+  };
+  readonly offset: [number, number];
 }
