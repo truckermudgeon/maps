@@ -1,4 +1,5 @@
 import polyline from '@mapbox/polyline';
+import type { Theme } from '@mui/joy';
 import { Box } from '@mui/joy';
 import { Grid, Slide, useMediaQuery, useTheme } from '@mui/material';
 import { assertExists } from '@truckermudgeon/base/assert';
@@ -7,7 +8,7 @@ import { bbox } from '@turf/bbox';
 import bearing from '@turf/bearing';
 import type { Marker as MapLibreGLMarker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { action, comparer, computed, reaction, when } from 'mobx';
+import { action, autorun, comparer, computed, reaction, when } from 'mobx';
 import { observer } from 'mobx-react-lite';
 import type { ReactElement } from 'react';
 import { useEffect, useRef } from 'react';
@@ -31,19 +32,31 @@ import {
 } from './controllers/app';
 import { CameraMode, NavPageKey } from './controllers/constants';
 import type { AppClient, AppStore, NavSheetStore } from './controllers/types';
+import { UiEnvironmentStoreImpl } from './controllers/ui-environment';
 import { createControls } from './create-controls';
 import { createNavSheet } from './create-nav-sheet';
 
 export function createApp({
   appClient,
+  joyTheme,
   transitionDurationMs,
 }: {
   appClient: AppClient;
+  joyTheme: Theme;
   transitionDurationMs: number;
 }): {
   App: () => ReactElement;
   store: Pick<AppStore, 'readyToLoad'>;
 } {
+  const uiEnvStore = new UiEnvironmentStoreImpl(joyTheme.breakpoints.values);
+
+  autorun(() => {
+    console.log(uiEnvStore.width);
+    console.log(uiEnvStore.height);
+    console.log(uiEnvStore.orientation);
+    console.log(uiEnvStore.isLargePortrait);
+  });
+
   const store = new AppStoreImpl();
   const controller = new AppControllerImpl();
 
