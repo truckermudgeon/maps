@@ -74,6 +74,7 @@ export async function handleUpgrade(
       reason: UpgradeRejectionReason.TOO_MANY_CONCURRENT_CONNECTIONS,
     });
     rejectUpgrade(socket, 429, 'Too Many Requests');
+    await opts.services.rateLimit.wsDisconnect(ip);
     return;
   }
 
@@ -83,6 +84,7 @@ export async function handleUpgrade(
       reason: UpgradeRejectionReason.RATE_LIMIT,
     });
     rejectUpgrade(socket, 429, 'Too Many Requests');
+    await opts.services.rateLimit.wsDisconnect(ip);
     return;
   }
 

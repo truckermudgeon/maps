@@ -220,7 +220,7 @@ export const telemetryRouter = router({
       if (!isTimestampValid) {
         throw new TRPCError({
           code: 'UNAUTHORIZED',
-          message: `invalid timestamp: min(${now - 30_000}) max(${now}) actual(${timestamp})}`,
+          message: `invalid timestamp: min(${now - 30_000}) max(${now + 5_000}) actual(${timestamp})}`,
         });
       }
 
