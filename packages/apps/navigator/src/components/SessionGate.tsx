@@ -14,6 +14,7 @@ import {
   Stack,
   Typography,
 } from '@mui/joy';
+import { action, runInAction } from 'mobx';
 import React, { memo, useEffect, useRef, useState } from 'react';
 import OtpInput from 'react-otp-input';
 import type { AppClient } from '../controllers/types';
@@ -50,17 +51,17 @@ export const SessionGate = (props: {
           setStatus('loggedOut');
         } else {
           setStatus('loggedIn');
-          readyToLoadStore.readyToLoad = true;
+          runInAction(() => (readyToLoadStore.readyToLoad = true));
         }
       }
     };
     void checkAuth();
   }, []);
 
-  const onLoggedIn = () => {
+  const onLoggedIn = action(() => {
     setStatus('loggedIn');
     readyToLoadStore.readyToLoad = true;
-  };
+  });
 
   return (
     <>
@@ -76,11 +77,12 @@ export const SessionGate = (props: {
           width={'100%'}
           height={'100vh'}
           bgcolor={'#0008'}
+          p={2}
         >
           <Card
             ref={containerRef}
             size={'lg'}
-            sx={{ boxShadow: 'lg', overflow: 'hidden' }}
+            sx={{ boxShadow: 'lg', overflow: 'hidden', maxWidth: '100%' }}
           >
             <Header />
             <Divider />
@@ -126,6 +128,12 @@ const Header = memo(() => {
       <Typography
         level={'h1'}
         alignSelf={'center'}
+        sx={{
+          fontSize: {
+            xs: 30,
+            sm: 36,
+          },
+        }}
         startDecorator={
           <IconButton
             color={'primary'}

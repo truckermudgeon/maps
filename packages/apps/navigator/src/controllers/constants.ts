@@ -4,7 +4,9 @@ export const enum CameraMode {
 }
 
 export const enum NavPageKey {
+  /** shows search bar and destination types */
   CHOOSE_DESTINATION,
+  /** shows search bar and destination types */
   SEARCH_ALONG,
   /** shows instructions for panning/zooming map to choose */
   CHOOSE_ON_MAP,
@@ -19,3 +21,12 @@ export const enum NavPageKey {
   /** re-order and/or delete waypoints in the active route. */
   MANAGE_STOPS,
 }
+
+export const navSheetPagesRequiringMapVisibility = new Set<NavPageKey>([
+  NavPageKey.CHOOSE_ON_MAP,
+  NavPageKey.DESTINATIONS,
+  NavPageKey.ROUTES,
+  NavPageKey.MANAGE_STOPS,
+]);
+
+export const maxPortraitSheetCssHeight = '40vh';

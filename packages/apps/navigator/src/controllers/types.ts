@@ -124,3 +124,34 @@ export interface NavSheetController {
   startShowActiveRouteDirectionsFlow(navSheetStore: NavSheetStore): void;
   startManageStopsFlow(navSheetStore: NavSheetStore): void;
 }
+
+export interface Breakpoints {
+  readonly xs: number;
+  readonly sm: number;
+  readonly md: number;
+  readonly lg: number;
+  readonly xl: number;
+}
+
+export interface UIEnvironmentStore {
+  readonly breakpoints: Breakpoints;
+  readonly width: number;
+  readonly height: number;
+  readonly orientation: 'portrait' | 'landscape';
+  readonly isLargePortrait: boolean;
+
+  // other potential fields
+  // isTouchMobile;
+  // isDesktopPointer;
+  // isKeyboardOpen;
+}
+
+export interface MapPaddingStore {
+  readonly padding: {
+    readonly left: number;
+    readonly right: number;
+    readonly top: number;
+    readonly bottom: number;
+  };
+  readonly offset: [number, number];
+}
