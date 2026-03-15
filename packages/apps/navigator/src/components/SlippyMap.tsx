@@ -238,7 +238,11 @@ export const SlippyMap = (props: {
         }}
       >
         <a
-          style={{ color: 'inherit', textDecoration: 'none' }}
+          style={{
+            color: 'inherit',
+            textDecoration: 'none',
+            pointerEvents: 'none',
+          }}
           href="https://github.com/truckermudgeon/maps"
         >
           TruckSim Maps
