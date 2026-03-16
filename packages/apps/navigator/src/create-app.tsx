@@ -554,7 +554,7 @@ const App = observer(
           }}
           padding={2}
           paddingBlockEnd={3}
-          height={'100vh'}
+          height={'100dvh'}
         >
           <HudStackGridItem
             store={props.store}
@@ -572,7 +572,7 @@ const App = observer(
           }}
           padding={2}
           paddingBlockEnd={3}
-          height={'100vh'}
+          height={'100dvh'}
           justifyContent={'space-between'}
         >
           <Grid
@@ -601,20 +601,20 @@ const App = observer(
               sm: 2,
             },
             height: {
-              xs: isMapVisibilityRequired.get() ? 'fit-content' : '100vh',
+              xs: isMapVisibilityRequired.get() ? 'fit-content' : '100dvh',
               sm:
                 isMapVisibilityRequired.get() && isLargePortrait
                   ? 'fit-content'
-                  : '100vh',
+                  : '100dvh',
             },
             maxHeight: {
               xs: isMapVisibilityRequired.get()
                 ? maxPortraitSheetCssHeight
-                : '100vh',
+                : '100dvh',
               sm:
                 isMapVisibilityRequired.get() && isLargePortrait
                   ? maxPortraitSheetCssHeight
-                  : '100vh',
+                  : '100dvh',
             },
             overflow: 'auto',
           }}

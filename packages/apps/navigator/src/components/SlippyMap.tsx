@@ -76,7 +76,7 @@ export const SlippyMap = (props: {
         top: 0,
         left: 0,
         width: '100vw',
-        height: '100vh',
+        height: '100dvh',
       }} // ensure map fills page
       minZoom={4}
       maxZoom={15}
