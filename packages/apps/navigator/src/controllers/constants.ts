@@ -4,8 +4,8 @@ export const enum CameraMode {
 }
 
 export const enum BearingMode {
-  TRUCK,
-  NORTH,
+  MATCH_MAP,
+  NORTH_LOCK,
 }
 
 export const enum NavPageKey {

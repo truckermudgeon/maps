@@ -269,10 +269,10 @@ export function createApp({
       onCompassClick={action(() => {
         controller.requestWakeLock();
         switch (store.bearingMode) {
-          case BearingMode.TRUCK:
+          case BearingMode.MATCH_MAP:
             controller.setNorthLock(store);
             break;
-          case BearingMode.NORTH:
+          case BearingMode.NORTH_LOCK:
             controller.setNorthUnlock(store);
             break;
           default:

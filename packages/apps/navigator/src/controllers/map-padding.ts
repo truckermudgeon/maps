@@ -69,10 +69,13 @@ export class MapPaddingStoreImpl implements MapPaddingStore {
 
   //of the target center relative to real map container center at the end of animation.
   get offset(): [number, number] {
-    if (this.appStore.bearingMode === BearingMode.NORTH) {
+    if (this.appStore.bearingMode === BearingMode.NORTH_LOCK) {
+      // no need to offset in north-lock mode: map should be centered on player.
       return [0, 0];
     }
 
+    // offset map so that player marker is toward the bottom of the screen,
+    // above the route stack (if visible).
     const markerHeight = 50;
     const routeStackHeight =
       this.uiEnvStore.orientation === 'portrait' && this.appStore.activeRoute
@@ -82,9 +85,6 @@ export class MapPaddingStoreImpl implements MapPaddingStore {
       ? markerHeight + verticalPadding
       : markerHeight + verticalPadding / 2;
     const offsetY = this.uiEnvStore.height / 2 - routeStackHeight - padding;
-    console.log({
-      offsetY,
-    });
     return [0, offsetY];
   }
 }

@@ -28,7 +28,7 @@ import type { AppClient, AppController, AppStore } from './types';
 export class AppStoreImpl implements AppStore {
   themeMode: 'light' | 'dark' = 'light';
   cameraMode: CameraMode = CameraMode.FOLLOW;
-  bearingMode: BearingMode = BearingMode.TRUCK;
+  bearingMode: BearingMode = BearingMode.MATCH_MAP;
   activeRoute: Route | undefined = undefined;
   activeRouteIndex: RouteIndex | undefined = undefined;
   truckPoint: [lon: number, lat: number] = [0, 0];
@@ -425,11 +425,11 @@ export class AppControllerImpl implements AppController {
   }
 
   setNorthUnlock(store: AppStore) {
-    store.bearingMode = BearingMode.TRUCK;
+    store.bearingMode = BearingMode.MATCH_MAP;
   }
 
   setNorthLock(store: AppStore) {
-    store.bearingMode = BearingMode.NORTH;
+    store.bearingMode = BearingMode.NORTH_LOCK;
   }
 
   hideNavSheet(store: AppStore) {
@@ -568,7 +568,7 @@ export class AppControllerImpl implements AppController {
         case CameraMode.FOLLOW:
           map.easeTo({
             ...toCameraOptions(center, bearing, speedMph, {
-              isNorthLock: store.bearingMode === BearingMode.NORTH,
+              isNorthLock: store.bearingMode === BearingMode.NORTH_LOCK,
             }),
             duration,
             padding: this.padding,
