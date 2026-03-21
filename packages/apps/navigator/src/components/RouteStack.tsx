@@ -29,7 +29,7 @@ export const RouteStack = (props: {
         }}
         justifyContent={'space-between'}
       >
-        <Box sx={{ pointerEvents: 'auto' }}>
+        <Box sx={{ pointerEvents: 'none' }}>
           <Slide in={!needsExpanding || !expanded} appear={false}>
             <Box /* ref={guidanceRef} */>
               <Collapse in={!needsExpanding || !expanded} appear={false}>
