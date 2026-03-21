@@ -107,6 +107,10 @@ export function toThemeMode(
   }
 }
 
+/**
+ * Returns the `position` in [lng, lat] and `bearing` in degrees (-180, 180] CW,
+ * 0 north, of `truck`.
+ */
 export function toPosAndBearing(
   truck: Pick<TruckSimTelemetry['truck'], 'position' | 'orientation'>,
 ) {
@@ -125,6 +129,8 @@ export function toPosAndBearing(
   };
 }
 
+// TODO make this a proper inverse of `toPosAndBearing`, and change the domain
+//  of `headingDegrees`.
 export function fromPosAndBearing(
   lngLat: Position,
   headingDegrees: number, // [0(north), 360) CW

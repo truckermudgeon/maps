@@ -30,7 +30,9 @@ export function createControls(opts: { appStore: AppStore }): {
   const store = new ControlsStoreImpl(appStore);
   const controller = new ControlsControllerImpl();
 
-  const _TextCompass = observer(() => <Compass direction={store.direction} />);
+  const _TextCompass = observer(() => (
+    <Compass mode={appStore.themeMode} direction={store.direction} />
+  ));
   const _SpeedLimit = observer(() => (
     <SpeedLimit limitMph={store.limitMph} speedMph={store.speedMph} />
   ));

@@ -16,9 +16,13 @@ export const TwoLetter: Story = {
   args: {
     direction: 'NW',
   },
+  render: (args, context) => (
+    <Compass {...args} mode={context.globals['theme'] as 'light' | 'dark'} />
+  ),
 };
 
 export const OneLetter: Story = {
+  ...TwoLetter,
   args: {
     direction: 'W',
   },
