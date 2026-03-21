@@ -2,7 +2,7 @@ import { Sheet } from '@mui/joy';
 
 type CompassPoint = 'N' | 'S' | 'E' | 'W' | `${'N' | 'S'}${'E' | 'W'}`;
 
-export const TextCompass = (props: { direction: CompassPoint }) => (
+export const Compass = (props: { direction: CompassPoint }) => (
   <Sheet
     variant={'solid'}
     sx={{

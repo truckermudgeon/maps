@@ -1,13 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { TextCompass } from './TextCompass';
+import { Compass } from './Compass';
 
 const meta = {
-  title: 'HUD/Text Compass',
-  component: TextCompass,
+  title: 'HUD/Compass',
+  component: Compass,
   parameters: {
     layout: 'centered',
   },
-} satisfies Meta<typeof TextCompass>;
+} satisfies Meta<typeof Compass>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

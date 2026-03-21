@@ -1,10 +1,10 @@
 import { Directions, NavigationOutlined, Search } from '@mui/icons-material';
 import { observer } from 'mobx-react-lite';
 import type { ReactElement } from 'react';
+import { Compass } from './components/Compass';
 import { Fab } from './components/Fab';
 import { HudStack } from './components/HudStack';
 import { SpeedLimit } from './components/SpeedLimit';
-import { TextCompass } from './components/TextCompass';
 import {
   ControlsControllerImpl,
   ControlsStoreImpl,
@@ -30,9 +30,7 @@ export function createControls(opts: { appStore: AppStore }): {
   const store = new ControlsStoreImpl(appStore);
   const controller = new ControlsControllerImpl();
 
-  const _TextCompass = observer(() => (
-    <TextCompass direction={store.direction} />
-  ));
+  const _TextCompass = observer(() => <Compass direction={store.direction} />);
   const _SpeedLimit = observer(() => (
     <SpeedLimit limitMph={store.limitMph} speedMph={store.speedMph} />
   ));
