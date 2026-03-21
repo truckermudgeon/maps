@@ -38,7 +38,7 @@ import type { PanoramaMeta } from './Demo';
 import './StreetView.css';
 import { calculatePanoHash } from './url-hash-utils';
 
-const drivers = [
+const drivers: { name: string; avatarUrl: string }[] = [
   {
     name: 'Trucker Mudgeon',
     avatarUrl: 'https://avatars.githubusercontent.com/u/121829201?v=4',
@@ -47,9 +47,14 @@ const drivers = [
     name: 'San_Sany4',
     avatarUrl: 'https://avatars.githubusercontent.com/u/3860505?v=4',
   },
+  {
+    name: 'Nunes',
+    avatarUrl:
+      'https://forum.scssoft.com/download/file.php?avatar=181002_1724679914.png',
+  },
 ];
 
-const makeSingleLevelPanoSrc = (pixelRootUrl: string, id: string) => {
+const makeSingleLevelPanoSrc1 = (pixelRootUrl: string, id: string) => {
   return {
     width: 8192,
     cols: 16,
@@ -57,6 +62,17 @@ const makeSingleLevelPanoSrc = (pixelRootUrl: string, id: string) => {
     baseUrl: `${pixelRootUrl}/${id}_thumb.jpg`,
     tileUrl: (col: number, row: number) =>
       `${pixelRootUrl}/${id}_${col}_${row}.jpg`,
+  };
+};
+
+const makeSingleLevelPanoSrc2 = (pixelRootUrl: string, id: string) => {
+  return {
+    width: 4240,
+    cols: 16,
+    rows: 8,
+    baseUrl: `${pixelRootUrl}/${id}/thumb.jpg`,
+    tileUrl: (col: number, row: number) =>
+      `${pixelRootUrl}/${id}/${col}_${row}.jpg`,
   };
 };
 
@@ -165,8 +181,10 @@ export const StreetView = memo(
 
     // use YPZ from the first pano as the defaults for the photo sphere viewer.
     const { yaw, pitch, zoom } = panos[0];
-    const singleLevelPanoFor = (id: string) =>
-      makeSingleLevelPanoSrc(pixelRootUrl, id);
+    const singleLevelPano1For = (id: string) =>
+      makeSingleLevelPanoSrc1(pixelRootUrl, id);
+    const singleLevelPano2For = (id: string) =>
+      makeSingleLevelPanoSrc2(pixelRootUrl, id);
     const multiLevelPanoFor = makeMultiLevelPanoramaFn(pixelRootUrl);
 
     const tourConfig: VirtualTourPluginConfig = useMemo(() => {
@@ -179,8 +197,10 @@ export const StreetView = memo(
             // (currently relying on the fact that my photo spheres are too
             // low-res to create multi-level panos)
             p.driverId === 0
-              ? singleLevelPanoFor(p.id)
-              : multiLevelPanoFor(p.id),
+              ? singleLevelPano1For(p.id)
+              : p.driverId === 1
+                ? multiLevelPanoFor(p.id)
+                : singleLevelPano2For(p.id),
           gps: p.point,
           links: [
             { nodeId: panos[i - 1]?.id },
