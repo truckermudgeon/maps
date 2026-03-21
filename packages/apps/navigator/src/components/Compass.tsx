@@ -20,8 +20,6 @@ export const Compass = (props: {
       sx={{
         width: '3.5em',
         height: '3.5em',
-        //width: '35em',
-        //height: '35em',
         borderRadius: '50%',
         fontWeight: 'bold',
         display: 'flex',
