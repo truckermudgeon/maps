@@ -3,6 +3,7 @@ import type { Theme } from '@mui/joy';
 import { Box } from '@mui/joy';
 import { Grid, Slide, useMediaQuery, useTheme } from '@mui/material';
 import { assertExists } from '@truckermudgeon/base/assert';
+import { UnreachableError } from '@truckermudgeon/base/precon';
 import type { RouteStep } from '@truckermudgeon/navigation/types';
 import { bbox } from '@turf/bbox';
 import bearing from '@turf/bearing';
@@ -31,6 +32,7 @@ import {
   toFeatureCollection,
 } from './controllers/app';
 import {
+  BearingMode,
   CameraMode,
   maxPortraitSheetCssHeight,
   NavPageKey,
@@ -264,6 +266,19 @@ export function createApp({
   });
   const _Controls = () => (
     <Controls
+      onCompassClick={action(() => {
+        controller.requestWakeLock();
+        switch (store.bearingMode) {
+          case BearingMode.MATCH_MAP:
+            controller.setNorthLock(store);
+            break;
+          case BearingMode.NORTH_LOCK:
+            controller.setNorthUnlock(store);
+            break;
+          default:
+            throw new UnreachableError(store.bearingMode);
+        }
+      })}
       onRecenterFabClick={action(() => {
         controller.requestWakeLock();
         controller.setFollow(store);
@@ -290,7 +305,7 @@ export function createApp({
         store.mapLoaded = true;
         controller.onMapLoad(map, marker);
         controller.startListening(store, appClient);
-        controlsController.startListening(controlsStore, appClient);
+        controlsController.startListening(controlsStore, appClient, map);
       },
     );
   };

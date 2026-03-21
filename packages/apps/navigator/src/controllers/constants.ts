@@ -3,6 +3,11 @@ export const enum CameraMode {
   FREE,
 }
 
+export const enum BearingMode {
+  MATCH_MAP,
+  NORTH_LOCK,
+}
+
 export const enum NavPageKey {
   /** shows search bar and destination types */
   CHOOSE_DESTINATION,
