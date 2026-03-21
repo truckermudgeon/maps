@@ -1,16 +1,17 @@
 import { Sheet } from '@mui/joy';
 import { memo } from 'react';
+import { toCompassPoint } from '../base/to-compass-point';
 
-type CompassPoint = 'N' | 'S' | 'E' | 'W' | `${'N' | 'S'}${'E' | 'W'}`;
-
-const svgSize = 110;
+const svgSize = 105;
 const center = svgSize / 2;
+const black = '#32383E';
 
 export const Compass = (props: {
   mode?: 'light' | 'dark';
-  direction: CompassPoint;
+  // (-180, 180] CW, 0 is north
+  bearing: number;
 }) => {
-  const { mode = 'light', direction } = props;
+  const { mode = 'light', bearing } = props;
 
   return (
     <Sheet
@@ -29,7 +30,14 @@ export const Compass = (props: {
       }}
     >
       <svg viewBox={`0 0 ${svgSize} ${svgSize}`}>
-        <Ticks mode={mode} />
+        <g
+          transform={`rotate(${-bearing} ${center} ${center})`}
+          style={{
+            transition: 'transform 0.4s ease',
+          }}
+        >
+          <Ticks mode={mode} />
+        </g>
         <text
           x={center}
           y={center}
@@ -37,9 +45,9 @@ export const Compass = (props: {
           dominantBaseline="central"
           fontSize="30"
           fontWeight="bold"
-          fill={mode === 'light' ? 'black' : 'white'}
+          fill={mode === 'light' ? black : 'white'}
         >
-          {direction}
+          {toCompassPoint(bearing)}
         </text>
       </svg>
     </Sheet>
@@ -47,7 +55,7 @@ export const Compass = (props: {
 };
 
 const Ticks = memo(({ mode }: { mode: 'light' | 'dark' }) => {
-  const padding = 2;
+  const padding = 4;
   const numTicks = 16;
   return Array.from({ length: numTicks }, (_, i) => {
     const angle = (i / numTicks) * 360;
@@ -68,7 +76,7 @@ const Ticks = memo(({ mode }: { mode: 'light' | 'dark' }) => {
             ${center - baseWidth / 2},${baseY}
             ${center + baseWidth / 2},${baseY}
           `}
-          fill={i === 0 ? 'red' : mode === 'light' ? 'black' : 'white'}
+          fill={i === 0 ? 'red' : mode === 'light' ? black + 'bb' : 'white'}
           transform={`rotate(${angle} ${center} ${center})`}
         />
       );
@@ -81,7 +89,7 @@ const Ticks = memo(({ mode }: { mode: 'light' | 'dark' }) => {
         y1={padding}
         x2={center}
         y2={padding + tickLength}
-        stroke={'#aaa'}
+        stroke={mode === 'light' ? '#bbb' : '#666'}
         strokeWidth={2}
         transform={`rotate(${angle} ${center} ${center})`}
       />

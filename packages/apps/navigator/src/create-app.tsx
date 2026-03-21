@@ -290,7 +290,7 @@ export function createApp({
         store.mapLoaded = true;
         controller.onMapLoad(map, marker);
         controller.startListening(store, appClient);
-        controlsController.startListening(controlsStore, appClient);
+        controlsController.startListening(controlsStore, appClient, map);
       },
     );
   };

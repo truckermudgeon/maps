@@ -14,7 +14,7 @@ type Story = StoryObj<typeof meta>;
 
 export const TwoLetter: Story = {
   args: {
-    direction: 'NW',
+    bearing: -45,
   },
   render: (args, context) => (
     <Compass {...args} mode={context.globals['theme'] as 'light' | 'dark'} />
@@ -24,6 +24,6 @@ export const TwoLetter: Story = {
 export const OneLetter: Story = {
   ...TwoLetter,
   args: {
-    direction: 'W',
+    bearing: -90,
   },
 };
