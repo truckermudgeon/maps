@@ -10,8 +10,9 @@ export const Compass = (props: {
   mode?: 'light' | 'dark';
   // (-180, 180] CW, 0 is north
   bearing: number;
+  onClick: () => void;
 }) => {
-  const { mode = 'light', bearing } = props;
+  const { mode = 'light', bearing, onClick } = props;
 
   return (
     <Sheet
@@ -26,8 +27,9 @@ export const Compass = (props: {
         display: 'flex',
         boxShadow: 'md',
         cursor: 'pointer',
-        //'rgba(0, 0, 0, 0.2) 0 3px 5px -1px, rgba(0, 0, 0, 0.14) 0 6px 10px 0, rgba(0, 0, 0, 0.12) 0 1px 18px 0',
+        userSelect: 'none',
       }}
+      onClick={onClick}
     >
       <svg viewBox={`0 0 ${svgSize} ${svgSize}`}>
         <g
@@ -55,7 +57,7 @@ export const Compass = (props: {
 };
 
 const Ticks = memo(({ mode }: { mode: 'light' | 'dark' }) => {
-  const padding = 4;
+  const padding = 8;
   const numTicks = 16;
   return Array.from({ length: numTicks }, (_, i) => {
     const angle = (i / numTicks) * 360;

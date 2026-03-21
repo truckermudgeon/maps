@@ -21,13 +21,14 @@ import type { GeoJSONSource } from 'maplibre-gl';
 import { Marker } from 'maplibre-gl';
 import { action, makeAutoObservable, observable, runInAction } from 'mobx';
 import type { MapRef } from 'react-map-gl/maplibre';
-import { CameraMode } from './constants';
+import { BearingMode, CameraMode } from './constants';
 import { TelemetryTimeline } from './telemetry-timeline';
 import type { AppClient, AppController, AppStore } from './types';
 
 export class AppStoreImpl implements AppStore {
   themeMode: 'light' | 'dark' = 'light';
   cameraMode: CameraMode = CameraMode.FOLLOW;
+  bearingMode: BearingMode = BearingMode.TRUCK;
   activeRoute: Route | undefined = undefined;
   activeRouteIndex: RouteIndex | undefined = undefined;
   truckPoint: [lon: number, lat: number] = [0, 0];
@@ -423,6 +424,14 @@ export class AppControllerImpl implements AppController {
     store.cameraMode = CameraMode.FOLLOW;
   }
 
+  setNorthUnlock(store: AppStore) {
+    store.bearingMode = BearingMode.TRUCK;
+  }
+
+  setNorthLock(store: AppStore) {
+    store.bearingMode = BearingMode.NORTH;
+  }
+
   hideNavSheet(store: AppStore) {
     console.log('hide nav sheet');
     store.showNavSheet = false;
@@ -558,7 +567,9 @@ export class AppControllerImpl implements AppController {
       switch (store.cameraMode) {
         case CameraMode.FOLLOW:
           map.easeTo({
-            ...toCameraOptions(center, bearing, speedMph),
+            ...toCameraOptions(center, bearing, speedMph, {
+              isNorthLock: store.bearingMode === BearingMode.NORTH,
+            }),
             duration,
             padding: this.padding,
             offset: this.offset,
@@ -781,7 +792,12 @@ function calculateDelta(currBearing: number, nextBearing: number): number {
   return delta;
 }
 
-function toCameraOptions(center: Position, bearing: number, speedMph: number) {
+function toCameraOptions(
+  center: Position,
+  bearing: number,
+  speedMph: number,
+  options: { isNorthLock: boolean },
+) {
   let zoom;
   let pitch;
   if (speedMph > 60) {
@@ -796,9 +812,9 @@ function toCameraOptions(center: Position, bearing: number, speedMph: number) {
   }
   return {
     center,
-    bearing,
-    zoom,
-    pitch,
+    zoom: options.isNorthLock ? zoom - 2 : zoom,
+    pitch: options.isNorthLock ? 0 : pitch,
+    bearing: options.isNorthLock ? 0 : bearing,
   };
 }
 

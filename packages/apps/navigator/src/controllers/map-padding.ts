@@ -1,5 +1,5 @@
 import { computed, makeAutoObservable } from 'mobx';
-import { navSheetPagesRequiringMapVisibility } from './constants';
+import { BearingMode, navSheetPagesRequiringMapVisibility } from './constants';
 import type {
   AppStore,
   MapPaddingStore,
@@ -69,6 +69,10 @@ export class MapPaddingStoreImpl implements MapPaddingStore {
 
   //of the target center relative to real map container center at the end of animation.
   get offset(): [number, number] {
+    if (this.appStore.bearingMode === BearingMode.NORTH) {
+      return [0, 0];
+    }
+
     const markerHeight = 50;
     const routeStackHeight =
       this.uiEnvStore.orientation === 'portrait' && this.appStore.activeRoute

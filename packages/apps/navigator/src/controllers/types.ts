@@ -13,7 +13,7 @@ import type {
 } from '@truckermudgeon/navigation/types';
 import type { Marker } from 'maplibre-gl';
 import type { MapRef } from 'react-map-gl/maplibre';
-import type { CameraMode, NavPageKey } from './constants';
+import type { BearingMode, CameraMode, NavPageKey } from './constants';
 
 export type AppClient = ReturnType<
   typeof createTRPCProxyClient<AppRouter>
@@ -22,6 +22,7 @@ export type AppClient = ReturnType<
 export interface AppStore {
   themeMode: 'light' | 'dark';
   cameraMode: CameraMode;
+  bearingMode: BearingMode;
   truckPoint: readonly [lon: number, lat: number];
   trailerPoint: readonly [lon: number, lat: number] | undefined;
   showNavSheet: boolean;

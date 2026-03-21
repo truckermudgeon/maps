@@ -16,6 +16,7 @@ import type {
 } from './controllers/types';
 
 interface ControlsProps {
+  onCompassClick: () => void;
   onRecenterFabClick: () => void;
   onRouteFabClick: () => void;
   onSearchFabClick: () => void;
@@ -30,8 +31,12 @@ export function createControls(opts: { appStore: AppStore }): {
   const store = new ControlsStoreImpl(appStore);
   const controller = new ControlsControllerImpl();
 
-  const _TextCompass = observer(() => (
-    <Compass mode={appStore.themeMode} bearing={store.bearing} />
+  const _Compass = observer((props: { onClick: () => void }) => (
+    <Compass
+      mode={appStore.themeMode}
+      bearing={store.bearing}
+      onClick={props.onClick}
+    />
   ));
   const _SpeedLimit = observer(() => (
     <SpeedLimit limitMph={store.limitMph} speedMph={store.speedMph} />
@@ -66,7 +71,7 @@ export function createControls(opts: { appStore: AppStore }): {
     Controls: (props: ControlsProps) => {
       return (
         <HudStack
-          Direction={_TextCompass}
+          Direction={() => <_Compass onClick={props.onCompassClick} />}
           SpeedLimit={_SpeedLimit}
           RecenterFab={() => <RecenterFab onClick={props.onRecenterFabClick} />}
           RouteFab={() => <RouteFab onClick={props.onRouteFabClick} />}
