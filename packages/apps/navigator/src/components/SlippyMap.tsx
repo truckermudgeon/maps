@@ -76,7 +76,7 @@ export const SlippyMap = (props: {
         top: 0,
         left: 0,
         width: '100vw',
-        height: '100vh',
+        height: '100dvh',
       }} // ensure map fills page
       minZoom={4}
       maxZoom={15}
@@ -238,7 +238,11 @@ export const SlippyMap = (props: {
         }}
       >
         <a
-          style={{ color: 'inherit', textDecoration: 'none' }}
+          style={{
+            color: 'inherit',
+            textDecoration: 'none',
+            pointerEvents: 'none',
+          }}
           href="https://github.com/truckermudgeon/maps"
         >
           TruckSim Maps

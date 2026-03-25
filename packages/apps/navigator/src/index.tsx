@@ -1,5 +1,5 @@
 import '@fontsource/inter';
-import { CssBaseline, CssVarsProvider } from '@mui/joy';
+import { CssBaseline, CssVarsProvider, extendTheme } from '@mui/joy';
 import {
   THEME_ID as MATERIAL_THEME_ID,
   Experimental_CssVarsProvider as MaterialCssVarsProvider,
@@ -61,6 +61,7 @@ const appClient = createTRPCProxyClient<AppRouter>({
 
 const { App, store } = createApp({
   appClient,
+  joyTheme: extendTheme(),
   transitionDurationMs: materialTheme.transitions.duration.standard,
 });
 

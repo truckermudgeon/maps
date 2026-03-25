@@ -12,7 +12,7 @@ export const HudStack = (props: {
   return (
     <Stack direction={'column'} justifyContent={'space-between'}>
       <Stack
-        gap={1}
+        gap={2}
         alignSelf={'end'}
         alignItems={'end'}
         sx={{ pointerEvents: 'auto' }}

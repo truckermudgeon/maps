@@ -28,6 +28,7 @@ export const Directions = memo(
           spacing={2}
           bgcolor={bgColor.string()}
           borderRadius={hasHint ? '1em 1em 1em 0' : '1em'}
+          sx={{ pointerEvents: 'auto' }}
         >
           <Stack>
             <Stack direction={'row'} alignItems={'center'} gap={1}>
@@ -87,7 +88,7 @@ const LaneHint = (props: {
             }}
           />
         }
-        sx={{ justifyContent: 'center' }}
+        sx={{ justifyContent: 'center', pointerEvents: 'auto' }}
         bgcolor={bgColor.darken(0.33).string()}
         borderRadius={`0 0 1em ${props.roundBottomLeft ? '1em' : 0}`}
       >
@@ -119,6 +120,7 @@ const ThenHint = (props: { hint: NonNullable<StepManeuver['thenHint']> }) => {
         spacing={1}
         bgcolor={bgColor.darken(0.33).string()}
         borderRadius={'0 0 1em 1em'}
+        sx={{ pointerEvents: 'auto' }}
       >
         <Typography textColor={'#fff'} level={'body-lg'}>
           Then

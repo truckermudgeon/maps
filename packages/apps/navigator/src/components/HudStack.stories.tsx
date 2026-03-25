@@ -1,5 +1,7 @@
 import type { Meta, StoryContext, StoryObj } from '@storybook/react';
 import * as React from 'react';
+import { Compass } from './Compass';
+import { TwoLetter as TextCompassPrimary } from './Compass.stories';
 import { Fab } from './Fab';
 import { Plain, Solid } from './Fab.stories';
 import { HudStack } from './HudStack';
@@ -8,8 +10,6 @@ import {
   KPH as KphSpeedLimit,
   MPHWithNormalSpeed as MphSpeedLimit,
 } from './SpeedLimit.stories';
-import { TextCompass } from './TextCompass';
-import { TwoLetter as TextCompassPrimary } from './TextCompass.stories';
 
 const meta = {
   title: 'HUD/Control Stack',
@@ -38,7 +38,7 @@ type Story = StoryObj<typeof meta>;
 
 export const MPH: Story = {
   args: {
-    Direction: () => <TextCompass {...TextCompassPrimary.args} />,
+    Direction: () => <Compass {...TextCompassPrimary.args} />,
     SpeedLimit: () => <SpeedLimit {...MphSpeedLimit.args} />,
     RecenterFab: () => <Fab {...Plain.args} />,
     RouteFab: () => <Fab {...Solid.args} />,
@@ -48,7 +48,7 @@ export const MPH: Story = {
 
 export const KPH: Story = {
   args: {
-    Direction: () => <TextCompass {...TextCompassPrimary.args} />,
+    Direction: () => <Compass {...TextCompassPrimary.args} />,
     SpeedLimit: () => <SpeedLimit {...KphSpeedLimit.args} />,
     RecenterFab: () => <Fab {...Plain.args} />,
     RouteFab: () => <Fab {...Solid.args} />,
