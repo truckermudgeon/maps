@@ -155,6 +155,9 @@ export function readMapData<
     }
   }
 
+  const allCompanies = readArrayFile<CompanyItem>(toJsonFilePath('companies'));
+  const allCompanyPrefabs = new Set(allCompanies.map(c => c.prefabUid));
+
   const toWgs84 = map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
   if (focusCoords) {
     logger.info(
@@ -202,8 +205,7 @@ export function readMapData<
         mapData.roads = mapify(
           readArrayFile<Road>(
             toJsonFilePath(key),
-            r =>
-              (includeHiddenRoadsAndPrefabs ? true : !r.hidden) && focusXY(r),
+            r => (includeHiddenRoadsAndPrefabs || !r.hidden) && focusXY(r),
           ),
           r => r.uid,
         );
@@ -216,11 +218,16 @@ export function readMapData<
         break;
       case 'prefabs':
         mapData.prefabs = mapify(
-          readArrayFile<Prefab>(
-            toJsonFilePath(key),
-            p =>
-              (includeHiddenRoadsAndPrefabs ? true : !p.hidden) && focusXY(p),
-          ),
+          readArrayFile<Prefab>(toJsonFilePath(key), p => {
+            const isCompanyPrefab = allCompanyPrefabs.has(p.uid);
+            // N.B.: all company prefabs are returned, regardless of whether
+            // they're hidden, because there's no such thing as a
+            // hidden-from-the-map-ui company (e.g., Rock Port in St Louis, MO)
+            return (
+              (includeHiddenRoadsAndPrefabs || isCompanyPrefab || !p.hidden) &&
+              focusXY(p)
+            );
+          }),
           p => p.uid,
         );
         break;
@@ -231,10 +238,7 @@ export function readMapData<
         );
         break;
       case 'companies':
-        mapData.companies = mapify(
-          readArrayFile<CompanyItem>(toJsonFilePath(key), focusXY),
-          c => c.uid,
-        );
+        mapData.companies = mapify(allCompanies.filter(focusXY), c => c.uid);
         break;
       case 'models':
         mapData.models = mapify(
@@ -353,7 +357,7 @@ export function readMapData<
     }
   }
 
-  // companies may be linked to hidden prefabs or prefabs outside the focused range.
+  // companies may be linked to prefabs outside the focused range.
   // filter them out so `companies` array is consistent with prefabs.
   if (
     mapData.companies != null &&
@@ -367,7 +371,6 @@ export function readMapData<
       const prefabUid = company.prefabUid;
       const nodeUid = company.nodeUid;
       if (!prefabsMap.has(prefabUid)) {
-        prefabsMap.delete(prefabUid);
         nodesMap.delete(nodeUid);
         companiesMap.delete(company.uid);
       }
