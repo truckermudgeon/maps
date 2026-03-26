@@ -479,6 +479,18 @@ describe('command-line interface', () => {
       JSON.stringify(Array.from(fixtures.countriesAts.values())),
     );
     fs.writeFileSync(
+      path.join(tmpDir, 'usa-companies.json'),
+      JSON.stringify(
+        Array.from(fixtures.companiesAts.values()),
+        (key, value) => {
+          if (key.toLowerCase().endsWith('uid')) {
+            return (value as bigint).toString(16);
+          }
+          return value as unknown;
+        },
+      ),
+    );
+    fs.writeFileSync(
       path.join(tmpDir, 'usa-mileageTargets.json'),
       JSON.stringify(mileageTargets),
     );
