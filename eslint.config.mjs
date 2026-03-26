@@ -23,6 +23,7 @@ export default [
       '**/dist',
       '**/public',
       '**/*-worker-wrapper.js',
+      './packages/guis/navigator/*.ts',
     ],
   },
   ...compat.extends(
@@ -48,6 +49,7 @@ export default [
           './packages/apis/*/tsconfig.json',
           './packages/apps/*/tsconfig.json',
           './packages/clis/*/tsconfig.json',
+          './packages/guis/*/tsconfig.json',
           './packages/libs/*/tsconfig.json',
         ],
       },

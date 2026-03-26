@@ -1,0 +1,43 @@
+{
+  "private": true,
+  "name": "@truckermudgeon/navigator-client-gui",
+  "version": "0.0.0",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "postinstall": "npx tsx -e \"const { rmSync, symlinkSync } = require('node:fs'); const t = './node_modules/electrobun'; rmSync(t, { force: true }); symlinkSync('../../../../node_modules/electrobun', t);\"",
+    "dev": "bun run build && electrobun dev",
+    "dev:hmr": "concurrently \"bun run hmr\" \"bun run dev\"",
+    "hmr": "vite --port 5174",
+    "build": "vite build && electrobun build",
+    "build:prod": "cross-env NODE_ENV=production vite build && cross-env NODE_ENV=production electrobun build --env=stable",
+    "start": "bun run dev"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.11.3",
+    "@emotion/styled": "^11.11.0",
+    "@fontsource/inter": "^5.0.16",
+    "@mui/icons-material": "^7.2.0",
+    "@mui/joy": "^5.0.0-beta.49",
+    "@truckermudgeon/navigator-client": "0.0.0",
+    "electrobun": "1.15.1",
+    "mobx": "^6.12.0",
+    "mobx-react-lite": "^4.1.0",
+    "mobx-utils": "^6.1.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "recharts": "^3.7.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/react": "^18.2.47",
+    "@types/react-dom": "^18.2.18",
+    "@types/three": "^0.183.1",
+    "@vitejs/plugin-react": "^4.2.1",
+    "concurrently": "^9.1.0",
+    "cross-env": "^10.1.0",
+    "typescript": "^5.9.2",
+    "uqr": "^0.1.2",
+    "vite": "^7.1.5"
+  }
+}

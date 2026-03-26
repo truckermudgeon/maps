@@ -23,6 +23,9 @@
       "path": "packages/clis/navigator"
     },
     {
+      "path": "packages/guis/navigator"
+    },
+    {
       "path": "packages/libs/base"
     },
     {
