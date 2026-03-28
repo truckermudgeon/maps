@@ -1,3 +1,4 @@
+import type { MappedDataForKeys } from '@truckermudgeon/io';
 import {
   AtsSelectableDlcs,
   toAtsDlcGuards,
@@ -11,7 +12,6 @@ import type { CompanyItem, Neighbors } from '@truckermudgeon/map/types';
 import * as cliProgress from 'cli-progress';
 import Tinypool from 'tinypool';
 import { logger } from '../logger';
-import type { MappedDataForKeys } from '../mapped-data';
 
 interface CompanySummary {
   company: string;

@@ -8,10 +8,7 @@ import {
   subtract,
 } from '@truckermudgeon/base/geom';
 import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
-import type {
-  MapDataKeys,
-  MappedDataForKeys,
-} from '@truckermudgeon/generator/mapped-data';
+import type { MapDataKeys, MappedDataForKeys } from '@truckermudgeon/io';
 import { ItemType } from '@truckermudgeon/map/constants';
 import { calculateLaneInfo, toMapPosition } from '@truckermudgeon/map/prefabs';
 import {

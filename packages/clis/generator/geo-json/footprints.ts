@@ -1,12 +1,12 @@
 import { assertExists } from '@truckermudgeon/base/assert';
 import type { Position } from '@truckermudgeon/base/geom';
 import { add, nonUniformScale, rotate } from '@truckermudgeon/base/geom';
+import type { MapDataKeys, MappedDataForKeys } from '@truckermudgeon/io';
 import type {
   FootprintFeature,
   FootprintProperties,
 } from '@truckermudgeon/map/types';
 import type { GeoJSON } from 'geojson';
-import type { MapDataKeys, MappedDataForKeys } from '../mapped-data';
 import { createNormalizeFeature } from './normalize';
 
 export const footprintsMapDataKeys = [

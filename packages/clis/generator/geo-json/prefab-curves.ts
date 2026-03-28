@@ -1,10 +1,10 @@
 import { assertExists } from '@truckermudgeon/base/assert';
 import type { Position } from '@truckermudgeon/base/geom';
 import { toSplinePoints } from '@truckermudgeon/base/geom';
+import type { MapDataKeys, MappedDataForKeys } from '@truckermudgeon/io';
 import { toMapPosition } from '@truckermudgeon/map/prefabs';
 import type { DebugFeature } from '@truckermudgeon/map/types';
 import type { GeoJSON } from 'geojson';
-import type { MapDataKeys, MappedDataForKeys } from '../mapped-data';
 import { createNormalizeFeature } from './normalize';
 
 export const prefabCurveMapDataKeys = [

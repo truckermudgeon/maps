@@ -1,3 +1,4 @@
+import { writeGeojsonFile } from '@truckermudgeon/io';
 import fs from 'fs';
 import type { GeoJSON } from 'geojson';
 import path from 'path';
@@ -5,7 +6,6 @@ import type { Argv, BuilderArguments } from 'yargs';
 import { createNormalizeFeature } from '../geo-json/normalize';
 import { getCitiesByCountryIsoA2 } from '../geo-json/populated-places';
 import { logger } from '../logger';
-import { writeGeojsonFile } from '../write-geojson-file';
 import { maybeEnsureOutputDir, resourcesDir, untildify } from './path-helpers';
 
 export const command = 'ets2-villages';

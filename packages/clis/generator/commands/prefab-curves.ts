@@ -1,3 +1,5 @@
+import type { FocusOptions } from '@truckermudgeon/io';
+import { readMapData, writeGeojsonFile } from '@truckermudgeon/io';
 import path from 'path';
 import type { Argv, BuilderArguments } from 'yargs';
 import {
@@ -5,9 +7,6 @@ import {
   prefabCurveMapDataKeys,
 } from '../geo-json/prefab-curves';
 import { logger } from '../logger';
-import type { FocusOptions } from '../mapped-data';
-import { readMapData } from '../mapped-data';
-import { writeGeojsonFile } from '../write-geojson-file';
 import { maybeEnsureOutputDir, untildify } from './path-helpers';
 
 export const command = 'prefab-curves';

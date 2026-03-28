@@ -1,5 +1,5 @@
 import { assertExists } from '@truckermudgeon/base/assert';
-import type { MappedDataForKeys } from '@truckermudgeon/generator/mapped-data';
+import type { MappedDataForKeys } from '@truckermudgeon/io';
 import type { CompanyItem } from '@truckermudgeon/map/types';
 import { EventEmitter } from 'events';
 import type { JobLocation, JobState } from '../../types';

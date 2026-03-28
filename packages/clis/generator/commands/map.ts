@@ -1,3 +1,5 @@
+import type { FocusOptions } from '@truckermudgeon/io';
+import { readMapData, writeGeojsonFile } from '@truckermudgeon/io';
 import { execSync } from 'child_process';
 import fs from 'fs';
 import os from 'os';
@@ -5,8 +7,6 @@ import path from 'path';
 import type { Argv, BuilderArguments } from 'yargs';
 import { convertToMapGeoJson, geoJsonMapDataKeys } from '../geo-json/map';
 import { logger } from '../logger';
-import type { FocusOptions } from '../mapped-data';
-import { readMapData } from '../mapped-data';
 import { maybeEnsureOutputDir, untildify } from './path-helpers';
 
 export const command = 'map';
@@ -145,14 +145,14 @@ export function handler(args: BuilderArguments<typeof builder>) {
   if (!args.dryRun && types.includes('geojson')) {
     geoJsonPath = path.join(args.outputDir, `${gamePrefix}.geojson`);
     logger.log('writing GeoJSON files...');
-    fs.writeFileSync(geoJsonPath, JSON.stringify(geoJson, null, 2));
+    writeGeojsonFile(geoJsonPath, geoJson);
   }
   if (!args.dryRun && types.some(t => t.endsWith('tiles'))) {
     let cleanupGeoJson = false;
     if (geoJsonPath == null) {
       geoJsonPath = path.join(os.tmpdir(), `${gamePrefix}.geojson`);
       logger.log('writing temporary GeoJSON files...');
-      fs.writeFileSync(geoJsonPath, JSON.stringify(geoJson, null, 2));
+      writeGeojsonFile(geoJsonPath, geoJson);
       cleanupGeoJson = true;
     }
 

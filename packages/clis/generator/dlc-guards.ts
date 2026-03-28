@@ -1,6 +1,7 @@
 import { assertExists } from '@truckermudgeon/base/assert';
 import { putIfAbsent } from '@truckermudgeon/base/map';
 import { Preconditions } from '@truckermudgeon/base/precon';
+import type { MapDataKeys, MappedDataForKeys } from '@truckermudgeon/io';
 import {
   AtsCountryIdToDlcGuard,
   AtsDlcGuards,
@@ -11,7 +12,6 @@ import type { Node } from '@truckermudgeon/map/types';
 import type { Quadtree } from 'd3-quadtree';
 import { quadtree } from 'd3-quadtree';
 import { logger } from './logger';
-import type { MapDataKeys, MappedDataForKeys } from './mapped-data';
 
 interface QtDlcGuardEntry {
   x: number;

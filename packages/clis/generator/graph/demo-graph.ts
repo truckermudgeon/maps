@@ -1,5 +1,6 @@
 import { assertExists } from '@truckermudgeon/base/assert';
 import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
+import type { MappedDataForKeys } from '@truckermudgeon/io';
 import { fromAtsCoordsToWgs84 } from '@truckermudgeon/map/projections';
 import type {
   Company,
@@ -11,7 +12,6 @@ import type {
   Neighbor,
   Neighbors,
 } from '@truckermudgeon/map/types';
-import type { MappedDataForKeys } from '../mapped-data';
 
 type DemoGraphMappedData = MappedDataForKeys<
   ['nodes', 'companies', 'companyDefs']

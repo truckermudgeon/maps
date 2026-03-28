@@ -1,5 +1,5 @@
-import type { MappedDataForKeys } from '@truckermudgeon/generator/mapped-data';
-import { readMapData } from '@truckermudgeon/generator/mapped-data';
+import type { MappedDataForKeys } from '@truckermudgeon/io';
+import { readMapData } from '@truckermudgeon/io';
 import {
   AtsSelectableDlcs,
   toAtsDlcGuards,

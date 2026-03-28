@@ -1,3 +1,4 @@
+import type { MappedData } from '@truckermudgeon/io';
 import type { LabelMeta, MileageTarget } from '@truckermudgeon/map/types';
 import fs from 'fs';
 import type { GeoJSON } from 'geojson';
@@ -7,7 +8,6 @@ import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import yargs from 'yargs';
 import * as extraLabels from '../../commands/extra-labels';
 import { logger } from '../../logger';
-import type { MappedData } from '../../mapped-data';
 import type { Label } from '../extra-labels';
 import { LabelProducer, TargetLabel } from '../extra-labels';
 import * as fixtures from './extra-labels.fixtures';

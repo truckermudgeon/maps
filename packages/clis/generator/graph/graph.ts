@@ -5,6 +5,7 @@ import type { Extent, Position } from '@truckermudgeon/base/geom';
 import { contains, distance, getExtent } from '@truckermudgeon/base/geom';
 import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
 import { UnreachableError } from '@truckermudgeon/base/precon';
+import type { MapDataKeys, MappedDataForKeys } from '@truckermudgeon/io';
 import {
   AtsSelectableDlcs,
   FacilitySpawnPointTypes,
@@ -42,7 +43,6 @@ import type { GeoJSON } from 'geojson';
 import { dlcGuardMapDataKeys, normalizeDlcGuards } from '../dlc-guards';
 import { createNormalizeFeature } from '../geo-json/normalize';
 import { logger } from '../logger';
-import type { MapDataKeys, MappedDataForKeys } from '../mapped-data';
 
 type GraphContextMappedData = MappedDataForKeys<
   [

@@ -1,7 +1,7 @@
 import polyline from '@mapbox/polyline';
 import { assertExists } from '@truckermudgeon/base/assert';
 import { Preconditions } from '@truckermudgeon/base/precon';
-import type { MappedDataForKeys } from '@truckermudgeon/generator/mapped-data';
+import type { MappedDataForKeys } from '@truckermudgeon/io';
 import { ItemType } from '@truckermudgeon/map/constants';
 import type {
   CompanyItem,

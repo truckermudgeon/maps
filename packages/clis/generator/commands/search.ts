@@ -2,6 +2,8 @@ import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { distance } from '@truckermudgeon/base/geom';
 import { putIfAbsent } from '@truckermudgeon/base/map';
 import { UnreachableError } from '@truckermudgeon/base/precon';
+import type { MappedDataForKeys } from '@truckermudgeon/io';
+import { readMapData, writeGeojsonFile } from '@truckermudgeon/io';
 import { getBranchSuffix, toDealerLabel } from '@truckermudgeon/map/labels';
 import { PointRBush } from '@truckermudgeon/map/point-rbush';
 import { fromWgs84ToAtsCoords } from '@truckermudgeon/map/projections';
@@ -27,9 +29,6 @@ import { dlcGuardMapDataKeys, normalizeDlcGuards } from '../dlc-guards';
 import { createNormalizeFeature } from '../geo-json/normalize';
 import { ets2IsoA2, isoA2Ets2 } from '../geo-json/populated-places';
 import { logger } from '../logger';
-import type { MappedDataForKeys } from '../mapped-data';
-import { readMapData } from '../mapped-data';
-import { writeGeojsonFile } from '../write-geojson-file';
 import { parseEts2VillagesCsv } from './ets2-villages';
 import { maybeEnsureOutputDir, untildify } from './path-helpers';
 

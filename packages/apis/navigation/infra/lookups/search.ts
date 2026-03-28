@@ -2,7 +2,7 @@ import { assert, assertExists } from '@truckermudgeon/base/assert';
 import type { Position } from '@truckermudgeon/base/geom';
 import { distance } from '@truckermudgeon/base/geom';
 import { UnreachableError } from '@truckermudgeon/base/precon';
-import type { MappedDataForKeys } from '@truckermudgeon/generator/mapped-data';
+import type { MappedDataForKeys } from '@truckermudgeon/io';
 import { PointRBush } from '@truckermudgeon/map/point-rbush';
 import {
   fromAtsCoordsToWgs84,

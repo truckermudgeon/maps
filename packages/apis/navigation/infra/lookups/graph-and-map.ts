@@ -5,7 +5,7 @@ import {
   type Position,
   toSplinePoints,
 } from '@truckermudgeon/base/geom';
-import { readMapData } from '@truckermudgeon/generator/mapped-data';
+import { readMapData } from '@truckermudgeon/io';
 import { PointRBush } from '@truckermudgeon/map/point-rbush';
 import {
   toMapPosition,
