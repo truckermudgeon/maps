@@ -1006,6 +1006,7 @@ function postProcess(
       achievements: valuesWithTokens(defData.achievements),
       routes: valuesWithTokens(defData.routes),
       mileageTargets: valuesWithTokens(defData.mileageTargets),
+      cargoes: valuesWithTokens(defData.cargoes),
     },
     icons,
   };
@@ -1019,6 +1020,7 @@ function toDefData(
   return {
     countries: valuesWithTokens(defData.countries).map(withLocalizedName),
     companyDefs: valuesWithTokens(defData.companies),
+    cargoes: valuesWithTokens(defData.cargoes).map(withLocalizedName),
     roadLooks: valuesWithTokens(defData.roadLooks),
     prefabDescriptions: valuesWithTokens(defData.prefabs),
     modelDescriptions: valuesWithTokens(defData.models),

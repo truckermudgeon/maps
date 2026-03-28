@@ -113,6 +113,21 @@ export type Ferry = Readonly<{
   connections: FerryConnection[];
 }>;
 
+export type Cargo = Readonly<{
+  token: string;
+  name: string;
+  nameLocalized: string | undefined;
+  fragility: number;
+  volume: number;
+  mass: number;
+  unitRewardPerKm: number;
+  unitLoadTime: number;
+  bodyTypes: string[];
+  overweight?: true;
+  valuable?: true;
+  group?: string[];
+}>;
+
 export type MileageTarget = Readonly<{
   token: string;
   editorName: string;
@@ -277,6 +292,7 @@ export type Achievement = Readonly<
 export interface Route {
   fromCity: string;
   toCity: string;
+  cargoTokens: string[];
 }
 
 export type BaseItem = Readonly<{
@@ -365,6 +381,7 @@ export type TrajectoryItem = BaseItem &
   Readonly<{
     type: ItemType.TrajectoryItem;
     nodeUids: readonly bigint[];
+    // N.B.: guaranteed to have at least 1 item, per `sector-parser.ts`
     checkpoints: readonly Readonly<{
       route: string;
       checkpoint: string;
@@ -619,6 +636,7 @@ export interface DefData {
   achievements: WithToken<Achievement>[];
   routes: WithToken<Route>[];
   mileageTargets: MileageTarget[];
+  cargoes: Cargo[];
 }
 
 // GeoJSON

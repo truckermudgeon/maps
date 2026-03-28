@@ -4,6 +4,7 @@ import { Preconditions } from '@truckermudgeon/base/precon';
 import { isLaneSpeedClass } from '@truckermudgeon/map/constants';
 import type {
   Achievement,
+  Cargo,
   City,
   Company,
   Country,
@@ -28,12 +29,14 @@ import type { Entries } from './scs-archive';
 import { parseSii } from './sii-parser';
 import type {
   AchievementsSii,
+  CargoDataSii,
   CitySii,
   CompanySii,
   CountrySii,
   FerrySii,
   MileageTargetsSii,
   ModelSii,
+  OversizeOfferSii,
   PrefabSii,
   RoadLookSii,
   RouteSii,
@@ -42,7 +45,8 @@ import type {
 } from './sii-schemas';
 import {
   AchievementsSiiSchema,
-  CargoSiiSchema,
+  CargoDataSiiSchema,
+  CargoDefSiiSchema,
   CityCompanySiiSchema,
   CitySiiSchema,
   CompanySiiSchema,
@@ -51,6 +55,7 @@ import {
   FerrySiiSchema,
   MileageTargetsSiiSchema,
   ModelSiiSchema,
+  OversizeOfferSiiSchema,
   PrefabSiiSchema,
   RoadLookSiiSchema,
   RouteSiiSchema,
@@ -74,6 +79,7 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
   >();
   const countries = new Map<string, Country>();
   const companies = new Map<string, Company>();
+  const cargoes = new Map<string, Cargo>();
   const ferries = new Map<
     string,
     Omit<Ferry, 'nodeUid' | 'x' | 'y' | 'connections' | 'train'> & {
@@ -98,7 +104,10 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
   };
 
   for (const f of def.files) {
-    if (!/^(city|country|company|ferry)\./.test(f) || !f.endsWith('.sii')) {
+    if (
+      !/^(city|country|company|cargo|ferry)\./.test(f) ||
+      !f.endsWith('.sii')
+    ) {
       continue;
     }
     if (/\b(?:xmas2023|mod_halloween_2025_event)\b/.test(f)) {
@@ -127,6 +136,8 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
         }
       } else if (f.startsWith('company.')) {
         processAndAdd(path, CompanySiiSchema, processCompanyJson, companies);
+      } else if (f.startsWith('cargo.')) {
+        processAndAdd(path, CargoDataSiiSchema, processCargoJson, cargoes);
       } else if (f.startsWith('ferry.')) {
         processAndAdd(path, FerrySiiSchema, processFerryJson, ferries);
       } else {
@@ -137,6 +148,7 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
   logger.info('parsed', cities.size, 'cities');
   logger.info('parsed', countries.size, 'states/countries');
   logger.info('parsed', companies.size, 'companies');
+  logger.info('parsed', cargoes.size, 'cargoes');
   logger.info('parsed', ferries.size, 'ferry/train terminals');
 
   const defCompany = Preconditions.checkExists(
@@ -261,10 +273,16 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
   logger.info('parsed', achievements.size, 'achievements');
 
   const routes = new Map<string, Route>();
+  const oversizeOfferData = convertSiiToJson(
+    'def/oversize_offer_data.sii',
+    entries,
+    OversizeOfferSiiSchema,
+  );
   for (const f of def.files) {
     if (/^route\.(\w+\.)?sii$/.test(f)) {
       processRouteJson(
         convertSiiToJson('def/route.sii', entries, RouteSiiSchema),
+        oversizeOfferData,
       ).forEach((v, k) => routes.set(k, v));
     }
   }
@@ -276,6 +294,7 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
     cities,
     countries,
     companies,
+    cargoes,
     ferries,
     prefabs,
     roadLooks,
@@ -407,7 +426,7 @@ function processCompanyJson(obj: CompanySii, entries: Entries): Company {
         const cargo = convertSiiToJson(
           `def/company/${companyToken}/${direction}/${f}`,
           entries,
-          CargoSiiSchema,
+          CargoDefSiiSchema,
         );
         for (const [, entry] of Object.entries(cargo.cargoDef)) {
           arr.push(entry.cargo);
@@ -422,6 +441,22 @@ function processCompanyJson(obj: CompanySii, entries: Entries): Company {
     cityTokens,
     cargoInTokens,
     cargoOutTokens,
+  };
+}
+
+function processCargoJson(obj: CargoDataSii): Cargo {
+  const objEntries = Object.entries(obj.cargoData);
+  const [tokenPath, rawCargo] = objEntries[0];
+  const token = tokenPath.split('.')[1];
+  return {
+    token,
+    ...rawCargo,
+    name: rawCargo.name.replaceAll('@', '').replaceAll('_', ' '),
+    nameLocalized: rawCargo.name.startsWith('@@') ? rawCargo.name : undefined,
+    fragility: rawCargo.fragility ?? 0,
+    overweight: rawCargo.overweight === 'true' ? true : undefined,
+    valuable: rawCargo.valuable === 'true' ? true : undefined,
+    unitLoadTime: rawCargo.unitLoadTime ?? 0,
   };
 }
 
@@ -952,11 +987,20 @@ function processAchievementsJson(
   return achievements;
 }
 
-function processRouteJson(obj: RouteSii): Map<string, Route> {
+function processRouteJson(
+  obj: RouteSii,
+  oversizeOfferData: OversizeOfferSii,
+): Map<string, Route> {
   const routes = new Map<string, Route>();
+  const allOffers = Object.values(oversizeOfferData.oversizeOfferData);
   for (const [key, route] of Object.entries(obj.routeData)) {
     const routeKey = assertExists(key.split('.')[1]);
-    routes.set(routeKey, route);
+    routes.set(routeKey, {
+      ...route,
+      cargoTokens: allOffers
+        .filter(offer => offer.route === key)
+        .map(offer => offer.cargo.split('.')[1]),
+    });
   }
   return routes;
 }

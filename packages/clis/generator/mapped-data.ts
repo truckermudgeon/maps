@@ -8,6 +8,7 @@ import {
 import type {
   Achievement,
   Building,
+  Cargo,
   City,
   Company,
   CompanyItem,
@@ -59,6 +60,7 @@ interface MapDataKeyFields {
   mapAreas: PickKey<'mapAreas', 'uid'>;
   mileageTargets: PickKey<'mileageTargets', 'token'>;
   modelDescriptions: PickKey<'modelDescriptions', 'token'>;
+  cargoes: PickKey<'cargoes', 'token'>;
   models: PickKey<'models', 'uid'>;
   nodes: PickKey<'nodes', 'uid'>;
   pois: PickKey<'pois', never>;
@@ -295,6 +297,12 @@ export function readMapData<
       case 'modelDescriptions':
         mapData.modelDescriptions = mapify(
           readArrayFile<WithToken<ModelDescription>>(toJsonFilePath(key)),
+          m => m.token,
+        );
+        break;
+      case 'cargoes':
+        mapData.cargoes = mapify(
+          readArrayFile<Cargo>(toJsonFilePath(key)),
           m => m.token,
         );
         break;

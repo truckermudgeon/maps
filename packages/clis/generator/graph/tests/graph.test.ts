@@ -560,6 +560,7 @@ function createFakeMapData(arrays: PartialMapData): MappedData<'usa'> {
     cutscenes: new Map(),
     dividers: new Map(),
     modelDescriptions: new Map(),
+    cargoes: new Map(),
     pois: [],
     elevation: [],
   };
