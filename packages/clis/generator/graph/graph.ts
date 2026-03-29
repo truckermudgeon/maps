@@ -982,6 +982,7 @@ function updateGraphWithFerries(
     backward: [],
   });
 
+  const ferryExitFallbacks = [];
   for (const ferry of ferries.values()) {
     const ferryNode = assertExists(nodes.get(ferry.nodeUid));
     let ferryEntrance: Node;
@@ -1016,13 +1017,14 @@ function updateGraphWithFerries(
         .filter(node => node.backwardItemUid === 0n && !graph.has(node.uid))
         .sort((a, b) => distance(a, ferryNode) - distance(b, ferryNode));
       if (potentialFerryExits.length === 0) {
-        // ignore "no backward item id" constraint.
+        // ignore "no backward item id" and "mus not be in graph" constraints.
         potentialFerryExits = ferryPrefab.nodeUids
           .map(nid => assertExists(nodes.get(nid)))
           .sort((a, b) => distance(a, ferryNode) - distance(b, ferryNode));
         assert(potentialFerryExits.length > 0);
         const node = potentialFerryExits[0];
-        logger.info('fallback ferryExit', ferry.name, {
+        ferryExitFallbacks.push({
+          name: ferry.name,
           hasBackwardItem: node.backwardItemUid !== 0n,
           inGraph: graph.has(node.uid),
           distance: Math.round(distance(node, ferryNode)),
@@ -1117,6 +1119,16 @@ function updateGraphWithFerries(
         isFerry: true,
       });
     }
+  }
+  if (ferryExitFallbacks.length) {
+    logger.warn(
+      'fallback ferryExits',
+      ferryExitFallbacks.length,
+      '/',
+      ferries.size,
+      '\n',
+      ferryExitFallbacks,
+    );
   }
 }
 
