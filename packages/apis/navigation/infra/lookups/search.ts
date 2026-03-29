@@ -6,6 +6,7 @@ import type { MappedDataForKeys } from '@truckermudgeon/io';
 import { PointRBush } from '@truckermudgeon/map/point-rbush';
 import {
   fromAtsCoordsToWgs84,
+  fromEts2CoordsToWgs84,
   fromWgs84ToAtsCoords,
   fromWgs84ToEts2Coords,
 } from '@truckermudgeon/map/projections';
@@ -52,6 +53,10 @@ export function readAndProcessSearchData(
     context.tsMapData.map === 'usa'
       ? fromWgs84ToAtsCoords
       : fromWgs84ToEts2Coords;
+  const toLngLat =
+    context.tsMapData.map === 'usa'
+      ? fromAtsCoordsToWgs84
+      : fromEts2CoordsToWgs84;
 
   let correctCompanyNodes = 0;
   let incorrectCompanyNodes = 0;
@@ -186,7 +191,7 @@ export function readAndProcessSearchData(
       .map(([nodeUid, serviceArea]) => {
         const node = assertExists(context.tsMapData.nodes.get(nodeUid));
         const nodePos: Position = [node.x, node.y];
-        const lonLat = fromAtsCoordsToWgs84(nodePos);
+        const lonLat = toLngLat(nodePos);
 
         const res: SearchResult & { description?: string } = {
           id: id++,

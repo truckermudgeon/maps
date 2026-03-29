@@ -17,6 +17,7 @@ import type { DomainEventSink } from '../../events';
 import type {
   GraphAndMapData,
   GraphMappedData,
+  LookupService,
   ProcessedSearchData,
 } from '../../lookup-data';
 import type { TelemetryEventEmitter } from '../../session-actor';
@@ -38,6 +39,8 @@ describe.skip('searchPoi', () => {
   let graphAndMapData: GraphAndMapData<GraphMappedData>;
   let searchData: ProcessedSearchData;
   let routingService: RoutingService;
+  // TODO make this real.
+  const lookupService: LookupService = {} as unknown as LookupService;
   beforeAll(() => {
     const __filename = url.fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
@@ -92,15 +95,14 @@ describe.skip('searchPoi', () => {
     const numIters = 1000;
     const start = Date.now();
     const searchService = createSearchService(
-      searchData,
-      graphAndMapData.graphNodeRTree,
+      lookupService,
       new ConsoleWorkerMetrics(),
     );
     let searchResults: SearchResult[] = [];
     for (let i = 0; i < numIters; i++) {
-      searchResults = (await searchService.searchPoi(searchRequest)).map(
-        addRelativeTruckInfo,
-      );
+      searchResults = (
+        await searchService.searchPoi(searchRequest, { game: 'usa' })
+      ).map(addRelativeTruckInfo);
     }
     // 1.95 seconds for 1000 iters
     // -> 0.227 after using r-tree
@@ -163,14 +165,13 @@ describe.skip('searchPoi', () => {
     const numIters = 5;
     const start = Date.now();
     const searchService = createSearchService(
-      searchData,
-      graphAndMapData.graphNodeRTree,
+      lookupService,
       new ConsoleWorkerMetrics(),
     );
     const results: SearchResult[][] = (
       await Promise.all(
         Array.from({ length: numIters }, () =>
-          searchService.searchPoi(searchRequest),
+          searchService.searchPoi(searchRequest, { game: 'usa' }),
         ),
       )
     ).map(rs => rs.map(addRelativeTruckInfo));

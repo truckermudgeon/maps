@@ -35,6 +35,7 @@ import type {
   SearchResultWithRelativeTruckInfo,
   TruckSimTelemetry,
 } from '../../types';
+import type { GameContext } from '../game-context';
 import type { ProcessedSearchData, SearchIndices } from '../lookup-data';
 import type { RouteWithLookup } from './generate-routes';
 
@@ -187,7 +188,13 @@ const searchPropertyPriority: Record<SearchProperties['type'], number> = {
   serviceArea: 7,
 };
 
+export interface SearchSearcherOptions {
+  gameContext: GameContext;
+  bbox: BBox;
+}
+
 export interface SearchReducerOptions {
+  gameContext: GameContext;
   truckLngLat: [number, number];
   searchResults: SearchResult[];
   routeLine: GeoJSON.Feature<GeoJSON.LineString>;
@@ -198,30 +205,85 @@ export interface SearchReducerOptions {
   distanceKm: number;
 }
 
-export class SearchService {
+export interface SearchService {
+  searchPoi(
+    req: SearchRequest,
+    game: GameContext | undefined,
+  ): Promise<SearchResult[]>;
+
+  search(
+    input: string,
+    maxSearchResults: number,
+    context: {
+      game: GameContext | undefined;
+      truckLngLat: Position | undefined;
+      activeJob: JobState | undefined;
+      activeRoute: RouteWithLookup | undefined;
+    },
+  ): Promise<SearchResult[]>;
+
+  synthesizeSearchResult(
+    lngLat: [number, number],
+    game: GameContext,
+  ): SearchResult;
+}
+
+export class SearchServiceImpl implements SearchService {
   // This helper, and the code for multi-token searches using Fuse.js, from:
   // https://stackoverflow.com/a/67736057
   private static readonly tokenizeStringWithQuotesBySpaces = (
     string: string,
   ): string[] => string.match(/("[^"]*?"|[^"\s]+)+(?=\s*|\s*$)/g) ?? [];
 
-  private readonly fuse: Fuse<SearchResult>;
+  private readonly fuse: (gameContext: GameContext) => Fuse<SearchResult>;
 
   constructor(
-    private readonly processedSearchData: ProcessedSearchData,
-    private readonly searcher: (bbox: BBox) => Promise<SearchResult[]>,
+    private readonly searcher: (
+      opts: SearchSearcherOptions,
+    ) => Promise<SearchResult[]>,
     private readonly reducer: (
       opts: SearchReducerOptions,
     ) => Promise<SearchResult[]>,
-    private readonly graphNodeRTree: PointRBush<{
-      x: number;
-      y: number;
-      z: number;
-      node: Node;
-    }>,
+    private readonly getLookup: (gameContext: GameContext) => {
+      processedSearchData: ProcessedSearchData;
+      graphNodeRTree: PointRBush<{
+        x: number;
+        y: number;
+        z: number;
+        node: Node;
+      }>;
+    },
   ) {
-    this.fuse = new Fuse<SearchResult>(
-      processedSearchData.searchData.map(s => ({
+    const atsSearchData = this.getLookup({ game: 'usa' }).processedSearchData
+      .searchData;
+    const ets2SearchData = this.getLookup({
+      game: 'europe',
+    }).processedSearchData.searchData;
+    SearchServiceImpl.validateSearchResults(atsSearchData);
+    SearchServiceImpl.validateSearchResults(ets2SearchData);
+
+    const atsFuse = new Fuse<SearchResult>(
+      atsSearchData.map(s => ({
+        ...s,
+        tags: s.tags.concat(s.description ? [s.description] : []),
+      })),
+      {
+        distance: 0,
+        threshold: 0.2,
+        findAllMatches: true,
+        ignoreLocation: true, // so that 'san francisco' can be searched for without quotes
+        sortFn: sortSearchResults,
+        keys: [
+          { name: 'label', weight: 3 },
+          { name: 'city.name', weight: 2 },
+          { name: 'stateName', weight: 1.5 },
+          'stateCode',
+          'tags',
+        ],
+      },
+    );
+    const ets2Fuse = new Fuse<SearchResult>(
+      ets2SearchData.map(s => ({
         ...s,
         tags: s.tags.concat(s.description ? [s.description] : []),
       })),
@@ -241,9 +303,12 @@ export class SearchService {
       },
     );
 
-    const missingLabels = processedSearchData.searchData.filter(
-      s => s.label == null,
-    );
+    this.fuse = (gameContext: GameContext) =>
+      gameContext.game === 'usa' ? atsFuse : ets2Fuse;
+  }
+
+  private static validateSearchResults(searchResults: SearchResult[]) {
+    const missingLabels = searchResults.filter(s => s.label == null);
     if (missingLabels.length) {
       console.log(missingLabels);
       throw new Error();
@@ -254,13 +319,19 @@ export class SearchService {
     input: string,
     maxSearchResults: number,
     context: {
+      game: GameContext | undefined;
       truckLngLat: Position | undefined;
       activeJob: JobState | undefined;
       activeRoute: RouteWithLookup | undefined;
     },
   ): Promise<SearchResult[]> {
-    const fuseResults = this.fuse.search({
-      $and: SearchService.tokenizeStringWithQuotesBySpaces(input).map(
+    const { game } = context;
+    if (!game) {
+      return [];
+    }
+
+    const fuseResults = this.fuse(game).search({
+      $and: SearchServiceImpl.tokenizeStringWithQuotesBySpaces(input).map(
         (searchToken: string) => {
           const orFields: Expression[] = [
             { label: searchToken },
@@ -302,7 +373,7 @@ export class SearchService {
           ),
         ),
       ) as unknown as GeoJSON.Feature<GeoJSON.LineString>;
-      results = await this.searchAlongLine(routeLine);
+      results = await this.searchAlongLine(routeLine, game);
       console.log(results.length, 'items in rough range of line');
 
       const fuseResultIds = new Set(fuseResults.map(r => r.item.id));
@@ -310,6 +381,7 @@ export class SearchService {
       console.log(results.length, 'items after filtering by fuse');
 
       results = await this.reducer({
+        gameContext: game,
         searchResults: results,
         truckLngLat,
         routeLine,
@@ -346,14 +418,21 @@ export class SearchService {
     });
   }
 
-  async searchPoi(request: SearchRequest): Promise<SearchResult[]> {
+  async searchPoi(
+    request: SearchRequest,
+    game: GameContext | undefined,
+  ): Promise<SearchResult[]> {
+    if (game == null) {
+      return [];
+    }
+
     let results: SearchResult[];
     switch (request.scope) {
       case ScopeType.NEARBY:
-        results = await this.searchPoiNearby(request);
+        results = await this.searchPoiNearby(request, game);
         break;
       case ScopeType.ROUTE:
-        results = await this.searchPoiAlongRoute(request);
+        results = await this.searchPoiAlongRoute(request, game);
         break;
       default:
         throw new UnreachableError(request);
@@ -375,9 +454,16 @@ export class SearchService {
    * waypoint routing, because the navigation API + navigator UI only understand
    * SearchResults.
    */
-  synthesizeSearchResult(lonLat: [number, number]): SearchResult {
-    const gameCoords = fromWgs84ToAtsCoords(lonLat);
-    const closestNode = this.graphNodeRTree.findClosest(...gameCoords).node;
+  synthesizeSearchResult(
+    lonLat: [number, number],
+    game: GameContext,
+  ): SearchResult {
+    const toGameCoords =
+      game.game === 'usa' ? fromWgs84ToAtsCoords : fromWgs84ToEts2Coords;
+    const { processedSearchData, graphNodeRTree } = this.getLookup(game);
+
+    const gameCoords = toGameCoords(lonLat);
+    const closestNode = graphNodeRTree.findClosest(...gameCoords).node;
     // TODO check if closestNode is company node or service area node.
 
     return {
@@ -391,25 +477,29 @@ export class SearchService {
       tags: [],
       label: 'Waypoint',
       sprite: 'marker',
-      ...toBaseProperties(closestNode, this.processedSearchData),
+      ...toBaseProperties(closestNode, processedSearchData),
     };
   }
 
   private async searchPoiNearby(
     request: SearchRequest & { scope: ScopeType.NEARBY },
+    gameContext: GameContext,
   ): Promise<SearchResult[]> {
     const { point, poiType } = request;
 
     const [lng, lat] = fromAtsCoordsToWgs84(point);
-    return SearchService.filterSearchDataByPoi(
+    return SearchServiceImpl.filterSearchDataByPoi(
       await this.searcher({
+        gameContext,
         // N.B.: ran into some precision issues when trying to use a delta
         // of `searchRadiusMeters / lengthOfDegree`; r-tree search returned 0.
         // so use a generous delta of 1 degree, and filter by distance later.
-        minX: lng - 1,
-        minY: lat - 1,
-        maxX: lng + 1,
-        maxY: lat + 1,
+        bbox: {
+          minX: lng - 1,
+          minY: lat - 1,
+          maxX: lng + 1,
+          maxY: lat + 1,
+        },
       }),
       poiType,
     )
@@ -426,6 +516,7 @@ export class SearchService {
 
   private async searchPoiAlongRoute(
     request: SearchRequest & { scope: ScopeType.ROUTE },
+    gameContext: GameContext,
   ): Promise<SearchResult[]> {
     const { route, poiType, point } = request;
     const routeLine = cleanCoords(
@@ -435,12 +526,13 @@ export class SearchService {
         ),
       ),
     ) as unknown as GeoJSON.Feature<GeoJSON.LineString>;
-    const uniqueResults = await this.searchAlongLine(routeLine);
-    const inBoxResults = SearchService.filterSearchDataByPoi(
+    const uniqueResults = await this.searchAlongLine(routeLine, gameContext);
+    const inBoxResults = SearchServiceImpl.filterSearchDataByPoi(
       uniqueResults,
       poiType,
     );
     return this.reducer({
+      gameContext,
       searchResults: inBoxResults,
       truckLngLat: fromAtsCoordsToWgs84(point),
       routeLine,
@@ -450,6 +542,7 @@ export class SearchService {
 
   private async searchAlongLine(
     lineString: GeoJSON.Feature<GeoJSON.LineString>,
+    gameContext: GameContext,
   ): Promise<SearchResult[]> {
     const deltaDeg = 50_000 / lengthOfDegree;
     const bboxes = lineChunk(lineString, 200, {
@@ -467,7 +560,7 @@ export class SearchService {
     const results = (
       await Promise.all(
         bboxes.map(([minX, minY, maxX, maxY]) =>
-          this.searcher({ minX, minY, maxX, maxY }),
+          this.searcher({ gameContext, bbox: { minX, minY, maxX, maxY } }),
         ),
       )
     ).flat();

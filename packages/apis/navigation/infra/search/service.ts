@@ -1,59 +1,87 @@
-import type { PointRBush } from '@truckermudgeon/map/point-rbush';
-import type { Node } from '@truckermudgeon/map/types';
-import type { BBox } from 'rbush';
 import Tinypool from 'tinypool';
-import type { SearchReducerOptions } from '../../domain/actor/search';
-import { SearchService } from '../../domain/actor/search';
-import type { ProcessedSearchData } from '../../domain/lookup-data';
+import type {
+  SearchReducerOptions,
+  SearchSearcherOptions,
+  SearchService,
+} from '../../domain/actor/search';
+import { SearchServiceImpl } from '../../domain/actor/search';
+import type { GameContext } from '../../domain/game-context';
+import type { LookupService } from '../../domain/lookup-data';
 import type { SearchResult } from '../../types';
 import type { MetricsService } from '../metrics/service';
 
+// searchData: ProcessedSearchData,
+// graphNodeRTree: PointRBush<{ x: number; y: number; z: number; node: Node }>,
+
 export function createSearchService(
-  searchData: ProcessedSearchData,
-  graphNodeRTree: PointRBush<{ x: number; y: number; z: number; node: Node }>,
+  lookups: LookupService,
   metrics: MetricsService['worker'],
 ): SearchService {
-  const searcherPool = new Tinypool({
-    maxThreads: 4,
-    filename: new URL('../workers/search-worker-wrapper.js', import.meta.url)
-      .href,
-    workerData: {
-      rbushJSON: searchData.searchDataLngLatRTreeJSON,
-    },
-  });
-  const searcher = async (bbox: BBox): Promise<SearchResult[]> => {
+  const [atsSearcherPool, ets2SearcherPool] = (['usa', 'europe'] as const).map(
+    game =>
+      new Tinypool({
+        maxThreads: 4,
+        filename: new URL(
+          '../workers/search-worker-wrapper.js',
+          import.meta.url,
+        ).href,
+        workerData: {
+          rbushJSON: lookups.getData({ game }).searchData
+            .searchDataLngLatRTreeJSON,
+        },
+      }),
+  );
+  const searcher = async (
+    opts: SearchSearcherOptions,
+  ): Promise<SearchResult[]> => {
     const start = Date.now();
-    const meta = { name: 'search' };
+    const meta = { name: 'search', game: opts.gameContext.game };
     try {
       metrics.workerCalls.inc(meta);
-      return (await searcherPool.run({ bbox })) as SearchResult[];
+      const pool =
+        opts.gameContext.game === 'usa' ? atsSearcherPool : ets2SearcherPool;
+      return (await pool.run({ bbox: opts.bbox })) as SearchResult[];
     } finally {
       metrics.workerDuration.observe(meta, Date.now() - start);
     }
   };
 
-  const reducerPool = new Tinypool({
-    maxThreads: 4,
-    filename: new URL(
-      '../workers/search-results-worker-wrapper.js',
-      import.meta.url,
-    ).href,
-    workerData: {
-      rbushJSON: searchData.searchDataLngLatRTreeJSON,
-    },
-  });
+  const [atsReducerPool, ets2ReducerPool] = (['usa', 'europe'] as const).map(
+    game =>
+      new Tinypool({
+        maxThreads: 4,
+        filename: new URL(
+          '../workers/search-results-worker-wrapper.js',
+          import.meta.url,
+        ).href,
+        workerData: {
+          rbushJSON: lookups.getData({ game }).searchData
+            .searchDataLngLatRTreeJSON,
+        },
+      }),
+  );
   const reducer = async (
     opts: SearchReducerOptions,
   ): Promise<SearchResult[]> => {
     const start = Date.now();
-    const meta = { name: 'search-results-reducer' };
+    const meta = {
+      name: 'search-results-reducer',
+      game: opts.gameContext.game,
+    };
     try {
       metrics.workerCalls.inc(meta);
-      return (await reducerPool.run(opts)) as SearchResult[];
+      const pool =
+        opts.gameContext.game === 'usa' ? atsReducerPool : ets2ReducerPool;
+      return (await pool.run(opts)) as SearchResult[];
     } finally {
       metrics.workerDuration.observe(meta, Date.now() - start);
     }
   };
 
-  return new SearchService(searchData, searcher, reducer, graphNodeRTree);
+  const getLookup = (gameContext: GameContext) => ({
+    processedSearchData: lookups.getData(gameContext).searchData,
+    graphNodeRTree: lookups.getData(gameContext).graphAndMapData.graphNodeRTree,
+  });
+
+  return new SearchServiceImpl(searcher, reducer, getLookup);
 }

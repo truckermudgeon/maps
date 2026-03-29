@@ -3,6 +3,7 @@ import { ConsoleMetrics } from './helpers';
 
 export interface WorkerMeta {
   name: string;
+  game: string;
 }
 
 export interface WorkerMetrics {
@@ -29,7 +30,7 @@ export class ConsoleWorkerMetrics
 }
 
 export class PrometheusWorkerMetrics implements WorkerMetrics {
-  private static readonly labelNames = ['name'];
+  private static readonly labelNames = ['name', 'game'];
 
   private calls = new Prometheus.Counter({
     name: 'worker_calls_total',

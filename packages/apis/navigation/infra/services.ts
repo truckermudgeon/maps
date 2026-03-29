@@ -12,6 +12,7 @@ import type { KvStore } from './kv/store';
 import { createCacheableKv } from './kv/store';
 import { logger } from './logging/logger';
 import { loadLookupData } from './lookups/loader';
+import { LookupServiceImpl } from './lookups/service';
 import type { MetricsService } from './metrics/service';
 import { createMetricsService } from './metrics/service';
 import type { RateLimitService } from './rate-limit/service';
@@ -31,19 +32,22 @@ export interface Services {
 }
 
 export function initServices(dataDir: string): Services {
-  const lookups = loadLookupData(dataDir);
+  const lookups = new LookupServiceImpl(
+    loadLookupData(dataDir, 'usa'),
+    loadLookupData(dataDir, 'europe'),
+  );
+
   const kv = createCacheableKv();
   const rateLimit = createRateLimitService(kv);
   const metrics = createMetricsService();
-  const search = createSearchService(
-    lookups.searchData,
-    lookups.graphAndMapData.graphNodeRTree,
-    metrics.worker,
-  );
+  const search = createSearchService(lookups, metrics.worker);
+
+  const _lookups = lookups.getData({ game: 'usa' });
+
   const routing = createRoutingService(
     {
-      graph: lookups.graphAndMapData.graphData.graph,
-      nodeLUT: lookups.graphAndMapData.tsMapData.nodes,
+      graph: _lookups.graphAndMapData.graphData.graph,
+      nodeLUT: _lookups.graphAndMapData.tsMapData.nodes,
       enabledDlcGuards: toAtsDlcGuards(AtsSelectableDlcs),
     },
     metrics.worker,
@@ -72,7 +76,7 @@ export function initServices(dataDir: string): Services {
     domainEventSink,
     maxClientsPerActor: 5,
     idleTtlMs: 10 * 60_000, // 10 minutes
-    graphAndMapData: lookups.graphAndMapData,
+    graphAndMapData: _lookups.graphAndMapData,
     routing,
     kv,
     // TODO wire up create + delete metrics
@@ -87,7 +91,7 @@ export function initServices(dataDir: string): Services {
   }, 10_000);
 
   return {
-    lookups,
+    lookups: _lookups,
     domainEventSink,
     kv,
     sessionActors,

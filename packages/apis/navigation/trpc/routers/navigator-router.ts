@@ -181,7 +181,7 @@ export const navigatorRouter = router({
     )
     .query<SearchResultWithRelativeTruckInfo[]>(async ({ input, ctx }) => {
       console.log('search request', input);
-      const { readTelemetry, readActiveRoute } = ctx.sessionActor;
+      const { readTelemetry, readActiveRoute, gameContext } = ctx.sessionActor;
       const { type: poiType, scope } = input;
       const addRelativeTruckInfo = createWithRelativeTruckInfoMapper(
         'usa',
@@ -202,7 +202,7 @@ export const navigatorRouter = router({
         });
       }
 
-      return (await ctx.services.search.searchPoi(searchRequest))
+      return (await ctx.services.search.searchPoi(searchRequest, gameContext))
         .slice(0, scope === ScopeType.NEARBY ? maxSearchResults : Infinity)
         .map(addRelativeTruckInfo);
     }),
@@ -215,12 +215,13 @@ export const navigatorRouter = router({
     )
     .input(z.string().max(100))
     .query<SearchResultWithRelativeTruckInfo[]>(async ({ input, ctx }) => {
-      const { readTelemetry } = ctx.sessionActor;
+      const { readTelemetry, gameContext } = ctx.sessionActor;
       const currentTruckLocation = readTelemetry()?.truck.position;
       const results = await ctx.services.search.search(
         input,
         maxSearchResults,
         {
+          game: gameContext,
           truckLngLat: currentTruckLocation
             ? fromAtsCoordsToWgs84([
                 currentTruckLocation.X,
@@ -249,6 +250,10 @@ export const navigatorRouter = router({
     .query<SearchResult>(({ input, ctx }) => {
       return ctx.services.search.synthesizeSearchResult(
         input as [number, number],
+        assertExists(
+          ctx.sessionActor.gameContext,
+          'GameContext must exist in order to synthesize a search result.',
+        ),
       );
     }),
   previewRoutes: navigatorSessionProcedure

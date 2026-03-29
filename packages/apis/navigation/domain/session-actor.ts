@@ -16,6 +16,7 @@ import type { TrailerEventEmitter } from './actor/detect-trailer-events';
 import { detectTrailerEvents } from './actor/detect-trailer-events';
 import type { RouteWithLookup, RoutingService } from './actor/generate-routes';
 import type { DomainEventSink } from './events';
+import type { GameContext } from './game-context';
 import type { GraphAndMapData, GraphMappedData } from './lookup-data';
 import Omit = util.Omit;
 
@@ -30,6 +31,7 @@ export type SessionActor = {
   ReturnType<typeof detectRouteEvents> &
   ReturnType<typeof detectTrailerEvents> &
   ReturnType<typeof detectThemeModeEvents> & {
+    readonly gameContext: GameContext | undefined;
     readonly code: string;
     readonly attachedClientIds: ReadonlySet<string>;
     getLatestTelemetry(): LatestValue<TruckSimTelemetry | undefined>;
@@ -45,6 +47,10 @@ export type ReadonlySessionActor = Pick<SessionActor, 'attachedClientIds'>;
 // global functions.
 // TODO improve the interface.
 export class SessionActorImpl implements SessionActor {
+  private readonly _gameContext = {
+    game: undefined,
+  };
+
   private clients = new Set<string>(); // client IDs
   private latestTelemetry = new LatestValue<TruckSimTelemetry | undefined>();
   private readonly onTelemetryHandler: (
@@ -126,6 +132,16 @@ export class SessionActorImpl implements SessionActor {
 
   getLatestTelemetry() {
     return this.latestTelemetry;
+  }
+
+  get gameContext(): GameContext | undefined {
+    const latest = this.latestTelemetry.get();
+    if (latest == null) {
+      return undefined;
+    }
+    return {
+      game: latest.game.game.name === 'ats' ? 'usa' : 'europe',
+    };
   }
 
   get attachedClientIds(): ReadonlySet<string> {

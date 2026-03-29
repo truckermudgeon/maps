@@ -45,7 +45,7 @@ export function createRoutingService(
   });
   const router = async (opts: RouteOptions): Promise<Route> => {
     const start = Date.now();
-    const meta = { name: 'find-route' };
+    const meta = { name: 'find-route', game: 'TODO' };
     try {
       metrics.workerCalls.inc(meta);
       return (await pool.run(opts)) as Route;
