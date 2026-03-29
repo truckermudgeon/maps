@@ -162,7 +162,7 @@ export interface OversizeOfferSii {
   >;
 }
 export const OversizeOfferSiiSchema: JSONSchemaType<OversizeOfferSii> = object({
-  oversizeOfferData: patternRecord(/^spec_offer\.[0-9a-z_]{1,12}$/, {
+  oversizeOfferData: patternRecord(/^spec_offer\.[0-9a-zA-Z_]{1,12}$/, {
     route: stringPattern(/^route_data\.[0-9a-z_]{1,12}$/),
     cargo: stringPattern(/^cargo\.[0-9a-z_]{1,12}$/),
   }),
