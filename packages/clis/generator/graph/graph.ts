@@ -581,8 +581,27 @@ export function generateGraph(
     );
     // assert containing prefab is connected and doesn't already contain another
     // island prefab
-    assert(cpns.some(n => graph.has(n.uid)));
-    assert(!containingPrefabs.has(containingPrefab));
+    assert(
+      cpns.some(n => graph.has(n.uid)),
+      `containing prefab must be connected in graph`,
+    );
+    if (map === 'usa') {
+      assert(
+        !containingPrefabs.has(containingPrefab),
+        `containing prefab cannot contain more than 1 island prefab`,
+      );
+    } else if (map === 'europe') {
+      if (containingPrefabs.has(containingPrefab)) {
+        logger.warn(
+          'containing prefab',
+          containingPrefab.uid.toString(16),
+          'already contains an island',
+        );
+      }
+    } else {
+      logger.error('unsupported map', map);
+      throw new UnreachableError(map);
+    }
     containingPrefabs.add(containingPrefab);
 
     const { key, value } = getPrefabFacilitiesEntry(containingPrefab, {
@@ -967,7 +986,31 @@ function updateGraphWithFerries(
     const ferryNode = assertExists(nodes.get(ferry.nodeUid));
     let ferryEntrance: Node;
     let ferryExit: Node;
-    if (ferry.prefabUid != null) {
+    if (context.map === 'usa') {
+      if (ferry.prefabUid != null) {
+        const ferryPrefab = assertExists(
+          prefabs.get(ferry.prefabUid),
+          `no prefab for ferry:\nn${JSON.stringify(ferry, null, 2)}`,
+        );
+        const prefabNodesInGraph = ferryPrefab.nodeUids.filter(nid =>
+          graph.has(nid),
+        );
+        assert(prefabNodesInGraph.length === 1);
+
+        ferryEntrance = assertExists(nodes.get(prefabNodesInGraph[0]));
+        const potentialFerryExits = ferryPrefab.nodeUids
+          .map(nid => assertExists(nodes.get(nid)))
+          .filter(node => node.backwardItemUid === 0n);
+        // pick the exit node closest to ferry icon
+        ferryExit = potentialFerryExits.sort(
+          (a, b) => distance(a, ferryNode) - distance(b, ferryNode),
+        )[0];
+      } else {
+        ferryEntrance = assertExists(nodes.get(ferry.nodeUid));
+        ferryExit = ferryEntrance;
+      }
+    } else if (context.map === 'europe') {
+      assert(ferry.prefabUid != null, 'ferry must have prefab');
       const ferryPrefab = assertExists(
         prefabs.get(ferry.prefabUid),
         `no prefab for ferry:\nn${JSON.stringify(ferry, null, 2)}`,
@@ -975,19 +1018,36 @@ function updateGraphWithFerries(
       const prefabNodesInGraph = ferryPrefab.nodeUids.filter(nid =>
         graph.has(nid),
       );
-      assert(prefabNodesInGraph.length === 1);
+      assert(prefabNodesInGraph.length >= 1);
 
-      ferryEntrance = assertExists(nodes.get(prefabNodesInGraph[0]));
+      // sort by closest to ferry icon, first.
       const potentialFerryExits = ferryPrefab.nodeUids
         .map(nid => assertExists(nodes.get(nid)))
-        .filter(node => node.backwardItemUid === 0n);
-      // pick the exit node closest to ferry icon
-      ferryExit = potentialFerryExits.sort(
-        (a, b) => distance(a, ferryNode) - distance(b, ferryNode),
-      )[0];
+        .filter(node => node.backwardItemUid === 0n)
+        .sort((a, b) => distance(a, ferryNode) - distance(b, ferryNode));
+      ferryExit = assertExists(
+        potentialFerryExits[0],
+        `ferryExit must exist for ferry\n${JSON.stringify(ferry, null, 2)}`,
+      );
+
+      const potentialFerryEntrances = ferryPrefab.nodeUids
+        .map(nid => assertExists(nodes.get(nid)))
+        .filter(
+          node =>
+            node.uid !== ferryExit.uid && prefabNodesInGraph.includes(node.uid),
+        )
+        .sort((a, b) => distance(b, ferryNode) - distance(a, ferryNode));
+      ferryEntrance = assertExists(
+        potentialFerryEntrances[0],
+        `ferryEntrance must exist`,
+      );
+      assert(
+        ferryEntrance !== ferryExit,
+        `ferryEntrance cannot be the same as ferryExit`,
+      );
     } else {
-      ferryEntrance = assertExists(nodes.get(ferry.nodeUid));
-      ferryExit = ferryEntrance;
+      logger.error('unsupported map', context.map);
+      throw new UnreachableError(context.map);
     }
     //console.log('ferry', {
     //  token: ferry.token,
