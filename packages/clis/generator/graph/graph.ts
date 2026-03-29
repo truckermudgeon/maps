@@ -986,45 +986,49 @@ function updateGraphWithFerries(
     const ferryNode = assertExists(nodes.get(ferry.nodeUid));
     let ferryEntrance: Node;
     let ferryExit: Node;
+    assert(ferry.prefabUid != null, 'ferry must have prefab');
+    const ferryPrefab = assertExists(
+      prefabs.get(ferry.prefabUid),
+      `no prefab for ferry:\nn${JSON.stringify(ferry, null, 2)}`,
+    );
+    const prefabNodesInGraph = ferryPrefab.nodeUids.filter(nid =>
+      graph.has(nid),
+    );
+    assert(prefabNodesInGraph.length >= 1);
+
     if (context.map === 'usa') {
-      if (ferry.prefabUid != null) {
-        const ferryPrefab = assertExists(
-          prefabs.get(ferry.prefabUid),
-          `no prefab for ferry:\nn${JSON.stringify(ferry, null, 2)}`,
-        );
-        const prefabNodesInGraph = ferryPrefab.nodeUids.filter(nid =>
-          graph.has(nid),
-        );
-        assert(prefabNodesInGraph.length === 1);
-
-        ferryEntrance = assertExists(nodes.get(prefabNodesInGraph[0]));
-        const potentialFerryExits = ferryPrefab.nodeUids
-          .map(nid => assertExists(nodes.get(nid)))
-          .filter(node => node.backwardItemUid === 0n);
-        // pick the exit node closest to ferry icon
-        ferryExit = potentialFerryExits.sort(
-          (a, b) => distance(a, ferryNode) - distance(b, ferryNode),
-        )[0];
-      } else {
-        ferryEntrance = assertExists(nodes.get(ferry.nodeUid));
-        ferryExit = ferryEntrance;
-      }
-    } else if (context.map === 'europe') {
-      assert(ferry.prefabUid != null, 'ferry must have prefab');
-      const ferryPrefab = assertExists(
-        prefabs.get(ferry.prefabUid),
-        `no prefab for ferry:\nn${JSON.stringify(ferry, null, 2)}`,
-      );
-      const prefabNodesInGraph = ferryPrefab.nodeUids.filter(nid =>
-        graph.has(nid),
-      );
-      assert(prefabNodesInGraph.length >= 1);
-
+      assert(prefabNodesInGraph.length === 1);
+      ferryEntrance = assertExists(nodes.get(prefabNodesInGraph[0]));
       // sort by closest to ferry icon, first.
       const potentialFerryExits = ferryPrefab.nodeUids
         .map(nid => assertExists(nodes.get(nid)))
         .filter(node => node.backwardItemUid === 0n)
         .sort((a, b) => distance(a, ferryNode) - distance(b, ferryNode));
+      ferryExit = assertExists(
+        potentialFerryExits[0],
+        `ferryExit must exist for ferry\n${JSON.stringify(ferry, null, 2)}`,
+      );
+    } else if (context.map === 'europe') {
+      // sort by closest to ferry icon, first.
+      // TODO what's the best way to pick a ferry exit node in ETS2?
+      let potentialFerryExits = ferryPrefab.nodeUids
+        .map(nid => assertExists(nodes.get(nid)))
+        .filter(node => node.backwardItemUid === 0n && !graph.has(node.uid))
+        .sort((a, b) => distance(a, ferryNode) - distance(b, ferryNode));
+      if (potentialFerryExits.length === 0) {
+        // ignore "no backward item id" constraint.
+        potentialFerryExits = ferryPrefab.nodeUids
+          .map(nid => assertExists(nodes.get(nid)))
+          .sort((a, b) => distance(a, ferryNode) - distance(b, ferryNode));
+        assert(potentialFerryExits.length > 0);
+        const node = potentialFerryExits[0];
+        logger.info('fallback ferryExit', ferry.name, {
+          hasBackwardItem: node.backwardItemUid !== 0n,
+          inGraph: graph.has(node.uid),
+          distance: Math.round(distance(node, ferryNode)),
+        });
+      }
+
       ferryExit = assertExists(
         potentialFerryExits[0],
         `ferryExit must exist for ferry\n${JSON.stringify(ferry, null, 2)}`,
@@ -1041,14 +1045,16 @@ function updateGraphWithFerries(
         potentialFerryEntrances[0],
         `ferryEntrance must exist`,
       );
-      assert(
-        ferryEntrance !== ferryExit,
-        `ferryEntrance cannot be the same as ferryExit`,
-      );
     } else {
       logger.error('unsupported map', context.map);
       throw new UnreachableError(context.map);
     }
+
+    assert(
+      ferryEntrance !== ferryExit,
+      `ferryEntrance cannot be the same as ferryExit`,
+    );
+
     //console.log('ferry', {
     //  token: ferry.token,
     //  ferryEntrance: ferryEntrance.uid.toString(16),
@@ -1056,8 +1062,19 @@ function updateGraphWithFerries(
     //});
 
     // create prefab exit graph node
-    const exitGraphNode = newGraphNode();
-    graph.set(ferryExit.uid, exitGraphNode);
+    let exitGraphNode: { forward: Neighbor[]; backward: Neighbor[] };
+    if (context.map === 'usa') {
+      assert(
+        !graph.has(ferryExit.uid),
+        `graph must not already contain ferry exit for ${ferry.name}`,
+      );
+      exitGraphNode = newGraphNode();
+      graph.set(ferryExit.uid, exitGraphNode);
+    } else if (context.map === 'europe') {
+      exitGraphNode = putIfAbsent(ferryExit.uid, newGraphNode(), graph);
+    } else {
+      throw new UnreachableError(context.map);
+    }
 
     // establish edges between prefab entrance and prefab exit
     const entranceGraphNode = assertExists(graph.get(ferryEntrance.uid));
