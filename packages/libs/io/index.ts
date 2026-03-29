@@ -1,3 +1,4 @@
+export { readGraphData } from './graph-data';
 export { readMapData } from './mapped-data';
 export type {
   FocusOptions,
