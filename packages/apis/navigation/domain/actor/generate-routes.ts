@@ -808,6 +808,15 @@ function combineRoutes(routes: RouteWithLookup[]): RouteWithLookup {
 }
 
 function hasConsistentSegments(route: RouteWithLookup): boolean {
+  const firstSegmentMap = route.segments[0].key.split('-').at(-1);
+  if (
+    !route.segments.every(
+      segment => firstSegmentMap !== segment.key.split('-').at(-1),
+    )
+  ) {
+    console.warn('inconsistent segments: not all segments', firstSegmentMap);
+    return false;
+  }
   return route.lookup.nodeUids.every((nodeUids, index) => {
     assert(nodeUids.length > 0, 'empty route lookup nodeUids array');
     if (index === 0) {
