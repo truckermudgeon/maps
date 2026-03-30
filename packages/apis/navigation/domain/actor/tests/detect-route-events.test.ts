@@ -293,8 +293,8 @@ describe.skip('detectRouteEvents bugs', () => {
     const endNode = assertExists(nodes.get(0x47d43d1c908b0001n));
     const testRoute = await generateRouteFromKeys(
       [
-        createRouteKey(startNode.uid, endNode.uid, 'forward', 'fastest'),
-        createRouteKey(endNode.uid, startNode.uid, 'forward', 'fastest'),
+        createRouteKey(startNode.uid, endNode.uid, 'forward', 'fastest', 'usa'),
+        createRouteKey(endNode.uid, startNode.uid, 'forward', 'fastest', 'usa'),
       ],
       { graphAndMapData, routing: routingService },
     );

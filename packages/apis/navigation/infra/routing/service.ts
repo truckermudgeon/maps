@@ -38,12 +38,13 @@ export function createRoutingService(
   lookups: LookupService,
   metrics: MetricsService['worker'],
 ): RoutingService {
-  const [atsPool, ets2Pool] = ([] as const).map(game => {
+  const [atsPool, ets2Pool] = (['usa', 'europe'] as const).map(game => {
     const lookupData = lookups.getData({ game });
     const routeContext: Context = {
       nodeLUT: lookupData.graphAndMapData.tsMapData.nodes,
       graph: lookupData.graphAndMapData.graphData.graph,
       enabledDlcGuards: lookupData.allDlcGuards,
+      map: game,
     };
 
     return new Tinypool({

@@ -388,6 +388,7 @@ describe.skip('generateRoutes bugs', () => {
           0x5f76e26192852154n,
           'forward',
           'shortest',
+          'usa',
         ),
       ],
       {
@@ -406,6 +407,7 @@ describe.skip('generateRoutes bugs', () => {
           0x42da4f504e9b0426n,
           'forward',
           'shortest',
+          'usa',
         ),
       ],
       {
@@ -425,6 +427,7 @@ describe.skip('generateRoutes bugs', () => {
           0x27f9f4d86445076an,
           'backward',
           'shortest',
+          'usa',
         ),
       ],
       {

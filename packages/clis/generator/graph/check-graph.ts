@@ -1,13 +1,15 @@
 import type { MappedDataForKeys } from '@truckermudgeon/io';
 import {
   AtsSelectableDlcs,
+  Ets2SelectableDlcs,
   toAtsDlcGuards,
+  toEts2DlcGuards,
 } from '@truckermudgeon/map/constants';
 import {
   fromAtsCoordsToWgs84,
   fromEts2CoordsToWgs84,
 } from '@truckermudgeon/map/projections';
-import type { Route } from '@truckermudgeon/map/routing';
+import type { Context, Route } from '@truckermudgeon/map/routing';
 import type { CompanyItem, Neighbors } from '@truckermudgeon/map/types';
 import * as cliProgress from 'cli-progress';
 import Tinypool from 'tinypool';
@@ -65,8 +67,12 @@ export async function checkGraph(
       routeContext: {
         graph,
         nodeLUT: nodes,
-        enabledDlcGuards: toAtsDlcGuards(AtsSelectableDlcs),
-      },
+        enabledDlcGuards:
+          tsMapData.map === 'usa'
+            ? toAtsDlcGuards(AtsSelectableDlcs)
+            : toEts2DlcGuards(Ets2SelectableDlcs),
+        map: tsMapData.map,
+      } satisfies Context,
     },
   });
   const promises: Promise<unknown>[] = [];

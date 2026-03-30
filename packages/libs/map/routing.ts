@@ -34,9 +34,11 @@ export interface Context {
   nodeLUT: ReadonlyMap<bigint, PartialNode>;
   graph: ReadonlyMap<bigint, Neighbors>;
   enabledDlcGuards: ReadonlySet<number>;
+  map: 'usa' | 'europe';
 }
 
-export type RouteKey = `${string}-${string}-${Direction}-${Mode}`;
+export type RouteKey =
+  `${string}-${string}-${Direction}-${Mode}-${'usa' | 'europe'}`;
 
 export function assertRouteKey(key: string): RouteKey {
   const [startNodeUid, endNodeUid, direction, mode] = key.split('-');
@@ -59,8 +61,9 @@ export function createRouteKey(
   endNodeUid: bigint,
   direction: Direction,
   mode: Mode,
+  map: 'usa' | 'europe',
 ): RouteKey {
-  return `${startNodeUid.toString(16)}-${endNodeUid.toString(16)}-${direction}-${mode}`;
+  return `${startNodeUid.toString(16)}-${endNodeUid.toString(16)}-${direction}-${mode}-${map}`;
 }
 
 export function findRouteFromKey(key: RouteKey, context: Context): Route {
@@ -97,7 +100,13 @@ export function findRoute(
     context.graph.has(endNodeUid),
     `cannot find route to unknown node ${endNodeUid.toString(16)}`,
   );
-  const key = createRouteKey(startNodeUid, endNodeUid, direction, mode);
+  const key = createRouteKey(
+    startNodeUid,
+    endNodeUid,
+    direction,
+    mode,
+    context.map,
+  );
   // console.log('finding route', startNodeUid, 'direction', endNodeUid);
   const { nodeLUT, graph } = context;
 

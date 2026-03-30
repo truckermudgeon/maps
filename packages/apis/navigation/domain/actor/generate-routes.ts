@@ -132,7 +132,13 @@ export async function generateRouteFromKeys(
           endNodeUid.toString(16),
         );
       }
-      routeKey = createRouteKey(startNodeUid, endNodeUid, direction, mode);
+      routeKey = createRouteKey(
+        startNodeUid,
+        endNodeUid,
+        direction,
+        mode,
+        tsMapData.map,
+      );
 
       const route = await routing.findRouteFromKey(routeKey, gameContext);
       if (!route.success) {
@@ -213,7 +219,15 @@ export async function addWaypoint(
     }
 
     const first = await generateRouteFromKeys(
-      [createRouteKey(start, toNodeUid, firstDirection, strategy)],
+      [
+        createRouteKey(
+          start,
+          toNodeUid,
+          firstDirection,
+          strategy,
+          context.graphAndMapData.tsMapData.map,
+        ),
+      ],
       context,
     );
 
@@ -235,7 +249,15 @@ export async function addWaypoint(
     }
 
     const second = await generateRouteFromKeys(
-      [createRouteKey(toNodeUid, end, firstPenultimateDirection, strategy)],
+      [
+        createRouteKey(
+          toNodeUid,
+          end,
+          firstPenultimateDirection,
+          strategy,
+          context.graphAndMapData.tsMapData.map,
+        ),
+      ],
       context,
     );
 
@@ -451,7 +473,13 @@ export async function generateRoutes(
       modes.map(async mode => {
         const start = Date.now();
         let route = await routing.findRouteFromKey(
-          createRouteKey(fromNodeUid, toNodeUid, direction, mode),
+          createRouteKey(
+            fromNodeUid,
+            toNodeUid,
+            direction,
+            mode,
+            context.graphAndMapData.tsMapData.map,
+          ),
           gameContext,
         );
         if (!route.success) {
@@ -475,6 +503,7 @@ export async function generateRoutes(
                 toNodeUid,
                 direction === 'forward' ? 'backward' : 'forward',
                 mode,
+                context.graphAndMapData.tsMapData.map,
               ),
               gameContext,
             );
