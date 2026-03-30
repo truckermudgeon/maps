@@ -12,7 +12,7 @@ export const routingModes = new Set<Mode>([
   'smallRoads',
 ]);
 export type Route = {
-  key: string;
+  key: RouteKey;
   mode: Mode;
 } & (
   | {

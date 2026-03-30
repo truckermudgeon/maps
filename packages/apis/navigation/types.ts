@@ -1,4 +1,4 @@
-import type { Mode } from '@truckermudgeon/map/routing';
+import type { Mode, RouteKey } from '@truckermudgeon/map/routing';
 import type { SearchProperties } from '@truckermudgeon/map/types';
 import type { z } from 'zod';
 import type { BranchType } from './constants';
@@ -93,7 +93,7 @@ export interface RouteStep {
 }
 
 export interface RouteSegment {
-  key: string;
+  key: RouteKey;
   steps: RouteStep[]; // must have length > 0
   strategy: Mode;
   /** Sum of steps' distances */

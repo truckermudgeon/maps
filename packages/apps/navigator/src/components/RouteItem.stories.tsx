@@ -20,7 +20,7 @@ export const Default: Story = {
       id: '',
       segments: [
         {
-          key: '0-0-forward-fastest',
+          key: '0-0-forward-fastest-usa',
           steps: [],
           distanceMeters: 0,
           duration: 0,
