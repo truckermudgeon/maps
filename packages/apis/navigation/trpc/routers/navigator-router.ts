@@ -392,7 +392,10 @@ export const navigatorRouter = router({
       } else {
         console.log('generating and setting active route');
         setActiveRoute(
-          await generateRouteFromKeys(input, { graphAndMapData, routing }),
+          await generateRouteFromKeys(input, {
+            graphAndMapData,
+            routing,
+          }),
         );
         console.log('active route set:', readActiveRoute()?.id);
       }

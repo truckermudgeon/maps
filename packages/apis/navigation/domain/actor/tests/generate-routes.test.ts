@@ -1,9 +1,5 @@
 import type { MappedDataForKeys } from '@truckermudgeon/io';
 import { readMapData } from '@truckermudgeon/io';
-import {
-  AtsSelectableDlcs,
-  toAtsDlcGuards,
-} from '@truckermudgeon/map/constants';
 import { fromAtsCoordsToWgs84 } from '@truckermudgeon/map/projections';
 import { createRouteKey } from '@truckermudgeon/map/routing';
 import type { Node, Prefab } from '@truckermudgeon/map/types';
@@ -12,7 +8,6 @@ import { EventEmitter } from 'events';
 import * as path from 'node:path';
 import * as url from 'node:url';
 import { beforeAll } from 'vitest';
-import { readGraphAndMapData } from '../../../infra/lookups/graph-and-map';
 import { ConsoleWorkerMetrics } from '../../../infra/metrics/worker';
 import { createRoutingService } from '../../../infra/routing/service';
 import type { DomainEventSink } from '../../events';
@@ -40,6 +35,7 @@ import {
   lookupForNodeUids,
 } from './builders';
 import { nodes, prefabDesc_2o0cb } from './fixtures';
+import { testLookupService } from './test-lookup-service';
 
 const { combineRoutes, getDirectionOnRoad } = forTesting;
 const dummyEventSink: DomainEventSink = {
@@ -331,16 +327,9 @@ describe.skip('generateRoutes bugs', () => {
   let graphAndMapData: GraphAndMapData<GraphMappedData>;
   let routingService: RoutingService;
   beforeAll(() => {
-    const __filename = url.fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    const outDir = path.join(__dirname, '../../../../../../out');
-    graphAndMapData = readGraphAndMapData(outDir, 'usa');
+    graphAndMapData = testLookupService.getData().graphAndMapData;
     routingService = createRoutingService(
-      {
-        nodeLUT: graphAndMapData.tsMapData.nodes,
-        graph: graphAndMapData.graphData.graph,
-        enabledDlcGuards: toAtsDlcGuards(AtsSelectableDlcs),
-      },
+      testLookupService,
       new ConsoleWorkerMetrics(),
     );
     // routing service's thread pool ends up making copies of the routing context,

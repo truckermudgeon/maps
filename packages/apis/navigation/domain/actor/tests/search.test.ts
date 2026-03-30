@@ -1,14 +1,6 @@
-import {
-  AtsSelectableDlcs,
-  toAtsDlcGuards,
-} from '@truckermudgeon/map/constants';
 import { EventEmitter } from 'events';
-import path from 'node:path';
-import url from 'node:url';
 import { beforeAll } from 'vitest';
 import { PoiType, ScopeType } from '../../../constants';
-import { readGraphAndMapData } from '../../../infra/lookups/graph-and-map';
-import { readAndProcessSearchData } from '../../../infra/lookups/search';
 import { ConsoleWorkerMetrics } from '../../../infra/metrics/worker';
 import { createRoutingService } from '../../../infra/routing/service';
 import { createSearchService } from '../../../infra/search/service';
@@ -18,7 +10,6 @@ import type {
   GraphAndMapData,
   GraphMappedData,
   LookupService,
-  ProcessedSearchData,
 } from '../../lookup-data';
 import type { TelemetryEventEmitter } from '../../session-actor';
 import { SessionActorImpl } from '../../session-actor';
@@ -28,6 +19,7 @@ import {
   createWithRelativeTruckInfoMapper,
 } from '../search';
 import { aTelemetryWith, aTruckWith } from './builders';
+import { testLookupService } from './test-lookup-service';
 
 const dummyEventSink: DomainEventSink = {
   publish: () => void 0,
@@ -37,22 +29,13 @@ const dummyEventSink: DomainEventSink = {
 //  an entire dump of parser-generated JSON files.
 describe.skip('searchPoi', () => {
   let graphAndMapData: GraphAndMapData<GraphMappedData>;
-  let searchData: ProcessedSearchData;
   let routingService: RoutingService;
   // TODO make this real.
   const lookupService: LookupService = {} as unknown as LookupService;
   beforeAll(() => {
-    const __filename = url.fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    const outDir = path.join(__dirname, '../../../../../../out');
-    graphAndMapData = readGraphAndMapData(outDir, 'usa');
-    searchData = readAndProcessSearchData(outDir, graphAndMapData);
+    graphAndMapData = testLookupService.getData().graphAndMapData;
     routingService = createRoutingService(
-      {
-        nodeLUT: graphAndMapData.tsMapData.nodes,
-        graph: graphAndMapData.graphData.graph,
-        enabledDlcGuards: toAtsDlcGuards(AtsSelectableDlcs),
-      },
+      testLookupService,
       new ConsoleWorkerMetrics(),
     );
   }, 20_000);

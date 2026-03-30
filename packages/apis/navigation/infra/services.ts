@@ -1,8 +1,4 @@
 import { UnreachableError } from '@truckermudgeon/base/precon';
-import {
-  AtsSelectableDlcs,
-  toAtsDlcGuards,
-} from '@truckermudgeon/map/constants';
 import type { RoutingService } from '../domain/actor/generate-routes';
 import type { SearchService } from '../domain/actor/search';
 import type { DomainEventSink } from '../domain/events';
@@ -36,22 +32,13 @@ export function initServices(dataDir: string): Services {
     loadLookupData(dataDir, 'usa'),
     loadLookupData(dataDir, 'europe'),
   );
+  const _lookups = lookups.getData({ game: 'usa' });
 
   const kv = createCacheableKv();
   const rateLimit = createRateLimitService(kv);
   const metrics = createMetricsService();
   const search = createSearchService(lookups, metrics.worker);
-
-  const _lookups = lookups.getData({ game: 'usa' });
-
-  const routing = createRoutingService(
-    {
-      graph: _lookups.graphAndMapData.graphData.graph,
-      nodeLUT: _lookups.graphAndMapData.tsMapData.nodes,
-      enabledDlcGuards: toAtsDlcGuards(AtsSelectableDlcs),
-    },
-    metrics.worker,
-  );
+  const routing = createRoutingService(lookups, metrics.worker);
   const domainEventSink: DomainEventSink = {
     publish(event) {
       let logMethod;

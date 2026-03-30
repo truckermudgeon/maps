@@ -1,18 +1,11 @@
 import { assertExists } from '@truckermudgeon/base/assert';
 import type { Position } from '@truckermudgeon/base/geom';
-import {
-  AtsSelectableDlcs,
-  ItemType,
-  toAtsDlcGuards,
-} from '@truckermudgeon/map/constants';
+import { ItemType } from '@truckermudgeon/map/constants';
 import { fromAtsCoordsToWgs84 } from '@truckermudgeon/map/projections';
 import { createRouteKey } from '@truckermudgeon/map/routing';
 import type { Road } from '@truckermudgeon/map/types';
-import path from 'node:path';
-import url from 'node:url';
 import { beforeAll, vi } from 'vitest';
 import { BranchType } from '../../../constants';
-import { readGraphAndMapData } from '../../../infra/lookups/graph-and-map';
 import { ConsoleWorkerMetrics } from '../../../infra/metrics/worker';
 import { createRoutingService } from '../../../infra/routing/service';
 import type { DomainEventSink } from '../../events';
@@ -27,6 +20,7 @@ import {
   aTelemetryWith,
   aTruckWith,
 } from './builders';
+import { testLookupService } from './test-lookup-service';
 
 const { createUpdateListener, arrayIndexToRouteIndex } = forTesting;
 
@@ -207,16 +201,9 @@ describe.skip('detectRouteEvents bugs', () => {
   let graphAndMapData: GraphAndMapData<GraphMappedData>;
   let routingService: RoutingService;
   beforeAll(() => {
-    const __filename = url.fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    const outDir = path.join(__dirname, '../../../../../../out');
-    graphAndMapData = readGraphAndMapData(outDir, 'usa');
+    graphAndMapData = testLookupService.getData().graphAndMapData;
     routingService = createRoutingService(
-      {
-        nodeLUT: graphAndMapData.tsMapData.nodes,
-        graph: graphAndMapData.graphData.graph,
-        enabledDlcGuards: toAtsDlcGuards(AtsSelectableDlcs),
-      },
+      testLookupService,
       new ConsoleWorkerMetrics(),
     );
     // routing service's thread pool ends up making copies of the routing context,

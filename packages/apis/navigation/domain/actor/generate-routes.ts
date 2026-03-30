@@ -37,13 +37,14 @@ import type {
   TruckSimTelemetry,
 } from '../../types';
 import type { DomainEventSink } from '../events';
+import type { GameContext } from '../game-context';
 import type { GraphAndMapData, GraphMappedData } from '../lookup-data';
 import { calculateLocation } from './detect-route-events';
 import { calculateSteps } from './guidance';
 import { scoreLine } from './score-line';
 
 export interface RoutingService {
-  findRouteFromKey(key: RouteKey): Promise<RawRoute>;
+  findRouteFromKey(key: RouteKey, gameContext: GameContext): Promise<RawRoute>;
 }
 
 export type RouteWithLookup = Route & {
@@ -85,6 +86,9 @@ export async function generateRouteFromKeys(
     },
     routing,
   } = context;
+  const gameContext: GameContext = {
+    game: tsMapData.map,
+  };
   const routesWithoutLookup = await Promise.all(
     segmentKeys.map(async key => {
       // TODO how is navigator producing node uids that aren't in the graph?
@@ -130,7 +134,7 @@ export async function generateRouteFromKeys(
       }
       routeKey = createRouteKey(startNodeUid, endNodeUid, direction, mode);
 
-      const route = await routing.findRouteFromKey(routeKey);
+      const route = await routing.findRouteFromKey(routeKey, gameContext);
       if (!route.success) {
         console.warn(`could not find route for key "${key}"; ignoring.`);
         return;
@@ -329,6 +333,7 @@ export async function generateRoutes(
   Preconditions.checkArgument(modes.length > 0, 'modes cannot be empty');
   const { graphAndMapData, routing, truck, domainEventSink } = context;
   const { roadRTree, signRTree, graphData, tsMapData } = graphAndMapData;
+  const gameContext: GameContext = { game: tsMapData.map };
   const truckPos: [number, number] = [truck.position.X, truck.position.Z];
 
   const location = calculateLocation(
@@ -447,6 +452,7 @@ export async function generateRoutes(
         const start = Date.now();
         let route = await routing.findRouteFromKey(
           createRouteKey(fromNodeUid, toNodeUid, direction, mode),
+          gameContext,
         );
         if (!route.success) {
           // TODO probably should try other direction, in certain cases
@@ -470,6 +476,7 @@ export async function generateRoutes(
                 direction === 'forward' ? 'backward' : 'forward',
                 mode,
               ),
+              gameContext,
             );
             if (route.success) {
               return toRouteWithLookup(route, tsMapData, signRTree, graphData);
