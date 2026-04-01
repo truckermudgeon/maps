@@ -40,19 +40,56 @@ export interface Context {
 export type RouteKey =
   `${string}-${string}-${Direction}-${Mode}-${'usa' | 'europe'}`;
 
-export function assertRouteKey(key: string): RouteKey {
-  const [startNodeUid, endNodeUid, direction, mode] = key.split('-');
-  Preconditions.checkExists(startNodeUid);
-  Preconditions.checkExists(endNodeUid);
-  Preconditions.checkExists(direction);
-  Preconditions.checkExists(mode);
+export function isRouteKey(key: string): boolean {
+  const [startNodeUid, endNodeUid, direction, mode, map] = key.split('-');
+  if ([startNodeUid, endNodeUid, direction, mode, map].some(s => s == null)) {
+    return false;
+  }
 
-  Preconditions.checkArgument(/^[0-9a-f]{1,16}$/i.test(startNodeUid));
-  Preconditions.checkArgument(/^[0-9a-f]{1,16}$/i.test(endNodeUid));
+  if ([startNodeUid, endNodeUid].some(s => !/^[0-9a-f]{1,16}$/i.test(s))) {
+    return false;
+  }
+  if (direction !== 'forward' && direction !== 'backward') {
+    return false;
+  }
+  if (map !== 'usa' && map !== 'europe') {
+    return false;
+  }
+
+  return true;
+}
+
+export function assertRouteKey(key: string): RouteKey {
+  const [startNodeUid, endNodeUid, direction, mode, map] = key.split('-');
+  Preconditions.checkExists(
+    startNodeUid,
+    `${key} has no start node uid component`,
+  );
+  Preconditions.checkExists(endNodeUid, `${key} has no end node uid component`);
+  Preconditions.checkExists(direction, `${key} has no direction component`);
+  Preconditions.checkExists(mode, `${key} has no mode component`);
+  Preconditions.checkExists(map, `${key} has no map component`);
+
+  Preconditions.checkArgument(
+    /^[0-9a-f]{1,16}$/i.test(startNodeUid),
+    `${startNodeUid} is not a valid uid`,
+  );
+  Preconditions.checkArgument(
+    /^[0-9a-f]{1,16}$/i.test(endNodeUid),
+    `${endNodeUid} is not a valid uid`,
+  );
   Preconditions.checkArgument(
     direction === 'forward' || direction === 'backward',
+    `${direction} is not a valid direction`,
   );
-  Preconditions.checkArgument(routingModes.has(mode as Mode));
+  Preconditions.checkArgument(
+    routingModes.has(mode as Mode),
+    `${mode} is not a valid mode`,
+  );
+  Preconditions.checkArgument(
+    map === 'usa' || map === 'europe',
+    `${map} is not a valid map`,
+  );
   return key as RouteKey;
 }
 

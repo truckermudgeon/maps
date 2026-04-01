@@ -71,12 +71,19 @@ type RouteMappedData = MappedDataForKeys<typeof generateRoutesMapDataKeys>;
 // TODO add current truck pos as an argument, so that route generated is
 //  complete?
 export async function generateRouteFromKeys(
-  segmentKeys: string[],
+  segmentKeys: RouteKey[],
   context: {
     graphAndMapData: GraphAndMapData<RouteMappedData>;
     routing: RoutingService;
   },
 ): Promise<RouteWithLookup> {
+  Preconditions.checkArgument(segmentKeys.every(k => assertRouteKey(k)));
+  const maps = segmentKeys.map(k => k.split('-').at(-1)!);
+  Preconditions.checkArgument(
+    maps.every(map => map === context.graphAndMapData.tsMapData.map),
+    `all segment key maps must match context map '${context.graphAndMapData.tsMapData.map}'`,
+  );
+
   const {
     graphAndMapData: {
       graphData,
@@ -94,12 +101,22 @@ export async function generateRouteFromKeys(
       // TODO how is navigator producing node uids that aren't in the graph?
       // the need for massaging node uids is questionable.
       let routeKey = assertRouteKey(key);
-      const [startNodeUidString, endNodeUidString, direction, mode] =
-        routeKey.split('-') as [string, string, Direction, Mode];
+      const [startNodeUidString, endNodeUidString, direction, mode, map] =
+        routeKey.split('-') as [
+          string,
+          string,
+          Direction,
+          Mode,
+          'usa' | 'europe',
+        ];
+
       let startNodeUid = BigInt(`0x${startNodeUidString}`);
       let endNodeUid = BigInt(`0x${endNodeUidString}`);
       if (!graph.has(startNodeUid)) {
-        const startNode = assertExists(tsMapData.nodes.get(startNodeUid));
+        const startNode = assertExists(
+          tsMapData.nodes.get(startNodeUid),
+          `generateRouteFromKeys: unknown start node ${endNodeUid.toString(16)}`,
+        );
         const closestStart = context.graphAndMapData.graphNodeRTree.findClosest(
           startNode.x,
           startNode.y,
@@ -112,7 +129,10 @@ export async function generateRouteFromKeys(
         );
       }
       if (!graph.has(startNodeUid)) {
-        const startNode = assertExists(tsMapData.nodes.get(startNodeUid));
+        const startNode = assertExists(
+          tsMapData.nodes.get(startNodeUid),
+          `generateRouteFromKeys: unknown start node (attempt 2) ${endNodeUid.toString(16)}`,
+        );
         const closestStart = context.graphAndMapData.graphNodeRTree.findClosest(
           startNode.x,
           startNode.y,
@@ -120,7 +140,10 @@ export async function generateRouteFromKeys(
         startNodeUid = closestStart.uid;
       }
       if (!graph.has(endNodeUid)) {
-        const endNode = assertExists(tsMapData.nodes.get(endNodeUid));
+        const endNode = assertExists(
+          tsMapData.nodes.get(endNodeUid),
+          `generateRouteFromKeys: unknown end node ${endNodeUid.toString(16)}`,
+        );
         const closestEnd = context.graphAndMapData.graphNodeRTree.findClosest(
           endNode.x,
           endNode.y,
@@ -132,13 +155,7 @@ export async function generateRouteFromKeys(
           endNodeUid.toString(16),
         );
       }
-      routeKey = createRouteKey(
-        startNodeUid,
-        endNodeUid,
-        direction,
-        mode,
-        tsMapData.map,
-      );
+      routeKey = createRouteKey(startNodeUid, endNodeUid, direction, mode, map);
 
       const route = await routing.findRouteFromKey(routeKey, gameContext);
       if (!route.success) {
@@ -811,10 +828,14 @@ function hasConsistentSegments(route: RouteWithLookup): boolean {
   const firstSegmentMap = route.segments[0].key.split('-').at(-1);
   if (
     !route.segments.every(
-      segment => firstSegmentMap !== segment.key.split('-').at(-1),
+      segment => firstSegmentMap === segment.key.split('-').at(-1),
     )
   ) {
-    console.warn('inconsistent segments: not all segments', firstSegmentMap);
+    console.warn(
+      'inconsistent segments: not all segments',
+      firstSegmentMap,
+      route.segments.map(s => s.key),
+    );
     return false;
   }
   return route.lookup.nodeUids.every((nodeUids, index) => {

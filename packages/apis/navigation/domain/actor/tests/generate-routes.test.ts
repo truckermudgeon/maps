@@ -1,6 +1,7 @@
 import type { MappedDataForKeys } from '@truckermudgeon/io';
 import { readMapData } from '@truckermudgeon/io';
 import { fromAtsCoordsToWgs84 } from '@truckermudgeon/map/projections';
+import type { RouteKey } from '@truckermudgeon/map/routing';
 import { createRouteKey } from '@truckermudgeon/map/routing';
 import type { Node, Prefab } from '@truckermudgeon/map/types';
 import { toStepText } from '@truckermudgeon/navigator-app/src/components/text';
@@ -343,11 +344,12 @@ describe.skip('generateRoutes bugs', () => {
       'code',
       dummyEventSink,
       telemetryEventEmitter,
-      graphAndMapData,
+      () => graphAndMapData,
       routingService,
       100,
     );
-    const key = '57457ae23e11a7f4-5f76e2647d050b31-forward-fastest';
+    const key: RouteKey =
+      '57457ae23e11a7f4-5f76e2647d050b31-forward-fastest-usa';
     const route = await generateRouteFromKeys([key], {
       graphAndMapData,
       routing: routingService,

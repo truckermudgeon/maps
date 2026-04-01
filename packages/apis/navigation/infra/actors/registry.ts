@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 import type { RoutingService } from '../../domain/actor/generate-routes';
 import type { DomainEventSink } from '../../domain/events';
+import type { GameContext } from '../../domain/game-context';
 import type {
   GraphAndMapData,
   GraphMappedData,
@@ -33,7 +34,9 @@ export class SessionActorRegistry implements ReadonlySessionActorRegistry {
     private readonly opts: {
       idleTtlMs: number;
       maxClientsPerActor: number;
-      graphAndMapData: GraphAndMapData<GraphMappedData>;
+      getGraphAndMapData: (
+        gameContext: GameContext,
+      ) => GraphAndMapData<GraphMappedData>;
       routing: RoutingService;
       kv: ObservableKvStore;
       metrics: MetricsService;
@@ -97,7 +100,7 @@ export class SessionActorRegistry implements ReadonlySessionActorRegistry {
         telemetryId,
         this.opts.domainEventSink,
         telemetryEventEmitter,
-        this.opts.graphAndMapData,
+        this.opts.getGraphAndMapData,
         this.opts.routing,
         this.opts.maxClientsPerActor,
       );

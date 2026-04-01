@@ -6,6 +6,8 @@ import {
   fromAtsCoordsToWgs84,
   fromWgs84ToAtsCoords,
 } from '@truckermudgeon/map/projections';
+import type { RouteKey } from '@truckermudgeon/map/routing';
+import { isRouteKey } from '@truckermudgeon/map/routing';
 import crypto from 'node:crypto';
 import { z } from 'zod';
 import { PoiType, ScopeType } from '../../constants';
@@ -378,7 +380,7 @@ export const navigatorRouter = router({
         per: 'minute',
       }),
     )
-    .input(z.optional(z.array(z.string().max(100)).min(1).max(50)))
+    .input(z.optional(z.array(z.string().refine(isRouteKey)).max(50)))
     .mutation(async ({ input, ctx }) => {
       const {
         lookups: { graphAndMapData },
@@ -392,7 +394,7 @@ export const navigatorRouter = router({
       } else {
         console.log('generating and setting active route');
         setActiveRoute(
-          await generateRouteFromKeys(input, {
+          await generateRouteFromKeys(input as RouteKey[], {
             graphAndMapData,
             routing,
           }),

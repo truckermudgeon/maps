@@ -3,6 +3,7 @@ import type { MappedDataForKeys } from '@truckermudgeon/io';
 import type { CompanyItem } from '@truckermudgeon/map/types';
 import { EventEmitter } from 'events';
 import type { JobLocation, JobState } from '../../types';
+import type { GameContext } from '../game-context';
 import type { TelemetryEventEmitter } from '../session-actor';
 
 export type JobEventEmitter = EventEmitter<{
@@ -15,18 +16,29 @@ export type JobEventEmitter = EventEmitter<{
 
 export function detectJobEvents(opts: {
   telemetryEventEmitter: TelemetryEventEmitter;
-  jobMappedData: MappedDataForKeys<['companies', 'cities', 'countries']>;
+  getJobMappedData: (
+    gameContext: GameContext,
+  ) => MappedDataForKeys<['companies', 'cities', 'countries']>;
 }): {
   readJobState: () => JobState | undefined;
   jobEventEmitter: JobEventEmitter;
 } {
-  const { telemetryEventEmitter, jobMappedData } = opts;
+  const { telemetryEventEmitter, getJobMappedData } = opts;
+  const atsJobMappedData = getJobMappedData({ game: 'usa' });
+  const ets2JobMappedData = getJobMappedData({ game: 'europe' });
   const jobEventEmitter: JobEventEmitter = new EventEmitter();
 
   let jobState: JobState | undefined;
   const readJobState = () => jobState;
-  const companiesByKey = new Map<string, CompanyItem>(
-    jobMappedData.companies.values().map(c => [`${c.token}.${c.cityToken}`, c]),
+  const atsCompaniesByKey = new Map<string, CompanyItem>(
+    atsJobMappedData.companies
+      .values()
+      .map(c => [`${c.token}.${c.cityToken}`, c]),
+  );
+  const ets2CompaniesByKey = new Map<string, CompanyItem>(
+    ets2JobMappedData.companies
+      .values()
+      .map(c => [`${c.token}.${c.cityToken}`, c]),
   );
 
   telemetryEventEmitter.on('telemetry', function detectJobEvents(telemetry) {
@@ -44,6 +56,15 @@ export function detectJobEvents(opts: {
       // ignore for now.
       jobState = undefined;
     } else {
+      const companiesByKey =
+        telemetry.game.game.name === 'ats'
+          ? atsCompaniesByKey
+          : ets2CompaniesByKey;
+      const jobMappedData =
+        telemetry.game.game.name === 'ats'
+          ? atsJobMappedData
+          : ets2JobMappedData;
+
       const company = assertExists(
         companiesByKey.get(newDestKey),
         `unknown company key ${newDestKey}`,

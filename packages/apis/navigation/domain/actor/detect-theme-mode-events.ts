@@ -2,6 +2,7 @@ import { throttle } from '@truckermudgeon/base/throttle';
 import type { MapDataKeys, MappedDataForKeys } from '@truckermudgeon/io';
 import { EventEmitter } from 'events';
 import type { TruckSimTelemetry } from '../../types';
+import type { GameContext } from '../game-context';
 import type { GraphAndMapData } from '../lookup-data';
 import type { TelemetryEventEmitter } from '../session-actor';
 import { toThemeMode } from './game-state';
@@ -14,14 +15,14 @@ export type ThemeModeEventEmitter = EventEmitter<{
 
 export function detectThemeModeEvents(opts: {
   telemetryEventEmitter: TelemetryEventEmitter;
-  graphAndMapData: GraphAndMapData<
-    MappedDataForKeys<typeof detectThemeMapDataKeys>
-  >;
+  getGraphAndMapData: (
+    gameContext: GameContext,
+  ) => GraphAndMapData<MappedDataForKeys<typeof detectThemeMapDataKeys>>;
 }): {
   readThemeMode: () => 'light' | 'dark';
   themeModeEventEmitter: Omit<ThemeModeEventEmitter, 'emit'>;
 } {
-  const { telemetryEventEmitter, graphAndMapData } = opts;
+  const { telemetryEventEmitter, getGraphAndMapData } = opts;
   const themeModeEventEmitter: ThemeModeEventEmitter = new EventEmitter();
 
   let currentMode: 'light' | 'dark' = 'light';
@@ -34,6 +35,9 @@ export function detectThemeModeEvents(opts: {
         return;
       }
 
+      const graphAndMapData = getGraphAndMapData({
+        game: telemetry.game.game.name === 'ats' ? 'usa' : 'europe',
+      });
       const newMode = toThemeMode(
         telemetry,
         graphAndMapData.tsMapData.countries,

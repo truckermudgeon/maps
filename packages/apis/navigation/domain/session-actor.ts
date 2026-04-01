@@ -76,7 +76,9 @@ export class SessionActorImpl implements SessionActor {
     readonly code: string,
     private readonly events: DomainEventSink,
     readonly telemetryEventEmitter: TelemetryEventEmitter,
-    graphAndMapData: GraphAndMapData<GraphMappedData>,
+    getGraphAndMapData: (
+      gameContext: GameContext,
+    ) => GraphAndMapData<GraphMappedData>,
     routing: RoutingService,
     private readonly maxClients: number,
   ) {
@@ -98,11 +100,12 @@ export class SessionActorImpl implements SessionActor {
 
     const jobRes = detectJobEvents({
       telemetryEventEmitter,
-      jobMappedData: graphAndMapData.tsMapData,
+      getJobMappedData: gameContext =>
+        getGraphAndMapData(gameContext).tsMapData,
     });
     const routeRes = detectRouteEvents({
       telemetryEventEmitter,
-      graphAndMapData,
+      getGraphAndMapData,
       routing,
       domainEventSink: this.events,
     });
@@ -111,7 +114,7 @@ export class SessionActorImpl implements SessionActor {
     });
     const themeModeRes = detectThemeModeEvents({
       telemetryEventEmitter,
-      graphAndMapData,
+      getGraphAndMapData,
     });
 
     this.jobEventEmitter = jobRes.jobEventEmitter;

@@ -6,11 +6,7 @@ import { createRoutingService } from '../../../infra/routing/service';
 import { createSearchService } from '../../../infra/search/service';
 import type { SearchResult, TruckSimTelemetry } from '../../../types';
 import type { DomainEventSink } from '../../events';
-import type {
-  GraphAndMapData,
-  GraphMappedData,
-  LookupService,
-} from '../../lookup-data';
+import type { GraphAndMapData, GraphMappedData } from '../../lookup-data';
 import type { TelemetryEventEmitter } from '../../session-actor';
 import { SessionActorImpl } from '../../session-actor';
 import { generateRoutes, type RoutingService } from '../generate-routes';
@@ -30,8 +26,6 @@ const dummyEventSink: DomainEventSink = {
 describe.skip('searchPoi', () => {
   let graphAndMapData: GraphAndMapData<GraphMappedData>;
   let routingService: RoutingService;
-  // TODO make this real.
-  const lookupService: LookupService = {} as unknown as LookupService;
   beforeAll(() => {
     graphAndMapData = testLookupService.getData().graphAndMapData;
     routingService = createRoutingService(
@@ -46,7 +40,7 @@ describe.skip('searchPoi', () => {
       'code',
       dummyEventSink,
       telemetryEventEmitter,
-      graphAndMapData,
+      () => graphAndMapData,
       routingService,
       100,
     );
@@ -78,7 +72,7 @@ describe.skip('searchPoi', () => {
     const numIters = 1000;
     const start = Date.now();
     const searchService = createSearchService(
-      lookupService,
+      testLookupService,
       new ConsoleWorkerMetrics(),
     );
     let searchResults: SearchResult[] = [];
@@ -105,7 +99,7 @@ describe.skip('searchPoi', () => {
       'code',
       dummyEventSink,
       telemetryEventEmitter,
-      graphAndMapData,
+      () => graphAndMapData,
       routingService,
       100,
     );
@@ -148,7 +142,7 @@ describe.skip('searchPoi', () => {
     const numIters = 5;
     const start = Date.now();
     const searchService = createSearchService(
-      lookupService,
+      testLookupService,
       new ConsoleWorkerMetrics(),
     );
     const results: SearchResult[][] = (

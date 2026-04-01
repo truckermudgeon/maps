@@ -2,6 +2,7 @@ import { UnreachableError } from '@truckermudgeon/base/precon';
 import type { RoutingService } from '../domain/actor/generate-routes';
 import type { SearchService } from '../domain/actor/search';
 import type { DomainEventSink } from '../domain/events';
+import type { GameContext } from '../domain/game-context';
 import type { LookupData } from '../domain/lookup-data';
 import { SessionActorRegistry } from './actors/registry';
 import type { KvStore } from './kv/store';
@@ -63,7 +64,8 @@ export function initServices(dataDir: string): Services {
     domainEventSink,
     maxClientsPerActor: 5,
     idleTtlMs: 10 * 60_000, // 10 minutes
-    graphAndMapData: _lookups.graphAndMapData,
+    getGraphAndMapData: (gameContext: GameContext) =>
+      lookups.getData(gameContext).graphAndMapData,
     routing,
     kv,
     // TODO wire up create + delete metrics
