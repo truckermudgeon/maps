@@ -439,8 +439,7 @@ export const navigatorRouter = router({
       const { generator, unsubscribe } = subscribeSession(
         ctx.sessionActor,
         signal,
-        // TODO subscribeSession shouldn't rely on hardcoded game context
-        ctx.services.lookups.getData({ game: 'usa' }).graphAndMapData.tsMapData,
+        ctx.services.lookups,
       );
       try {
         while (true) {

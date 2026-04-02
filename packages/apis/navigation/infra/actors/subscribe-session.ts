@@ -1,20 +1,21 @@
 import { assertExists } from '@truckermudgeon/base/assert';
 import { toGameState } from '../../domain/actor/game-state';
 import { toSegmentInfo } from '../../domain/actor/segment-info';
-import type { GraphMappedData } from '../../domain/lookup-data';
+import type { LookupService } from '../../domain/lookup-data';
 import type { SessionActor } from '../../domain/session-actor';
 import type {
   ActorEvent,
   JobState,
   Route,
   RouteIndex,
+  SegmentInfo,
   TrailerState,
 } from '../../types';
 
 export function subscribeSession(
   actor: SessionActor,
   signal: AbortSignal | undefined,
-  tsMapData: GraphMappedData,
+  lookups: LookupService,
 ): {
   generator: AsyncGenerator<ActorEvent, void, void>;
   unsubscribe: () => void;
@@ -39,14 +40,31 @@ export function subscribeSession(
   };
 
   const onSegmentComplete = (index: number) => {
+    // TODO calculation of segmentInfo better done as part of emitting
+    //  segment-complete event?
+    const gameContext = actor.gameContext;
+    const activeRoute = assertExists(
+      actor.readActiveRoute(),
+      'A route must be active to complete a segment',
+    );
+    let segmentInfo: SegmentInfo;
+    if (gameContext) {
+      segmentInfo = toSegmentInfo(
+        index,
+        activeRoute,
+        lookups.getData(gameContext).graphAndMapData.tsMapData,
+      );
+    } else {
+      segmentInfo = {
+        place: 'Your location',
+        placeInfo: '',
+        isFinal: index + 1 === activeRoute.segments.length,
+      };
+    }
+
     queue.push({
       type: 'segmentComplete',
-      // TODO this shouldn't live here.
-      data: toSegmentInfo(
-        index,
-        assertExists(actor.readActiveRoute()),
-        tsMapData,
-      ),
+      data: segmentInfo,
     });
     resolve?.();
     resolve = null;
