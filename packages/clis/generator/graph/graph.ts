@@ -8,9 +8,11 @@ import { UnreachableError } from '@truckermudgeon/base/precon';
 import type { MapDataKeys, MappedDataForKeys } from '@truckermudgeon/io';
 import {
   AtsSelectableDlcs,
+  Ets2SelectableDlcs,
   FacilitySpawnPointTypes,
   ItemType,
   toAtsDlcGuards,
+  toEts2DlcGuards,
   toFacilityIcon,
 } from '@truckermudgeon/map/constants';
 import { toDealerLabel } from '@truckermudgeon/map/labels';
@@ -122,7 +124,10 @@ export function generateGraph(
   const roads = new Map(_roads);
 
   // delete roads + prefabs in unselectable dlc content.
-  const guards = toAtsDlcGuards(AtsSelectableDlcs) as Set<number>;
+  const guards: Set<number> =
+    map === 'usa'
+      ? toAtsDlcGuards(AtsSelectableDlcs)
+      : toEts2DlcGuards(Ets2SelectableDlcs);
   for (const [key, prefab] of prefabs) {
     if (!guards.has(prefab.dlcGuard)) {
       prefabs.delete(key);
