@@ -4,7 +4,9 @@ import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { Preconditions } from '@truckermudgeon/base/precon';
 import {
   fromAtsCoordsToWgs84,
+  fromEts2CoordsToWgs84,
   fromWgs84ToAtsCoords,
+  fromWgs84ToEts2Coords,
 } from '@truckermudgeon/map/projections';
 import type { RouteKey } from '@truckermudgeon/map/routing';
 import { isRouteKey } from '@truckermudgeon/map/routing';
@@ -43,6 +45,7 @@ import { loggingMiddleware } from '../middleware/logging';
 import { metricsMiddleware } from '../middleware/metrics';
 import { rateLimitMiddleware } from '../middleware/rate-limit';
 import { requireAuthState } from '../middleware/require-auth-state';
+import { requireGameContext } from '../middleware/require-game-context';
 import { requireNavigatorContext } from '../middleware/require-navigator-context';
 import { requireSessionActor } from '../middleware/require-session-actor';
 import { subscriptionLimitMiddleware } from '../middleware/subscription-limit';
@@ -56,6 +59,8 @@ const navigatorProcedure = publicProcedure
 const navigatorSessionProcedure = navigatorProcedure
   .use(requireAuthState([AuthState.VIEWER_AUTHENTICATED]))
   .use(requireSessionActor);
+const navigatorGameProcedure =
+  navigatorSessionProcedure.use(requireGameContext);
 
 export const navigatorRouter = router({
   redeemCode: navigatorProcedure
@@ -167,7 +172,7 @@ export const navigatorRouter = router({
       return true;
     }),
 
-  search: navigatorSessionProcedure
+  search: navigatorGameProcedure
     .use(
       rateLimitMiddleware({
         maxCalls: 10,
@@ -186,16 +191,20 @@ export const navigatorRouter = router({
       const { readTelemetry, readActiveRoute, gameContext } = ctx.sessionActor;
       const { type: poiType, scope } = input;
       const addRelativeTruckInfo = createWithRelativeTruckInfoMapper(
-        'usa',
+        gameContext.game,
         readTelemetry,
       );
 
       let searchRequest: SearchRequest;
       if (input.scope === ScopeType.NEARBY && input.center) {
+        const toGameCoords =
+          gameContext.game === 'usa'
+            ? fromWgs84ToAtsCoords
+            : fromWgs84ToEts2Coords;
         searchRequest = {
           scope: ScopeType.NEARBY,
           poiType: input.type,
-          point: fromWgs84ToAtsCoords(input.center as [number, number]),
+          point: toGameCoords(input.center as [number, number]),
         };
       } else {
         searchRequest = createSearchRequest(scope, poiType, {
@@ -208,7 +217,7 @@ export const navigatorRouter = router({
         .slice(0, scope === ScopeType.NEARBY ? maxSearchResults : Infinity)
         .map(addRelativeTruckInfo);
     }),
-  getAutocompleteOptions: navigatorSessionProcedure
+  getAutocompleteOptions: navigatorGameProcedure
     .use(
       rateLimitMiddleware({
         maxCalls: 4,
@@ -219,23 +228,24 @@ export const navigatorRouter = router({
     .query<SearchResultWithRelativeTruckInfo[]>(async ({ input, ctx }) => {
       const { readTelemetry, gameContext } = ctx.sessionActor;
       const currentTruckLocation = readTelemetry()?.truck.position;
+      const toLngLat =
+        gameContext.game === 'usa'
+          ? fromAtsCoordsToWgs84
+          : fromEts2CoordsToWgs84;
       const results = await ctx.services.search.search(
         input,
         maxSearchResults,
         {
           game: gameContext,
           truckLngLat: currentTruckLocation
-            ? fromAtsCoordsToWgs84([
-                currentTruckLocation.X,
-                currentTruckLocation.Z,
-              ])
+            ? toLngLat([currentTruckLocation.X, currentTruckLocation.Z])
             : undefined,
           activeJob: ctx.sessionActor.readJobState(),
           activeRoute: ctx.sessionActor.readActiveRoute(),
         },
       );
       const addRelativeTruckInfo = createWithRelativeTruckInfoMapper(
-        'usa',
+        gameContext.game,
         readTelemetry,
       );
 
@@ -258,7 +268,7 @@ export const navigatorRouter = router({
         ),
       );
     }),
-  previewRoutes: navigatorSessionProcedure
+  previewRoutes: navigatorGameProcedure
     .use(
       rateLimitMiddleware({
         maxCalls: 1,
@@ -271,16 +281,13 @@ export const navigatorRouter = router({
       }),
     )
     .query<RouteWithSummary[]>(async ({ input, ctx }) => {
-      const {
-        lookups: { graphAndMapData },
-        domainEventSink,
-        routing,
-      } = ctx.services;
-      const { readActiveRoute, readTelemetry, readRouteIndex } =
+      const { readActiveRoute, readTelemetry, readRouteIndex, gameContext } =
         ctx.sessionActor;
+      const { lookups, domainEventSink, routing } = ctx.services;
       const toNodeUid = BigInt('0x' + input.toNodeUid);
       const activeRoute = readActiveRoute();
       const truck = Preconditions.checkExists(readTelemetry()).truck;
+      const graphAndMapData = lookups.getData(gameContext).graphAndMapData;
 
       const routesWithLookup: RouteWithLookup[] = [];
       if (!activeRoute) {
@@ -326,23 +333,23 @@ export const navigatorRouter = router({
       );
       return [...uniqueRoutes.values()].reverse();
     }),
-  generateRouteFromNodeUids: navigatorSessionProcedure
+  generateRouteFromNodeUids: navigatorGameProcedure
     .use(
       rateLimitMiddleware({
         maxCalls: 1,
         per: 'second',
       }),
     )
-    .input(z.array(z.string().max(16)).min(1).max(50))
+    .input(
+      z
+        .array(z.string().regex(/^[0-9a-f]{1,16}$/i))
+        .min(1)
+        .max(50),
+    )
     .query<Route>(async ({ input, ctx }) => {
-      // TODO precon failures should throw 400s.
-      Preconditions.checkArgument(input.length > 0);
-      const {
-        lookups: { graphAndMapData },
-        routing,
-        domainEventSink,
-      } = ctx.services;
-      const { readActiveRoute, readTelemetry } = ctx.sessionActor;
+      const { lookups, routing, domainEventSink } = ctx.services;
+      const { readActiveRoute, readTelemetry, gameContext } = ctx.sessionActor;
+      const graphAndMapData = lookups.getData(gameContext).graphAndMapData;
 
       const truck = Preconditions.checkExists(readTelemetry()).truck;
       const nodeUids = input.map(v => BigInt('0x' + v));
@@ -373,7 +380,7 @@ export const navigatorRouter = router({
       const { lookup, ...route } = finalRoute;
       return route;
     }),
-  setActiveRoute: navigatorSessionProcedure
+  setActiveRoute: navigatorGameProcedure
     .use(
       rateLimitMiddleware({
         maxCalls: 5,
@@ -382,11 +389,9 @@ export const navigatorRouter = router({
     )
     .input(z.optional(z.array(z.string().refine(isRouteKey)).max(50)))
     .mutation(async ({ input, ctx }) => {
-      const {
-        lookups: { graphAndMapData },
-        routing,
-      } = ctx.services;
-      const { setActiveRoute, readActiveRoute } = ctx.sessionActor;
+      const { lookups, routing } = ctx.services;
+      const { setActiveRoute, readActiveRoute, gameContext } = ctx.sessionActor;
+      const graphAndMapData = lookups.getData(gameContext).graphAndMapData;
 
       if (input == null) {
         console.log('clearing active route');
@@ -434,7 +439,8 @@ export const navigatorRouter = router({
       const { generator, unsubscribe } = subscribeSession(
         ctx.sessionActor,
         signal,
-        ctx.services.lookups.graphAndMapData.tsMapData,
+        // TODO subscribeSession shouldn't rely on hardcoded game context
+        ctx.services.lookups.getData({ game: 'usa' }).graphAndMapData.tsMapData,
       );
       try {
         while (true) {

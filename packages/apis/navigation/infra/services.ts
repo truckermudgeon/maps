@@ -3,7 +3,7 @@ import type { RoutingService } from '../domain/actor/generate-routes';
 import type { SearchService } from '../domain/actor/search';
 import type { DomainEventSink } from '../domain/events';
 import type { GameContext } from '../domain/game-context';
-import type { LookupData } from '../domain/lookup-data';
+import type { LookupService } from '../domain/lookup-data';
 import { SessionActorRegistry } from './actors/registry';
 import type { KvStore } from './kv/store';
 import { createCacheableKv } from './kv/store';
@@ -18,7 +18,7 @@ import { createRoutingService } from './routing/service';
 import { createSearchService } from './search/service';
 
 export interface Services {
-  lookups: LookupData;
+  lookups: LookupService;
   domainEventSink: DomainEventSink;
   kv: KvStore;
   sessionActors: SessionActorRegistry;
@@ -33,7 +33,6 @@ export function initServices(dataDir: string): Services {
     loadLookupData(dataDir, 'usa'),
     loadLookupData(dataDir, 'europe'),
   );
-  const _lookups = lookups.getData({ game: 'usa' });
 
   const kv = createCacheableKv();
   const rateLimit = createRateLimitService(kv);
@@ -80,7 +79,7 @@ export function initServices(dataDir: string): Services {
   }, 10_000);
 
   return {
-    lookups: _lookups,
+    lookups,
     domainEventSink,
     kv,
     sessionActors,
