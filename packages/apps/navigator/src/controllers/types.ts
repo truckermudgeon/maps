@@ -43,6 +43,9 @@ export interface AppStore {
 
   readonly distanceToNextManeuver: number | undefined;
   readonly activeRouteDirection: StepManeuver | undefined;
+  readonly activeStepLine:
+    | { line: GeoJSON.Feature<GeoJSON.LineString> }
+    | undefined;
   readonly activeArrowStep: RouteStep | undefined;
 }
 

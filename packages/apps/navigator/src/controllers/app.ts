@@ -21,6 +21,7 @@ import type { GeoJSONSource } from 'maplibre-gl';
 import { Marker } from 'maplibre-gl';
 import { action, makeAutoObservable, observable, runInAction } from 'mobx';
 import type { MapRef } from 'react-map-gl/maplibre';
+import { lineGradientExpression } from '../components/SlippyMap';
 import { BearingMode, CameraMode } from './constants';
 import { TelemetryTimeline } from './telemetry-timeline';
 import type { AppClient, AppController, AppStore } from './types';
@@ -97,7 +98,7 @@ export class AppStoreImpl implements AppStore {
     };
   }
 
-  private get activeStepLine():
+  get activeStepLine():
     | {
         line: GeoJSON.Feature<GeoJSON.LineString>;
         length: number;
@@ -478,6 +479,8 @@ export class AppControllerImpl implements AppController {
     let currBearing = 0;
     let markerBearing = 0;
     console.log('subscribing');
+    let routeLength = 0;
+    let flattenedSteps: { step: RouteStep; length: number }[] = [];
 
     const timeline = new TelemetryTimeline({
       lookbackMs: 250,
@@ -496,6 +499,25 @@ export class AppControllerImpl implements AppController {
               store.activeRoute = event.data;
               store.activeRouteIndex = undefined;
               this.renderActiveRoute(event.data);
+              if (store.activeRoute != null) {
+                const routeLine = toFeatureCollection(
+                  store.activeRoute,
+                ).features.find(f => f.geometry.type === 'LineString')!;
+                routeLength = length(routeLine);
+                flattenedSteps = store.activeRoute.segments.flatMap(s =>
+                  s.steps.map(step => {
+                    const points = polyline.decode(step.geometry);
+                    const stepLine = lineString(points);
+                    return {
+                      step,
+                      length: length(stepLine),
+                    };
+                  }),
+                );
+              } else {
+                routeLength = 0;
+                flattenedSteps = [];
+              }
             });
             break;
           case 'routeProgress':
@@ -533,7 +555,7 @@ export class AppControllerImpl implements AppController {
       }
 
       const { speed, position, heading } = gameState;
-      const { position: center, bearing } = toPosAndBearing({
+      const { position: _center, bearing } = toPosAndBearing({
         position: {
           X: position.x,
           Y: position.z,
@@ -543,6 +565,7 @@ export class AppControllerImpl implements AppController {
           heading,
         },
       });
+      let center = _center;
       const speedMph = Math.round(speed * 2.236936);
 
       store.truckPoint = center;
@@ -551,6 +574,46 @@ export class AppControllerImpl implements AppController {
       if (!map || !playerMarker) {
         console.log('early return onPositionUpdate');
         return;
+      }
+
+      if (store.activeRoute && store.activeRouteIndex && store.activeStepLine) {
+        let distanceTraveled = 0;
+        const activeStep =
+          store.activeRoute.segments[store.activeRouteIndex.segmentIndex].steps[
+            store.activeRouteIndex.stepIndex
+          ];
+        for (const { step, length } of flattenedSteps) {
+          if (step === activeStep) {
+            break;
+          }
+          distanceTraveled += length;
+        }
+
+        const snapPoint = nearestPointOnLine(store.activeStepLine.line, center);
+        const distanceAlongActiveStepLine = snapPoint.properties.location;
+        distanceTraveled += distanceAlongActiveStepLine;
+        if (distanceTraveled >= 0.2 && snapPoint.properties.dist < 0.1) {
+          center = snapPoint.geometry.coordinates as [number, number];
+          store.truckPoint = center;
+        }
+
+        const progress = clamp(distanceTraveled / routeLength, 0, 1);
+        map.getMap().setPaintProperty(
+          'activeRouteLayer-case',
+          'line-gradient',
+          lineGradientExpression({
+            lineType: 'case',
+            progress,
+          }),
+        );
+        map.getMap().setPaintProperty(
+          'activeRouteLayer',
+          'line-gradient',
+          lineGradientExpression({
+            lineType: 'line',
+            progress,
+          }),
+        );
       }
 
       if (prevPosition.every(v => !v)) {
@@ -656,8 +719,9 @@ export class AppControllerImpl implements AppController {
     }
 
     console.log('setting route data', maybeRoute);
-    routeSource.setData(toFeatureCollection(maybeRoute));
-    iconsSource.setData(toFeatureCollection(maybeRoute));
+    const routeFC = toFeatureCollection(maybeRoute);
+    routeSource.setData(routeFC);
+    iconsSource.setData(routeFC);
     // active route layer may have been hidden
     // note: setting paint property by getting a reference to the style layer
     // with react-map-gl apis, then calling setpaintproperty on the style layer,
@@ -856,3 +920,7 @@ const routeSummaryReducer = (
   acc.distanceMeters += dDistance;
   return acc;
 };
+
+function clamp(v: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, v));
+}

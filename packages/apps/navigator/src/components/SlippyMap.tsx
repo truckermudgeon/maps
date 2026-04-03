@@ -1,6 +1,7 @@
 import { assertExists } from '@truckermudgeon/base/assert';
 import type { Extent } from '@truckermudgeon/base/geom';
 import { center as calculateCenter } from '@truckermudgeon/base/geom';
+import { Preconditions } from '@truckermudgeon/base/precon';
 import { routingModes } from '@truckermudgeon/map/routing';
 import {
   BaseMapStyle,
@@ -8,7 +9,10 @@ import {
   GameMapStyle,
   SceneryTownSource,
 } from '@truckermudgeon/ui';
-import type { Marker as MapLibreGLMarker } from 'maplibre-gl';
+import type {
+  ExpressionSpecification,
+  Marker as MapLibreGLMarker,
+} from 'maplibre-gl';
 import type { ForwardRefExoticComponent, ReactElement } from 'react';
 import { useRef } from 'react';
 import type { MapRef } from 'react-map-gl/maplibre';
@@ -28,6 +32,35 @@ const extents = {
     [-10.025698, 34.897275].map(n => Math.floor(n)),
     [33.284941, 71.573102].map(n => Math.ceil(n)),
   ].flat() as Extent,
+};
+
+const lineColors = {
+  case: {
+    before: 'hsl(204,0%,60%)',
+    after: 'hsl(204,100%,40%)',
+  },
+  line: {
+    before: 'hsl(204,0%,80%)',
+    after: 'hsl(204,100%,50%)',
+  },
+};
+
+export const lineGradientExpression = ({
+  lineType,
+  progress,
+}: {
+  lineType: keyof typeof lineColors;
+  progress: number;
+}) => {
+  Preconditions.checkArgument(0 <= progress && progress <= 1);
+  const { before, after } = lineColors[lineType];
+  return [
+    'step',
+    ['line-progress'],
+    before,
+    progress,
+    after,
+  ] satisfies ExpressionSpecification;
 };
 
 export const SlippyMap = (props: {
@@ -90,6 +123,7 @@ export const SlippyMap = (props: {
           <Source
             id={'activeRoute'}
             type={'geojson'}
+            lineMetrics={true}
             data={
               {
                 type: 'FeatureCollection',
@@ -101,19 +135,25 @@ export const SlippyMap = (props: {
               id={'activeRouteLayer-case'}
               type={'line'}
               paint={{
-                'line-color': 'hsl(204,100%,40%)',
                 'line-gap-width': 8,
                 'line-width': 4,
                 'line-opacity': 1,
+                'line-gradient': lineGradientExpression({
+                  lineType: 'case',
+                  progress: 0,
+                }),
               }}
             />
             <Layer
               id={'activeRouteLayer'}
               type={'line'}
               paint={{
-                'line-color': 'hsl(204,100%,50%)',
                 'line-width': 10,
                 'line-opacity': 1,
+                'line-gradient': lineGradientExpression({
+                  lineType: 'line',
+                  progress: 0,
+                }),
               }}
             />
           </Source>
@@ -122,6 +162,7 @@ export const SlippyMap = (props: {
               key={`previewRoute-${i}`}
               id={`previewRoute-${i}`}
               type={'geojson'}
+              lineMetrics={true}
               data={
                 {
                   type: 'FeatureCollection',
