@@ -48,6 +48,8 @@ export function readGraphAndMapData(
   const graphCompaniesByNodeUid = new Map<bigint, CompanyItem>(
     tsMapData.companies
       .values()
+      // this is expected to filter out companies that, e.g., are part of
+      // DLCs that have not yet been released (e.g. .pk_medved_ru.volkhov).
       .filter(company => graphData.graph.has(company.nodeUid))
       .map(company => [company.nodeUid, company]),
   );

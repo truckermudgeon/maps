@@ -93,6 +93,10 @@ export function readAndProcessSearchData(
                 .values()
                 .find(c => c.nodeUid === closestNode.uid),
             );
+            assert(
+              company.token === f.properties.sprite,
+              `${company.token}.${company.cityToken} !== ${f.properties.sprite}`,
+            );
           } else {
             const companyNode = context.graphNodeRTree.findClosest(
               ...gameCoords,
