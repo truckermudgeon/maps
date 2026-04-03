@@ -10,6 +10,7 @@ import {
   SceneryTownSource,
 } from '@truckermudgeon/ui';
 import type {
+  DataDrivenPropertyValueSpecification,
   ExpressionSpecification,
   Marker as MapLibreGLMarker,
 } from 'maplibre-gl';
@@ -151,8 +152,8 @@ export const SlippyMap = (props: {
               id={'activeRouteLayer-case'}
               type={'line'}
               paint={{
-                'line-gap-width': 8,
-                'line-width': 4,
+                'line-gap-width': routeLineWidth,
+                'line-width': caseWidth,
                 'line-opacity': 1,
                 'line-gradient': lineGradientExpression({
                   lineType: 'case',
@@ -164,7 +165,7 @@ export const SlippyMap = (props: {
               id={'activeRouteLayer'}
               type={'line'}
               paint={{
-                'line-width': 10,
+                'line-width': routeLineWidth,
                 'line-opacity': 1,
                 'line-gradient': lineGradientExpression({
                   lineType: 'line',
@@ -191,8 +192,8 @@ export const SlippyMap = (props: {
                 type={'line'}
                 paint={{
                   'line-color': 'hsl(204,100%,40%)',
-                  'line-gap-width': 8,
-                  'line-width': 4,
+                  'line-gap-width': routeLineWidth,
+                  'line-width': caseWidth,
                   'line-opacity': 1,
                 }}
               />
@@ -201,7 +202,7 @@ export const SlippyMap = (props: {
                 type={'line'}
                 paint={{
                   'line-color': 'hsl(204,100%,50%)',
-                  'line-width': 10,
+                  'line-width': routeLineWidth,
                   'line-opacity': 1,
                 }}
               />
@@ -226,7 +227,7 @@ export const SlippyMap = (props: {
               }}
               paint={{
                 'line-color': '#444',
-                'line-gap-width': 11,
+                'line-gap-width': arrowLineWidth,
                 'line-width': 2,
                 'line-opacity': 1,
               }}
@@ -252,7 +253,7 @@ export const SlippyMap = (props: {
               }}
               paint={{
                 'line-color': '#fff',
-                'line-width': 11,
+                'line-width': arrowLineWidth,
                 'line-opacity': 1,
               }}
               filter={['in', '$type', 'LineString']}
@@ -308,3 +309,33 @@ export const SlippyMap = (props: {
     </MapGl>
   );
 };
+
+const routeLineWidth: DataDrivenPropertyValueSpecification<number> = [
+  'interpolate',
+  ['exponential', 1.5],
+  ['zoom'],
+  3,
+  4,
+  10,
+  10,
+];
+
+const arrowLineWidth: DataDrivenPropertyValueSpecification<number> = [
+  'interpolate',
+  ['exponential', 1.5],
+  ['zoom'],
+  3,
+  5,
+  10,
+  11,
+];
+
+const caseWidth: DataDrivenPropertyValueSpecification<number> = [
+  'interpolate',
+  ['exponential', 1.5],
+  ['zoom'],
+  3,
+  1.5,
+  10,
+  3,
+];
