@@ -107,7 +107,9 @@ export function generateGraph(
     dlcGuardQuadTree,
   } = normalizeDlcGuards(tsMapData);
   const getDlcGuard = (node: Node): number =>
-    dlcGuardQuadTree?.find(node.x, node.y)?.dlcGuard ?? -1;
+    (dlcGuardQuadTree?.find(node.x, node.y)?.dlcGuard ?? map === 'usa')
+      ? -1
+      : 0;
   const toNode = (nodeUid: bigint): Node => assertExists(nodes.get(nodeUid));
 
   const graphDebug: DebugFC = {
