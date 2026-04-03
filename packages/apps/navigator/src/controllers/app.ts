@@ -500,17 +500,16 @@ export class AppControllerImpl implements AppController {
               store.activeRouteIndex = undefined;
               this.renderActiveRoute(event.data);
               if (store.activeRoute != null) {
-                const routeLine = toFeatureCollection(
-                  store.activeRoute,
-                ).features.find(f => f.geometry.type === 'LineString')!;
-                routeLength = length(routeLine);
+                routeLength = 0;
                 flattenedSteps = store.activeRoute.segments.flatMap(s =>
                   s.steps.map(step => {
                     const points = polyline.decode(step.geometry);
                     const stepLine = lineString(points);
+                    const stepLength = length(stepLine);
+                    routeLength += stepLength;
                     return {
                       step,
-                      length: length(stepLine),
+                      length: stepLength,
                     };
                   }),
                 );
@@ -565,7 +564,7 @@ export class AppControllerImpl implements AppController {
           heading,
         },
       });
-      let center = _center;
+      const center = _center;
       const speedMph = Math.round(speed * 2.236936);
 
       store.truckPoint = center;
@@ -590,11 +589,11 @@ export class AppControllerImpl implements AppController {
         }
 
         const snapPoint = nearestPointOnLine(store.activeStepLine.line, center);
-        const distanceAlongActiveStepLine = snapPoint.properties.location;
+        const distanceAlongActiveStepLine = snapPoint.properties.lineDistance;
         distanceTraveled += distanceAlongActiveStepLine;
         if (distanceTraveled >= 0.2 && snapPoint.properties.dist < 0.1) {
-          center = snapPoint.geometry.coordinates as [number, number];
-          store.truckPoint = center;
+          //center = snapPoint.geometry.coordinates as [number, number];
+          //store.truckPoint = center;
         }
 
         const progress = clamp(distanceTraveled / routeLength, 0, 1);
