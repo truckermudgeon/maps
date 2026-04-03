@@ -145,7 +145,7 @@ export function readAndProcessSearchData(
           text !== 'Golden Gate Bridge'),
     )
     .map(f => {
-      f.geometry.coordinates = fromWgs84ToAtsCoords(
+      f.geometry.coordinates = toGameCoords(
         f.geometry.coordinates as [number, number],
       );
       return f;
@@ -245,7 +245,7 @@ type ExtraLabelsGeoJSON = GeoJSON.FeatureCollection<
 // TODO dry up from commands/search.ts
 function createSpatialIndices(
   tsMapData: MappedDataForKeys<['cities', 'countries', 'nodes']>,
-  sceneryTowns: ExtraLabelsGeoJSON,
+  sceneryTowns: ExtraLabelsGeoJSON, // coordinates are in game coords
 ): Pick<SearchIndices, 'cityRTree' | 'cityPointRTree' | 'nodePointRTree'> {
   const cityRTree = new RBush<
     BBox & {

@@ -183,6 +183,7 @@ function isTruckOnRoute(
     nodes,
     context.tsMapData.roadLooks,
     roadAndPrefabRTree,
+    context.tsMapData.map,
   );
   if (!location) {
     // benefit of the doubt: we're near a node that isn't part of the route,
@@ -483,6 +484,7 @@ export function calculateLocation(
   nodes: ReadonlyMap<bigint, Node>,
   roadLooks: ReadonlyMap<string, RoadLook>,
   rtree: GraphAndMapData['roadAndPrefabRTree'],
+  map: 'usa' | 'europe',
 ): Road | Prefab | undefined {
   const truckPos = {
     x: truck.position.X,
@@ -520,10 +522,10 @@ export function calculateLocation(
               // have two linestring entries.
               assert(entry.lines.length === 1);
               if (roadLook.lanesLeft.length && roadLook.lanesRight.length) {
-                return Math.abs(scoreLine(ls, truck));
+                return Math.abs(scoreLine(ls, truck, map));
               }
             }
-            return scoreLine(ls, truck);
+            return scoreLine(ls, truck, map);
           }),
       ),
       item: entry.item,

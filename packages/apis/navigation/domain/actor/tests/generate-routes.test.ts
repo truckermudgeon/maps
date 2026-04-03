@@ -208,12 +208,12 @@ describe('getDirectionOnRoad', () => {
     });
 
     // before the road
-    expect(getDirectionOnRoad(truckFacingNorth, southToNorthRoad, nodes)).toBe(
-      'forward',
-    );
-    expect(getDirectionOnRoad(truckFacingSouth, southToNorthRoad, nodes)).toBe(
-      'backward',
-    );
+    expect(
+      getDirectionOnRoad(truckFacingNorth, southToNorthRoad, nodes, 'usa'),
+    ).toBe('forward');
+    expect(
+      getDirectionOnRoad(truckFacingSouth, southToNorthRoad, nodes, 'usa'),
+    ).toBe('backward');
   });
 });
 
@@ -260,9 +260,15 @@ describe.skip('getDirectionOnPrefab', () => {
       const truck = toTruck(data);
       const prefab = tsMapData.prefabs.get(BigInt('0x' + data.prefabUid))!;
       const prefabDesc = tsMapData.prefabDescriptions.get(data.prefabToken)!;
-      console.log(toPosAndBearing(truck));
+      console.log(toPosAndBearing(truck, tsMapData.map));
       expect(
-        getDirectionOnPrefab(truck, prefab, prefabDesc, tsMapData.nodes),
+        getDirectionOnPrefab(
+          truck,
+          prefab,
+          prefabDesc,
+          tsMapData.nodes,
+          tsMapData.map,
+        ),
       ).toEqual({
         direction: 'forward',
         fromNodeUid: 0x52d133f0f285f9e7n,
@@ -280,9 +286,15 @@ describe.skip('getDirectionOnPrefab', () => {
       const truck = toTruck(data);
       const prefab = tsMapData.prefabs.get(BigInt('0x' + data.prefabUid))!;
       const prefabDesc = tsMapData.prefabDescriptions.get(data.prefabToken)!;
-      console.log(toPosAndBearing(truck));
+      console.log(toPosAndBearing(truck, tsMapData.map));
       expect(
-        getDirectionOnPrefab(truck, prefab, prefabDesc, tsMapData.nodes),
+        getDirectionOnPrefab(
+          truck,
+          prefab,
+          prefabDesc,
+          tsMapData.nodes,
+          tsMapData.map,
+        ),
       ).toEqual({
         direction: 'forward',
         fromNodeUid: 0x572ca546838b0002n,
@@ -314,7 +326,7 @@ describe.skip('getDirectionOnPrefab', () => {
     };
 
     expect(
-      getDirectionOnPrefab(truck, prefab, prefabDesc_2o0cb, nodes),
+      getDirectionOnPrefab(truck, prefab, prefabDesc_2o0cb, nodes, 'usa'),
     ).toEqual({
       fromNodeUid: 0x441462706bcb0000n,
       direction: 'backward',

@@ -241,7 +241,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
 
 function createSpatialIndices(
   tsMapData: MappedDataForKeys<['cities', 'countries', 'nodes']>,
-  sceneryTowns: ExtraLabelsGeoJSON,
+  sceneryTowns: ExtraLabelsGeoJSON, // coordinates are in game coords
 ): {
   cityRTree: RBush<
     BBox & {

@@ -486,8 +486,13 @@ export class SearchServiceImpl implements SearchService {
     gameContext: GameContext,
   ): Promise<SearchResult[]> {
     const { point, poiType } = request;
+    const { map } = gameContext;
+    const toGameCoord =
+      map === 'usa' ? fromWgs84ToAtsCoords : fromWgs84ToEts2Coords;
+    const toLngLat =
+      map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
 
-    const [lng, lat] = fromAtsCoordsToWgs84(point);
+    const [lng, lat] = toLngLat(point);
     return SearchServiceImpl.filterSearchDataByPoi(
       await this.searcher({
         gameContext,
@@ -504,13 +509,13 @@ export class SearchServiceImpl implements SearchService {
       poiType,
     )
       .filter(s => {
-        const poiGame = fromWgs84ToAtsCoords(s.lonLat);
+        const poiGame = toGameCoord(s.lonLat);
         return distance(poiGame, point) <= searchRadiusMeters;
       })
       .sort(
         (a, b) =>
-          distance(fromWgs84ToAtsCoords(a.lonLat), point) -
-          distance(fromWgs84ToAtsCoords(b.lonLat), point),
+          distance(toGameCoord(a.lonLat), point) -
+          distance(toGameCoord(b.lonLat), point),
       );
   }
 
@@ -519,6 +524,10 @@ export class SearchServiceImpl implements SearchService {
     gameContext: GameContext,
   ): Promise<SearchResult[]> {
     const { route, poiType, point } = request;
+    const { map } = gameContext;
+    const toLngLat =
+      map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
+
     const routeLine = cleanCoords(
       lineString(
         route.segments.flatMap(segment =>
@@ -534,7 +543,7 @@ export class SearchServiceImpl implements SearchService {
     return this.reducer({
       gameContext,
       searchResults: inBoxResults,
-      truckLngLat: fromAtsCoordsToWgs84(point),
+      truckLngLat: toLngLat(point),
       routeLine,
       distanceKm: 48, // 48 km away from route, or ~1.5 miles in game units
     });

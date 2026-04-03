@@ -11,8 +11,9 @@ import { toPosAndBearing } from './game-state';
 export function scoreLine(
   line: GeoJSON.LineString,
   truck: Pick<TruckSimTelemetry['truck'], 'position' | 'orientation'>,
+  map: 'usa' | 'europe',
 ): number {
-  const { position, bearing } = toPosAndBearing(truck);
+  const { position, bearing } = toPosAndBearing(truck, map);
   return scoreLineSigned(line, position, toRadians(bearing));
 }
 

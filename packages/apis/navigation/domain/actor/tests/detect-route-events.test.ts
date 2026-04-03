@@ -241,6 +241,7 @@ describe.skip('detectRouteEvents bugs', () => {
       graphAndMapData.tsMapData.nodes,
       graphAndMapData.tsMapData.roadLooks,
       graphAndMapData.roadAndPrefabRTree,
+      graphAndMapData.tsMapData.map,
     );
     expect(location?.type).toBe(ItemType.Road);
     const road = location! as Road;
@@ -259,6 +260,7 @@ describe.skip('detectRouteEvents bugs', () => {
       graphAndMapData.tsMapData.nodes,
       graphAndMapData.tsMapData.roadLooks,
       graphAndMapData.roadAndPrefabRTree,
+      graphAndMapData.tsMapData.map,
     );
     expect(location?.type).toBe(ItemType.Road);
     const road = location! as Road;
@@ -277,6 +279,7 @@ describe.skip('detectRouteEvents bugs', () => {
       graphAndMapData.tsMapData.nodes,
       graphAndMapData.tsMapData.roadLooks,
       graphAndMapData.roadAndPrefabRTree,
+      graphAndMapData.tsMapData.map,
     );
     expect(location?.type).toBe(ItemType.Road);
     const road = location! as Road;

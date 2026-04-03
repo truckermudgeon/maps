@@ -298,7 +298,10 @@ export async function addWaypoint(
   const waypointNode = assertExists(
     context.graphAndMapData.tsMapData.nodes.get(toNodeUid),
   );
-  const waypointLngLat = fromAtsCoordsToWgs84([waypointNode.x, waypointNode.y]);
+  const waypointLngLat =
+    context.graphAndMapData.tsMapData.map === 'usa'
+      ? fromAtsCoordsToWgs84([waypointNode.x, waypointNode.y])
+      : fromEts2CoordsToWgs84([waypointNode.x, waypointNode.y]);
 
   const withWaypoint = combineRoutes(bestSegments);
   withWaypoint.detour = {
@@ -380,6 +383,7 @@ export async function generateRoutes(
     tsMapData.nodes,
     tsMapData.roadLooks,
     graphAndMapData.roadAndPrefabRTree,
+    tsMapData.map,
   );
 
   // TODO what if truck is in a ferry prefab? fromNodeUid should be ferry
@@ -408,7 +412,12 @@ export async function generateRoutes(
           // fallback to nearest road.
           // TODO should fallback to closest road OR prefab?
           roadRTree.findClosest(truck.position.X, truck.position.Z).road;
-    direction = getDirectionOnRoad(truck, nearestRoad, tsMapData.nodes);
+    direction = getDirectionOnRoad(
+      truck,
+      nearestRoad,
+      tsMapData.nodes,
+      tsMapData.map,
+    );
     fromNodeUid = [nearestRoad.startNodeUid, nearestRoad.endNodeUid]
       .map(uid => assertExists(tsMapData.nodes.get(uid)))
       .sort((a, b) => distance(truckPos, a) - distance(truckPos, b))[0].uid;
@@ -421,6 +430,7 @@ export async function generateRoutes(
       location,
       assertExists(tsMapData.prefabDescriptions.get(location.token)),
       tsMapData.nodes,
+      tsMapData.map,
       domainEventSink,
     ));
     console.log({
@@ -450,6 +460,7 @@ export async function generateRoutes(
         tsMapData.nodes,
         tsMapData.roadLooks,
         graphAndMapData.roadAndPrefabRTree,
+        tsMapData.map,
       );
       if (!location) {
         if (fromNodeUid !== lastPrefabUidReported) {
@@ -470,13 +481,19 @@ export async function generateRoutes(
         }
         direction = 'forward';
       } else if (location.type === ItemType.Road) {
-        direction = getDirectionOnRoad(fakeTruck, location, tsMapData.nodes);
+        direction = getDirectionOnRoad(
+          fakeTruck,
+          location,
+          tsMapData.nodes,
+          tsMapData.map,
+        );
       } else {
         direction = getDirectionOnPrefab(
           fakeTruck,
           location,
           assertExists(tsMapData.prefabDescriptions.get(location.token)),
           tsMapData.nodes,
+          tsMapData.map,
           domainEventSink,
         ).direction;
       }
@@ -637,20 +654,20 @@ function getDirectionOnRoad(
   //     arg with nodes, roads and prefabs)
   road: Road,
   nodes: ReadonlyMap<bigint, Node>,
+  map: 'usa' | 'europe',
 ): 'forward' | 'backward' {
+  const toLngLat = map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
   const roadStartNode = assertExists(nodes.get(road.startNodeUid));
   const roadEndNode = assertExists(nodes.get(road.endNodeUid));
 
   // TODO generate a proper line string.
-  const roadStartPoint = fromAtsCoordsToWgs84([
-    roadStartNode.x,
-    roadStartNode.y,
-  ]);
-  const roadEndPoint = fromAtsCoordsToWgs84([roadEndNode.x, roadEndNode.y]);
+  const roadStartPoint = toLngLat([roadStartNode.x, roadStartNode.y]);
+  const roadEndPoint = toLngLat([roadEndNode.x, roadEndNode.y]);
 
   const score = scoreLine(
     lineString([roadStartPoint, roadEndPoint]).geometry,
     truck,
+    map,
   );
   return score >= 0 ? 'forward' : 'backward';
 }
@@ -662,12 +679,14 @@ export function getDirectionOnPrefab(
   prefab: Prefab,
   prefabDesc: PrefabDescription,
   nodes: ReadonlyMap<bigint, Node>,
+  map: 'usa' | 'europe',
   domainEventSink?: DomainEventSink,
 ): { fromNodeUid: bigint; direction: Direction } {
   if (prefab.ferryLinkUid != null) {
     return getDirectionOnFerryPrefab(truck, prefab, nodes);
   }
 
+  const toLngLat = map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
   const targetNodeUids = rotateRight(prefab.nodeUids, prefab.originNodeIndex);
   const laneInfo = calculateLaneInfo(prefabDesc);
   const potentialInputIndices: {
@@ -681,12 +700,10 @@ export function getDirectionOnPrefab(
         const branchCurvePoints = branch.curvePoints.map(cp =>
           toMapPosition(cp, prefab, prefabDesc, nodes),
         );
-        const branchLineString = lineString(
-          branchCurvePoints.map(fromAtsCoordsToWgs84),
-        );
+        const branchLineString = lineString(branchCurvePoints.map(toLngLat));
         potentialInputIndices.push({
           targetIndex,
-          score: scoreLine(branchLineString.geometry, truck),
+          score: scoreLine(branchLineString.geometry, truck, map),
         });
       }
     }
