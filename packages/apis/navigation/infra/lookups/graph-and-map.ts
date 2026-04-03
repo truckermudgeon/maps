@@ -260,6 +260,7 @@ export function readGraphAndMapData(
       .values()
       .filter(
         v =>
+          map === 'usa' &&
           v.modelDesc.startsWith('/model/sign/navigation') &&
           ((v.name.includes('exit') && !v.name.includes('exit mph')) ||
             v.name.includes('side board green')),
@@ -271,6 +272,7 @@ export function readGraphAndMapData(
       .values()
       .filter(
         v =>
+          map === 'usa' &&
           v.modelDesc.startsWith('/model/sign/navigation') &&
           !v.name.includes('ovh board') &&
           !v.name.includes('ovh brd') &&
@@ -455,6 +457,7 @@ export function readGraphAndMapData(
     lngLat: [number, number];
     poi: Poi & { type: 'road' };
   }>();
+  // TODO add ETS2 pois, like border crossings
   const nonRoadNumbers = new Set(['agri_check', 'toll_ico']);
   poiRTree.load(
     tsMapData.pois
