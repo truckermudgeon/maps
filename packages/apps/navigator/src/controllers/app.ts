@@ -711,11 +711,15 @@ export class AppControllerImpl implements AppController {
     const routeSource = assertExists(
       map.getSource<GeoJSONSource>('activeRoute'),
     );
+    const routeStart = assertExists(
+      map.getSource<GeoJSONSource>('activeRouteStart'),
+    );
     const iconsSource = assertExists(
       map.getSource<GeoJSONSource>('activeRouteIcons'),
     );
     if (!maybeRoute) {
       routeSource.setData(emptyFeatureCollection);
+      routeStart.setData(emptyFeatureCollection);
       iconsSource.setData(emptyFeatureCollection);
       return;
     }
@@ -724,6 +728,12 @@ export class AppControllerImpl implements AppController {
     const routeFC = toFeatureCollection(maybeRoute);
     routeSource.setData(routeFC);
     iconsSource.setData(routeFC);
+
+    const firstPoint = (
+      routeFC.features[0] as GeoJSON.Feature<GeoJSON.LineString>
+    ).geometry.coordinates[0];
+    routeStart.setData(point(firstPoint));
+
     // active route layer may have been hidden
     // note: setting paint property by getting a reference to the style layer
     // with react-map-gl apis, then calling setpaintproperty on the style layer,

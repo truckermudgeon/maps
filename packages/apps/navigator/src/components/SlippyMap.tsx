@@ -174,6 +174,27 @@ export const SlippyMap = (props: {
               }}
             />
           </Source>
+          <Source
+            id={'activeRouteStart'}
+            type={'geojson'}
+            data={
+              {
+                type: 'FeatureCollection',
+                features: [],
+              } as GeoJSON.FeatureCollection
+            }
+          >
+            <Layer
+              id={'activeRouteStartLayer'}
+              type={'circle'}
+              paint={{
+                'circle-radius': startPointWidth,
+                'circle-color': '#fff',
+                'circle-stroke-width': 2.5,
+                'circle-stroke-color': '#888',
+              }}
+            />
+          </Source>
           {Array.from({ length: routingModes.size }, (_, i) => (
             <Source
               key={`previewRoute-${i}`}
@@ -238,6 +259,7 @@ export const SlippyMap = (props: {
               type={'symbol'}
               layout={{
                 'icon-image': 'triangle',
+                'icon-size': arrowSize,
                 'icon-allow-overlap': true,
                 'icon-pitch-alignment': 'map',
                 'icon-rotation-alignment': 'map',
@@ -330,6 +352,16 @@ const arrowLineWidth: DataDrivenPropertyValueSpecification<number> = [
   11,
 ];
 
+const arrowSize: DataDrivenPropertyValueSpecification<number> = [
+  'interpolate',
+  ['exponential', 1.5],
+  ['zoom'],
+  3,
+  0.33,
+  10,
+  1,
+];
+
 const caseWidth: DataDrivenPropertyValueSpecification<number> = [
   'interpolate',
   ['exponential', 1.5],
@@ -338,4 +370,14 @@ const caseWidth: DataDrivenPropertyValueSpecification<number> = [
   1.5,
   10,
   3,
+];
+
+const startPointWidth: DataDrivenPropertyValueSpecification<number> = [
+  'interpolate',
+  ['exponential', 1.5],
+  ['zoom'],
+  3,
+  6,
+  10,
+  10,
 ];
