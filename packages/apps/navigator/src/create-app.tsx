@@ -219,12 +219,17 @@ export function createApp({
       routes: navSheetStore.routes,
       selected: navSheetStore.selectedRoute,
     }),
-    ({ routes, selected }) => {
-      // HACK to make sure existing previews are cleared after navsheet reset
-      [0, 1, 2].forEach(index =>
-        controller.renderRoutePreview(routes[index], {
-          index: index,
-          highlight: selected?.id === routes[index]?.id,
+    ({ routes, selected }, prev) => {
+      const highlightedIndex = routes.findIndex(r => r.id === selected?.id);
+      const sortedRouteIndices = [0, 1, 2].sort((a, b) =>
+        a === highlightedIndex ? 1 : b === highlightedIndex ? -1 : a - b,
+      );
+
+      sortedRouteIndices.forEach((routeIndex, layerIndex) =>
+        controller.renderRoutePreview(routes[routeIndex], {
+          index: layerIndex,
+          highlight: selected?.id === routes[routeIndex]?.id,
+          animate: prev.routes !== routes,
         }),
       );
       if (routes.length === 0 && !selected) {

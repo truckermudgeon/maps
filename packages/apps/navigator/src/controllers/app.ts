@@ -598,22 +598,24 @@ export class AppControllerImpl implements AppController {
         }
 
         const progress = clamp(distanceTraveled / routeLength, 0, 1);
-        map.getMap().setPaintProperty(
-          'activeRouteLayer-case',
-          'line-gradient',
-          lineGradientExpression({
-            lineType: 'case',
-            progress,
-          }),
-        );
-        map.getMap().setPaintProperty(
-          'activeRouteLayer',
-          'line-gradient',
-          lineGradientExpression({
-            lineType: 'line',
-            progress,
-          }),
-        );
+        map
+          .getMap()
+          .setPaintProperty(
+            'activeRouteLayer-case',
+            'line-gradient',
+            lineGradientExpression({
+              lineType: 'case',
+              progress,
+            }),
+          )
+          .setPaintProperty(
+            'activeRouteLayer',
+            'line-gradient',
+            lineGradientExpression({
+              lineType: 'line',
+              progress,
+            }),
+          );
       }
 
       if (prevPosition.every(v => !v)) {
@@ -734,10 +736,11 @@ export class AppControllerImpl implements AppController {
   }
 
   renderRoutePreview(
-    maybeRoute: Route,
+    maybeRoute: Route | undefined,
     options: {
       highlight: boolean;
       index: number;
+      animate: boolean;
     },
   ) {
     const { map } = this;
@@ -756,21 +759,53 @@ export class AppControllerImpl implements AppController {
     }
 
     routeSource.setData(toFeatureCollection(maybeRoute));
+    if (options.animate) {
+      let start = 0;
+      const durationMs = 1_000;
+
+      const animate = (timestamp: number) => {
+        if (!start) {
+          start = timestamp;
+        }
+
+        const t = (timestamp - start) / durationMs;
+        const progress = Math.min(t, 1);
+        map
+          .getMap()
+          .setPaintProperty(
+            `previewRouteLayer-${options.index}`,
+            'line-gradient',
+            lineGradientExpression({
+              lineType: options.highlight
+                ? 'animatedPrimaryLine'
+                : 'animatedSecondaryLine',
+              progress,
+            }),
+          )
+          .setPaintProperty(
+            `previewRouteLayer-${options.index}-case`,
+            'line-gradient',
+            lineGradientExpression({
+              lineType: options.highlight
+                ? 'animatedPrimaryCase'
+                : 'animatedSecondaryCase',
+              progress,
+            }),
+          );
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        }
+      };
+
+      requestAnimationFrame(animate);
+    }
+
     // note: setting paint property by getting a reference to the style layer
     // with react-map-gl apis, then calling setpaintproperty on the style layer,
     // does *not* work.
     map
       .getMap()
-      .setPaintProperty(
-        `previewRouteLayer-${options.index}`,
-        'line-opacity',
-        options.highlight ? 1 : 0.25,
-      )
-      .setPaintProperty(
-        `previewRouteLayer-${options.index}-case`,
-        'line-opacity',
-        options.highlight ? 1 : 0.25,
-      )
       .setLayoutProperty('activeRouteLayer', 'visibility', 'none')
       .setLayoutProperty('activeRouteLayer-case', 'visibility', 'none');
   }
