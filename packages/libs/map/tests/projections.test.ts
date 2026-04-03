@@ -26,6 +26,10 @@ describe('ETS', () => {
   const greeceGame: Position = [62_276, 84_880];
   const greeceLonLat: Position = [24.63877984644102, 35.391305791648065];
 
+  // Batisse depot in Paris, France
+  const batisseGame: Position = [-30_120, 5_847];
+  const batisseLonLat: Position = [2.2454398875049852, 48.96983557895307];
+
   it('converts UK game coords to longitude/latitude and back', () => {
     expect(fromEts2CoordsToWgs84(londonGame)).toEqual(londonLonLat);
     expect(fromWgs84ToEts2Coords(londonLonLat)).toEqual(londonGame);
@@ -34,5 +38,8 @@ describe('ETS', () => {
   it('converts longitude/latitude to non-UK game coords', () => {
     expect(fromEts2CoordsToWgs84(greeceGame)).toEqual(greeceLonLat);
     expect(fromWgs84ToEts2Coords(greeceLonLat)).toEqual(greeceGame);
+
+    expect(fromEts2CoordsToWgs84(batisseGame)).toEqual(batisseLonLat);
+    expect(fromWgs84ToEts2Coords(batisseLonLat)).toEqual(batisseGame);
   });
 });
