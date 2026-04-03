@@ -194,6 +194,7 @@ export function readMapData<
 
   const mapData: Partial<Omit<MappedData<T>, 'map'>> = {};
   const uniqueKeys = new Set(options.mapDataKeys);
+  const referencedNodeUids = new Set<bigint>();
   for (const key of uniqueKeys) {
     switch (key) {
       case 'nodes': {
@@ -211,12 +212,22 @@ export function readMapData<
           ),
           r => r.uid,
         );
+        mapData.roads.values().forEach(road => {
+          referencedNodeUids.add(road.startNodeUid);
+          referencedNodeUids.add(road.endNodeUid);
+        });
         break;
       case 'ferries':
         mapData.ferries = mapify(
           readArrayFile<Ferry>(toJsonFilePath(key), focusXY),
           f => f.token,
         );
+        mapData.ferries.values().forEach(ferry => {
+          referencedNodeUids.add(ferry.nodeUid);
+          ferry.connections.forEach(connection => {
+            referencedNodeUids.add(connection.nodeUid);
+          });
+        });
         break;
       case 'prefabs':
         mapData.prefabs = mapify(
@@ -232,33 +243,52 @@ export function readMapData<
           }),
           p => p.uid,
         );
+        mapData.prefabs.values().forEach(prefab => {
+          prefab.nodeUids.forEach(uid => referencedNodeUids.add(uid));
+        });
         break;
       case 'signs':
         mapData.signs = mapify(
           readArrayFile<Sign>(toJsonFilePath(key), focusXY),
           t => t.uid,
         );
+        mapData.signs.values().forEach(sign => {
+          referencedNodeUids.add(sign.nodeUid);
+        });
         break;
       case 'companies':
         mapData.companies = mapify(allCompanies.filter(focusXY), c => c.uid);
+        mapData.companies.values().forEach(company => {
+          referencedNodeUids.add(company.nodeUid);
+        });
         break;
       case 'models':
         mapData.models = mapify(
           readArrayFile<Model>(toJsonFilePath(key), focusXY),
           m => m.uid,
         );
+        mapData.models.values().forEach(model => {
+          referencedNodeUids.add(model.nodeUid);
+        });
         break;
       case 'mapAreas':
         mapData.mapAreas = mapify(
           readArrayFile<MapArea>(toJsonFilePath(key), focusXYPlus(200)),
           m => m.uid,
         );
+        mapData.mapAreas.values().forEach(mapArea => {
+          mapArea.nodeUids.forEach(uid => referencedNodeUids.add(uid));
+        });
         break;
       case 'dividers':
         mapData.dividers = mapify(
           readArrayFile<Building | Curve>(toJsonFilePath(key), focusXY),
           d => d.uid,
         );
+        mapData.dividers.values().forEach(divider => {
+          referencedNodeUids.add(divider.startNodeUid);
+          referencedNodeUids.add(divider.endNodeUid);
+        });
         break;
       case 'cities':
         mapData.cities = mapify(allCities.filter(focusXY), c => c.token);
@@ -270,7 +300,6 @@ export function readMapData<
           ),
           c => c.token,
         );
-
         break;
       case 'companyDefs':
         mapData.companyDefs = mapify(
@@ -325,18 +354,27 @@ export function readMapData<
           readArrayFile<TrajectoryItem>(toJsonFilePath(key)),
           t => t.uid,
         );
+        mapData.trajectories.values().forEach(trajectory => {
+          trajectory.nodeUids.forEach(uid => referencedNodeUids.add(uid));
+        });
         break;
       case 'triggers':
         mapData.triggers = mapify(
           readArrayFile<Trigger>(toJsonFilePath(key)),
           t => t.uid,
         );
+        mapData.triggers.values().forEach(trigger => {
+          trigger.nodeUids.forEach(uid => referencedNodeUids.add(uid));
+        });
         break;
       case 'cutscenes':
         mapData.cutscenes = mapify(
           readArrayFile<Cutscene>(toJsonFilePath(key)),
           c => c.uid,
         );
+        mapData.cutscenes.values().forEach(cutscene => {
+          referencedNodeUids.add(cutscene.nodeUid);
+        });
         break;
       case 'routes':
         mapData.routes = mapify(
@@ -349,10 +387,46 @@ export function readMapData<
           readArrayFile<WithToken<MileageTarget>>(toJsonFilePath(key)),
           t => t.token,
         );
+        mapData.mileageTargets.values().forEach(target => {
+          if (target.nodeUid != null) {
+            referencedNodeUids.add(target.nodeUid);
+          }
+        });
         break;
       // N.B.: the following data is always in array form.
       case 'pois':
         mapData.pois = readArrayFile<Poi>(toJsonFilePath(key), focusXY);
+        mapData.pois.forEach(poi => {
+          switch (poi.type) {
+            case 'landmark':
+            case 'road':
+              referencedNodeUids.add(poi.nodeUid);
+              break;
+            case 'facility':
+              switch (poi.icon) {
+                case 'parking_ico':
+                  poi.itemNodeUids.forEach(uid => referencedNodeUids.add(uid));
+                  break;
+                case 'gas_ico':
+                case 'service_ico':
+                case 'weigh_station_ico':
+                case 'dealer_ico':
+                case 'garage_large_ico':
+                case 'recruitment_ico':
+                  break;
+                default:
+                  throw new UnreachableError(poi);
+              }
+              break;
+            case 'viewpoint':
+            case 'ferry':
+            case 'train':
+            case 'company':
+              break;
+            default:
+              throw new UnreachableError(poi);
+          }
+        });
         break;
       case 'elevation':
         mapData.elevation = readArrayFile<[number, number, number]>(
@@ -394,6 +468,25 @@ export function readMapData<
       logger.info((mapOrArray as ReadonlyMap<unknown, unknown>).size, k);
     }
   }
+
+  if (mapData.nodes != null) {
+    const totalNodes = mapData.nodes.size;
+    logger.info(
+      'preserved',
+      referencedNodeUids.size,
+      '/',
+      totalNodes,
+      `(${Math.round((referencedNodeUids.size / totalNodes) * 100)}%) nodes`,
+    );
+    // the following casts are required so we can mutate the maps.
+    const nodesMap = mapData.nodes as Map<bigint, unknown>;
+    nodesMap.keys().forEach(key => {
+      if (!referencedNodeUids.has(key)) {
+        nodesMap.delete(key);
+      }
+    });
+  }
+
   // this cast should be safe because `mapData` contains all keys K.
   return { ...mapData, map } as Pick<MappedData<T>, 'map' | K>;
 }
