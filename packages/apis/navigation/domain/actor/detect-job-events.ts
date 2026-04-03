@@ -38,6 +38,11 @@ export function detectJobEvents(opts: {
 
     if (newDestKey == null) {
       jobState = undefined;
+    } else if (!companiesByKey.has(newDestKey)) {
+      // the job is either a special transport route (unsupported)
+      // or the job is for some company in some mod (also unsupported).
+      // ignore for now.
+      jobState = undefined;
     } else {
       const company = assertExists(
         companiesByKey.get(newDestKey),
