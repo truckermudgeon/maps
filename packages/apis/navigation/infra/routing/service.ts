@@ -39,7 +39,7 @@ export function createRoutingService(
   metrics: MetricsService['worker'],
 ): RoutingService {
   const [atsPool, ets2Pool] = (['usa', 'europe'] as const).map(game => {
-    const lookupData = lookups.getData({ game });
+    const lookupData = lookups.getData({ map: game });
     const routeContext: Context = {
       nodeLUT: lookupData.graphAndMapData.tsMapData.nodes,
       graph: lookupData.graphAndMapData.graphData.graph,
@@ -64,7 +64,7 @@ export function createRoutingService(
     const meta = { name: 'find-route', game: 'TODO' };
     try {
       metrics.workerCalls.inc(meta);
-      const pool = opts.gameContext.game === 'usa' ? atsPool : ets2Pool;
+      const pool = opts.gameContext.map === 'usa' ? atsPool : ets2Pool;
       return (await pool.run(opts)) as Route;
     } finally {
       metrics.workerDuration.observe(meta, Date.now() - start);

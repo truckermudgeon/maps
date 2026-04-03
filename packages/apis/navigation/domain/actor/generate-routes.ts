@@ -94,7 +94,7 @@ export async function generateRouteFromKeys(
     routing,
   } = context;
   const gameContext: GameContext = {
-    game: tsMapData.map,
+    map: tsMapData.map,
   };
   const routesWithoutLookup = await Promise.all(
     segmentKeys.map(async key => {
@@ -372,7 +372,7 @@ export async function generateRoutes(
   Preconditions.checkArgument(modes.length > 0, 'modes cannot be empty');
   const { graphAndMapData, routing, truck, domainEventSink } = context;
   const { roadRTree, signRTree, graphData, tsMapData } = graphAndMapData;
-  const gameContext: GameContext = { game: tsMapData.map };
+  const gameContext: GameContext = { map: tsMapData.map };
   const truckPos: [number, number] = [truck.position.X, truck.position.Z];
 
   const location = calculateLocation(

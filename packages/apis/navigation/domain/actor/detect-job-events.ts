@@ -24,8 +24,8 @@ export function detectJobEvents(opts: {
   jobEventEmitter: JobEventEmitter;
 } {
   const { telemetryEventEmitter, getJobMappedData } = opts;
-  const atsJobMappedData = getJobMappedData({ game: 'usa' });
-  const ets2JobMappedData = getJobMappedData({ game: 'europe' });
+  const atsJobMappedData = getJobMappedData({ map: 'usa' });
+  const ets2JobMappedData = getJobMappedData({ map: 'europe' });
   const jobEventEmitter: JobEventEmitter = new EventEmitter();
 
   let jobState: JobState | undefined;

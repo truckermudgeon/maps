@@ -26,7 +26,7 @@ export function createSearchService(
           import.meta.url,
         ).href,
         workerData: {
-          rbushJSON: lookups.getData({ game }).searchData
+          rbushJSON: lookups.getData({ map: game }).searchData
             .searchDataLngLatRTreeJSON,
         },
       }),
@@ -35,11 +35,11 @@ export function createSearchService(
     opts: SearchSearcherOptions,
   ): Promise<SearchResult[]> => {
     const start = Date.now();
-    const meta = { name: 'search', game: opts.gameContext.game };
+    const meta = { name: 'search', game: opts.gameContext.map };
     try {
       metrics.workerCalls.inc(meta);
       const pool =
-        opts.gameContext.game === 'usa' ? atsSearcherPool : ets2SearcherPool;
+        opts.gameContext.map === 'usa' ? atsSearcherPool : ets2SearcherPool;
       return (await pool.run({ bbox: opts.bbox })) as SearchResult[];
     } finally {
       metrics.workerDuration.observe(meta, Date.now() - start);
@@ -55,7 +55,7 @@ export function createSearchService(
           import.meta.url,
         ).href,
         workerData: {
-          rbushJSON: lookups.getData({ game }).searchData
+          rbushJSON: lookups.getData({ map: game }).searchData
             .searchDataLngLatRTreeJSON,
         },
       }),
@@ -66,12 +66,12 @@ export function createSearchService(
     const start = Date.now();
     const meta = {
       name: 'search-results-reducer',
-      game: opts.gameContext.game,
+      game: opts.gameContext.map,
     };
     try {
       metrics.workerCalls.inc(meta);
       const pool =
-        opts.gameContext.game === 'usa' ? atsReducerPool : ets2ReducerPool;
+        opts.gameContext.map === 'usa' ? atsReducerPool : ets2ReducerPool;
       return (await pool.run(opts)) as SearchResult[];
     } finally {
       metrics.workerDuration.observe(meta, Date.now() - start);

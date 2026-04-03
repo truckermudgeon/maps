@@ -78,7 +78,7 @@ describe.skip('searchPoi', () => {
     let searchResults: SearchResult[] = [];
     for (let i = 0; i < numIters; i++) {
       searchResults = (
-        await searchService.searchPoi(searchRequest, { game: 'usa' })
+        await searchService.searchPoi(searchRequest, { map: 'usa' })
       ).map(addRelativeTruckInfo);
     }
     // 1.95 seconds for 1000 iters
@@ -148,7 +148,7 @@ describe.skip('searchPoi', () => {
     const results: SearchResult[][] = (
       await Promise.all(
         Array.from({ length: numIters }, () =>
-          searchService.searchPoi(searchRequest, { game: 'usa' }),
+          searchService.searchPoi(searchRequest, { map: 'usa' }),
         ),
       )
     ).map(rs => rs.map(addRelativeTruckInfo));

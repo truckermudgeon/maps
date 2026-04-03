@@ -191,14 +191,14 @@ export const navigatorRouter = router({
       const { readTelemetry, readActiveRoute, gameContext } = ctx.sessionActor;
       const { type: poiType, scope } = input;
       const addRelativeTruckInfo = createWithRelativeTruckInfoMapper(
-        gameContext.game,
+        gameContext.map,
         readTelemetry,
       );
 
       let searchRequest: SearchRequest;
       if (input.scope === ScopeType.NEARBY && input.center) {
         const toGameCoords =
-          gameContext.game === 'usa'
+          gameContext.map === 'usa'
             ? fromWgs84ToAtsCoords
             : fromWgs84ToEts2Coords;
         searchRequest = {
@@ -229,7 +229,7 @@ export const navigatorRouter = router({
       const { readTelemetry, gameContext } = ctx.sessionActor;
       const currentTruckLocation = readTelemetry()?.truck.position;
       const toLngLat =
-        gameContext.game === 'usa'
+        gameContext.map === 'usa'
           ? fromAtsCoordsToWgs84
           : fromEts2CoordsToWgs84;
       const results = await ctx.services.search.search(
@@ -245,7 +245,7 @@ export const navigatorRouter = router({
         },
       );
       const addRelativeTruckInfo = createWithRelativeTruckInfoMapper(
-        gameContext.game,
+        gameContext.map,
         readTelemetry,
       );
 

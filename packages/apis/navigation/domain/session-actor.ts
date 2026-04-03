@@ -143,7 +143,7 @@ export class SessionActorImpl implements SessionActor {
       return undefined;
     }
     return {
-      game: latest.game.game.name === 'ats' ? 'usa' : 'europe',
+      map: latest.game.game.name === 'ats' ? 'usa' : 'europe',
     };
   }
 

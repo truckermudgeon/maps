@@ -36,7 +36,7 @@ export function detectThemeModeEvents(opts: {
       }
 
       const graphAndMapData = getGraphAndMapData({
-        game: telemetry.game.game.name === 'ats' ? 'usa' : 'europe',
+        map: telemetry.game.game.name === 'ats' ? 'usa' : 'europe',
       });
       const newMode = toThemeMode(
         telemetry,

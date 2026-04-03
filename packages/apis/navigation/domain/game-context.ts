@@ -1,3 +1,3 @@
 export interface GameContext {
-  readonly game: 'usa' | 'europe';
+  readonly map: 'usa' | 'europe';
 }

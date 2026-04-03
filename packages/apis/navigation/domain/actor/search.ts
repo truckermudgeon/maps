@@ -254,10 +254,10 @@ export class SearchServiceImpl implements SearchService {
       }>;
     },
   ) {
-    const atsSearchData = this.getLookup({ game: 'usa' }).processedSearchData
+    const atsSearchData = this.getLookup({ map: 'usa' }).processedSearchData
       .searchData;
     const ets2SearchData = this.getLookup({
-      game: 'europe',
+      map: 'europe',
     }).processedSearchData.searchData;
     SearchServiceImpl.validateSearchResults(atsSearchData);
     SearchServiceImpl.validateSearchResults(ets2SearchData);
@@ -304,7 +304,7 @@ export class SearchServiceImpl implements SearchService {
     );
 
     this.fuse = (gameContext: GameContext) =>
-      gameContext.game === 'usa' ? atsFuse : ets2Fuse;
+      gameContext.map === 'usa' ? atsFuse : ets2Fuse;
   }
 
   private static validateSearchResults(searchResults: SearchResult[]) {
@@ -459,7 +459,7 @@ export class SearchServiceImpl implements SearchService {
     game: GameContext,
   ): SearchResult {
     const toGameCoords =
-      game.game === 'usa' ? fromWgs84ToAtsCoords : fromWgs84ToEts2Coords;
+      game.map === 'usa' ? fromWgs84ToAtsCoords : fromWgs84ToEts2Coords;
     const { processedSearchData, graphNodeRTree } = this.getLookup(game);
 
     const gameCoords = toGameCoords(lonLat);

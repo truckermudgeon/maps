@@ -120,7 +120,7 @@ export function detectRouteEvents(opts: {
       if (map !== 'usa' && map !== 'europe') {
         throw new Error('unexpected map value for activeRoute: ' + map);
       }
-      const graphAndMapData = getGraphAndMapData({ game: map });
+      const graphAndMapData = getGraphAndMapData({ map: map });
 
       detectRouteEvents = createUpdateListener(
         activeRoute,
