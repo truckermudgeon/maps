@@ -98,14 +98,12 @@ export const fromWgs84ToEts2Coords = ([lon, lat]: Position): Position => {
   // find any clues in the def files.
   const calais = [-31100, -5500];
 
-  const unUkX = x / ukScaleFactor - calais[0] / 2;
-  const unUkY = y / ukScaleFactor - calais[1] / 2;
   const isUk =
-    unUkX * ukScaleFactor < calais[0] && //
-    unUkX * ukScaleFactor < calais[1];
+    x < calais[0] * (1 + ukScaleFactor / 2) &&
+    y < calais[1] * (1 + ukScaleFactor / 2);
   if (isUk) {
-    x = unUkX;
-    y = unUkY;
+    x = x / ukScaleFactor - calais[0] / 2;
+    y = y / ukScaleFactor - calais[1] / 2;
   }
 
   return [
