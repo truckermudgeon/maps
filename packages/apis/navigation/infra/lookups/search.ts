@@ -375,6 +375,7 @@ function toServiceAreaSprite(serviceArea: ServiceArea): string {
             : serviceArea.description.toLowerCase().slice(0, 3);
         return `${prefix}_oil_gst`;
       }
+      // ATS truck dealers
       case 'Western Star':
         return 'ws_trk_dlr';
       case 'Kenworth':
@@ -386,6 +387,16 @@ function toServiceAreaSprite(serviceArea: ServiceArea): string {
       case 'Freightliner':
       case 'International':
       case 'Mack':
+        return 'blank';
+      // ETS2 truck dealers:
+      case 'Scania':
+        return 'scania_dlr';
+      case 'DAF':
+        return 'daf';
+      case 'Iveco':
+      case 'MAN':
+      case 'Mercedes-Benz':
+      case 'Renault':
         return 'blank';
       default:
         throw new Error(
