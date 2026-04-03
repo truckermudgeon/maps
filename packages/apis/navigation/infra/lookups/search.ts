@@ -1,6 +1,5 @@
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import type { Position } from '@truckermudgeon/base/geom';
-import { distance } from '@truckermudgeon/base/geom';
 import { UnreachableError } from '@truckermudgeon/base/precon';
 import type { MappedDataForKeys } from '@truckermudgeon/io';
 import { PointRBush } from '@truckermudgeon/map/point-rbush';
@@ -11,7 +10,6 @@ import {
   fromWgs84ToEts2Coords,
 } from '@truckermudgeon/map/projections';
 import type {
-  CompanyItem,
   Country,
   FacilityIcon,
   Node,
@@ -58,8 +56,6 @@ export function readAndProcessSearchData(
       ? fromAtsCoordsToWgs84
       : fromEts2CoordsToWgs84;
 
-  let correctCompanyNodes = 0;
-  let incorrectCompanyNodes = 0;
   let id = 0;
   const searchResults = geojson.features
     // Dealers will be handled by ServiceAreas
@@ -84,47 +80,19 @@ export function readAndProcessSearchData(
       const facilityUrls: string[] = [];
       switch (f.properties.type) {
         case 'company': {
-          let company: CompanyItem;
-          if (context.graphCompaniesByNodeUid.has(closestNode.uid)) {
-            // do nothing; node is correct
-            correctCompanyNodes++;
-            company = assertExists(
-              context.tsMapData.companies
-                .values()
-                .find(c => c.nodeUid === closestNode.uid),
-            );
-            assert(
-              company.token === f.properties.sprite,
-              `${company.token}.${company.cityToken} !== ${f.properties.sprite}`,
-            );
-          } else {
-            const companyNode = context.graphNodeRTree.findClosest(
-              ...gameCoords,
-              {
-                predicate: item =>
-                  context.graphCompaniesByNodeUid.has(item.node.uid),
-              },
-            ).node;
-            assert(
-              companyNode.uid ===
-                context.graphCompaniesByNodeUid.get(companyNode.uid)?.nodeUid,
-            );
-            company = assertExists(
-              context.tsMapData.companies
-                .values()
-                .find(c => c.nodeUid === companyNode.uid),
-            );
-            console.log(
-              'bad company node',
-              poiProperties.sprite,
-              poiProperties.city.name,
-              poiProperties.stateCode,
-
-              distance(closestNode, gameCoords),
-              distance(closestNode, companyNode),
-            );
-            incorrectCompanyNodes++;
-          }
+          assert(
+            context.graphCompaniesByNodeUid.has(closestNode.uid),
+            'closest node to company POI should be a company node.',
+          );
+          const company = assertExists(
+            context.tsMapData.companies
+              .values()
+              .find(c => c.nodeUid === closestNode.uid),
+          );
+          assert(
+            company.token === f.properties.sprite,
+            `${company.token}.${company.cityToken} !== ${f.properties.sprite}`,
+          );
 
           const prefab = context.tsMapData.prefabs.get(company.prefabUid);
           if (
@@ -219,7 +187,6 @@ export function readAndProcessSearchData(
       })
       .toArray();
 
-  console.log({ correctCompanyNodes, incorrectCompanyNodes });
   const searchData = searchResults.concat(facilityResults);
 
   const searchDataLngLatRTree = new PointRBush<{
