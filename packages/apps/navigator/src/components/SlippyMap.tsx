@@ -337,9 +337,19 @@ const routeLineWidth: DataDrivenPropertyValueSpecification<number> = [
   ['exponential', 1.5],
   ['zoom'],
   3,
-  4,
+  5,
   10,
   10,
+];
+
+const caseWidth: DataDrivenPropertyValueSpecification<number> = [
+  'interpolate',
+  ['exponential', 1.5],
+  ['zoom'],
+  3,
+  2,
+  10,
+  3,
 ];
 
 const arrowLineWidth: DataDrivenPropertyValueSpecification<number> = [
@@ -360,16 +370,6 @@ const arrowSize: DataDrivenPropertyValueSpecification<number> = [
   0.33,
   10,
   1,
-];
-
-const caseWidth: DataDrivenPropertyValueSpecification<number> = [
-  'interpolate',
-  ['exponential', 1.5],
-  ['zoom'],
-  3,
-  1.5,
-  10,
-  3,
 ];
 
 const startPointWidth: DataDrivenPropertyValueSpecification<number> = [
