@@ -47,6 +47,10 @@ export interface AppStore {
     | { line: GeoJSON.Feature<GeoJSON.LineString> }
     | undefined;
   readonly activeArrowStep: RouteStep | undefined;
+  readonly geoJsonRoute: {
+    steps: readonly { step: RouteStep; featureLength: number }[];
+    featureLength: number;
+  };
 }
 
 export interface AppController {

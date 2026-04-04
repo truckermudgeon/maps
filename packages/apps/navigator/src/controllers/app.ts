@@ -261,6 +261,36 @@ export class AppStoreImpl implements AppStore {
     }
     return this.nextStep!;
   }
+
+  get geoJsonRoute(): {
+    steps: readonly { step: RouteStep; featureLength: number }[];
+    featureLength: number;
+  } {
+    if (!this.activeRoute) {
+      return {
+        steps: [],
+        featureLength: 0,
+      };
+    }
+
+    let totalLength = 0;
+    const steps = this.activeRoute.segments.flatMap(s =>
+      s.steps.map(step => {
+        const points = polyline.decode(step.geometry);
+        const stepLine = lineString(points);
+        const featureLength = length(stepLine);
+        totalLength += featureLength;
+        return {
+          step,
+          featureLength,
+        };
+      }),
+    );
+    return {
+      steps,
+      featureLength: totalLength,
+    };
+  }
 }
 
 export class AppControllerImpl implements AppController {
@@ -479,8 +509,6 @@ export class AppControllerImpl implements AppController {
     let currBearing = 0;
     let markerBearing = 0;
     console.log('subscribing');
-    let routeLength = 0;
-    let flattenedSteps: { step: RouteStep; length: number }[] = [];
 
     const timeline = new TelemetryTimeline({
       lookbackMs: 250,
@@ -499,24 +527,6 @@ export class AppControllerImpl implements AppController {
               store.activeRoute = event.data;
               store.activeRouteIndex = undefined;
               this.renderActiveRoute(event.data);
-              if (store.activeRoute != null) {
-                routeLength = 0;
-                flattenedSteps = store.activeRoute.segments.flatMap(s =>
-                  s.steps.map(step => {
-                    const points = polyline.decode(step.geometry);
-                    const stepLine = lineString(points);
-                    const stepLength = length(stepLine);
-                    routeLength += stepLength;
-                    return {
-                      step,
-                      length: stepLength,
-                    };
-                  }),
-                );
-              } else {
-                routeLength = 0;
-                flattenedSteps = [];
-              }
             });
             break;
           case 'routeProgress':
@@ -575,47 +585,7 @@ export class AppControllerImpl implements AppController {
         return;
       }
 
-      if (store.activeRoute && store.activeRouteIndex && store.activeStepLine) {
-        let distanceTraveled = 0;
-        const activeStep =
-          store.activeRoute.segments[store.activeRouteIndex.segmentIndex].steps[
-            store.activeRouteIndex.stepIndex
-          ];
-        for (const { step, length } of flattenedSteps) {
-          if (step === activeStep) {
-            break;
-          }
-          distanceTraveled += length;
-        }
-
-        const snapPoint = nearestPointOnLine(store.activeStepLine.line, center);
-        const distanceAlongActiveStepLine = snapPoint.properties.lineDistance;
-        distanceTraveled += distanceAlongActiveStepLine;
-        if (distanceTraveled >= 0.2 && snapPoint.properties.dist < 0.1) {
-          //center = snapPoint.geometry.coordinates as [number, number];
-          //store.truckPoint = center;
-        }
-
-        const progress = clamp(distanceTraveled / routeLength, 0, 1);
-        map
-          .getMap()
-          .setPaintProperty(
-            'activeRouteLayer-case',
-            'line-gradient',
-            lineGradientExpression({
-              lineType: 'case',
-              progress,
-            }),
-          )
-          .setPaintProperty(
-            'activeRouteLayer',
-            'line-gradient',
-            lineGradientExpression({
-              lineType: 'line',
-              progress,
-            }),
-          );
-      }
+      this.renderActiveRouteProgress(store);
 
       if (prevPosition.every(v => !v)) {
         console.log('reset center', center);
@@ -808,6 +778,65 @@ export class AppControllerImpl implements AppController {
       .setLayoutProperty('activeRouteStartLayer', 'visibility', 'none');
   }
 
+  private renderActiveRouteProgress(store: AppStore) {
+    if (
+      !this.map ||
+      !store.activeRoute ||
+      !store.activeRouteIndex ||
+      !store.activeStepLine
+    ) {
+      return;
+    }
+
+    let distanceTraveled = 0;
+    const activeStep =
+      store.activeRoute.segments[store.activeRouteIndex.segmentIndex].steps[
+        store.activeRouteIndex.stepIndex
+      ];
+    for (const { step, featureLength } of store.geoJsonRoute.steps) {
+      if (step === activeStep) {
+        break;
+      }
+      distanceTraveled += featureLength;
+    }
+
+    const snapPoint = nearestPointOnLine(
+      store.activeStepLine.line,
+      // cast as mutable, and assume nearestPointOnLine doesn't mutate.
+      store.truckPoint as [number, number],
+    );
+    const distanceAlongActiveStepLine = snapPoint.properties.lineDistance;
+    distanceTraveled += distanceAlongActiveStepLine;
+    if (distanceTraveled >= 0.2 && snapPoint.properties.dist < 0.1) {
+      //center = snapPoint.geometry.coordinates as [number, number];
+      //store.truckPoint = center;
+    }
+
+    const progress = clamp(
+      distanceTraveled / store.geoJsonRoute.featureLength,
+      0,
+      1,
+    );
+    this.map
+      .getMap()
+      .setPaintProperty(
+        'activeRouteLayer-case',
+        'line-gradient',
+        lineGradientExpression({
+          lineType: 'case',
+          progress,
+        }),
+      )
+      .setPaintProperty(
+        'activeRouteLayer',
+        'line-gradient',
+        lineGradientExpression({
+          lineType: 'line',
+          progress,
+        }),
+      );
+  }
+
   drawStepArrow(step: RouteStep | undefined) {
     const { map } = this;
     if (!map) {
@@ -819,7 +848,7 @@ export class AppControllerImpl implements AppController {
       map.getSource<GeoJSONSource>('previewStepArrow'),
     );
     if (!step?.arrowPoints || step.arrowPoints < 2) {
-      arrowSource.setData(featureCollection([]));
+      arrowSource.setData(emptyFeatureCollection);
       return;
     }
 
