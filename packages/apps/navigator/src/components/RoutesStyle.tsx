@@ -43,17 +43,20 @@ export const RoutesStyle = () => {
             }),
           }}
         />
-      </Source>
-      <Source
-        id={'activeRouteStart'}
-        type={'geojson'}
-        data={
-          {
-            type: 'FeatureCollection',
-            features: [],
-          } as GeoJSON.FeatureCollection
-        }
-      >
+        <Layer
+          id={'activeRouteIconsLayer'}
+          type={'symbol'}
+          layout={{
+            'icon-image': '{sprite}',
+            'icon-allow-overlap': true,
+          }}
+          minzoom={10}
+          filter={[
+            'all',
+            ['==', ['geometry-type'], 'Point'],
+            ['==', ['get', 'type'], 'traffic'],
+          ]}
+        />
         <Layer
           id={'activeRouteStartLayer'}
           type={'circle'}
@@ -63,6 +66,11 @@ export const RoutesStyle = () => {
             'circle-stroke-width': 2.5,
             'circle-stroke-color': '#888',
           }}
+          filter={[
+            'all',
+            ['==', ['geometry-type'], 'Point'],
+            ['==', ['get', 'type'], 'start'],
+          ]}
         />
       </Source>
       {Array.from({ length: routingModes.size }, (_, i) => (
@@ -149,27 +157,6 @@ export const RoutesStyle = () => {
             'line-opacity': 1,
           }}
           filter={['in', '$type', 'LineString']}
-        />
-      </Source>
-      <Source
-        id={'activeRouteIcons'}
-        type={'geojson'}
-        data={
-          {
-            type: 'FeatureCollection',
-            features: [],
-          } as GeoJSON.FeatureCollection
-        }
-      >
-        <Layer
-          id={'activeRouteIconsLayer'}
-          type={'symbol'}
-          layout={{
-            'icon-image': '{sprite}',
-            'icon-allow-overlap': true,
-          }}
-          minzoom={10}
-          filter={['in', '$type', 'Point']}
         />
       </Source>
     </>

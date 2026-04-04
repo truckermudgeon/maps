@@ -29,7 +29,7 @@ import { WaitingForTelemetry } from './components/WaitingForTelemetry';
 import {
   AppControllerImpl,
   AppStoreImpl,
-  toFeatureCollection,
+  toRouteFeatures,
 } from './controllers/app';
 import {
   BearingMode,
@@ -197,9 +197,7 @@ export function createApp({
         controller.fitPoints(store, tlbrs);
       } else {
         // TODO move this calc to RouteSummary
-        const bboxes = maybeRoutes.map(route =>
-          bbox(toFeatureCollection(route)),
-        );
+        const bboxes = maybeRoutes.map(route => bbox(toRouteFeatures(route)));
         const tlbrs = bboxes.flatMap(
           ([minX, minY, maxX, maxY]) =>
             [
@@ -248,7 +246,7 @@ export function createApp({
       if (!maybeRoute) {
         return;
       }
-      const [minX, minY, maxX, maxY] = bbox(toFeatureCollection(maybeRoute));
+      const [minX, minY, maxX, maxY] = bbox(toRouteFeatures(maybeRoute));
       const tlbr: [number, number][] = [
         [minX, minY],
         [maxX, maxY],
@@ -474,7 +472,7 @@ export function createApp({
             return;
           }
           const [minX, minY, maxX, maxY] = bbox(
-            toFeatureCollection(store.activeRoute),
+            toRouteFeatures(store.activeRoute),
           );
           store.cameraMode = CameraMode.FREE;
           controller.fitPoints(store, [

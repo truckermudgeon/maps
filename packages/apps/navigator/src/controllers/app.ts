@@ -710,28 +710,14 @@ export class AppControllerImpl implements AppController {
     const routeSource = assertExists(
       map.getSource<GeoJSONSource>('activeRoute'),
     );
-    const routeStart = assertExists(
-      map.getSource<GeoJSONSource>('activeRouteStart'),
-    );
-    const iconsSource = assertExists(
-      map.getSource<GeoJSONSource>('activeRouteIcons'),
-    );
     if (!maybeRoute) {
       routeSource.setData(emptyFeatureCollection);
-      routeStart.setData(emptyFeatureCollection);
-      iconsSource.setData(emptyFeatureCollection);
       return;
     }
 
     console.log('setting route data', maybeRoute);
-    const routeFC = toFeatureCollection(maybeRoute);
+    const routeFC = toRouteFeatures(maybeRoute);
     routeSource.setData(routeFC);
-    iconsSource.setData(routeFC);
-
-    const firstPoint = (
-      routeFC.features[0] as GeoJSON.Feature<GeoJSON.LineString>
-    ).geometry.coordinates[0];
-    routeStart.setData(point(firstPoint));
 
     // active route layer may have been hidden
     // note: setting paint property by getting a reference to the style layer
@@ -741,7 +727,8 @@ export class AppControllerImpl implements AppController {
       .getMap()
       .setLayoutProperty('activeRouteLayer', 'visibility', 'visible')
       .setLayoutProperty('activeRouteLayer-case', 'visibility', 'visible')
-      .setLayoutProperty('activeRouteIconsLayer', 'visibility', 'visible');
+      .setLayoutProperty('activeRouteIconsLayer', 'visibility', 'visible')
+      .setLayoutProperty('activeRouteStartLayer', 'visibility', 'visible');
   }
 
   renderRoutePreview(
@@ -767,7 +754,7 @@ export class AppControllerImpl implements AppController {
       return;
     }
 
-    routeSource.setData(toFeatureCollection(maybeRoute));
+    routeSource.setData(toRouteFeatures(maybeRoute));
     if (options.animate) {
       let start = 0;
       const durationMs = 1_000;
@@ -816,7 +803,9 @@ export class AppControllerImpl implements AppController {
     map
       .getMap()
       .setLayoutProperty('activeRouteLayer', 'visibility', 'none')
-      .setLayoutProperty('activeRouteLayer-case', 'visibility', 'none');
+      .setLayoutProperty('activeRouteLayer-case', 'visibility', 'none')
+      .setLayoutProperty('activeRouteIconsLayer', 'visibility', 'none')
+      .setLayoutProperty('activeRouteStartLayer', 'visibility', 'none');
   }
 
   drawStepArrow(step: RouteStep | undefined) {
@@ -855,7 +844,7 @@ const emptyFeatureCollection: GeoJSON.FeatureCollection = {
   features: [],
 } as const;
 
-export function toFeatureCollection(route: Route): GeoJSON.FeatureCollection {
+export function toRouteFeatures(route: Route): GeoJSON.FeatureCollection {
   const iconFeatures: GeoJSON.Feature<GeoJSON.Point>[] = route.segments.flatMap(
     segment =>
       segment.steps.flatMap(step =>
@@ -866,11 +855,17 @@ export function toFeatureCollection(route: Route): GeoJSON.FeatureCollection {
             coordinates: icon.lonLat,
           },
           properties: {
+            type: 'traffic',
             sprite: icon.type === 'stop' ? 'stopsign' : 'trafficlight',
           },
         })),
       ),
   );
+  if (route.segments.length && route.segments[0].steps.length) {
+    const firstStep = route.segments[0].steps[0];
+    const coords = polyline.decode(firstStep.geometry);
+    iconFeatures.push(point(coords[0], { type: 'start' }));
+  }
 
   return {
     type: 'FeatureCollection',
