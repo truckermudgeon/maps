@@ -21,7 +21,7 @@ import type { GeoJSONSource } from 'maplibre-gl';
 import { Marker } from 'maplibre-gl';
 import { action, makeAutoObservable, observable, runInAction } from 'mobx';
 import type { MapRef } from 'react-map-gl/maplibre';
-import { lineGradientExpression } from '../components/SlippyMap';
+import { lineGradientExpression } from '../components/RoutesStyle';
 import { BearingMode, CameraMode } from './constants';
 import { TelemetryTimeline } from './telemetry-timeline';
 import type { AppClient, AppController, AppStore } from './types';
@@ -567,7 +567,7 @@ export class AppControllerImpl implements AppController {
       }
 
       const { speed, position, heading } = gameState;
-      const { position: _center, bearing } = toPosAndBearing({
+      const { position: center, bearing } = toPosAndBearing({
         position: {
           X: position.x,
           Y: position.z,
@@ -577,7 +577,6 @@ export class AppControllerImpl implements AppController {
           heading,
         },
       });
-      const center = _center;
       const speedMph = Math.round(speed * 2.236936);
 
       store.truckPoint = center;
