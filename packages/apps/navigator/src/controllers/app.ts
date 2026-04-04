@@ -706,7 +706,8 @@ export class AppControllerImpl implements AppController {
       .setLayoutProperty('activeRouteLayer-case', 'visibility', 'visible')
       .setLayoutProperty('activeRouteIconsLayer', 'visibility', 'visible')
       .setLayoutProperty('activeRouteStartLayer', 'visibility', 'visible')
-      .setLayoutProperty('activeRouteStepLayer', 'visibility', 'visible');
+      .setLayoutProperty('activeRouteStepLayer', 'visibility', 'visible')
+      .setLayoutProperty('activeRouteStepLayer-case', 'visibility', 'visible');
   }
 
   renderRoutePreview(
@@ -784,7 +785,8 @@ export class AppControllerImpl implements AppController {
       .setLayoutProperty('activeRouteLayer-case', 'visibility', 'none')
       .setLayoutProperty('activeRouteIconsLayer', 'visibility', 'none')
       .setLayoutProperty('activeRouteStartLayer', 'visibility', 'none')
-      .setLayoutProperty('activeRouteStepLayer', 'visibility', 'none');
+      .setLayoutProperty('activeRouteStepLayer', 'visibility', 'none')
+      .setLayoutProperty('activeRouteStepLayer-case', 'visibility', 'none');
   }
 
   private renderActiveRouteProgress(store: AppStore) {
@@ -828,14 +830,26 @@ export class AppControllerImpl implements AppController {
       console.log('rendering step line');
       stepSource.setData(store.activeStepLine.line);
     }
-    this.map.getMap().setPaintProperty(
-      'activeRouteStepLayer',
-      'line-gradient',
-      lineGradientExpression({
-        lineType: 'line',
-        progress: distanceAlongActiveStepLine / store.activeStepLine.length,
-      }),
-    );
+    const stepProgress =
+      distanceAlongActiveStepLine / store.activeStepLine.length;
+    this.map
+      .getMap()
+      .setPaintProperty(
+        `activeRouteStepLayer-case`,
+        'line-gradient',
+        lineGradientExpression({
+          lineType: 'case',
+          progress: stepProgress,
+        }),
+      )
+      .setPaintProperty(
+        'activeRouteStepLayer',
+        'line-gradient',
+        lineGradientExpression({
+          lineType: 'line',
+          progress: stepProgress,
+        }),
+      );
 
     this.lastRenderedActiveStepLine = store.activeStepLine.line;
 

@@ -56,6 +56,19 @@ export const RoutesStyle = () => {
         }
       >
         <Layer
+          id={'activeRouteStepLayer-case'}
+          type={'line'}
+          paint={{
+            'line-gap-width': routeLineWidth,
+            'line-width': caseWidth,
+            'line-opacity': 1,
+            'line-gradient': lineGradientExpression({
+              lineType: 'case',
+              progress: 0,
+            }),
+          }}
+        />
+        <Layer
           id={'activeRouteStepLayer'}
           source={'activeRouteStep'}
           type={'line'}
