@@ -110,7 +110,7 @@ export const RoutesStyle = () => {
         filter={[
           'all',
           ['==', ['geometry-type'], 'Point'],
-          ['==', ['get', 'type'], 'start'],
+          ['==', ['get', 'type'], 'startOrEnd'],
         ]}
       />
       {Array.from({ length: routingModes.size }, (_, i) => (
@@ -144,6 +144,21 @@ export const RoutesStyle = () => {
               'line-width': routeLineWidth,
               'line-opacity': 1,
             }}
+          />
+          <Layer
+            id={`previewRouteLayer-${i}-start`}
+            type={'circle'}
+            paint={{
+              'circle-radius': startPointWidth,
+              'circle-color': '#fff',
+              'circle-stroke-width': 2.5,
+              'circle-stroke-color': '#888',
+            }}
+            filter={[
+              'all',
+              ['==', ['geometry-type'], 'Point'],
+              ['==', ['get', 'type'], 'startOrEnd'],
+            ]}
           />
         </Source>
       ))}

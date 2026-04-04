@@ -696,18 +696,7 @@ export class AppControllerImpl implements AppController {
 
     routeSource.setData(toRouteFeatures(maybeRoute));
 
-    // active route layer may have been hidden
-    // note: setting paint property by getting a reference to the style layer
-    // with react-map-gl apis, then calling setpaintproperty on the style layer,
-    // does *not* work.
-    map
-      .getMap()
-      .setLayoutProperty('activeRouteLayer', 'visibility', 'visible')
-      .setLayoutProperty('activeRouteLayer-case', 'visibility', 'visible')
-      .setLayoutProperty('activeRouteIconsLayer', 'visibility', 'visible')
-      .setLayoutProperty('activeRouteStartLayer', 'visibility', 'visible')
-      .setLayoutProperty('activeRouteStepLayer', 'visibility', 'visible')
-      .setLayoutProperty('activeRouteStepLayer-case', 'visibility', 'visible');
+    this.toggleActiveRouteLayers(true);
   }
 
   renderRoutePreview(
@@ -776,17 +765,26 @@ export class AppControllerImpl implements AppController {
       requestAnimationFrame(animate);
     }
 
+    this.toggleActiveRouteLayers(false);
+  }
+
+  private toggleActiveRouteLayers(visible: boolean) {
+    if (!this.map) {
+      return;
+    }
+
     // note: setting paint property by getting a reference to the style layer
     // with react-map-gl apis, then calling setpaintproperty on the style layer,
     // does *not* work.
-    map
+    const visibility = visible ? 'visible' : 'none';
+    this.map
       .getMap()
-      .setLayoutProperty('activeRouteLayer', 'visibility', 'none')
-      .setLayoutProperty('activeRouteLayer-case', 'visibility', 'none')
-      .setLayoutProperty('activeRouteIconsLayer', 'visibility', 'none')
-      .setLayoutProperty('activeRouteStartLayer', 'visibility', 'none')
-      .setLayoutProperty('activeRouteStepLayer', 'visibility', 'none')
-      .setLayoutProperty('activeRouteStepLayer-case', 'visibility', 'none');
+      .setLayoutProperty('activeRouteLayer', 'visibility', visibility)
+      .setLayoutProperty('activeRouteLayer-case', 'visibility', visibility)
+      .setLayoutProperty('activeRouteIconsLayer', 'visibility', visibility)
+      .setLayoutProperty('activeRouteStartLayer', 'visibility', visibility)
+      .setLayoutProperty('activeRouteStepLayer', 'visibility', visibility)
+      .setLayoutProperty('activeRouteStepLayer-case', 'visibility', visibility);
   }
 
   private renderActiveRouteProgress(store: AppStore) {
@@ -934,7 +932,13 @@ export function toRouteFeatures(route: Route): GeoJSON.FeatureCollection {
   if (route.segments.length && route.segments[0].steps.length) {
     const firstStep = route.segments[0].steps[0];
     const coords = polyline.decode(firstStep.geometry);
-    iconFeatures.push(point(coords[0], { type: 'start' }));
+    iconFeatures.push(point(coords[0], { type: 'startOrEnd' }));
+
+    const lastStep = route.segments.at(-1)!.steps.at(-1);
+    if (lastStep) {
+      const coords = polyline.decode(lastStep.geometry);
+      iconFeatures.push(point(coords.at(-1)!, { type: 'startOrEnd' }));
+    }
   }
 
   return {
