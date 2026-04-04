@@ -52,16 +52,24 @@ export function detectJobEvents(opts: {
         jobMappedData.cities.get(company.cityToken),
         `unknown city token ${company.cityToken} for company ${company.token}`,
       );
-      const country = assertExists(
-        jobMappedData.countries.get(city.countryToken),
-      );
+      if (!jobMappedData.countries.has(city.countryToken)) {
+        // unknown country (e.g., because of mod, or unknown DLC).
+        // ignore for now.
+        // TODO log unknown country?
+        jobState = undefined;
+      } else {
+        const country = assertExists(
+          jobMappedData.countries.get(city.countryToken),
+          `unknown country token ${city.countryToken}`,
+        );
 
-      jobState = {
-        ...telemetry.job,
-        toNodeUid: company.nodeUid.toString(16),
-        countryCode: country.code,
-        countryName: country.name,
-      };
+        jobState = {
+          ...telemetry.job,
+          toNodeUid: company.nodeUid.toString(16),
+          countryCode: country.code,
+          countryName: country.name,
+        };
+      }
     }
 
     jobEventEmitter.emit('update', jobState);
