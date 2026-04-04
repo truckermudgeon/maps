@@ -43,36 +43,63 @@ export const RoutesStyle = () => {
             }),
           }}
         />
+      </Source>
+      <Source
+        id={'activeRouteStep'}
+        type={'geojson'}
+        lineMetrics={true}
+        data={
+          {
+            type: 'FeatureCollection',
+            features: [],
+          } as GeoJSON.FeatureCollection
+        }
+      >
         <Layer
-          id={'activeRouteIconsLayer'}
-          type={'symbol'}
-          layout={{
-            'icon-image': '{sprite}',
-            'icon-allow-overlap': true,
-          }}
-          minzoom={10}
-          filter={[
-            'all',
-            ['==', ['geometry-type'], 'Point'],
-            ['==', ['get', 'type'], 'traffic'],
-          ]}
-        />
-        <Layer
-          id={'activeRouteStartLayer'}
-          type={'circle'}
+          id={'activeRouteStepLayer'}
+          source={'activeRouteStep'}
+          type={'line'}
           paint={{
-            'circle-radius': startPointWidth,
-            'circle-color': '#fff',
-            'circle-stroke-width': 2.5,
-            'circle-stroke-color': '#888',
+            'line-width': routeLineWidth,
+            'line-opacity': 1,
+            'line-gradient': lineGradientExpression({
+              lineType: 'line',
+              progress: 0,
+            }),
           }}
-          filter={[
-            'all',
-            ['==', ['geometry-type'], 'Point'],
-            ['==', ['get', 'type'], 'start'],
-          ]}
         />
       </Source>
+      <Layer
+        id={'activeRouteIconsLayer'}
+        source={'activeRouteStep'}
+        type={'symbol'}
+        layout={{
+          'icon-image': '{sprite}',
+          'icon-allow-overlap': true,
+        }}
+        minzoom={10}
+        filter={[
+          'all',
+          ['==', ['geometry-type'], 'Point'],
+          ['==', ['get', 'type'], 'traffic'],
+        ]}
+      />
+      <Layer
+        id={'activeRouteStartLayer'}
+        source={'activeRoute'}
+        type={'circle'}
+        paint={{
+          'circle-radius': startPointWidth,
+          'circle-color': '#fff',
+          'circle-stroke-width': 2.5,
+          'circle-stroke-color': '#888',
+        }}
+        filter={[
+          'all',
+          ['==', ['geometry-type'], 'Point'],
+          ['==', ['get', 'type'], 'start'],
+        ]}
+      />
       {Array.from({ length: routingModes.size }, (_, i) => (
         <Source
           key={`previewRoute-${i}`}

@@ -310,6 +310,9 @@ export class AppControllerImpl implements AppController {
     bottom: 0,
   };
   private offset: [number, number] = [0, 0];
+  private lastRenderedActiveStepLine:
+    | GeoJSON.Feature<GeoJSON.LineString>
+    | undefined;
 
   setPadding(padding: {
     left: number;
@@ -677,6 +680,12 @@ export class AppControllerImpl implements AppController {
       return;
     }
 
+    const stepSource = assertExists(
+      map.getSource<GeoJSONSource>('activeRouteStep'),
+    );
+    stepSource.setData(emptyFeatureCollection);
+    this.lastRenderedActiveStepLine = undefined;
+
     const routeSource = assertExists(
       map.getSource<GeoJSONSource>('activeRoute'),
     );
@@ -685,9 +694,7 @@ export class AppControllerImpl implements AppController {
       return;
     }
 
-    console.log('setting route data', maybeRoute);
-    const routeFC = toRouteFeatures(maybeRoute);
-    routeSource.setData(routeFC);
+    routeSource.setData(toRouteFeatures(maybeRoute));
 
     // active route layer may have been hidden
     // note: setting paint property by getting a reference to the style layer
@@ -698,7 +705,8 @@ export class AppControllerImpl implements AppController {
       .setLayoutProperty('activeRouteLayer', 'visibility', 'visible')
       .setLayoutProperty('activeRouteLayer-case', 'visibility', 'visible')
       .setLayoutProperty('activeRouteIconsLayer', 'visibility', 'visible')
-      .setLayoutProperty('activeRouteStartLayer', 'visibility', 'visible');
+      .setLayoutProperty('activeRouteStartLayer', 'visibility', 'visible')
+      .setLayoutProperty('activeRouteStepLayer', 'visibility', 'visible');
   }
 
   renderRoutePreview(
@@ -775,7 +783,8 @@ export class AppControllerImpl implements AppController {
       .setLayoutProperty('activeRouteLayer', 'visibility', 'none')
       .setLayoutProperty('activeRouteLayer-case', 'visibility', 'none')
       .setLayoutProperty('activeRouteIconsLayer', 'visibility', 'none')
-      .setLayoutProperty('activeRouteStartLayer', 'visibility', 'none');
+      .setLayoutProperty('activeRouteStartLayer', 'visibility', 'none')
+      .setLayoutProperty('activeRouteStepLayer', 'visibility', 'none');
   }
 
   private renderActiveRouteProgress(store: AppStore) {
@@ -811,6 +820,24 @@ export class AppControllerImpl implements AppController {
       //center = snapPoint.geometry.coordinates as [number, number];
       //store.truckPoint = center;
     }
+
+    const stepSource = assertExists(
+      this.map.getSource<GeoJSONSource>('activeRouteStep'),
+    );
+    if (this.lastRenderedActiveStepLine !== store.activeStepLine.line) {
+      console.log('rendering step line');
+      stepSource.setData(store.activeStepLine.line);
+    }
+    this.map.getMap().setPaintProperty(
+      'activeRouteStepLayer',
+      'line-gradient',
+      lineGradientExpression({
+        lineType: 'line',
+        progress: distanceAlongActiveStepLine / store.activeStepLine.length,
+      }),
+    );
+
+    this.lastRenderedActiveStepLine = store.activeStepLine.line;
 
     const progress = clamp(
       distanceTraveled / store.geoJsonRoute.featureLength,
