@@ -21,6 +21,7 @@ import type { GeoJSONSource } from 'maplibre-gl';
 import { Marker } from 'maplibre-gl';
 import { action, makeAutoObservable, observable, runInAction } from 'mobx';
 import type { MapRef } from 'react-map-gl/maplibre';
+import { lineGradientExpression } from '../components/RoutesStyle';
 import { BearingMode, CameraMode } from './constants';
 import { TelemetryTimeline } from './telemetry-timeline';
 import type { AppClient, AppController, AppStore } from './types';
@@ -97,7 +98,7 @@ export class AppStoreImpl implements AppStore {
     };
   }
 
-  private get activeStepLine():
+  get activeStepLine():
     | {
         line: GeoJSON.Feature<GeoJSON.LineString>;
         length: number;
@@ -260,6 +261,36 @@ export class AppStoreImpl implements AppStore {
     }
     return this.nextStep!;
   }
+
+  get geoJsonRoute(): {
+    steps: readonly { step: RouteStep; featureLength: number }[];
+    featureLength: number;
+  } {
+    if (!this.activeRoute) {
+      return {
+        steps: [],
+        featureLength: 0,
+      };
+    }
+
+    let totalLength = 0;
+    const steps = this.activeRoute.segments.flatMap(s =>
+      s.steps.map(step => {
+        const points = polyline.decode(step.geometry);
+        const stepLine = lineString(points);
+        const featureLength = length(stepLine);
+        totalLength += featureLength;
+        return {
+          step,
+          featureLength,
+        };
+      }),
+    );
+    return {
+      steps,
+      featureLength: totalLength,
+    };
+  }
 }
 
 export class AppControllerImpl implements AppController {
@@ -279,6 +310,9 @@ export class AppControllerImpl implements AppController {
     bottom: 0,
   };
   private offset: [number, number] = [0, 0];
+  private lastRenderedActiveStepLine:
+    | GeoJSON.Feature<GeoJSON.LineString>
+    | undefined;
 
   setPadding(padding: {
     left: number;
@@ -553,6 +587,8 @@ export class AppControllerImpl implements AppController {
         return;
       }
 
+      this.renderActiveRouteProgress(store);
+
       if (prevPosition.every(v => !v)) {
         console.log('reset center', center);
         map.setCenter(center);
@@ -643,37 +679,31 @@ export class AppControllerImpl implements AppController {
       return;
     }
 
+    const stepSource = assertExists(
+      map.getSource<GeoJSONSource>('activeRouteStep'),
+    );
+    stepSource.setData(emptyFeatureCollection);
+    this.lastRenderedActiveStepLine = undefined;
+
     const routeSource = assertExists(
       map.getSource<GeoJSONSource>('activeRoute'),
     );
-    const iconsSource = assertExists(
-      map.getSource<GeoJSONSource>('activeRouteIcons'),
-    );
     if (!maybeRoute) {
       routeSource.setData(emptyFeatureCollection);
-      iconsSource.setData(emptyFeatureCollection);
       return;
     }
 
-    console.log('setting route data', maybeRoute);
-    routeSource.setData(toFeatureCollection(maybeRoute));
-    iconsSource.setData(toFeatureCollection(maybeRoute));
-    // active route layer may have been hidden
-    // note: setting paint property by getting a reference to the style layer
-    // with react-map-gl apis, then calling setpaintproperty on the style layer,
-    // does *not* work.
-    map
-      .getMap()
-      .setLayoutProperty('activeRouteLayer', 'visibility', 'visible')
-      .setLayoutProperty('activeRouteLayer-case', 'visibility', 'visible')
-      .setLayoutProperty('activeRouteIconsLayer', 'visibility', 'visible');
+    routeSource.setData(toRouteFeatures(maybeRoute));
+
+    this.toggleActiveRouteLayers(true);
   }
 
   renderRoutePreview(
-    maybeRoute: Route,
+    maybeRoute: Route | undefined,
     options: {
       highlight: boolean;
       index: number;
+      animate: boolean;
     },
   ) {
     const { map } = this;
@@ -691,24 +721,158 @@ export class AppControllerImpl implements AppController {
       return;
     }
 
-    routeSource.setData(toFeatureCollection(maybeRoute));
+    routeSource.setData(toRouteFeatures(maybeRoute));
+    if (options.animate) {
+      let start = 0;
+      const durationMs = 1_000;
+
+      const animate = (timestamp: number) => {
+        if (!start) {
+          start = timestamp;
+        }
+
+        const t = (timestamp - start) / durationMs;
+        const progress = Math.min(t, 1);
+        map
+          .getMap()
+          .setPaintProperty(
+            `previewRouteLayer-${options.index}`,
+            'line-gradient',
+            lineGradientExpression({
+              lineType: options.highlight
+                ? 'animatedPrimaryLine'
+                : 'animatedSecondaryLine',
+              progress,
+            }),
+          )
+          .setPaintProperty(
+            `previewRouteLayer-${options.index}-case`,
+            'line-gradient',
+            lineGradientExpression({
+              lineType: options.highlight
+                ? 'animatedPrimaryCase'
+                : 'animatedSecondaryCase',
+              progress,
+            }),
+          );
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        }
+      };
+
+      requestAnimationFrame(animate);
+    }
+
+    this.toggleActiveRouteLayers(false);
+  }
+
+  private toggleActiveRouteLayers(visible: boolean) {
+    if (!this.map) {
+      return;
+    }
+
     // note: setting paint property by getting a reference to the style layer
     // with react-map-gl apis, then calling setpaintproperty on the style layer,
     // does *not* work.
-    map
+    const visibility = visible ? 'visible' : 'none';
+    this.map
+      .getMap()
+      .setLayoutProperty('activeRouteLayer', 'visibility', visibility)
+      .setLayoutProperty('activeRouteLayer-case', 'visibility', visibility)
+      .setLayoutProperty('activeRouteIconsLayer', 'visibility', visibility)
+      .setLayoutProperty('activeRouteStartLayer', 'visibility', visibility)
+      .setLayoutProperty('activeRouteStepLayer', 'visibility', visibility)
+      .setLayoutProperty('activeRouteStepLayer-case', 'visibility', visibility);
+  }
+
+  private renderActiveRouteProgress(store: AppStore) {
+    if (
+      !this.map ||
+      !store.activeRoute ||
+      !store.activeRouteIndex ||
+      !store.activeStepLine
+    ) {
+      return;
+    }
+
+    let distanceTraveled = 0;
+    const activeStep =
+      store.activeRoute.segments[store.activeRouteIndex.segmentIndex].steps[
+        store.activeRouteIndex.stepIndex
+      ];
+    for (const { step, featureLength } of store.geoJsonRoute.steps) {
+      if (step === activeStep) {
+        break;
+      }
+      distanceTraveled += featureLength;
+    }
+
+    const snapPoint = nearestPointOnLine(
+      store.activeStepLine.line,
+      // cast as mutable, and assume nearestPointOnLine doesn't mutate.
+      store.truckPoint as [number, number],
+    );
+    const distanceAlongActiveStepLine = snapPoint.properties.lineDistance;
+    distanceTraveled += distanceAlongActiveStepLine;
+    if (distanceTraveled >= 0.2 && snapPoint.properties.dist < 0.1) {
+      //center = snapPoint.geometry.coordinates as [number, number];
+      //store.truckPoint = center;
+    }
+
+    const stepSource = assertExists(
+      this.map.getSource<GeoJSONSource>('activeRouteStep'),
+    );
+    if (this.lastRenderedActiveStepLine !== store.activeStepLine.line) {
+      console.log('rendering step line');
+      stepSource.setData(store.activeStepLine.line);
+    }
+    const stepProgress =
+      distanceAlongActiveStepLine / store.activeStepLine.length;
+    this.map
       .getMap()
       .setPaintProperty(
-        `previewRouteLayer-${options.index}`,
-        'line-opacity',
-        options.highlight ? 1 : 0.25,
+        `activeRouteStepLayer-case`,
+        'line-gradient',
+        lineGradientExpression({
+          lineType: 'case',
+          progress: stepProgress,
+        }),
       )
       .setPaintProperty(
-        `previewRouteLayer-${options.index}-case`,
-        'line-opacity',
-        options.highlight ? 1 : 0.25,
+        'activeRouteStepLayer',
+        'line-gradient',
+        lineGradientExpression({
+          lineType: 'line',
+          progress: stepProgress,
+        }),
+      );
+
+    this.lastRenderedActiveStepLine = store.activeStepLine.line;
+
+    const progress = clamp(
+      distanceTraveled / store.geoJsonRoute.featureLength,
+      0,
+      1,
+    );
+    this.map
+      .getMap()
+      .setPaintProperty(
+        'activeRouteLayer-case',
+        'line-gradient',
+        lineGradientExpression({
+          lineType: 'case',
+          progress,
+        }),
       )
-      .setLayoutProperty('activeRouteLayer', 'visibility', 'none')
-      .setLayoutProperty('activeRouteLayer-case', 'visibility', 'none');
+      .setPaintProperty(
+        'activeRouteLayer',
+        'line-gradient',
+        lineGradientExpression({
+          lineType: 'line',
+          progress,
+        }),
+      );
   }
 
   drawStepArrow(step: RouteStep | undefined) {
@@ -722,7 +886,7 @@ export class AppControllerImpl implements AppController {
       map.getSource<GeoJSONSource>('previewStepArrow'),
     );
     if (!step?.arrowPoints || step.arrowPoints < 2) {
-      arrowSource.setData(featureCollection([]));
+      arrowSource.setData(emptyFeatureCollection);
       return;
     }
 
@@ -747,7 +911,7 @@ const emptyFeatureCollection: GeoJSON.FeatureCollection = {
   features: [],
 } as const;
 
-export function toFeatureCollection(route: Route): GeoJSON.FeatureCollection {
+export function toRouteFeatures(route: Route): GeoJSON.FeatureCollection {
   const iconFeatures: GeoJSON.Feature<GeoJSON.Point>[] = route.segments.flatMap(
     segment =>
       segment.steps.flatMap(step =>
@@ -758,11 +922,23 @@ export function toFeatureCollection(route: Route): GeoJSON.FeatureCollection {
             coordinates: icon.lonLat,
           },
           properties: {
+            type: 'traffic',
             sprite: icon.type === 'stop' ? 'stopsign' : 'trafficlight',
           },
         })),
       ),
   );
+  if (route.segments.length && route.segments[0].steps.length) {
+    const firstStep = route.segments[0].steps[0];
+    const coords = polyline.decode(firstStep.geometry);
+    iconFeatures.push(point(coords[0], { type: 'startOrEnd' }));
+
+    const lastStep = route.segments.at(-1)!.steps.at(-1);
+    if (lastStep) {
+      const coords = polyline.decode(lastStep.geometry);
+      iconFeatures.push(point(coords.at(-1)!, { type: 'startOrEnd' }));
+    }
+  }
 
   return {
     type: 'FeatureCollection',
@@ -856,3 +1032,7 @@ const routeSummaryReducer = (
   acc.distanceMeters += dDistance;
   return acc;
 };
+
+function clamp(v: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, v));
+}

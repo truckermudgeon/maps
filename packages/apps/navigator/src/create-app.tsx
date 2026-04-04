@@ -29,7 +29,7 @@ import { WaitingForTelemetry } from './components/WaitingForTelemetry';
 import {
   AppControllerImpl,
   AppStoreImpl,
-  toFeatureCollection,
+  toRouteFeatures,
 } from './controllers/app';
 import {
   BearingMode,
@@ -197,9 +197,7 @@ export function createApp({
         controller.fitPoints(store, tlbrs);
       } else {
         // TODO move this calc to RouteSummary
-        const bboxes = maybeRoutes.map(route =>
-          bbox(toFeatureCollection(route)),
-        );
+        const bboxes = maybeRoutes.map(route => bbox(toRouteFeatures(route)));
         const tlbrs = bboxes.flatMap(
           ([minX, minY, maxX, maxY]) =>
             [
@@ -219,12 +217,17 @@ export function createApp({
       routes: navSheetStore.routes,
       selected: navSheetStore.selectedRoute,
     }),
-    ({ routes, selected }) => {
-      // HACK to make sure existing previews are cleared after navsheet reset
-      [0, 1, 2].forEach(index =>
-        controller.renderRoutePreview(routes[index], {
-          index: index,
-          highlight: selected?.id === routes[index]?.id,
+    ({ routes, selected }, prev) => {
+      const highlightedIndex = routes.findIndex(r => r.id === selected?.id);
+      const sortedRouteIndices = [0, 1, 2].sort((a, b) =>
+        a === highlightedIndex ? 1 : b === highlightedIndex ? -1 : a - b,
+      );
+
+      sortedRouteIndices.forEach((routeIndex, layerIndex) =>
+        controller.renderRoutePreview(routes[routeIndex], {
+          index: layerIndex,
+          highlight: selected?.id === routes[routeIndex]?.id,
+          animate: prev.routes !== routes,
         }),
       );
       if (routes.length === 0 && !selected) {
@@ -243,7 +246,7 @@ export function createApp({
       if (!maybeRoute) {
         return;
       }
-      const [minX, minY, maxX, maxY] = bbox(toFeatureCollection(maybeRoute));
+      const [minX, minY, maxX, maxY] = bbox(toRouteFeatures(maybeRoute));
       const tlbr: [number, number][] = [
         [minX, minY],
         [maxX, maxY],
@@ -469,7 +472,7 @@ export function createApp({
             return;
           }
           const [minX, minY, maxX, maxY] = bbox(
-            toFeatureCollection(store.activeRoute),
+            toRouteFeatures(store.activeRoute),
           );
           store.cameraMode = CameraMode.FREE;
           controller.fitPoints(store, [
