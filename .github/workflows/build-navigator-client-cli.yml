@@ -18,10 +18,11 @@ jobs:
         os:
           - windows-latest
           - ubuntu-latest
-          # macOS builds are disabled, because running unsigned binaries on macOS leads to issues with Gatekeeper.
+          # macOS builds aren't signed, and running them without moving the quarantine flag will lead to issues with
+          # Gatekeeper.
           # mac users will be encouraged to build a client from source, until i decide to cave in and sign up for an
           # Apple Developer account 😕
-          # - macos-latest
+          - macos-latest
 
     steps:
       - uses: oven-sh/setup-bun@v2

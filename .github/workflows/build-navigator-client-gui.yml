@@ -1,4 +1,4 @@
-name: build navigator client (CLI)
+name: build navigator client (GUI)
 
 on:
   push:
