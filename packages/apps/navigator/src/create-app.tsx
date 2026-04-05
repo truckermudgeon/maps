@@ -43,6 +43,7 @@ import type { AppClient, AppStore, NavSheetStore } from './controllers/types';
 import { UiEnvironmentStoreImpl } from './controllers/ui-environment';
 import { createControls } from './create-controls';
 import { createNavSheet } from './create-nav-sheet';
+import { setupDevtools } from './dev-tools';
 
 export function createApp({
   appClient,
@@ -58,6 +59,7 @@ export function createApp({
 } {
   const store = new AppStoreImpl();
   const controller = new AppControllerImpl();
+  setupDevtools({ appStore: store });
 
   const {
     NavSheet,
