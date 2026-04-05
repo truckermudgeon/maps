@@ -567,16 +567,19 @@ export class AppControllerImpl implements AppController {
       }
 
       const { speed, position, heading } = gameState;
-      const { position: center, bearing } = toPosAndBearing({
-        position: {
-          X: position.x,
-          Y: position.z,
-          Z: position.y,
+      const { position: center, bearing } = toPosAndBearing(
+        {
+          position: {
+            X: position.x,
+            Y: position.z,
+            Z: position.y,
+          },
+          orientation: {
+            heading,
+          },
         },
-        orientation: {
-          heading,
-        },
-      });
+        'usa',
+      );
       const speedMph = Math.round(speed * 2.236936);
 
       store.truckPoint = center;

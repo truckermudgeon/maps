@@ -48,6 +48,11 @@ export function detectJobEvents(opts: {
       return;
     }
 
+    const companiesByKey =
+      telemetry.game.game.name === 'ats'
+        ? atsCompaniesByKey
+        : ets2CompaniesByKey;
+
     if (newDestKey == null) {
       jobState = undefined;
     } else if (!companiesByKey.has(newDestKey)) {
@@ -56,10 +61,6 @@ export function detectJobEvents(opts: {
       // ignore for now.
       jobState = undefined;
     } else {
-      const companiesByKey =
-        telemetry.game.game.name === 'ats'
-          ? atsCompaniesByKey
-          : ets2CompaniesByKey;
       const jobMappedData =
         telemetry.game.game.name === 'ats'
           ? atsJobMappedData
