@@ -20,7 +20,7 @@ export interface PropsForTestingOnly {
 
 const colors = {
   ['light']: {
-    background: 'rgba(255,255,255,0.9)',
+    background: 'rgba(255,255,255,0.95)',
     fill: 'hsl(204,100%,50%)',
   },
   ['dark']: {

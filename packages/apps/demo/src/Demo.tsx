@@ -43,6 +43,7 @@ import MapGl, {
 import { useSearchParams } from 'react-router-dom';
 import { ContextMenu } from './ContextMenu';
 import './Demo.css';
+import { setupDevtools } from './dev-tools';
 import { createListProps, Legend } from './Legend';
 import { ModeControl } from './ModeControl';
 import { mapCenters, OmniBar } from './OmniBar';
@@ -161,6 +162,7 @@ const Demo = (props: {
     }
 
     const map = mapRef.current;
+    setupDevtools({ map });
     syncMapCameraToHash(map, window.location.hash);
     syncPanoToHash(window.location.hash.split('!')[1]);
 

@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@truckermudgeon/base": "0.0.0",
+    "@truckermudgeon/io": "0.0.0",
     "@truckermudgeon/map": "0.0.0",
     "ajv": "^8.18.0",
     "ajv-keywords": "^5.1.0",

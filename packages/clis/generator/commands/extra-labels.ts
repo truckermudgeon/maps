@@ -1,9 +1,9 @@
+import { writeGeojsonFile } from '@truckermudgeon/io';
 import fs from 'fs';
 import type { GeoJSON } from 'geojson';
 import path from 'path';
 import type { Argv, BuilderArguments } from 'yargs';
 import { logger } from '../logger';
-import { writeGeojsonFile } from '../write-geojson-file';
 import { resourcesDir, untildify } from './path-helpers';
 
 import type { LabelMeta } from '@truckermudgeon/map/types';

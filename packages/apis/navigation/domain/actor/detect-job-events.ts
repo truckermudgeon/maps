@@ -1,5 +1,5 @@
 import { assertExists } from '@truckermudgeon/base/assert';
-import type { MappedDataForKeys } from '@truckermudgeon/generator/mapped-data';
+import type { MappedDataForKeys } from '@truckermudgeon/io';
 import type { CompanyItem } from '@truckermudgeon/map/types';
 import { EventEmitter } from 'events';
 import type { JobLocation, JobState } from '../../types';
@@ -38,6 +38,11 @@ export function detectJobEvents(opts: {
 
     if (newDestKey == null) {
       jobState = undefined;
+    } else if (!companiesByKey.has(newDestKey)) {
+      // the job is either a special transport route (unsupported)
+      // or the job is for some company in some mod (also unsupported).
+      // ignore for now.
+      jobState = undefined;
     } else {
       const company = assertExists(
         companiesByKey.get(newDestKey),
@@ -47,16 +52,24 @@ export function detectJobEvents(opts: {
         jobMappedData.cities.get(company.cityToken),
         `unknown city token ${company.cityToken} for company ${company.token}`,
       );
-      const country = assertExists(
-        jobMappedData.countries.get(city.countryToken),
-      );
+      if (!jobMappedData.countries.has(city.countryToken)) {
+        // unknown country (e.g., because of mod, or unknown DLC).
+        // ignore for now.
+        // TODO log unknown country?
+        jobState = undefined;
+      } else {
+        const country = assertExists(
+          jobMappedData.countries.get(city.countryToken),
+          `unknown country token ${city.countryToken}`,
+        );
 
-      jobState = {
-        ...telemetry.job,
-        toNodeUid: company.nodeUid.toString(16),
-        countryCode: country.code,
-        countryName: country.name,
-      };
+        jobState = {
+          ...telemetry.job,
+          toNodeUid: company.nodeUid.toString(16),
+          countryCode: country.code,
+          countryName: country.name,
+        };
+      }
     }
 
     jobEventEmitter.emit('update', jobState);

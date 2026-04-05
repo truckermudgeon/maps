@@ -1,4 +1,5 @@
 import { Preconditions } from '@truckermudgeon/base/precon';
+import type { MappedData } from '@truckermudgeon/io';
 import { ItemType } from '@truckermudgeon/map/constants';
 import type {
   City,
@@ -11,7 +12,6 @@ import type {
   RoadLook,
   WithToken,
 } from '@truckermudgeon/map/types';
-import type { MappedData } from '../../mapped-data';
 import { generateGraph } from '../graph';
 import { d_farm_grg, d_oil_gst3, prefab_us_405 } from './fixtures';
 
@@ -560,6 +560,7 @@ function createFakeMapData(arrays: PartialMapData): MappedData<'usa'> {
     cutscenes: new Map(),
     dividers: new Map(),
     modelDescriptions: new Map(),
+    cargoes: new Map(),
     pois: [],
     elevation: [],
   };

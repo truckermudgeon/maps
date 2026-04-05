@@ -1,5 +1,6 @@
 #!/usr/bin/env -S NODE_OPTIONS=--max-old-space-size=8192 npx tsx
 
+import { writeArrayFile } from '@truckermudgeon/io';
 import type { DefData, MapData } from '@truckermudgeon/map/types';
 import fs from 'fs';
 import os from 'os';
@@ -70,10 +71,7 @@ function main() {
     const collection = data[key as keyof (MapData | DefData)];
     const filename = `${map}-${key}.json`;
     logger.log('writing', collection.length, `entries to ${filename}...`);
-    fs.writeFileSync(
-      path.join(args.outputDir, filename),
-      JSON.stringify(collection, null, 2),
-    );
+    writeArrayFile(collection, path.join(args.outputDir, filename));
   }
 
   const pngOutputDir = path.join(args.outputDir, 'icons');
@@ -95,20 +93,5 @@ function main() {
 
   logger.success('done.');
 }
-
-// Ensure `BigInt`s are `JSON.serialize`d as hex strings, so they can be
-// `JSON.parse`d without any data loss.
-//
-// Do this before calling `main()` (or executing any other code that might
-// involve serializing bigints to JSON).
-
-// eslint-disable-next-line
-interface BigIntWithToJSON extends BigInt {
-  toJSON(): string;
-}
-
-(BigInt.prototype as BigIntWithToJSON).toJSON = function () {
-  return this.toString(16);
-};
 
 main();

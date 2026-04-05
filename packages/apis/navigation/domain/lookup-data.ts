@@ -1,10 +1,7 @@
 // TODO ensure no imports from infra
 
 import type { Position } from '@truckermudgeon/base/geom';
-import type {
-  MapDataKeys,
-  MappedDataForKeys,
-} from '@truckermudgeon/generator/mapped-data';
+import type { MapDataKeys, MappedDataForKeys } from '@truckermudgeon/io';
 import type { PointRBush } from '@truckermudgeon/map/point-rbush';
 import type {
   CompanyItem,

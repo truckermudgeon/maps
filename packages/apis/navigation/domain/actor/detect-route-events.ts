@@ -1,10 +1,7 @@
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { distance } from '@truckermudgeon/base/geom';
 import { Preconditions } from '@truckermudgeon/base/precon';
-import type {
-  MapDataKeys,
-  MappedDataForKeys,
-} from '@truckermudgeon/generator/mapped-data';
+import type { MapDataKeys, MappedDataForKeys } from '@truckermudgeon/io';
 import { ItemType } from '@truckermudgeon/map/constants';
 import { fromAtsCoordsToWgs84 } from '@truckermudgeon/map/projections';
 import type {

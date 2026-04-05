@@ -1,6 +1,7 @@
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { putIfAbsent } from '@truckermudgeon/base/map';
 import { UnreachableError } from '@truckermudgeon/base/precon';
+import type { MapDataKeys, MappedDataForKeys } from '@truckermudgeon/io';
 import {
   type AtsCountryId,
   AtsCountryIdToDlcGuard,
@@ -17,7 +18,6 @@ import type {
 } from '@truckermudgeon/map/types';
 import { normalizeDlcGuards } from '../dlc-guards';
 import { logger } from '../logger';
-import type { MapDataKeys, MappedDataForKeys } from '../mapped-data';
 import { createNormalizeFeature } from './normalize';
 
 interface Point {

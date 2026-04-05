@@ -33,6 +33,9 @@
     },
     {
       "path": "packages/libs/ui"
+    },
+    {
+      "path": "packages/libs/io"
     }
   ],
   "files": []

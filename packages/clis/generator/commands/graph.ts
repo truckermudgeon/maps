@@ -1,3 +1,8 @@
+import {
+  readMapData,
+  writeGeojsonFile,
+  writeGraphFile,
+} from '@truckermudgeon/io';
 import fs from 'fs';
 import path from 'path';
 import type { Argv, BuilderArguments } from 'yargs';
@@ -5,8 +10,6 @@ import { checkGraph } from '../graph/check-graph';
 import { toDemoGraph } from '../graph/demo-graph';
 import { generateGraph, graphMapDataKeys } from '../graph/graph';
 import { logger } from '../logger';
-import { readMapData } from '../mapped-data';
-import { writeGeojsonFile } from '../write-geojson-file';
 import { maybeEnsureOutputDir, untildify } from './path-helpers';
 
 export const command = 'graph';
@@ -87,10 +90,7 @@ export async function handler(args: BuilderArguments<typeof builder>) {
         JSON.stringify(toDemoGraph(res.graph, tsMapData)),
       );
     } else {
-      fs.writeFileSync(
-        path.join(args.outputDir, `${args.map}-graph.json`),
-        JSON.stringify(res, graphSerializer, 2),
-      );
+      writeGraphFile(res, path.join(args.outputDir, `${args.map}-graph.json`));
     }
   }
   if (args.debugType != null) {
@@ -105,17 +105,4 @@ export async function handler(args: BuilderArguments<typeof builder>) {
     logger.info(debugPath, 'written with', geoJson.features.length, 'features');
   }
   logger.success('done.');
-}
-
-function graphSerializer(key: string, value: unknown) {
-  if (key === 'distance' && typeof value === 'number') {
-    return Number(value.toFixed(2));
-  }
-  if (value instanceof Set) {
-    return [...value] as unknown[];
-  }
-  if (value instanceof Map) {
-    return [...value.entries()] as unknown[];
-  }
-  return value;
 }

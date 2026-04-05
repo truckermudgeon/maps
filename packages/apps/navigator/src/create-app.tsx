@@ -1,13 +1,15 @@
 import polyline from '@mapbox/polyline';
+import type { Theme } from '@mui/joy';
 import { Box } from '@mui/joy';
 import { Grid, Slide, useMediaQuery, useTheme } from '@mui/material';
 import { assertExists } from '@truckermudgeon/base/assert';
+import { UnreachableError } from '@truckermudgeon/base/precon';
 import type { RouteStep } from '@truckermudgeon/navigation/types';
 import { bbox } from '@turf/bbox';
 import bearing from '@turf/bearing';
 import type { Marker as MapLibreGLMarker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { action, comparer, computed, reaction, when } from 'mobx';
+import { action, autorun, comparer, computed, reaction, when } from 'mobx';
 import { observer } from 'mobx-react-lite';
 import type { ReactElement } from 'react';
 import { useEffect, useRef } from 'react';
@@ -27,18 +29,28 @@ import { WaitingForTelemetry } from './components/WaitingForTelemetry';
 import {
   AppControllerImpl,
   AppStoreImpl,
-  toFeatureCollection,
+  toRouteFeatures,
 } from './controllers/app';
-import { CameraMode, NavPageKey } from './controllers/constants';
-import type { AppClient, AppStore } from './controllers/types';
+import {
+  BearingMode,
+  CameraMode,
+  maxPortraitSheetCssHeight,
+  NavPageKey,
+  navSheetPagesRequiringMapVisibility,
+} from './controllers/constants';
+import { MapPaddingStoreImpl } from './controllers/map-padding';
+import type { AppClient, AppStore, NavSheetStore } from './controllers/types';
+import { UiEnvironmentStoreImpl } from './controllers/ui-environment';
 import { createControls } from './create-controls';
 import { createNavSheet } from './create-nav-sheet';
 
 export function createApp({
   appClient,
+  joyTheme,
   transitionDurationMs,
 }: {
   appClient: AppClient;
+  joyTheme: Theme;
   transitionDurationMs: number;
 }): {
   App: () => ReactElement;
@@ -109,6 +121,16 @@ export function createApp({
     />
   );
 
+  const mapPaddingStore = new MapPaddingStoreImpl(
+    new UiEnvironmentStoreImpl(joyTheme.breakpoints.values),
+    store,
+    navSheetStore,
+  );
+  autorun(() => {
+    controller.setOffset(mapPaddingStore.offset);
+    controller.setPadding(mapPaddingStore.padding);
+  });
+
   // TODO remove these reactions.
   // they're hacks while i figure out a better way to structure stores and controllers.
   reaction(
@@ -175,9 +197,7 @@ export function createApp({
         controller.fitPoints(store, tlbrs);
       } else {
         // TODO move this calc to RouteSummary
-        const bboxes = maybeRoutes.map(route =>
-          bbox(toFeatureCollection(route)),
-        );
+        const bboxes = maybeRoutes.map(route => bbox(toRouteFeatures(route)));
         const tlbrs = bboxes.flatMap(
           ([minX, minY, maxX, maxY]) =>
             [
@@ -197,12 +217,17 @@ export function createApp({
       routes: navSheetStore.routes,
       selected: navSheetStore.selectedRoute,
     }),
-    ({ routes, selected }) => {
-      // HACK to make sure existing previews are cleared after navsheet reset
-      [0, 1, 2].forEach(index =>
-        controller.renderRoutePreview(routes[index], {
-          index: index,
-          highlight: selected?.id === routes[index]?.id,
+    ({ routes, selected }, prev) => {
+      const highlightedIndex = routes.findIndex(r => r.id === selected?.id);
+      const sortedRouteIndices = [0, 1, 2].sort((a, b) =>
+        a === highlightedIndex ? 1 : b === highlightedIndex ? -1 : a - b,
+      );
+
+      sortedRouteIndices.forEach((routeIndex, layerIndex) =>
+        controller.renderRoutePreview(routes[routeIndex], {
+          index: layerIndex,
+          highlight: selected?.id === routes[routeIndex]?.id,
+          animate: prev.routes !== routes,
         }),
       );
       if (routes.length === 0 && !selected) {
@@ -221,7 +246,7 @@ export function createApp({
       if (!maybeRoute) {
         return;
       }
-      const [minX, minY, maxX, maxY] = bbox(toFeatureCollection(maybeRoute));
+      const [minX, minY, maxX, maxY] = bbox(toRouteFeatures(maybeRoute));
       const tlbr: [number, number][] = [
         [minX, minY],
         [maxX, maxY],
@@ -244,6 +269,19 @@ export function createApp({
   });
   const _Controls = () => (
     <Controls
+      onCompassClick={action(() => {
+        controller.requestWakeLock();
+        switch (store.bearingMode) {
+          case BearingMode.MATCH_MAP:
+            controller.setNorthLock(store);
+            break;
+          case BearingMode.NORTH_LOCK:
+            controller.setNorthUnlock(store);
+            break;
+          default:
+            throw new UnreachableError(store.bearingMode);
+        }
+      })}
       onRecenterFabClick={action(() => {
         controller.requestWakeLock();
         controller.setFollow(store);
@@ -270,7 +308,7 @@ export function createApp({
         store.mapLoaded = true;
         controller.onMapLoad(map, marker);
         controller.startListening(store, appClient);
-        controlsController.startListening(controlsStore, appClient);
+        controlsController.startListening(controlsStore, appClient, map);
       },
     );
   };
@@ -434,7 +472,7 @@ export function createApp({
             return;
           }
           const [minX, minY, maxX, maxY] = bbox(
-            toFeatureCollection(store.activeRoute),
+            toRouteFeatures(store.activeRoute),
           );
           store.cameraMode = CameraMode.FREE;
           controller.fitPoints(store, [
@@ -475,6 +513,7 @@ export function createApp({
     App: () => (
       <App
         store={store}
+        navSheetStore={navSheetStore}
         transitionDurationMs={transitionDurationMs}
         SlippyMap={_SlippyMap}
         NavSheet={_NavSheet}
@@ -487,101 +526,144 @@ export function createApp({
   };
 }
 
-const App = (props: {
-  store: AppStore;
-  transitionDurationMs: number;
-  SlippyMap: () => ReactElement;
-  NavSheet: () => ReactElement;
-  RouteStack: () => ReactElement;
-  Controls: () => ReactElement;
-  WaitingForTelemetry: () => ReactElement;
-}) => {
-  console.log('render app');
-  const { SlippyMap, NavSheet, RouteStack, Controls, WaitingForTelemetry } =
-    props;
-  const theme = useTheme();
-  const isLargePortrait = useMediaQuery(
-    theme.breakpoints.up('sm') + ' and (orientation: portrait)',
-  );
+const App = observer(
+  (props: {
+    store: AppStore;
+    navSheetStore: NavSheetStore;
+    transitionDurationMs: number;
+    SlippyMap: () => ReactElement;
+    NavSheet: () => ReactElement;
+    RouteStack: () => ReactElement;
+    Controls: () => ReactElement;
+    WaitingForTelemetry: () => ReactElement;
+  }) => {
+    console.log('render app');
+    const {
+      store,
+      navSheetStore,
+      SlippyMap,
+      NavSheet,
+      RouteStack,
+      Controls,
+      WaitingForTelemetry,
+    } = props;
+    const theme = useTheme();
+    const isLargePortrait = useMediaQuery(
+      theme.breakpoints.up('sm') + ' and (orientation: portrait)',
+    );
+    const isMapVisibilityRequired = computed(
+      () =>
+        store.showNavSheet &&
+        navSheetPagesRequiringMapVisibility.has(navSheetStore.currentPageKey),
+    );
 
-  return (
-    <SpriteProvider>
-      <SlippyMap />
-      <Grid
-        columns={3}
-        container={true}
-        sx={{
-          flexGrow: 1,
-          position: 'absolute',
-          top: 0,
-          right: 0,
-          pointerEvents: 'none',
-        }}
-        padding={2}
-        paddingBlockEnd={3}
-        height={'100vh'}
-      >
-        <HudStackGridItem
-          store={props.store}
-          isLargePortrait={isLargePortrait}
-          transitionDurationMs={props.transitionDurationMs}
-        >
-          <Controls />
-        </HudStackGridItem>
-      </Grid>
-      <Grid
-        container={true}
-        sx={{
-          flexGrow: 1,
-          pointerEvents: 'none',
-        }}
-        padding={2}
-        paddingBlockEnd={3}
-        height={'100vh'}
-        justifyContent={'space-between'}
-      >
+    return (
+      <SpriteProvider>
+        <SlippyMap />
         <Grid
-          size={{ xs: 12, sm: isLargePortrait ? 12 : 5 }}
-          maxWidth={isLargePortrait ? undefined : 600}
+          columns={3}
+          container={true}
           sx={{
-            zIndex: 999, // so it renders over hud stack
+            flexGrow: 1,
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            pointerEvents: 'none',
           }}
+          padding={2}
+          paddingBlockEnd={3}
+          height={'100dvh'}
         >
-          <RouteStackContainer store={props.store}>
-            <RouteStack />
-          </RouteStackContainer>
+          <HudStackGridItem
+            store={props.store}
+            isLargePortrait={isLargePortrait}
+            transitionDurationMs={props.transitionDurationMs}
+          >
+            <Controls />
+          </HudStackGridItem>
         </Grid>
-      </Grid>
-      <Grid
-        container={true}
-        sx={{
-          flexGrow: 1,
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          pointerEvents: 'none',
-        }}
-        padding={2}
-        paddingBlockEnd={3}
-        height={'100vh'}
-      >
         <Grid
-          size={{ xs: 12, sm: isLargePortrait ? 12 : 5 }}
-          maxWidth={isLargePortrait ? undefined : 600}
+          container={true}
           sx={{
-            maxHeight: '100%',
+            flexGrow: 1,
+            pointerEvents: 'none',
           }}
+          padding={2}
+          paddingBlockEnd={3}
+          height={'100dvh'}
+          justifyContent={'space-between'}
         >
-          <NavSheetContainer store={props.store}>
-            <NavSheet />
-          </NavSheetContainer>
+          <Grid
+            size={{ xs: 12, sm: isLargePortrait ? 12 : 5 }}
+            maxWidth={isLargePortrait ? undefined : 600}
+            sx={{
+              zIndex: 999, // so it renders over hud stack
+            }}
+          >
+            <RouteStackContainer store={props.store}>
+              <RouteStack />
+            </RouteStackContainer>
+          </Grid>
         </Grid>
-      </Grid>
-      <WaitingForTelemetry />
-    </SpriteProvider>
-  );
-};
+        <Grid
+          container={true}
+          sx={{
+            flexGrow: 1,
+            position: 'absolute',
+            ...(isMapVisibilityRequired.get() ? { bottom: 0 } : { top: 0 }),
+            left: 0,
+            right: 0,
+            pointerEvents: 'none',
+            p: {
+              xs: 0,
+              sm: 2,
+            },
+            height: {
+              xs: isMapVisibilityRequired.get() ? 'fit-content' : '100dvh',
+              sm:
+                isMapVisibilityRequired.get() && isLargePortrait
+                  ? 'fit-content'
+                  : '100dvh',
+            },
+            maxHeight: {
+              xs: isMapVisibilityRequired.get()
+                ? maxPortraitSheetCssHeight
+                : '100dvh',
+              sm:
+                isMapVisibilityRequired.get() && isLargePortrait
+                  ? maxPortraitSheetCssHeight
+                  : '100dvh',
+            },
+            overflow: 'auto',
+          }}
+          padding={2}
+          paddingBlockEnd={3}
+        >
+          <Grid
+            size={{ xs: 12, sm: isLargePortrait ? 12 : 5 }}
+            maxWidth={isLargePortrait ? undefined : 600}
+            sx={{
+              maxHeight: {
+                xs: isMapVisibilityRequired.get()
+                  ? maxPortraitSheetCssHeight
+                  : '100%',
+                sm:
+                  isMapVisibilityRequired.get() && isLargePortrait
+                    ? maxPortraitSheetCssHeight
+                    : '100%',
+              },
+            }}
+          >
+            <NavSheetContainer store={props.store}>
+              <NavSheet />
+            </NavSheetContainer>
+          </Grid>
+        </Grid>
+        <WaitingForTelemetry />
+      </SpriteProvider>
+    );
+  },
+);
 
 const HudStackGridItem = observer(
   (props: {
@@ -590,8 +672,18 @@ const HudStackGridItem = observer(
     isLargePortrait: boolean;
     children: ReactElement;
   }) => {
-    const showRouteStack =
-      !props.store.showNavSheet && props.store.activeRoute != null;
+    const showRouteStack = computed(
+      () => !props.store.showNavSheet && props.store.activeRoute != null,
+    );
+    const portraitPt = computed(() => {
+      if (!showRouteStack.get()) {
+        return 0;
+      }
+      const dirHasLabel =
+        props.store.activeRouteDirection?.banner?.text != null;
+      return dirHasLabel ? 18 : 14;
+    });
+    const portraitPb = computed(() => (showRouteStack.get() ? 13 : 0));
     return (
       <Grid
         container
@@ -600,12 +692,12 @@ const HudStackGridItem = observer(
           // apply top/bottom padding for portrait orientations, so that hud
           // controls don't overlap route controls.
           pt: {
-            xs: showRouteStack ? 14 : 0,
-            sm: props.isLargePortrait && showRouteStack ? 14 : 0,
+            xs: portraitPt.get(),
+            sm: props.isLargePortrait ? portraitPt.get() : 0,
           },
           pb: {
-            xs: showRouteStack ? 13 : 0,
-            sm: props.isLargePortrait && showRouteStack ? 13 : 0,
+            xs: portraitPb.get(),
+            sm: props.isLargePortrait ? portraitPb.get() : 0,
           },
           zIndex: 999, // needed so it's drawn over any highlighted destination map markers.
           transition: `${props.transitionDurationMs}ms padding ease`,

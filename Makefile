@@ -9,7 +9,7 @@ ETS2_DIR := "~/Library/Application Support/Steam/steamapps/common/Euro Truck Sim
 ##### `parser`-generated files ###############################################
 
 # note: values come from properties of `DefData`...
-PARSER_JSON_NAMES = countries companyDefs roadLooks prefabDescriptions modelDescriptions achievements routes
+PARSER_JSON_NAMES = countries companyDefs roadLooks prefabDescriptions modelDescriptions cargoes achievements routes
 # ...and `MapData` types.
 PARSER_JSON_NAMES += nodes elevation roads ferries prefabs companies models mapAreas pois dividers trajectories \
 		triggers cutscenes cities
@@ -30,8 +30,8 @@ RESOURCES_DIR := packages/clis/generator/resources
 DEMO_FILES :=
 # files required by the navigator webapp
 NAVIGATOR_FILES :=
-# files required by the navigation server, _in addition to_ ATS_PARSER_JSON_FILES
-NAVIGATION_FILES :=
+# files required by the navigation server
+NAVIGATION_FILES := $(ATS_PARSER_JSON_FILES)
 
 #### pmtiles files
 
@@ -40,6 +40,7 @@ $(GENERATOR_OUT_DIR)/world.pmtiles: $(addprefix $(RESOURCES_DIR)/,water.geojson 
 	tippecanoe -Z4 -z8 -y name -b 10 -X -o $@ $^
 
 DEMO_FILES += $(GENERATOR_OUT_DIR)/world.pmtiles
+NAVIGATOR_FILES += $(GENERATOR_OUT_DIR)/world.pmtiles
 
 
 # Create ATS and ETS2 pmtiles files
@@ -50,6 +51,7 @@ $(GENERATOR_OUT_DIR)/ets2.pmtiles: $(ETS2_PARSER_JSON_FILES)
 
 DEMO_FILES += $(GENERATOR_OUT_DIR)/ats.pmtiles
 DEMO_FILES += $(GENERATOR_OUT_DIR)/ets2.pmtiles
+NAVIGATOR_FILES += $(GENERATOR_OUT_DIR)/ats.pmtiles
 
 
 # Create ATS and ETS2 footprints pmtiles files
@@ -60,6 +62,7 @@ $(GENERATOR_OUT_DIR)/ets2-footprints.pmtiles: $(ETS2_PARSER_JSON_FILES)
 
 DEMO_FILES += $(GENERATOR_OUT_DIR)/ats-footprints.pmtiles
 DEMO_FILES += $(GENERATOR_OUT_DIR)/ets2-footprints.pmtiles
+NAVIGATOR_FILES += $(GENERATOR_OUT_DIR)/ats-footprints.pmtiles
 
 
 # Create ATS and ETS2 contours (aka elevations) pmtiles files
@@ -180,9 +183,16 @@ demo: demo-data demo-app ## builds map data and web assets for demo-app and copi
 
 navigator-data: $(NAVIGATOR_FILES) ## builds map data for navigator-app
 
-##############################################################################
-
 NAVIGATOR_PACKAGE_DIR := packages/apps/navigator
+NAVIGATOR_PUBLIC_DIR = $(NAVIGATOR_PACKAGE_DIR)/public
+NAVIGATOR_FILES_DEV = $(patsubst %,$(NAVIGATOR_PUBLIC_DIR)/%,$(notdir $(NAVIGATOR_FILES)))
+
+$(NAVIGATOR_FILES_DEV): $(NAVIGATOR_PUBLIC_DIR)/%:
+	@cp -p $(filter %/$(subst $(NAVIGATOR_PUBLIC_DIR)/,,$@),$(NAVIGATOR_FILES)) $@
+
+navigator-data-dev: $(NAVIGATOR_FILES_DEV) ## builds map data for navigator-app in development mode
+
+##############################################################################
 
 navigator-app: ## builds web assets for navigator-app
 	npm run build -w $(NAVIGATOR_PACKAGE_DIR)
@@ -218,8 +228,8 @@ clean: ## deletes all parser and generator outputs
 # https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
-		| awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
+		| awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-19s\033[0m %s\n", $$1, $$2}'
 
-.PHONY: demo demo-data demo-app navigator navigator-data navigator-app navigation-data clean help
+.PHONY: demo demo-data demo-app navigator navigator-data navigator-data-dev navigator-app navigation-data clean help
 
 .DEFAULT_GOAL := help

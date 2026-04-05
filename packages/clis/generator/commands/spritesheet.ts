@@ -1,4 +1,5 @@
 import { assert } from '@truckermudgeon/base/assert';
+import { readMapData } from '@truckermudgeon/io';
 import type { Poi } from '@truckermudgeon/map/types';
 import pack from 'bin-pack';
 import fs from 'fs';
@@ -8,7 +9,6 @@ import os from 'node:os';
 import path from 'path';
 import type { Argv, BuilderArguments } from 'yargs';
 import { logger } from '../logger';
-import { readMapData } from '../mapped-data';
 import { maybeEnsureOutputDir, resourcesDir, untildify } from './path-helpers';
 
 export const command = 'spritesheet';

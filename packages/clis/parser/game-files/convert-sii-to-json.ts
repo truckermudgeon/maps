@@ -69,5 +69,6 @@ export function convertSiiToJson<T>(
   logger.error('error validating', siiPath);
   console.log(JSON.stringify(json, null, 2));
   logger.error(ajv.errorsText(validate.errors));
+  logger.error(validate.errors);
   throw new Error();
 }

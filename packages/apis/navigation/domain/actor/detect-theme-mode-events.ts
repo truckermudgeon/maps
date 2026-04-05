@@ -1,6 +1,5 @@
 import { throttle } from '@truckermudgeon/base/throttle';
-import type { MappedDataForKeys } from '@truckermudgeon/generator/mapped-data';
-import { type MapDataKeys } from '@truckermudgeon/generator/mapped-data';
+import type { MapDataKeys, MappedDataForKeys } from '@truckermudgeon/io';
 import { EventEmitter } from 'events';
 import type { TruckSimTelemetry } from '../../types';
 import type { GraphAndMapData } from '../lookup-data';

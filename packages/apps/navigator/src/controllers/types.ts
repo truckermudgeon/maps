@@ -13,7 +13,7 @@ import type {
 } from '@truckermudgeon/navigation/types';
 import type { Marker } from 'maplibre-gl';
 import type { MapRef } from 'react-map-gl/maplibre';
-import type { CameraMode, NavPageKey } from './constants';
+import type { BearingMode, CameraMode, NavPageKey } from './constants';
 
 export type AppClient = ReturnType<
   typeof createTRPCProxyClient<AppRouter>
@@ -22,6 +22,7 @@ export type AppClient = ReturnType<
 export interface AppStore {
   themeMode: 'light' | 'dark';
   cameraMode: CameraMode;
+  bearingMode: BearingMode;
   truckPoint: readonly [lon: number, lat: number];
   trailerPoint: readonly [lon: number, lat: number] | undefined;
   showNavSheet: boolean;
@@ -42,7 +43,14 @@ export interface AppStore {
 
   readonly distanceToNextManeuver: number | undefined;
   readonly activeRouteDirection: StepManeuver | undefined;
+  readonly activeStepLine:
+    | { line: GeoJSON.Feature<GeoJSON.LineString>; length: number }
+    | undefined;
   readonly activeArrowStep: RouteStep | undefined;
+  readonly geoJsonRoute: {
+    steps: readonly { step: RouteStep; featureLength: number }[];
+    featureLength: number;
+  };
 }
 
 export interface AppController {
@@ -59,7 +67,8 @@ export interface AppController {
 export type CompassPoint = 'N' | 'S' | 'E' | 'W' | 'NE' | 'NW' | 'SE' | 'SW';
 
 export interface ControlsStore {
-  direction: CompassPoint;
+  // (-180, 180] CW, 0 is north.
+  bearing: number;
   limitMph: number;
   speedMph: number;
   showRecenterFab: boolean;
@@ -68,7 +77,7 @@ export interface ControlsStore {
 }
 
 export interface ControlsController {
-  startListening(store: ControlsStore, appClient: AppClient): void;
+  startListening(store: ControlsStore, appClient: AppClient, map: MapRef): void;
 }
 
 // TODO clean this data up. Some fields can probably be inferred.
@@ -123,4 +132,35 @@ export interface NavSheetController {
   startSearchAlongFlow(navSheetStore: NavSheetStore): void;
   startShowActiveRouteDirectionsFlow(navSheetStore: NavSheetStore): void;
   startManageStopsFlow(navSheetStore: NavSheetStore): void;
+}
+
+export interface Breakpoints {
+  readonly xs: number;
+  readonly sm: number;
+  readonly md: number;
+  readonly lg: number;
+  readonly xl: number;
+}
+
+export interface UIEnvironmentStore {
+  readonly breakpoints: Breakpoints;
+  readonly width: number;
+  readonly height: number;
+  readonly orientation: 'portrait' | 'landscape';
+  readonly isLargePortrait: boolean;
+
+  // other potential fields
+  // isTouchMobile;
+  // isDesktopPointer;
+  // isKeyboardOpen;
+}
+
+export interface MapPaddingStore {
+  readonly padding: {
+    readonly left: number;
+    readonly right: number;
+    readonly top: number;
+    readonly bottom: number;
+  };
+  readonly offset: [number, number];
 }

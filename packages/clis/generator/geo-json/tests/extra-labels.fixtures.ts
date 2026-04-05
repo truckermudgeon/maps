@@ -1,4 +1,9 @@
-import type { City, Country, MileageTarget } from '@truckermudgeon/map/types';
+import type {
+  City,
+  CompanyItem,
+  Country,
+  MileageTarget,
+} from '@truckermudgeon/map/types';
 
 function mapOf<T extends { token: string }>(array: T[]): Map<string, T> {
   return new Map(array.map(x => [x.token, x]));
@@ -43,6 +48,20 @@ type CountryFixture = Omit<
   | 'timeZoneName'
   | 'secondaryTimeZones'
 >;
+
+function mapOfCompany(array: CompanyFixture[]): Map<bigint, CompanyItem> {
+  return new Map(
+    array.map(company => [
+      company.uid,
+      {
+        type: 6,
+        nodeUid: 0n,
+        ...company,
+      },
+    ]),
+  );
+}
+type CompanyFixture = Omit<CompanyItem, 'type' | 'nodeUid'>;
 
 export const ar_ftsmith_ = mapOf<MileageTarget>([
   {
@@ -324,6 +343,25 @@ export const countriesAts = mapOfCountry([
     x: 17000,
     y: 20000,
     code: 'AR',
+  },
+]);
+
+export const companiesAts = mapOfCompany([
+  {
+    uid: 0x4fe93889e082001bn,
+    x: 1162.140625,
+    y: -2223.6328125,
+    token: 'flv_food_str',
+    cityToken: 'topeka',
+    prefabUid: 0x4fe93888fe820013n,
+  },
+  {
+    uid: 0x6111b0364c053a44n,
+    x: 1012.5425163688351,
+    y: -2047.8164135036463,
+    token: 'pho_oil_gst',
+    cityToken: 'topeka',
+    prefabUid: 0x4c049d04e8662ed8n,
   },
 ]);
 

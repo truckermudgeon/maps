@@ -11,7 +11,7 @@ import {
   toSplinePoints,
 } from '@truckermudgeon/base/geom';
 import { UnreachableError } from '@truckermudgeon/base/precon';
-import type { MappedDataForKeys } from '@truckermudgeon/generator/mapped-data';
+import type { MappedDataForKeys } from '@truckermudgeon/io';
 import { ItemType } from '@truckermudgeon/map/constants';
 import {
   calculateLaneInfo,

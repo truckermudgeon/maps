@@ -21,7 +21,7 @@ abstract class BinaryParserBase<T> implements Base<T> {
     parser.saveOffset('_privateOffset').seek(function (
       this: Record<string, unknown>,
     ) {
-      stream.pos = this['_privateOffset'] as number;
+      stream.pos = this._privateOffset as number;
       return 0;
     });
 
@@ -301,7 +301,7 @@ class Uint64String extends BinaryParserBase<string> {
       type: new Parser().string(name, {
         greedy: true,
         zeroTerminated: false,
-        encoding: 'ascii',
+        encoding: 'utf8',
       }),
     });
   }

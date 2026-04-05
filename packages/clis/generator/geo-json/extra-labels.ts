@@ -5,6 +5,8 @@
  */
 
 import { Preconditions } from '@truckermudgeon/base/precon';
+import type { MappedDataForKeys } from '@truckermudgeon/io';
+import { readMapData } from '@truckermudgeon/io';
 import type {
   City,
   Country,
@@ -14,8 +16,6 @@ import type {
 import fs from 'fs';
 import type { GeoJSON } from 'geojson';
 import { logger } from '../logger';
-import type { MappedDataForKeys } from '../mapped-data';
-import { readMapData } from '../mapped-data';
 import { createNormalizeFeature } from './normalize';
 import { ets2IsoA2 } from './populated-places';
 

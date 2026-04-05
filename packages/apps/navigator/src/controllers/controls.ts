@@ -1,17 +1,15 @@
-import { toPosAndBearing } from '@truckermudgeon/navigation/helpers';
 import { action, makeAutoObservable } from 'mobx';
-import { toCompassPoint } from '../base/to-compass-point';
+import type { MapRef } from 'react-map-gl/maplibre';
 import { CameraMode } from './constants';
 import type {
   AppClient,
   AppStore,
-  CompassPoint,
   ControlsController,
   ControlsStore,
 } from './types';
 
 export class ControlsStoreImpl implements ControlsStore {
-  direction: CompassPoint = 'N';
+  bearing = 0;
   limitMph = 0;
   speedMph = 0;
 
@@ -33,25 +31,18 @@ export class ControlsStoreImpl implements ControlsStore {
 }
 
 export class ControlsControllerImpl implements ControlsController {
-  startListening(store: ControlsStore, appClient: AppClient) {
+  startListening(store: ControlsStore, appClient: AppClient, map: MapRef) {
     appClient.onPositionUpdate.subscribe(undefined, {
       onData: action(gameState => {
-        const { speed, position, heading } = gameState;
-        const { bearing } = toPosAndBearing({
-          position: {
-            X: position.x,
-            Y: position.z,
-            Z: position.y,
-          },
-          orientation: {
-            heading,
-          },
-        });
+        const { speed } = gameState;
         const speedMph = Math.abs(Math.round(speed * 2.236936));
-        store.direction = toCompassPoint(bearing);
         store.limitMph = gameState.speedLimit;
         store.speedMph = speedMph;
       }),
     });
+    map.on(
+      'move',
+      action(() => (store.bearing = map.getBearing())),
+    );
   }
 }

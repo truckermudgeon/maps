@@ -42,12 +42,7 @@ export function createRateLimitService(kv: KvStore): RateLimitService {
             await kv.expire(key, 60 * 60 * 24 * 7); // 1 week
           }
 
-          if (count <= 5) {
-            return true;
-          } else {
-            await kv.decr(key);
-            return false;
-          }
+          return count <= 5;
         },
 
         wsDisconnect: async (ip: string) => {

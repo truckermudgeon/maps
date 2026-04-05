@@ -406,6 +406,7 @@ export const navigatorRouter = router({
   subscribeToDevice: navigatorSessionProcedure
     .use(subscriptionLimitMiddleware(1))
     .subscription(async function* ({
+      path,
       ctx,
       signal,
     }): AsyncGenerator<ActorEvent, void, void> {
@@ -420,18 +421,36 @@ export const navigatorRouter = router({
         });
       }
 
-      const generator = subscribeSession(
+      const { generator, unsubscribe } = subscribeSession(
         ctx.sessionActor,
         signal,
         ctx.services.lookups.graphAndMapData.tsMapData,
-      )();
-      while (true) {
-        // touch actor to keep it alive and prevent it from being swept.
-        ctx.services.sessionActors.get(telemetryId);
-        const res = await generator.next();
-        if (!res.done) {
-          yield res.value;
+      );
+      try {
+        while (true) {
+          // touch actor to keep it alive and prevent it from being swept.
+          ctx.services.sessionActors.get(telemetryId);
+
+          const res = await generator.next();
+          if (!res.done) {
+            yield res.value;
+          }
         }
+      } catch (err) {
+        logger.error('actor subscription error', {
+          trpc: {
+            path,
+            type: 'subscription',
+          },
+          request: {
+            type: ctx.type,
+            clientId: ctx.clientId,
+          },
+          error:
+            err instanceof Error ? `${err.name}: ${err.message}` : String(err),
+        });
+      } finally {
+        unsubscribe();
       }
     }),
   /** @deprecated use `subscribeToDevice` instead */

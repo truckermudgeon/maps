@@ -55,14 +55,14 @@ export function parseMapFiles(
 ):
   | {
       onlyDefs: false;
-      map: string;
+      map: 'usa' | 'europe';
       version: string;
       mapData: MapData;
       icons: Map<string, Buffer>;
     }
   | {
       onlyDefs: true;
-      map: string;
+      map: 'usa' | 'europe';
       version: string;
       defData: DefData;
     } {
@@ -120,7 +120,10 @@ function parseVersionSii(entries: Entries) {
   return { application, version };
 }
 
-function parseSectorFiles(entries: Entries) {
+function parseSectorFiles(entries: Entries): {
+  map: 'usa' | 'europe';
+  sectors: Map<string, { items: Item[]; nodes: Node[] }>;
+} {
   const mapDir = Preconditions.checkExists(entries.directories.get('map'));
   const mbds = mapDir.files.filter(f => f.endsWith('.mbd'));
   if (mbds.length !== 1) {
@@ -182,6 +185,7 @@ function parseSectorFiles(entries: Entries) {
     'seconds',
   );
 
+  assert(map === 'usa' || map === 'europe');
   return {
     map,
     sectors,
@@ -328,7 +332,7 @@ function postProcess(
   { sectors, map }: ReturnType<typeof parseSectorFiles>,
   icons: ReturnType<typeof parseIconMatFiles>,
   l10n: Map<string, string>,
-): { map: string; mapData: MapData; icons: Map<string, Buffer> } {
+): { map: 'usa' | 'europe'; mapData: MapData; icons: Map<string, Buffer> } {
   logger.log('building node and item LUTs...');
   const nodesByUid = new Map<bigint, Node>();
   const itemsByUid = new Map<bigint, Item>();
@@ -1006,6 +1010,7 @@ function postProcess(
       achievements: valuesWithTokens(defData.achievements),
       routes: valuesWithTokens(defData.routes),
       mileageTargets: valuesWithTokens(defData.mileageTargets),
+      cargoes: valuesWithTokens(defData.cargoes),
     },
     icons,
   };
@@ -1019,6 +1024,7 @@ function toDefData(
   return {
     countries: valuesWithTokens(defData.countries).map(withLocalizedName),
     companyDefs: valuesWithTokens(defData.companies),
+    cargoes: valuesWithTokens(defData.cargoes).map(withLocalizedName),
     roadLooks: valuesWithTokens(defData.roadLooks),
     prefabDescriptions: valuesWithTokens(defData.prefabs),
     modelDescriptions: valuesWithTokens(defData.models),

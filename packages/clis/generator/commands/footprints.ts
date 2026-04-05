@@ -1,3 +1,4 @@
+import { readMapData, writeGeojsonFile } from '@truckermudgeon/io';
 import { execSync } from 'child_process';
 import fs from 'fs';
 import os from 'os';
@@ -8,8 +9,6 @@ import {
   footprintsMapDataKeys,
 } from '../geo-json/footprints';
 import { logger } from '../logger';
-import { readMapData } from '../mapped-data';
-import { writeGeojsonFile } from '../write-geojson-file';
 import { maybeEnsureOutputDir, untildify } from './path-helpers';
 
 export const command = 'footprints';

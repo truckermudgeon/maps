@@ -152,6 +152,22 @@ export const RouteSiiSchema: JSONSchemaType<RouteSii> = object({
   }),
 });
 
+export interface OversizeOfferSii {
+  oversizeOfferData: Record<
+    string,
+    {
+      route: string;
+      cargo: string;
+    }
+  >;
+}
+export const OversizeOfferSiiSchema: JSONSchemaType<OversizeOfferSii> = object({
+  oversizeOfferData: patternRecord(/^spec_offer\.[0-9a-zA-Z_]{1,12}$/, {
+    route: stringPattern(/^route_data\.[0-9a-z_]{1,12}$/),
+    cargo: stringPattern(/^cargo\.[0-9a-z_]{1,12}$/),
+  }),
+});
+
 export interface AchievementsSii {
   achievementVisitCityData?: Record<
     string,
@@ -813,14 +829,50 @@ export const CityCompanySiiSchema: JSONSchemaType<CityCompanySii> = object({
   }),
 });
 
-export interface CargoSii {
+export interface CargoDefSii {
   cargoDef: Record<string, { cargo: string }>;
 }
-export const CargoSiiSchema: JSONSchemaType<CargoSii> = object({
+export const CargoDefSiiSchema: JSONSchemaType<CargoDefSii> = object({
   cargoDef: patternRecord(/^\.[0-9a-z_]{1,12}$/, {
     // Note: more information (like l18n strings) for `cargo.foo` can be found in defs/cargo/foo.sui.
     cargo: stringPattern(/^cargo\.[0-9a-z_]{1,12}$/),
   }),
+});
+
+export interface CargoDataSii {
+  cargoData: Record<
+    string,
+    {
+      name: string;
+      volume: number;
+      mass: number;
+      unitRewardPerKm: number;
+      bodyTypes: string[];
+      fragility?: number;
+      overweight?: 'true' | 'false';
+      valuable?: 'true' | 'false';
+      group?: string[];
+      unitLoadTime?: number;
+    }
+  >;
+}
+export const CargoDataSiiSchema: JSONSchemaType<CargoDataSii> = object({
+  cargoData: patternRecord(
+    /^cargo\.[0-9a-z_]{1,12}$/,
+    {
+      name: string, // should be `localeToken`, but Valentines cargo :(
+      volume: number,
+      mass: number,
+      unitRewardPerKm: number,
+      bodyTypes: stringArray,
+      fragility: nullable(number),
+      overweight: nullable(stringEnum('true', 'false')),
+      valuable: nullable(stringEnum('true', 'false')),
+      group: nullable(stringArray),
+      unitLoadTime: nullable(number),
+    },
+    ['name', 'volume', 'mass', 'unitRewardPerKm', 'bodyTypes'],
+  ),
 });
 
 export interface SignSii {

@@ -1,7 +1,6 @@
 import { assertExists } from '@truckermudgeon/base/assert';
 import type { Extent } from '@truckermudgeon/base/geom';
 import { center as calculateCenter } from '@truckermudgeon/base/geom';
-import { routingModes } from '@truckermudgeon/map/routing';
 import {
   BaseMapStyle,
   defaultMapStyle,
@@ -12,8 +11,9 @@ import type { Marker as MapLibreGLMarker } from 'maplibre-gl';
 import type { ForwardRefExoticComponent, ReactElement } from 'react';
 import { useRef } from 'react';
 import type { MapRef } from 'react-map-gl/maplibre';
-import MapGl, { Layer, Source } from 'react-map-gl/maplibre';
+import MapGl from 'react-map-gl/maplibre';
 import type { PlayerMarkerProps } from './PlayerMarker';
+import { RoutesStyle } from './RoutesStyle';
 import './SlippyMap.css';
 
 const tileRootUrl = import.meta.env.VITE_TILE_ROOT_URL;
@@ -76,7 +76,7 @@ export const SlippyMap = (props: {
         top: 0,
         left: 0,
         width: '100vw',
-        height: '100vh',
+        height: '100dvh',
       }} // ensure map fills page
       minZoom={4}
       maxZoom={15}
@@ -85,144 +85,8 @@ export const SlippyMap = (props: {
     >
       <BaseMapStyle tileRootUrl={tileRootUrl} mode={mode} />
       <GameMapStyle tileRootUrl={tileRootUrl} mode={mode} game={'ats'}>
-        <>
-          <SceneryTownSource mode={mode} game={'ats'} />
-          <Source
-            id={'activeRoute'}
-            type={'geojson'}
-            data={
-              {
-                type: 'FeatureCollection',
-                features: [],
-              } as GeoJSON.FeatureCollection
-            }
-          >
-            <Layer
-              id={'activeRouteLayer-case'}
-              type={'line'}
-              paint={{
-                'line-color': 'hsl(204,100%,40%)',
-                'line-gap-width': 8,
-                'line-width': 4,
-                'line-opacity': 1,
-              }}
-            />
-            <Layer
-              id={'activeRouteLayer'}
-              type={'line'}
-              paint={{
-                'line-color': 'hsl(204,100%,50%)',
-                'line-width': 10,
-                'line-opacity': 1,
-              }}
-            />
-          </Source>
-          {Array.from({ length: routingModes.size }, (_, i) => (
-            <Source
-              key={`previewRoute-${i}`}
-              id={`previewRoute-${i}`}
-              type={'geojson'}
-              data={
-                {
-                  type: 'FeatureCollection',
-                  features: [],
-                } as GeoJSON.FeatureCollection
-              }
-            >
-              <Layer
-                id={`previewRouteLayer-${i}-case`}
-                type={'line'}
-                paint={{
-                  'line-color': 'hsl(204,100%,40%)',
-                  'line-gap-width': 8,
-                  'line-width': 4,
-                  'line-opacity': 1,
-                }}
-              />
-              <Layer
-                id={`previewRouteLayer-${i}`}
-                type={'line'}
-                paint={{
-                  'line-color': 'hsl(204,100%,50%)',
-                  'line-width': 10,
-                  'line-opacity': 1,
-                }}
-              />
-            </Source>
-          ))}
-          <Source
-            key={`previewStepArrow`}
-            id={`previewStepArrow`}
-            type={'geojson'}
-            data={
-              {
-                type: 'FeatureCollection',
-                features: [],
-              } as GeoJSON.FeatureCollection
-            }
-          >
-            <Layer
-              id={`previewStepArrowCase`}
-              type={'line'}
-              layout={{
-                'line-cap': 'round',
-              }}
-              paint={{
-                'line-color': '#444',
-                'line-gap-width': 11,
-                'line-width': 2,
-                'line-opacity': 1,
-              }}
-              filter={['in', '$type', 'LineString']}
-            />
-            <Layer
-              id={`previewStepArrowArrow`}
-              type={'symbol'}
-              layout={{
-                'icon-image': 'triangle',
-                'icon-allow-overlap': true,
-                'icon-pitch-alignment': 'map',
-                'icon-rotation-alignment': 'map',
-                'icon-rotate': ['get', 'bearing'],
-              }}
-              filter={['in', '$type', 'Point']}
-            />
-            <Layer
-              id={`previewStepArrowLine`}
-              type={'line'}
-              layout={{
-                'line-cap': 'round',
-              }}
-              paint={{
-                'line-color': '#fff',
-                'line-width': 11,
-                'line-opacity': 1,
-              }}
-              filter={['in', '$type', 'LineString']}
-            />
-          </Source>
-          <Source
-            id={'activeRouteIcons'}
-            type={'geojson'}
-            data={
-              {
-                type: 'FeatureCollection',
-                features: [],
-              } as GeoJSON.FeatureCollection
-            }
-          >
-            <Layer
-              id={'activeRouteIconsLayer'}
-              type={'symbol'}
-              layout={{
-                'icon-image': '{sprite}',
-                'icon-allow-overlap': true,
-              }}
-              minzoom={10}
-              filter={['in', '$type', 'Point']}
-            />
-          </Source>
-        </>
+        <RoutesStyle />
+        <SceneryTownSource mode={mode} game={'ats'} />
       </GameMapStyle>
       <Destinations />
       <TrailerOrWaypointMarkers />
@@ -238,7 +102,11 @@ export const SlippyMap = (props: {
         }}
       >
         <a
-          style={{ color: 'inherit', textDecoration: 'none' }}
+          style={{
+            color: 'inherit',
+            textDecoration: 'none',
+            pointerEvents: 'none',
+          }}
           href="https://github.com/truckermudgeon/maps"
         >
           TruckSim Maps

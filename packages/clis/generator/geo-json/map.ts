@@ -10,6 +10,7 @@ import {
 } from '@truckermudgeon/base/geom';
 import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
 import { Preconditions } from '@truckermudgeon/base/precon';
+import type { MapDataKeys, MappedDataForKeys } from '@truckermudgeon/io';
 import { isLabeledPoi } from '@truckermudgeon/map/constants';
 import { toDealerLabel } from '@truckermudgeon/map/labels';
 import type { Polygon, RoadString } from '@truckermudgeon/map/prefabs';
@@ -54,7 +55,6 @@ import { quadtree } from 'd3-quadtree';
 import type { GeoJSON } from 'geojson';
 import { dlcGuardMapDataKeys, normalizeDlcGuards } from '../dlc-guards';
 import { logger } from '../logger';
-import type { MapDataKeys, MappedDataForKeys } from '../mapped-data';
 import { createNormalizeFeature } from './normalize';
 import { ets2IsoA2, getCitiesByCountryIsoA2 } from './populated-places';
 

@@ -1,3 +1,4 @@
+import { readMapData, writeGeojsonFile } from '@truckermudgeon/io';
 import { execSync } from 'child_process';
 import fs from 'fs';
 import os from 'os';
@@ -5,8 +6,6 @@ import path from 'path';
 import type { Argv, BuilderArguments } from 'yargs';
 import { convertToContoursGeoJson } from '../geo-json/contours';
 import { logger } from '../logger';
-import { readMapData } from '../mapped-data';
-import { writeGeojsonFile } from '../write-geojson-file';
 import { maybeEnsureOutputDir, untildify } from './path-helpers';
 
 export const command = 'contours';

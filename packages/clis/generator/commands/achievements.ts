@@ -1,3 +1,4 @@
+import { readMapData, writeGeojsonFile } from '@truckermudgeon/io';
 import path from 'path';
 import type { Argv, BuilderArguments } from 'yargs';
 import {
@@ -5,8 +6,6 @@ import {
   convertToAchievementsGeoJson,
 } from '../geo-json/achievements';
 import { logger } from '../logger';
-import { readMapData } from '../mapped-data';
-import { writeGeojsonFile } from '../write-geojson-file';
 import { maybeEnsureOutputDir, untildify } from './path-helpers';
 
 export const command = 'achievements';

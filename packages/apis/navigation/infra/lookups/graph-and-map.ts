@@ -1,11 +1,11 @@
-import { assert, assertExists } from '@truckermudgeon/base/assert';
+import { assertExists } from '@truckermudgeon/base/assert';
 import {
   getExtent,
   grow,
   type Position,
   toSplinePoints,
 } from '@truckermudgeon/base/geom';
-import { readMapData } from '@truckermudgeon/generator/mapped-data';
+import { readGraphData, readMapData } from '@truckermudgeon/io';
 import { PointRBush } from '@truckermudgeon/map/point-rbush';
 import {
   toMapPosition,
@@ -17,18 +17,14 @@ import {
 } from '@truckermudgeon/map/projections';
 import type {
   CompanyItem,
-  GraphData,
-  Neighbors,
   Node,
   Poi,
   Prefab,
   Road,
-  ServiceArea,
   Sign,
 } from '@truckermudgeon/map/types';
 import * as turf from '@turf/helpers';
 import lineOffset from '@turf/line-offset';
-import fs from 'node:fs';
 import path from 'node:path';
 import type { BBox } from 'rbush';
 import RBush from 'rbush';
@@ -482,46 +478,4 @@ export function readGraphAndMapData(
     roadAndPrefabRTree,
     poiRTree,
   };
-}
-
-function readGraphData<T extends 'usa' | 'europe'>(
-  inputDir: string,
-  map: T,
-): GraphData {
-  console.log('reading', map, 'graph data...');
-  const json = fs.readFileSync(
-    path.join(inputDir, `${map}-graph.json`),
-    'utf-8',
-  );
-  const graphData = JSON.parse(json, graphReviver) as unknown as GraphData;
-  console.log(graphData.graph.size, 'graph nodes');
-  console.log(graphData.serviceAreas.size, 'service areas');
-  return graphData;
-}
-
-function graphReviver(key: string, value: unknown) {
-  if (key === 'graph' && Array.isArray(value) && Array.isArray(value[0])) {
-    return new Map<bigint, Neighbors>(
-      value.map(([nid, neighbors]) => [BigInt(`0x${nid}`), neighbors]),
-    );
-  }
-  if (
-    key === 'serviceAreas' &&
-    Array.isArray(value) &&
-    Array.isArray(value[0])
-  ) {
-    return new Map<bigint, ServiceArea>(
-      value.map(([nid, serviceArea]) => [BigInt(`0x${nid}`), serviceArea]),
-    );
-  }
-  if (key === 'facilities' && Array.isArray(value)) {
-    return new Set(value);
-  }
-
-  if (key === 'uid' || key.endsWith('Uid')) {
-    assert(typeof value === 'string' && /^[0-9a-f]+$/.test(value));
-    return BigInt(`0x${value}`);
-  }
-
-  return value;
 }

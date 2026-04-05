@@ -43,6 +43,7 @@ export const loggingMiddleware = middleware(
           },
           error: {
             message: result.error.message,
+            stack: result.error.stack,
           },
         });
       }
@@ -62,6 +63,7 @@ export const loggingMiddleware = middleware(
           error: {
             message: err.message,
             cause: err.cause,
+            stack: err.stack,
           },
         });
       } else {
@@ -72,6 +74,7 @@ export const loggingMiddleware = middleware(
             durationMs,
           },
           error: err,
+          stack: err instanceof Error ? err.stack : undefined,
         });
       }
 
