@@ -61,7 +61,7 @@ export function createRoutingService(
 
   const router = async (opts: RouteOptions): Promise<Route> => {
     const start = Date.now();
-    const meta = { name: 'find-route', game: 'TODO' };
+    const meta = { name: 'find-route', game: opts.gameContext.map };
     try {
       metrics.workerCalls.inc(meta);
       const pool = opts.gameContext.map === 'usa' ? atsPool : ets2Pool;
