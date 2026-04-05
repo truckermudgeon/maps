@@ -1,8 +1,7 @@
 name: build navigator client (GUI)
 
 on:
-  push:
-    branches: ['nc-gui']
+  workflow_dispatch:
 
 env:
   BINARY_NAME: trucksim-navigator-gui
