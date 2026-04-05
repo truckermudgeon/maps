@@ -343,14 +343,9 @@ function createUpdateListener(
         );
         setRouteIndex(routeIndex);
 
-        // check to see if we've completed a degenerate route.
-        const isDegenerateRoute =
-          activeRoute.segments.length === 1 &&
-          activeRoute.segments[0].steps.length === 1 &&
-          activeRoute.segments[0].steps[0].nodesTraveled === 0 &&
-          activeRoute.segments[0].steps[0].maneuver.direction ===
-            BranchType.ARRIVE;
-        if (isDegenerateRoute && expectedItems.length === 0) {
+        // check to see if we've just completed a route (e.g., if we've veered
+        // into a degenerate route).
+        if (expectedItems.length === 0) {
           segmentComplete(routeIndex.segmentIndex);
         }
         return;
