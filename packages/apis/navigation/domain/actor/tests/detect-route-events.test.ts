@@ -18,7 +18,7 @@ import { createRoutingService } from '../../../infra/routing/service';
 import type { DomainEventSink } from '../../events';
 import type { GraphAndMapData, GraphMappedData } from '../../lookup-data';
 import { calculateLocation, forTesting } from '../detect-route-events';
-import type { RoutingService } from '../generate-routes';
+import type { RouteWithLookup, RoutingService } from '../generate-routes';
 import { generateRouteFromKeys } from '../generate-routes';
 import {
   aRouteWith,
@@ -460,6 +460,106 @@ describe.skip('detectRouteEvents bugs', () => {
     });
     expect(segmentComplete).toHaveBeenCalledTimes(1);
   });
+
+  it('handles veering to degenerate routes (start and end are the same)', async () => {
+    const nodes = graphAndMapData.tsMapData.nodes;
+
+    const startNode = assertExists(nodes.get(0x4e7602203bdf0000n));
+    const endNode = assertExists(nodes.get(0x4eeffb7b499f0003n));
+    let testRoute = await generateRouteFromKeys(
+      [createRouteKey(startNode.uid, endNode.uid, 'forward', 'fastest')],
+      { graphAndMapData, routing: routingService },
+    );
+    const testTelemetry = aTelemetryWith({
+      truck: aTruckWith({
+        orientation: {
+          // west
+          heading: 0.25,
+        },
+        position: toTruckPos({
+          x: 19819,
+          y: 20533,
+          z: -10,
+        }),
+      }),
+    });
+
+    expect(testRoute.segments.length).toBe(1);
+    expect(testRoute.segments[0].steps.length).toBe(2);
+    expect(
+      testRoute.segments[0].steps[0].maneuver.direction === BranchType.THROUGH,
+    );
+    expect(
+      testRoute.segments[0].steps[1].maneuver.direction === BranchType.ARRIVE,
+    );
+
+    const setActiveRoute = vi
+      .fn()
+      .mockImplementation((route: RouteWithLookup | undefined) => {
+        console.log('set route', route);
+        if (!route) {
+          throw new Error('unexpected undefined route');
+        }
+        testRoute = route;
+      });
+    const setRouteIndex = vi
+      .fn()
+      .mockImplementation(ri => console.log('setRouteIndex spy:', ri));
+    const segmentComplete = vi.fn().mockImplementation(si => {
+      console.log('segmentComplete spy:', si);
+      console.log('pausing route events.');
+      paused.paused = true;
+    });
+    const paused = { paused: false };
+
+    const domainEventSink: DomainEventSink = {
+      publish: () => void 0,
+    };
+
+    let { handler } = createUpdateListener(
+      testRoute,
+      setActiveRoute,
+      setRouteIndex,
+      segmentComplete,
+      paused,
+      graphAndMapData,
+      routingService,
+      domainEventSink,
+    );
+
+    console.log('handler: start');
+    handler(testTelemetry);
+
+    // `handler` is sync, but it kicks off an async call to routing :grimacing:
+    await delay(1000);
+
+    // `handler` should have re-routed
+    expect(testRoute).toBeDefined();
+    expect(setActiveRoute).toHaveBeenLastCalledWith(testRoute);
+    expect(segmentComplete).not.toHaveBeenCalled();
+
+    // simulate re-creation of update listener by the backend, when a re-route happens.
+    ({ handler } = createUpdateListener(
+      testRoute,
+      setActiveRoute,
+      setRouteIndex,
+      segmentComplete,
+      paused,
+      graphAndMapData,
+      routingService,
+      domainEventSink,
+    ));
+
+    console.log('handler: after re-route');
+    handler(testTelemetry);
+    expect(setRouteIndex).toHaveBeenLastCalledWith({
+      segmentIndex: 0,
+      stepIndex: 0,
+      nodeIndex: 1,
+    });
+    expect(segmentComplete).toHaveBeenLastCalledWith(0);
+    expect(paused.paused).toBe(true);
+  });
 });
 
 const toTruckPos = (pos: { x: number; y: number; z: number }) => ({
@@ -467,3 +567,5 @@ const toTruckPos = (pos: { x: number; y: number; z: number }) => ({
   Y: pos.z,
   Z: pos.y,
 });
+
+const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
