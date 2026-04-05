@@ -141,6 +141,11 @@ export class SessionActorImpl implements SessionActor {
 
     this.setActiveRoute = routeRes.setActiveRoute;
     this.unpauseRouteEvents = routeRes.unpauseRouteEvents;
+
+    this.mapEventEmitter.on('update', () => {
+      this.setActiveRoute(undefined);
+      this.unpauseRouteEvents();
+    });
   }
 
   getLatestTelemetry() {

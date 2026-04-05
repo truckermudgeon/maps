@@ -442,8 +442,11 @@ export class AppControllerImpl implements AppController {
   }
 
   onMapLoad(map: MapRef, player: Marker) {
-    Preconditions.checkState(this.map == null);
-    Preconditions.checkState(this.playerMarker == null);
+    if (this.map != null) {
+      console.warn(
+        'SlippyMap has reloaded, e.g., because of switching games while a session is in progress. Reload the page if things are weird.',
+      );
+    }
     this.map = map;
     this.playerMarker = player;
   }

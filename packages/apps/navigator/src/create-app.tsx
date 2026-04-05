@@ -341,17 +341,21 @@ export function createApp({
       />
     );
   });
-  const _SlippyMap = observer(() => (
-    <SlippyMap
-      map={store.isReceivingTelemetry ? store.map : map}
-      mode={store.themeMode}
-      onLoad={onMapLoad}
-      onDragStart={action(() => controller.setFree(store))}
-      Destinations={_Destinations}
-      TrailerOrWaypointMarkers={_TrailerOrWaypointMarkers}
-      PlayerMarker={PlayerMarker}
-    />
-  ));
+  const _SlippyMap = observer(() => {
+    const _map = store.isReceivingTelemetry ? store.map : map;
+    return (
+      <SlippyMap
+        key={_map}
+        map={_map}
+        mode={store.themeMode}
+        onLoad={onMapLoad}
+        onDragStart={action(() => controller.setFree(store))}
+        Destinations={_Destinations}
+        TrailerOrWaypointMarkers={_TrailerOrWaypointMarkers}
+        PlayerMarker={PlayerMarker}
+      />
+    );
+  });
 
   const lengthAndUnitToNextManeuver = computed(() =>
     toLengthAndUnit(store.distanceToNextManeuver),
