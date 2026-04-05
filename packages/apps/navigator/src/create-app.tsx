@@ -46,10 +46,12 @@ import { createNavSheet } from './create-nav-sheet';
 import { setupDevtools } from './dev-tools';
 
 export function createApp({
+  map,
   appClient,
   joyTheme,
   transitionDurationMs,
 }: {
+  map: 'usa' | 'europe';
   appClient: AppClient;
   joyTheme: Theme;
   transitionDurationMs: number;
@@ -57,7 +59,7 @@ export function createApp({
   App: () => ReactElement;
   store: Pick<AppStore, 'readyToLoad'>;
 } {
-  const store = new AppStoreImpl();
+  const store = new AppStoreImpl(map);
   const controller = new AppControllerImpl();
   setupDevtools({ appStore: store });
 
@@ -341,6 +343,7 @@ export function createApp({
   });
   const _SlippyMap = observer(() => (
     <SlippyMap
+      map={store.isReceivingTelemetry ? store.map : map}
       mode={store.themeMode}
       onLoad={onMapLoad}
       onDragStart={action(() => controller.setFree(store))}

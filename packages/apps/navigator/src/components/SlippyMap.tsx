@@ -20,11 +20,11 @@ const tileRootUrl = import.meta.env.VITE_TILE_ROOT_URL;
 
 // TODO read these values from the .pmtiles files at runtime.
 const extents = {
-  ats: [
+  usa: [
     [-124.477162, 25.767968].map(n => Math.floor(n)),
     [-88.928336, 49.122384].map(n => Math.ceil(n)),
   ].flat() as Extent,
-  ets2: [
+  europe: [
     [-10.025698, 34.897275].map(n => Math.floor(n)),
     [33.284941, 71.573102].map(n => Math.ceil(n)),
   ].flat() as Extent,
@@ -38,15 +38,18 @@ export const SlippyMap = (props: {
   Destinations: () => ReactElement;
   TrailerOrWaypointMarkers: () => ReactElement;
   PlayerMarker: ForwardRefExoticComponent<PlayerMarkerProps>;
+  map: 'usa' | 'europe';
 }) => {
   console.log('render slippy map');
   const {
     Destinations,
     TrailerOrWaypointMarkers,
     PlayerMarker,
-    center = calculateCenter(extents.ats),
+    center = calculateCenter(extents[props.map]),
     mode = 'light',
+    map,
   } = props;
+  const game = map === 'usa' ? 'ats' : 'ets2';
   const mapRef = useRef<MapRef>(null);
   const playerMarkerRef = useRef<MapLibreGLMarker>(null);
 
@@ -84,9 +87,9 @@ export const SlippyMap = (props: {
       attributionControl={false}
     >
       <BaseMapStyle tileRootUrl={tileRootUrl} mode={mode} />
-      <GameMapStyle tileRootUrl={tileRootUrl} mode={mode} game={'ats'}>
+      <GameMapStyle tileRootUrl={tileRootUrl} mode={mode} game={game}>
         <RoutesStyle />
-        <SceneryTownSource mode={mode} game={'ats'} />
+        <SceneryTownSource mode={mode} game={game} />
       </GameMapStyle>
       <Destinations />
       <TrailerOrWaypointMarkers />

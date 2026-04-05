@@ -17,6 +17,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
+    map: 'usa',
     center: [-114.806, 36.282],
     onLoad: () => console.log('map loaded'),
     onDragStart: fn(),

@@ -47,6 +47,13 @@ export class TelemetryTimeline {
     this.cursorSimT ??= sample.t - this.opts.lookbackMs;
   }
 
+  reset(): void {
+    this.samples.length = 0;
+    this.cursorSimT = undefined;
+    this.lastWallMs = undefined;
+    this.smoothed = undefined;
+  }
+
   /** Sample for rendering at wall-clock time */
   sample(wallMs: number): TelemetrySample | undefined {
     if (this.samples.length === 0) {

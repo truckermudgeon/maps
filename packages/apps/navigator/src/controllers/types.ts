@@ -21,6 +21,7 @@ export type AppClient = ReturnType<
 
 export interface AppStore {
   themeMode: 'light' | 'dark';
+  map: 'usa' | 'europe';
   cameraMode: CameraMode;
   bearingMode: BearingMode;
   truckPoint: readonly [lon: number, lat: number];

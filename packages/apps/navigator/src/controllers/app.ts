@@ -5,7 +5,6 @@ import { center, getExtent } from '@truckermudgeon/base/geom';
 import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
 import { toPosAndBearing } from '@truckermudgeon/navigation/helpers';
 import type {
-  JobState,
   Route,
   RouteIndex,
   RouteStep,
@@ -28,6 +27,7 @@ import type { AppClient, AppController, AppStore } from './types';
 
 export class AppStoreImpl implements AppStore {
   themeMode: 'light' | 'dark' = 'light';
+  map: 'usa' | 'europe';
   cameraMode: CameraMode = CameraMode.FOLLOW;
   bearingMode: BearingMode = BearingMode.MATCH_MAP;
   activeRoute: Route | undefined = undefined;
@@ -38,19 +38,17 @@ export class AppStoreImpl implements AppStore {
   readyToLoad = false;
   mapLoaded = false;
 
-  currentJob: JobState | undefined;
-
   segmentComplete: SegmentInfo | undefined = undefined;
 
-  constructor() {
+  constructor(map: 'usa' | 'europe') {
     makeAutoObservable(this, {
       activeRoute: observable.ref,
       activeRouteIndex: observable.struct,
       truckPoint: observable.ref,
       trailerPoint: observable.ref,
-      currentJob: observable.ref,
       segmentComplete: observable.ref,
     });
+    this.map = map;
   }
 
   get isReceivingTelemetry(): boolean {
@@ -551,6 +549,11 @@ export class AppControllerImpl implements AppController {
           case 'trailerUpdate':
             runInAction(() => (store.trailerPoint = event.data?.position));
             break;
+          case 'mapUpdate':
+            runInAction(() => (store.map = event.data));
+            localStorage.setItem('map', event.data);
+            timeline.reset();
+            break;
           case 'jobUpdate':
             break;
           default:
@@ -578,7 +581,7 @@ export class AppControllerImpl implements AppController {
             heading,
           },
         },
-        'usa',
+        store.map,
       );
       const speedMph = Math.round(speed * 2.236936);
 
