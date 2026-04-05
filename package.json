@@ -7,6 +7,7 @@
     "packages/apis/*",
     "packages/apps/*",
     "packages/clis/*",
+    "packages/guis/*",
     "packages/libs/*"
   ],
   "devDependencies": {

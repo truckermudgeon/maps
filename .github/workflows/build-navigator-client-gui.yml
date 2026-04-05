@@ -1,11 +1,11 @@
-name: build navigator client (CLI)
+name: build navigator client (GUI)
 
 on:
   workflow_dispatch:
 
 env:
-  BINARY_NAME: trucksim-navigator
-  NAV_DIR: packages/clis/navigator
+  BINARY_NAME: trucksim-navigator-gui
+  NAV_DIR: packages/guis/navigator
 
 jobs:
   build:
@@ -38,10 +38,10 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: npm run build -w ${{ env.NAV_DIR }} '--' --outfile dist/${{ env.BINARY_NAME }}
+        run: npm run build:prod -w ${{ env.NAV_DIR }}
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.BINARY_NAME }}-${{ runner.os }}-${{ runner.arch }}
-          path: ${{ env.NAV_DIR }}/dist/*
+          path: ${{ env.NAV_DIR }}/artifacts/*
