@@ -14,6 +14,7 @@ import type {
 } from '@truckermudgeon/map/types';
 import { lineString } from '@turf/helpers';
 import { EventEmitter } from 'events';
+import { BranchType } from '../../constants';
 import type { Route, RouteIndex, TruckSimTelemetry } from '../../types';
 import type { DomainEventSink } from '../events';
 import type { GraphAndMapData } from '../lookup-data';
@@ -341,6 +342,17 @@ function createUpdateListener(
           curSegmentIndex,
         );
         setRouteIndex(routeIndex);
+
+        // check to see if we've completed a degenerate route.
+        const isDegenerateRoute =
+          activeRoute.segments.length === 1 &&
+          activeRoute.segments[0].steps.length === 1 &&
+          activeRoute.segments[0].steps[0].nodesTraveled === 0 &&
+          activeRoute.segments[0].steps[0].maneuver.direction ===
+            BranchType.ARRIVE;
+        if (isDegenerateRoute && expectedItems.length === 0) {
+          segmentComplete(routeIndex.segmentIndex);
+        }
         return;
       }
 
@@ -558,6 +570,20 @@ function arrayIndexToRouteIndex(
       }
       nodeIndex -= step.nodesTraveled;
 
+      const isDegenerateRoute =
+        route.segments.length === 1 &&
+        route.segments[0].steps.length === 1 &&
+        route.segments[0].steps[0].nodesTraveled === 0 &&
+        route.segments[0].steps[0].maneuver.direction === BranchType.ARRIVE;
+      if (isDegenerateRoute) {
+        // edge case: degenerate routes
+        return {
+          segmentIndex,
+          stepIndex,
+          nodeIndex,
+        };
+      }
+
       if (
         nodeIndex === 0 &&
         step.nodesTraveled === 0 &&
@@ -575,7 +601,7 @@ function arrayIndexToRouteIndex(
     }
   }
 
-  console.error(route);
+  console.error(JSON.stringify(route, null, 2));
   throw new Error(
     `arrayIndex ${arrayIndex} is invalid for route. leftover: ` + nodeIndex,
   );
