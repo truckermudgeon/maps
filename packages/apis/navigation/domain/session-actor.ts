@@ -8,6 +8,8 @@ import type {
 } from '../types';
 import type { JobEventEmitter } from './actor/detect-job-events';
 import { detectJobEvents } from './actor/detect-job-events';
+import type { MapEventEmitter } from './actor/detect-map-events';
+import { detectMapEvents } from './actor/detect-map-events';
 import type { RouteEventEmitter } from './actor/detect-route-events';
 import { detectRouteEvents } from './actor/detect-route-events';
 import type { ThemeModeEventEmitter } from './actor/detect-theme-mode-events';
@@ -28,6 +30,7 @@ export type SessionActor = {
   readTelemetry: () => TruckSimTelemetry | undefined;
   telemetryEventEmitter: TelemetryEventEmitter;
 } & ReturnType<typeof detectJobEvents> &
+  ReturnType<typeof detectMapEvents> &
   ReturnType<typeof detectRouteEvents> &
   ReturnType<typeof detectTrailerEvents> &
   ReturnType<typeof detectThemeModeEvents> & {
@@ -58,12 +61,14 @@ export class SessionActorImpl implements SessionActor {
   ) => void;
 
   readonly jobEventEmitter: JobEventEmitter;
+  readonly mapEventEmitter: MapEventEmitter;
   readonly routeEventEmitter: RouteEventEmitter;
   readonly trailerEventEmitter: Omit<TrailerEventEmitter, 'emit'>;
   readonly themeModeEventEmitter: Omit<ThemeModeEventEmitter, 'emit'>;
 
   readonly readActiveRoute: () => RouteWithLookup | undefined;
   readonly readJobState: () => JobState | undefined;
+  readonly readMapState: () => 'usa' | 'europe';
   readonly readRouteIndex: () => RouteIndex | undefined;
   readonly readTelemetry: () => TruckSimTelemetry | undefined;
   readonly readTrailerState: () => TrailerState | undefined;
@@ -103,6 +108,9 @@ export class SessionActorImpl implements SessionActor {
       getJobMappedData: gameContext =>
         getGraphAndMapData(gameContext).tsMapData,
     });
+    const mapRes = detectMapEvents({
+      telemetryEventEmitter,
+    });
     const routeRes = detectRouteEvents({
       telemetryEventEmitter,
       getGraphAndMapData,
@@ -118,12 +126,14 @@ export class SessionActorImpl implements SessionActor {
     });
 
     this.jobEventEmitter = jobRes.jobEventEmitter;
+    this.mapEventEmitter = mapRes.mapEventEmitter;
     this.routeEventEmitter = routeRes.routeEventEmitter;
     this.trailerEventEmitter = trailerRes.trailerEventEmitter;
     this.themeModeEventEmitter = themeModeRes.themeModeEventEmitter;
 
     this.readActiveRoute = routeRes.readActiveRoute;
     this.readJobState = jobRes.readJobState;
+    this.readMapState = mapRes.readMapState;
     this.readRouteIndex = routeRes.readRouteIndex;
     this.readTelemetry = () => this.latestTelemetry.get();
     this.readTrailerState = trailerRes.readTrailerState;

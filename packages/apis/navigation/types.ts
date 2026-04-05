@@ -144,6 +144,10 @@ export type ActorEvent =
       data: GameState;
     }
   | {
+      type: 'mapUpdate';
+      data: 'usa' | 'europe';
+    }
+  | {
       type: 'routeUpdate';
       data: Route | undefined;
     }

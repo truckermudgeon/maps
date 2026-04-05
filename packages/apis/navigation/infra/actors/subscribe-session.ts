@@ -76,6 +76,12 @@ export function subscribeSession(
     resolve = null;
   };
 
+  const onMapUpdate = (data: 'usa' | 'europe') => {
+    queue.push({ type: 'mapUpdate', data });
+    resolve?.();
+    resolve = null;
+  };
+
   const onTrailerUpdate = (data: TrailerState | undefined) => {
     queue.push({ type: 'trailerUpdate', data });
     resolve?.();
@@ -102,6 +108,7 @@ export function subscribeSession(
     actor.routeEventEmitter.off('progress', onRouteProgress);
     actor.routeEventEmitter.off('segmentComplete', onSegmentComplete);
     actor.jobEventEmitter.off('update', onJobUpdate);
+    actor.mapEventEmitter.off('update', onMapUpdate);
     actor.trailerEventEmitter.off('update', onTrailerUpdate);
     actor.themeModeEventEmitter.off('update', onThemeModeUpdate);
     offLatest();
@@ -112,6 +119,7 @@ export function subscribeSession(
     actor.routeEventEmitter.on('progress', onRouteProgress);
     actor.routeEventEmitter.on('segmentComplete', onSegmentComplete);
     actor.jobEventEmitter.on('update', onJobUpdate);
+    actor.mapEventEmitter.on('update', onMapUpdate);
     actor.trailerEventEmitter.on('update', onTrailerUpdate);
     actor.themeModeEventEmitter.on('update', onThemeModeUpdate);
 
@@ -127,6 +135,9 @@ export function subscribeSession(
     queue.push({ type: 'themeModeUpdate', data: actor.readThemeMode() });
     queue.push({ type: 'jobUpdate', data: actor.readJobState() });
     queue.push({ type: 'trailerUpdate', data: actor.readTrailerState() });
+    if (actor.gameContext != null) {
+      queue.push({ type: 'mapUpdate', data: actor.gameContext.map });
+    }
 
     const rwl = actor.readActiveRoute();
     if (rwl == null) {
