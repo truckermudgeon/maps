@@ -404,8 +404,8 @@ function aNodeWith({
     forwardItemUid,
     x,
     y,
-    backwardCountryId: 0,
-    forwardCountryId: 0,
+    backwardCountryId: 1,
+    forwardCountryId: 1,
     rotation: 0,
     rotationQuat: [0, 0, 0, 0],
     z: 0,
@@ -520,7 +520,7 @@ function createFakeMapData(arrays: PartialMapData): MappedData<'usa'> {
   };
   const country: Country = {
     code: 'CO',
-    id: 0,
+    id: 1,
     name: 'Country',
     nameLocalized: 'Country',
     token: 'country',
