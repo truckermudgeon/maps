@@ -3,6 +3,8 @@ import { distance } from '@truckermudgeon/base/geom';
 import { putIfAbsent } from '@truckermudgeon/base/map';
 import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
 import {
+  AtsScsSourceToDlcGuard,
+  Ets2ScsSourceToDlcGuard,
   ItemType,
   MapOverlayType,
   SpawnPointType,
@@ -81,8 +83,9 @@ export function parseMapFiles(
       return requiredFiles.has(fn) || (includeDlc && fn.startsWith('dlc'));
     })
     .map(p => {
-      logger.log('adding', path.basename(p));
-      return new ScsArchive(p);
+      const scsSource = path.basename(p);
+      logger.log('adding', scsSource);
+      return new ScsArchive(p, scsSource);
     });
   const entries = new CombinedEntries(archives);
   try {
@@ -130,6 +133,7 @@ function parseSectorFiles(entries: Entries): {
     throw new Error();
   }
   const map = mbds[0].replace(/\.mbd$/, '');
+  assert(map === 'usa' || map === 'europe');
   const sectorRoot = Preconditions.checkExists(
     entries.directories.get(`map/${map}`),
   );
@@ -167,7 +171,11 @@ function parseSectorFiles(entries: Entries): {
     const sector = putIfAbsent(sectorKey, { items: [], nodes: [] }, sectors);
     const baseFile = assertExists(entries.files.get(`map/${map}/${f}`));
     const parsedSector = parseSector(baseFile.read(), seenNodeUids);
-    sector.items = sector.items.concat(parsedSector.items);
+    sector.items = sector.items.concat(
+      parsedSector.items.map(item =>
+        withDlcGuard(item, map, baseFile.scsSource),
+      ),
+    );
     for (const node of parsedSector.nodes) {
       if (seenNodeUids.has(node.uid)) {
         continue;
@@ -177,6 +185,12 @@ function parseSectorFiles(entries: Entries): {
     }
     bar.increment({ filename: f });
   }
+
+  if (unknownScsSources.size) {
+    logger.warn('encountered unknown .scs files containing map data', [
+      ...unknownScsSources,
+    ]);
+  }
   logger.success(
     'parsed',
     baseFiles.length,
@@ -185,11 +199,48 @@ function parseSectorFiles(entries: Entries): {
     'seconds',
   );
 
-  assert(map === 'usa' || map === 'europe');
   return {
     map,
     sectors,
   };
+}
+
+type ParsedSectorItem = ReturnType<typeof parseSector>['items'][0];
+
+const unknownScsSources = new Set<string>();
+
+function withDlcGuard(
+  item: ParsedSectorItem,
+  map: 'usa' | 'europe',
+  scsSource: string,
+): ParsedSectorItem {
+  let dlcGuard: number;
+  switch (map) {
+    case 'usa':
+      if (scsSource in AtsScsSourceToDlcGuard) {
+        dlcGuard = AtsScsSourceToDlcGuard[scsSource];
+      } else {
+        unknownScsSources.add(scsSource);
+        return item;
+      }
+      break;
+    case 'europe':
+      if (scsSource in Ets2ScsSourceToDlcGuard) {
+        dlcGuard = Ets2ScsSourceToDlcGuard[scsSource];
+      } else {
+        unknownScsSources.add(scsSource);
+        return item;
+      }
+      break;
+    default:
+      throw new UnreachableError(map);
+  }
+
+  if ('dlcGuard' in item && item.dlcGuard === 0) {
+    (item as { dlcGuard: number }).dlcGuard = dlcGuard;
+  }
+
+  return item;
 }
 
 function parseLocaleFiles(entries: Entries): Map<string, Map<string, string>> {

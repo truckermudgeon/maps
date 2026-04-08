@@ -143,7 +143,7 @@ export function normalizeDlcGuards<T extends DlcGuardMappedData>(
       }
       return equivDlcGuard;
     } else {
-      return 0;
+      return dlcGuard;
     }
   };
 
