@@ -8,7 +8,10 @@ import {
 } from '@mui/joy';
 import { assertExists } from '@truckermudgeon/base/assert';
 import { distance } from '@truckermudgeon/base/geom';
-import { AtsSelectableDlcs } from '@truckermudgeon/map/constants';
+import {
+  AtsSelectableDlcs,
+  Ets2SelectableDlcs,
+} from '@truckermudgeon/map/constants';
 import type {
   PhotoSphereProperties,
   StreetViewProperties,
@@ -129,6 +132,9 @@ const Demo = (props: {
   const [visibleAtsDlcs, setVisibleAtsDlcs] = useState(
     new Set(AtsSelectableDlcs),
   );
+  const [visibleEts2Dlcs, setVisibleEts2Dlcs] = useState(
+    new Set(Ets2SelectableDlcs),
+  );
   const visibleStates = toStateCodes(visibleAtsDlcs);
 
   const iconsListProps = createListProps(
@@ -141,6 +147,12 @@ const Demo = (props: {
     visibleAtsDlcs,
     setVisibleAtsDlcs,
     AtsSelectableDlcs,
+  );
+
+  const ets2DlcsListProps = createListProps(
+    visibleEts2Dlcs,
+    setVisibleEts2Dlcs,
+    Ets2SelectableDlcs,
   );
 
   const [showContours, setShowContours] = useState(false);
@@ -476,6 +488,7 @@ const Demo = (props: {
         enableIconAutoHide={autoHide}
         visibleIcons={visibleIcons}
         showSecrets={showSecrets}
+        dlcs={visibleEts2Dlcs}
       >
         {visibleIcons.has(MapIcon.CityNames) && (
           <SceneryTownSource
@@ -553,6 +566,7 @@ const Demo = (props: {
           onContoursToggle: setShowContours,
         }}
         atsDlcs={atsDlcsListProps}
+        ets2Dlcs={ets2DlcsListProps}
       />
       {panoramaPreview && (
         <Popup

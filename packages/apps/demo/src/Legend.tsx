@@ -23,8 +23,11 @@ import {
   Typography,
 } from '@mui/joy';
 import { assertExists } from '@truckermudgeon/base/assert';
-import type { AtsSelectableDlc } from '@truckermudgeon/map/constants';
-import { AtsDlcInfo } from '@truckermudgeon/map/constants';
+import type {
+  AtsSelectableDlc,
+  Ets2SelectableDlc,
+} from '@truckermudgeon/map/constants';
+import { AtsDlcInfo, Ets2DlcInfo } from '@truckermudgeon/map/constants';
 import type { SecretDisplay } from '@truckermudgeon/ui';
 import { MapIcon } from '@truckermudgeon/ui';
 import type { ReactElement } from 'react';
@@ -73,6 +76,10 @@ const atsDlcs = new Map<AtsSelectableDlc, string>(
   Object.entries(AtsDlcInfo).map(([k, v]) => [Number(k), v]),
 );
 
+const ets2Dlcs = new Map<Ets2SelectableDlc, string>(
+  Object.entries(Ets2DlcInfo).map(([k, v]) => [Number(k), v]),
+);
+
 export interface ListProps<T> {
   selectedItems: ReadonlySet<T>;
   allItems: ReadonlySet<T>;
@@ -110,6 +117,7 @@ export interface LegendProps {
   };
   advanced: AdvancedOptionsProps;
   atsDlcs: ListProps<AtsSelectableDlc>;
+  ets2Dlcs: ListProps<Ets2SelectableDlc>;
 }
 export const Legend = (props: LegendProps) => {
   const ref = useRef<HTMLDivElement>(null);
@@ -180,6 +188,7 @@ export const Legend = (props: LegendProps) => {
             <TabList tabFlex={1} sx={{ borderRadius: 0 }}>
               <Tab>Icons</Tab>
               <Tab>ATS DLC</Tab>
+              <Tab>ETS2 DLC</Tab>
               <Tab>Advanced</Tab>
             </TabList>
           </Tabs>
@@ -209,6 +218,13 @@ export const Legend = (props: LegendProps) => {
                 />
               </TabPanel>
               <TabPanel sx={{ p: 0 }} value={2}>
+                <CheckList
+                  items={ets2Dlcs}
+                  selectedItems={props.ets2Dlcs.selectedItems}
+                  onItemToggle={props.ets2Dlcs.onItemToggle}
+                />
+              </TabPanel>
+              <TabPanel sx={{ p: 0 }} value={3}>
                 <AdvancedOptions
                   showSecrets={props.advanced.showSecrets}
                   onSecretsChange={props.advanced.onSecretsChange}
@@ -233,6 +249,14 @@ export const Legend = (props: LegendProps) => {
                 props.atsDlcs.selectedItems.size === atsDlcs.size
               }
               onSelectAllToggle={props.atsDlcs.onSelectAllToggle}
+            />
+          )}
+          {activeTab === 2 && (
+            <DlcFooter
+              enableSelectAll={
+                props.ets2Dlcs.selectedItems.size === ets2Dlcs.size
+              }
+              onSelectAllToggle={props.ets2Dlcs.onSelectAllToggle}
             />
           )}
         </Sheet>

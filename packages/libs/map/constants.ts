@@ -245,6 +245,21 @@ export const Ets2SelectableDlcs: ReadonlySet<Ets2SelectableDlc> = new Set([
   Ets2Dlc.Feldbinder,
 ]);
 
+export const Ets2DlcInfo: Record<Ets2SelectableDlc, string> = {
+  [Ets2Dlc.GoingEast]: 'Going East!',
+  [Ets2Dlc.Scandinavia]: 'Scandinavia',
+  [Ets2Dlc.ViveLaFrance]: 'Vive la France!',
+  [Ets2Dlc.Italia]: 'Italia',
+  [Ets2Dlc.BeyondTheBalticSea]: 'Beyond the Baltic Sea',
+  [Ets2Dlc.RoadToTheBlackSea]: 'Road to the Black Sea',
+  [Ets2Dlc.Iberia]: 'Iberia',
+  [Ets2Dlc.WestBalkans]: 'West Balkans',
+  [Ets2Dlc.Greece]: 'Greece',
+  [Ets2Dlc.NordicHorizons]: 'Nordic Horizons',
+  [Ets2Dlc.Krone]: 'Krone Trailer Pack',
+  [Ets2Dlc.Feldbinder]: 'Feldbinder Trailer Pack',
+};
+
 export type Ets2DlcGuard = Range<0, 26>;
 
 export const Ets2DlcGuards: Record<number, ReadonlySet<Ets2SelectableDlc>> = {
