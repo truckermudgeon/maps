@@ -683,16 +683,16 @@ export function convertToMapGeoJson(
  */
 function withDlcGuard<T extends CityFeature | PoiFeature | ExitFeature>(
   feature: T,
-  dlcQuadTree: Quadtree<{ x: number; y: number; dlcGuard: number }> | undefined,
+  dlcQuadTree: Quadtree<{ x: number; y: number; dlcGuard: number }>,
 ): T {
-  if (dlcQuadTree == null) {
-    return feature;
-  }
   if (
     'dlcGuard' in feature.properties &&
     feature.properties.dlcGuard != null &&
     feature.properties.dlcGuard !== 0
   ) {
+    // TODO assert that the quad tree would return feature.properties.dlcGuard.
+    //  test it on ATS and ETS2 data. if no assertions fail, remove this entire
+    //  if statement.
     return feature;
   }
 

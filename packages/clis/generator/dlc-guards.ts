@@ -1,12 +1,12 @@
 import { assertExists } from '@truckermudgeon/base/assert';
 import { putIfAbsent } from '@truckermudgeon/base/map';
-import { Preconditions } from '@truckermudgeon/base/precon';
+import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
 import type { MapDataKeys, MappedDataForKeys } from '@truckermudgeon/io';
 import {
   AtsCountryIdToDlcGuard,
   AtsDlcGuards,
+  Ets2DlcGuards,
   type AtsCountryId,
-  type AtsDlcGuard,
 } from '@truckermudgeon/map/constants';
 import type { Node } from '@truckermudgeon/map/types';
 import type { Quadtree } from 'd3-quadtree';
@@ -48,13 +48,7 @@ export type DlcGuardMappedData = MappedDataForKeys<typeof dlcGuardMapDataKeys>;
  */
 export function normalizeDlcGuards<T extends DlcGuardMappedData>(
   tsMapData: T,
-): T & { dlcGuardQuadTree?: DlcGuardQuadTree } {
-  const { map } = tsMapData;
-  if (map === 'europe') {
-    logger.error('ets2 dlc guard normalization is not yet supported.');
-    return tsMapData;
-  }
-
+): T & { dlcGuardQuadTree: DlcGuardQuadTree } {
   const nodes = new Map(tsMapData.nodes);
   const roads = new Map(tsMapData.roads);
   const prefabs = new Map(tsMapData.prefabs);
@@ -62,20 +56,33 @@ export function normalizeDlcGuards<T extends DlcGuardMappedData>(
   const triggers = new Map(tsMapData.triggers);
   const cutscenes = new Map(tsMapData.cutscenes);
   const pois = new Array(...tsMapData.pois);
+  let dlcGuards: Record<number, unknown>;
+  switch (tsMapData.map) {
+    case 'usa':
+      dlcGuards = AtsDlcGuards;
+      break;
+    case 'europe':
+      dlcGuards = Ets2DlcGuards;
+      break;
+    default:
+      throw new UnreachableError(tsMapData.map);
+  }
 
   const dlcGuardQuadTree: DlcGuardQuadTree = quadtree<QtDlcGuardEntry>()
     .x(e => e.x)
     .y(e => e.y);
   const unknownDlcGuards = new Set<number>();
 
-  // returns a normalized dlc guard, or undefined if dlcGuard cannot / should
-  // not be normalized.
+  // returns a normalized dlc guard (i.e., a guard value where `0` means "base
+  // map content") for the given `nodeUids`, or `undefined` if dlcGuard
+  // cannot / should not be normalized.
+  // TODO uhhhhh... wat. this needs to be re-examined.
   const normalizeDlcGuard = (
     dlcGuard: number,
     nodeUids: readonly bigint[],
   ): number | undefined => {
     Preconditions.checkArgument(nodeUids.length > 0);
-    if (AtsDlcGuards[dlcGuard as AtsDlcGuard] == null) {
+    if (dlcGuards[dlcGuard] == null) {
       unknownDlcGuards.add(dlcGuard);
       return;
     }
@@ -96,44 +103,48 @@ export function normalizeDlcGuards<T extends DlcGuardMappedData>(
       return;
     }
 
-    // Map of country ids to number of occurrences
-    const countryIdCounts = new Map<number, number>();
+    if (tsMapData.map === 'usa') {
+      // Map of country ids to number of occurrences
+      const countryIdCounts = new Map<number, number>();
 
-    // count non-zero country ids for corresponding nodes
-    for (const cid of nodeUids.flatMap(nid => getCountryIds(nid, nodes))) {
-      const curCount = putIfAbsent(cid, 0, countryIdCounts);
-      countryIdCounts.set(cid, curCount + 1);
-    }
+      // count non-zero country ids for corresponding nodes
+      for (const cid of nodeUids.flatMap(nid => getCountryIds(nid, nodes))) {
+        const curCount = putIfAbsent(cid, 0, countryIdCounts);
+        countryIdCounts.set(cid, curCount + 1);
+      }
 
-    // find the most frequently ref'd country id
-    const mostReferencedEntries = [...countryIdCounts.entries()].sort(
-      ([, av], [, bv]) => bv - av,
-    );
-    if (mostReferencedEntries.length === 0) {
-      // no non-zero country IDs. Fallback to the dlc guard associated with the
-      // closest node.
-      const node = assertExists(nodes.get(nodeUids[0]));
-      const closestNode = dlcGuardQuadTree.find(node.x, node.y);
-      return closestNode?.dlcGuard;
-    }
+      // find the most frequently ref'd country id
+      const mostReferencedEntries = [...countryIdCounts.entries()].sort(
+        ([, av], [, bv]) => bv - av,
+      );
+      if (mostReferencedEntries.length === 0) {
+        // no non-zero country IDs. Fallback to the dlc guard associated with the
+        // closest node.
+        const node = assertExists(nodes.get(nodeUids[0]));
+        const closestNode = dlcGuardQuadTree.find(node.x, node.y);
+        return closestNode?.dlcGuard;
+      }
 
-    const countryId = mostReferencedEntries[0][0];
-    const equivDlcGuard = AtsCountryIdToDlcGuard[countryId as AtsCountryId];
-    if (equivDlcGuard == null) {
-      // no matching dlc guard for country id
-      logger.warn('unknown country id', countryId);
-      return;
-    }
+      const countryId = mostReferencedEntries[0][0];
+      const equivDlcGuard = AtsCountryIdToDlcGuard[countryId as AtsCountryId];
+      if (equivDlcGuard == null) {
+        // no matching dlc guard for country id
+        logger.warn('unknown country id', countryId);
+        return;
+      }
 
-    for (const nid of nodeUids) {
-      const node = assertExists(nodes.get(nid));
-      dlcGuardQuadTree.add({
-        x: node.x,
-        y: node.y,
-        dlcGuard: equivDlcGuard,
-      });
+      for (const nid of nodeUids) {
+        const node = assertExists(nodes.get(nid));
+        dlcGuardQuadTree.add({
+          x: node.x,
+          y: node.y,
+          dlcGuard: equivDlcGuard,
+        });
+      }
+      return equivDlcGuard;
+    } else {
+      return 0;
     }
-    return equivDlcGuard;
   };
 
   const updateMap = <T extends { dlcGuard: number }>(
@@ -172,7 +183,7 @@ export function normalizeDlcGuards<T extends DlcGuardMappedData>(
     }
   }
 
-  logger.warn('Unknown ATS dlc guards', unknownDlcGuards);
+  logger.warn('Unknown', tsMapData.map, 'dlc guards', unknownDlcGuards);
   return {
     ...tsMapData,
     nodes,

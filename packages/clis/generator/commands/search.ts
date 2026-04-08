@@ -17,7 +17,6 @@ import type {
   SearchProperties,
 } from '@truckermudgeon/map/types';
 import { featureCollection, point } from '@turf/helpers';
-import { quadtree } from 'd3-quadtree';
 import fs from 'fs';
 import type { GeoJSON } from 'geojson';
 import path from 'path';
@@ -110,29 +109,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
       mapDataKeys: searchMapDataKeys,
     }),
   );
-
-  let dlcGuardQuadTree: DlcGuardQuadTree;
-  if (args.map === 'usa') {
-    dlcGuardQuadTree = assertExists(tsMapData.dlcGuardQuadTree);
-  } else if (args.map === 'europe') {
-    // HACK until europe is properly supported in dlc-guard normalization.
-    dlcGuardQuadTree = quadtree<{
-      x: number;
-      y: number;
-      dlcGuard: number;
-    }>()
-      .x(e => e.x)
-      .y(e => e.y);
-    // N.B.: this datum must be added separately: it cannot be added as part of
-    // the ctor call :(
-    dlcGuardQuadTree.add({
-      x: 0,
-      y: 0,
-      dlcGuard: 0,
-    });
-  } else {
-    throw new UnreachableError(args.map);
-  }
+  const dlcGuardQuadTree = tsMapData.dlcGuardQuadTree;
 
   let sceneryTowns: ExtraLabelsGeoJSON;
   switch (args.map) {
