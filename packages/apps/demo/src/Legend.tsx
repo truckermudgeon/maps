@@ -115,9 +115,8 @@ export interface LegendProps {
     enableAutoHiding: boolean;
     onAutoHidingToggle: (newValue: boolean) => void;
   };
+  dlcs: ListProps<number> & { map: 'usa' | 'europe' };
   advanced: AdvancedOptionsProps;
-  atsDlcs: ListProps<AtsSelectableDlc>;
-  ets2Dlcs: ListProps<Ets2SelectableDlc>;
 }
 export const Legend = (props: LegendProps) => {
   const ref = useRef<HTMLDivElement>(null);
@@ -187,8 +186,7 @@ export const Legend = (props: LegendProps) => {
           <Tabs onChange={(_, value) => setActiveTab(Number(value))}>
             <TabList tabFlex={1} sx={{ borderRadius: 0 }}>
               <Tab>Icons</Tab>
-              <Tab>ATS DLC</Tab>
-              <Tab>ETS2 DLC</Tab>
+              <Tab>DLC</Tab>
               <Tab>Advanced</Tab>
             </TabList>
           </Tabs>
@@ -212,19 +210,12 @@ export const Legend = (props: LegendProps) => {
               </TabPanel>
               <TabPanel sx={{ p: 0 }} value={1}>
                 <CheckList
-                  items={atsDlcs}
-                  selectedItems={props.atsDlcs.selectedItems}
-                  onItemToggle={props.atsDlcs.onItemToggle}
+                  items={props.dlcs.map === 'usa' ? atsDlcs : ets2Dlcs}
+                  selectedItems={props.dlcs.selectedItems}
+                  onItemToggle={props.dlcs.onItemToggle}
                 />
               </TabPanel>
               <TabPanel sx={{ p: 0 }} value={2}>
-                <CheckList
-                  items={ets2Dlcs}
-                  selectedItems={props.ets2Dlcs.selectedItems}
-                  onItemToggle={props.ets2Dlcs.onItemToggle}
-                />
-              </TabPanel>
-              <TabPanel sx={{ p: 0 }} value={3}>
                 <AdvancedOptions
                   showSecrets={props.advanced.showSecrets}
                   onSecretsChange={props.advanced.onSecretsChange}
@@ -246,17 +237,9 @@ export const Legend = (props: LegendProps) => {
           {activeTab === 1 && (
             <DlcFooter
               enableSelectAll={
-                props.atsDlcs.selectedItems.size === atsDlcs.size
+                props.dlcs.selectedItems.size === props.dlcs.allItems.size
               }
-              onSelectAllToggle={props.atsDlcs.onSelectAllToggle}
-            />
-          )}
-          {activeTab === 2 && (
-            <DlcFooter
-              enableSelectAll={
-                props.ets2Dlcs.selectedItems.size === ets2Dlcs.size
-              }
-              onSelectAllToggle={props.ets2Dlcs.onSelectAllToggle}
+              onSelectAllToggle={props.dlcs.onSelectAllToggle}
             />
           )}
         </Sheet>

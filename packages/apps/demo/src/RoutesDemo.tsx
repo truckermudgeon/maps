@@ -11,7 +11,6 @@ import { getExtent } from '@truckermudgeon/base/geom';
 import type { AtsDlcGuard } from '@truckermudgeon/map/constants';
 import {
   AtsSelectableDlcs,
-  Ets2SelectableDlcs,
   toAtsDlcGuards,
   type AtsSelectableDlc,
 } from '@truckermudgeon/map/constants';
@@ -58,9 +57,6 @@ const RoutesDemo = (props: { tileRootUrl: string }) => {
   const [visibleAtsDlcs, setVisibleAtsDlcs] = useState(
     new Set(AtsSelectableDlcs),
   );
-  const [visibleEts2Dlcs, setVisibleEts2Dlcs] = useState(
-    new Set(Ets2SelectableDlcs),
-  );
   const visibleStates = toStateCodes(visibleAtsDlcs);
 
   const iconsListProps = createListProps(
@@ -69,17 +65,10 @@ const RoutesDemo = (props: { tileRootUrl: string }) => {
     atsIcons,
   );
 
-  const atsDlcsListProps = createListProps(
-    visibleAtsDlcs,
-    setVisibleAtsDlcs,
-    AtsSelectableDlcs,
-  );
-
-  const ets2DlcsListProps = createListProps(
-    visibleEts2Dlcs,
-    setVisibleEts2Dlcs,
-    Ets2SelectableDlcs,
-  );
+  const atsDlcsListProps = {
+    map: 'usa' as const,
+    ...createListProps(visibleAtsDlcs, setVisibleAtsDlcs, AtsSelectableDlcs),
+  };
 
   const [showSecrets, setShowSecrets] = useState<SecretDisplay>('showAsNormal'); // TODO localstorage
   const [showContours, setShowContours] = useState(false);
@@ -174,8 +163,7 @@ const RoutesDemo = (props: { tileRootUrl: string }) => {
           showContours,
           onContoursToggle: setShowContours,
         }}
-        atsDlcs={atsDlcsListProps}
-        ets2Dlcs={ets2DlcsListProps}
+        dlcs={atsDlcsListProps}
       />
     </MapGl>
   );
