@@ -15,6 +15,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
+    units: 'imperial',
     routes: Array.from({ length: 3 }, (_, i) => ({
       ...(i % 2 === 1 ? RouteDefault.args.route : RouteWithSummary.args.route),
       id: `route-${i}`,

@@ -15,6 +15,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
+    units: 'imperial',
     route: {
       id: 'route-id',
       segments: [

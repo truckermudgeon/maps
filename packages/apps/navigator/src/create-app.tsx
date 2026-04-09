@@ -23,7 +23,11 @@ import { RouteStack } from './components/RouteStack';
 import { SegmentCompleteToast } from './components/SegmentCompleteToast';
 import { SlippyMap } from './components/SlippyMap';
 import { SpriteProvider } from './components/SpriteProvider';
-import { toLengthAndUnit } from './components/text';
+import {
+  defaultImperialOptions,
+  defaultMetricOptions,
+  toLengthAndUnit,
+} from './components/text';
 import { TrailerOrWaypointMarkers } from './components/TrailerOrWaypointMarkers';
 import { WaitingForTelemetry } from './components/WaitingForTelemetry';
 import {
@@ -364,7 +368,10 @@ export function createApp({
   });
 
   const lengthAndUnitToNextManeuver = computed(() =>
-    toLengthAndUnit(store.distanceToNextManeuver),
+    toLengthAndUnit(
+      store.distanceToNextManeuver,
+      store.map === 'usa' ? defaultImperialOptions : defaultMetricOptions,
+    ),
   );
   const _Directions = observer(() => {
     // TODO move all this to a separate component file.
@@ -459,6 +466,7 @@ export function createApp({
       minutes: store.activeRouteToFirstWayPointSummary?.minutes ?? 0,
       distance: toLengthAndUnit(
         store.activeRouteToFirstWayPointSummary?.distanceMeters ?? 0,
+        store.map === 'usa' ? defaultImperialOptions : defaultMetricOptions,
       ),
     }),
     { equals: comparer.structural },

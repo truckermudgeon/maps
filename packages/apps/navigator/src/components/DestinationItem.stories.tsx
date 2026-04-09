@@ -15,6 +15,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Selected: Story = {
   args: {
+    units: 'imperial',
     destination: {
       ...aSearchResultWith({
         type: 'serviceArea',

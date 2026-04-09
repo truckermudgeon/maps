@@ -6,55 +6,93 @@ import type {
   StepManeuver,
 } from '@truckermudgeon/navigation/types';
 
+export const defaultImperialOptions = {
+  units: 'imperial',
+  abbreviateUnits: true,
+  forceSingular: false,
+} as const;
+
+export const defaultMetricOptions = {
+  units: 'metric',
+  abbreviateUnits: true,
+  forceSingular: false,
+} as const;
+
 export function toLengthAndUnit(
   meters: number,
   options: {
     abbreviateUnits: boolean;
     units: 'metric' | 'imperial';
     forceSingular: boolean;
-  } = {
-    abbreviateUnits: true,
-    units: 'imperial',
-    forceSingular: false,
   },
 ): {
   length: number;
   unit: string;
   string: string;
 } {
+  let raw: { length: number; unit: string };
   const { abbreviateUnits, units, forceSingular } = options;
   if (units === 'metric') {
-    throw new Error('metric units currently unsupported');
+    meters = Math.round(meters);
+    if (meters <= 100) {
+      const length = Math.round(Number(meters.toPrecision(1)) / 10) * 10;
+      const singular = forceSingular || length === 1;
+      raw = {
+        length,
+        unit: abbreviateUnits ? 'm' : singular ? 'meter' : 'meters',
+      };
+    } else if (meters <= 200) {
+      const length = Number(meters.toPrecision(2));
+      raw = {
+        length,
+        unit: abbreviateUnits ? 'm' : forceSingular ? 'meter' : 'meters',
+      };
+    } else if (meters <= 1000) {
+      const length = Number((Math.round(meters / 50) * 50).toPrecision(2));
+      raw = {
+        length,
+        unit: abbreviateUnits ? 'm' : forceSingular ? 'meter' : 'meters',
+      };
+    } else {
+      raw = {
+        length: Math.round(meters / 1000),
+        unit: abbreviateUnits
+          ? 'km'
+          : forceSingular
+            ? 'kilometer'
+            : 'kilometers',
+      };
+    }
+  } else {
+    const miles = meters * 0.0006213712;
+    if (miles <= 0.1) {
+      const feet = Math.max(1, meters * 3.28084);
+      const length = Math.round(feet / 50) * 50;
+      const singular = forceSingular || length === 1;
+      raw = {
+        length,
+        unit: abbreviateUnits ? 'ft' : singular ? 'foot' : 'feet',
+      };
+    } else if (miles <= 1) {
+      const length = Number(miles.toPrecision(1));
+      const singular = forceSingular || length === 1;
+      raw = {
+        length,
+        unit: abbreviateUnits ? 'mi' : singular ? 'mile' : 'miles',
+      };
+    } else if (miles <= 10) {
+      raw = {
+        length: Number(miles.toPrecision(2)),
+        unit: abbreviateUnits ? 'mi' : forceSingular ? 'mile' : 'miles',
+      };
+    } else {
+      raw = {
+        length: Math.round(miles),
+        unit: abbreviateUnits ? 'mi' : forceSingular ? 'mile' : 'miles',
+      };
+    }
   }
 
-  const miles = meters * 0.0006213712;
-  let raw;
-  if (miles <= 0.1) {
-    const feet = Math.max(1, meters * 3.28084);
-    const length = Math.round(feet / 50) * 50;
-    const singular = forceSingular || length === 1;
-    raw = {
-      length,
-      unit: abbreviateUnits ? 'ft' : singular ? 'foot' : 'feet',
-    };
-  } else if (miles <= 1) {
-    const length = Number(miles.toPrecision(1));
-    const singular = forceSingular || length === 1;
-    raw = {
-      length,
-      unit: abbreviateUnits ? 'mi' : singular ? 'mile' : 'miles',
-    };
-  } else if (miles <= 10) {
-    raw = {
-      length: Number(miles.toPrecision(2)),
-      unit: abbreviateUnits ? 'mi' : forceSingular ? 'mile' : 'miles',
-    };
-  } else {
-    raw = {
-      length: Math.round(miles),
-      unit: abbreviateUnits ? 'mi' : forceSingular ? 'mile' : 'miles',
-    };
-  }
   return {
     ...raw,
     string: `${raw.length.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${raw.unit}`,

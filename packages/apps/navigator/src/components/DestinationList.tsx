@@ -7,6 +7,7 @@ import type { ReactElement } from 'react';
 import { DestinationItem } from './DestinationItem';
 
 export const DestinationList = (props: {
+  units: 'imperial' | 'metric';
   destinations: SearchResultWithRelativeTruckInfo[];
   onDestinationHighlight: (dest: SearchResult) => void;
   CollapsibleButtonBar: (props: { destination: SearchResult }) => ReactElement;
@@ -17,6 +18,7 @@ export const DestinationList = (props: {
     <List size={'lg'}>
       {props.destinations.map((dest, index) => (
         <DestinationItem
+          units={props.units}
           key={dest.nodeUid}
           destination={dest}
           index={index}

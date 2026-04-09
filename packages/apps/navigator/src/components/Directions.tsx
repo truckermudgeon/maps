@@ -11,7 +11,11 @@ const bgColor = Color('hsl(151,82%,35%)');
 type DirectionsProps = Pick<
   StepManeuver,
   'direction' | 'banner' | 'laneHint' | 'thenHint'
-> & { length: number; unit: string; ref?: Ref<HTMLDivElement> };
+> & {
+  length: number;
+  unit: string;
+  ref?: Ref<HTMLDivElement>;
+};
 
 export const Directions = memo(
   forwardRef((props: DirectionsProps, ref: ForwardedRef<HTMLDivElement>) => {

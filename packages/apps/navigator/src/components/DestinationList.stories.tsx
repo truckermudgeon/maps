@@ -15,6 +15,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
+    units: 'imperial',
     destinations: [
       { ...Selected.args.destination, nodeUid: '1' },
       { ...Unselected.args.destination, nodeUid: '2' },
