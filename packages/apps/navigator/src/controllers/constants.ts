@@ -31,6 +31,8 @@ export const navSheetPagesRequiringMapVisibility = new Set<NavPageKey>([
   NavPageKey.CHOOSE_ON_MAP,
   NavPageKey.DESTINATIONS,
   NavPageKey.ROUTES,
+  NavPageKey.DIRECTIONS_FROM_ROUTE_CONTROLS,
+  NavPageKey.DIRECTIONS_FROM_ROUTES_LIST,
   NavPageKey.MANAGE_STOPS,
 ]);
 
