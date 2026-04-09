@@ -34,7 +34,11 @@ export function toGameState(telemetry: TruckSimTelemetry): GameState {
     angularVelocity: toXYZ(acceleration.angularVelocity),
     angularAccel: toXYZ(acceleration.angularAcceleration),
     // world stuff
-    speedLimit: telemetry.navigation.speedLimit.mph,
+    game: telemetry.game.game.name,
+    speedLimit: {
+      mph: telemetry.navigation.speedLimit.mph,
+      kph: telemetry.navigation.speedLimit.kph,
+    },
     scale: telemetry.game.scale,
   };
 }

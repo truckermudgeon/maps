@@ -201,7 +201,8 @@ export interface TelemetrySample {
 
 export interface GameState extends TelemetrySample {
   // world stuff
-  speedLimit: number;
+  game: 'ats' | 'ets2';
+  speedLimit: { mph: number; kph: number };
   scale: number;
 }
 

@@ -10,8 +10,9 @@ import type {
 
 export class ControlsStoreImpl implements ControlsStore {
   bearing = 0;
-  limitMph = 0;
-  speedMph = 0;
+  units = 'metric' as const;
+  limit = 0;
+  speed = 0;
 
   constructor(private readonly appStore: AppStore) {
     makeAutoObservable(this);
@@ -34,10 +35,17 @@ export class ControlsControllerImpl implements ControlsController {
   startListening(store: ControlsStore, appClient: AppClient, map: MapRef) {
     appClient.onPositionUpdate.subscribe(undefined, {
       onData: action(gameState => {
-        const { speed } = gameState;
-        const speedMph = Math.abs(Math.round(speed * 2.236936));
-        store.limitMph = gameState.speedLimit;
-        store.speedMph = speedMph;
+        const { game, speed } = gameState;
+        // TODO should use imperial if truck is in UK?
+        store.units = game === 'ats' ? 'imperial' : 'metric';
+
+        if (store.units === 'imperial') {
+          store.limit = gameState.speedLimit.mph;
+          store.speed = Math.abs(Math.round(speed * 2.236936));
+        } else {
+          store.limit = gameState.speedLimit.kph;
+          store.speed = Math.abs(Math.round(gameState.speed * 3.6));
+        }
       }),
     });
     map.on(

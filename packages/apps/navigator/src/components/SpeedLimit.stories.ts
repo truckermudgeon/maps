@@ -12,37 +12,46 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const MPHWith0Speed: Story = {
+export const MPH: Story = {
   args: {
-    limitMph: 50,
-    speedMph: 0,
+    units: 'imperial',
+    limit: 50,
+    speed: 0,
   },
 };
 
 export const MPHWithNormalSpeed: Story = {
   args: {
-    limitMph: 50,
-    speedMph: 50 * 0.95,
+    ...MPH.args,
+    speed: MPH.args.limit * 0.95,
   },
 };
 
 export const MPHWithFastSpeed: Story = {
   args: {
-    limitMph: 50,
-    speedMph: 50 * 1.1,
+    ...MPH.args,
+    speed: MPH.args.limit * 1.1,
   },
 };
 
 export const MPHWithLudicrousSpeed: Story = {
   args: {
-    limitMph: 50,
-    speedMph: 50 * 1.2,
+    ...MPH.args,
+    speed: MPH.args.limit * 1.2,
   },
 };
 
 export const KPH: Story = {
   args: {
-    limitKph: 50,
-    speedMph: 0,
+    units: 'metric',
+    limit: 80,
+    speed: 0,
+  },
+};
+
+export const KPHWithNormalSpeed: Story = {
+  args: {
+    ...KPH.args,
+    speed: KPH.args.limit * 0.8,
   },
 };
