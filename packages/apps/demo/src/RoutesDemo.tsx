@@ -65,11 +65,10 @@ const RoutesDemo = (props: { tileRootUrl: string }) => {
     atsIcons,
   );
 
-  const atsDlcsListProps = createListProps(
-    visibleAtsDlcs,
-    setVisibleAtsDlcs,
-    AtsSelectableDlcs,
-  );
+  const atsDlcsListProps = {
+    map: 'usa' as const,
+    ...createListProps(visibleAtsDlcs, setVisibleAtsDlcs, AtsSelectableDlcs),
+  };
 
   const [showSecrets, setShowSecrets] = useState<SecretDisplay>('showAsNormal'); // TODO localstorage
   const [showContours, setShowContours] = useState(false);
@@ -164,7 +163,7 @@ const RoutesDemo = (props: { tileRootUrl: string }) => {
           showContours,
           onContoursToggle: setShowContours,
         }}
-        atsDlcs={atsDlcsListProps}
+        dlcs={atsDlcsListProps}
       />
     </MapGl>
   );

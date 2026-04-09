@@ -8,7 +8,10 @@ import {
 } from '@mui/joy';
 import { assertExists } from '@truckermudgeon/base/assert';
 import { distance } from '@truckermudgeon/base/geom';
-import { AtsSelectableDlcs } from '@truckermudgeon/map/constants';
+import {
+  AtsSelectableDlcs,
+  Ets2SelectableDlcs,
+} from '@truckermudgeon/map/constants';
 import type {
   PhotoSphereProperties,
   StreetViewProperties,
@@ -44,6 +47,7 @@ import { useSearchParams } from 'react-router-dom';
 import { ContextMenu } from './ContextMenu';
 import './Demo.css';
 import { setupDevtools } from './dev-tools';
+import type { ListProps } from './Legend';
 import { createListProps, Legend } from './Legend';
 import { ModeControl } from './ModeControl';
 import { mapCenters, OmniBar } from './OmniBar';
@@ -129,6 +133,11 @@ const Demo = (props: {
   const [visibleAtsDlcs, setVisibleAtsDlcs] = useState(
     new Set(AtsSelectableDlcs),
   );
+  const [visibleEts2Dlcs, setVisibleEts2Dlcs] = useState(
+    new Set(Ets2SelectableDlcs),
+  );
+  // TODO do equivalent for ETS2. It won't work for countries spanning multiple
+  //  DLC, but it'll be good enough?
   const visibleStates = toStateCodes(visibleAtsDlcs);
 
   const iconsListProps = createListProps(
@@ -137,11 +146,24 @@ const Demo = (props: {
     gameIcons,
   );
 
-  const atsDlcsListProps = createListProps(
-    visibleAtsDlcs,
-    setVisibleAtsDlcs,
-    AtsSelectableDlcs,
-  );
+  const dlcListProps =
+    gameMap === 'usa'
+      ? {
+          map: 'usa' as const,
+          ...(createListProps(
+            visibleAtsDlcs,
+            setVisibleAtsDlcs,
+            AtsSelectableDlcs,
+          ) as ListProps<number>),
+        }
+      : {
+          map: 'europe' as const,
+          ...(createListProps(
+            visibleEts2Dlcs,
+            setVisibleEts2Dlcs,
+            Ets2SelectableDlcs,
+          ) as ListProps<number>),
+        };
 
   const [showContours, setShowContours] = useState(false);
 
@@ -476,6 +498,7 @@ const Demo = (props: {
         enableIconAutoHide={autoHide}
         visibleIcons={visibleIcons}
         showSecrets={showSecrets}
+        dlcs={visibleEts2Dlcs}
       >
         {visibleIcons.has(MapIcon.CityNames) && (
           <SceneryTownSource
@@ -552,7 +575,7 @@ const Demo = (props: {
           showContours,
           onContoursToggle: setShowContours,
         }}
-        atsDlcs={atsDlcsListProps}
+        dlcs={dlcListProps}
       />
       {panoramaPreview && (
         <Popup
