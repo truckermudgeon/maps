@@ -246,7 +246,7 @@ type ExtraLabelsGeoJSON = GeoJSON.FeatureCollection<
 function createSpatialIndices(
   tsMapData: MappedDataForKeys<['cities', 'countries', 'nodes']>,
   sceneryTowns: ExtraLabelsGeoJSON, // coordinates are in game coords
-): Pick<SearchIndices, 'cityRTree' | 'cityPointRTree' | 'nodePointRTree'> {
+): Pick<SearchIndices, 'cityRTree' | 'cityPointRTree' | 'countryPointRTree'> {
   const cityRTree = new RBush<
     BBox & {
       cityName: string;
@@ -307,8 +307,12 @@ function createSpatialIndices(
         }),
       ),
   );
-  const nodePointRTree = new PointRBush<{ x: number; y: number; node: Node }>();
-  nodePointRTree.load(
+  const countryPointRTree = new PointRBush<{
+    x: number;
+    y: number;
+    node: Node;
+  }>();
+  countryPointRTree.load(
     [...tsMapData.nodes.values()]
       .filter(
         n =>
@@ -325,7 +329,7 @@ function createSpatialIndices(
   return {
     cityRTree,
     cityPointRTree,
-    nodePointRTree,
+    countryPointRTree,
   };
 }
 

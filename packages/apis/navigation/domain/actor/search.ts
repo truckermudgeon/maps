@@ -125,8 +125,9 @@ export function toBaseProperties(
   node: Node,
   context: Omit<SearchIndices, 'searchDataLngLatRTreeJSON'>,
 ): Pick<SearchPoiProperties, 'dlcGuard' | 'stateName' | 'stateCode' | 'city'> {
-  const { nodePointRTree, cityRTree, cityPointRTree, countriesById } = context;
-  const closestNode = nodePointRTree.findClosest(node.x, node.y).node;
+  const { countryPointRTree, cityRTree, cityPointRTree, countriesById } =
+    context;
+  const closestNode = countryPointRTree.findClosest(node.x, node.y).node;
   const country =
     countriesById.get(closestNode.forwardCountryId) ??
     countriesById.get(closestNode.backwardCountryId);

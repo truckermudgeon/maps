@@ -78,11 +78,6 @@ export const graphMapDataKeys = [
 export type GraphMappedData = MappedDataForKeys<typeof graphMapDataKeys>;
 
 export interface SearchIndices {
-  nodePointRTree: PointRBush<{
-    x: number;
-    y: number;
-    node: Node;
-  }>;
   cityRTree: RBush<
     BBox & {
       cityName: string;
@@ -94,6 +89,11 @@ export interface SearchIndices {
     y: number;
     cityName: string;
     stateCode: string;
+  }>;
+  countryPointRTree: PointRBush<{
+    x: number;
+    y: number;
+    node: Node;
   }>;
   countriesById: ReadonlyMap<number, Country>;
   searchDataLngLatRTreeJSON: unknown; // JSON exported from a PointRBush<{x: number; y: number; searchResult: SearchResult}>
