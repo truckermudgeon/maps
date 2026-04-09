@@ -79,6 +79,12 @@ export function createApp({
     // HACK but reset destinations list right away, because we want to hide
     // markers right away.
     navSheetStore.destinations = [];
+    // HACK the reaction that's set up to draw step-arrows doesn't handle the
+    // case where there's no active route, buta preview-step arrow has been
+    // drawn. Handle it here.
+    if (!store.activeRoute) {
+      controller.drawStepArrow(undefined);
+    }
   });
   const _NavSheet = () => (
     <NavSheet
