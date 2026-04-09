@@ -83,6 +83,10 @@ export async function generateRouteFromKeys(
     maps.every(map => map === context.graphAndMapData.tsMapData.map),
     `all segment key maps must match context map '${context.graphAndMapData.tsMapData.map}'`,
   );
+  Preconditions.checkArgument(
+    maps[0] === context.graphAndMapData.tsMapData.map,
+    'segment keys must be for same map as context',
+  );
 
   const {
     graphAndMapData: {

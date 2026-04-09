@@ -23,8 +23,11 @@ import {
   Typography,
 } from '@mui/joy';
 import { assertExists } from '@truckermudgeon/base/assert';
-import type { AtsSelectableDlc } from '@truckermudgeon/map/constants';
-import { AtsDlcInfo } from '@truckermudgeon/map/constants';
+import type {
+  AtsSelectableDlc,
+  Ets2SelectableDlc,
+} from '@truckermudgeon/map/constants';
+import { AtsDlcInfo, Ets2DlcInfo } from '@truckermudgeon/map/constants';
 import type { SecretDisplay } from '@truckermudgeon/ui';
 import { MapIcon } from '@truckermudgeon/ui';
 import type { ReactElement } from 'react';
@@ -73,6 +76,10 @@ const atsDlcs = new Map<AtsSelectableDlc, string>(
   Object.entries(AtsDlcInfo).map(([k, v]) => [Number(k), v]),
 );
 
+const ets2Dlcs = new Map<Ets2SelectableDlc, string>(
+  Object.entries(Ets2DlcInfo).map(([k, v]) => [Number(k), v]),
+);
+
 export interface ListProps<T> {
   selectedItems: ReadonlySet<T>;
   allItems: ReadonlySet<T>;
@@ -108,8 +115,8 @@ export interface LegendProps {
     enableAutoHiding: boolean;
     onAutoHidingToggle: (newValue: boolean) => void;
   };
+  dlcs: ListProps<number> & { map: 'usa' | 'europe' };
   advanced: AdvancedOptionsProps;
-  atsDlcs: ListProps<AtsSelectableDlc>;
 }
 export const Legend = (props: LegendProps) => {
   const ref = useRef<HTMLDivElement>(null);
@@ -179,7 +186,7 @@ export const Legend = (props: LegendProps) => {
           <Tabs onChange={(_, value) => setActiveTab(Number(value))}>
             <TabList tabFlex={1} sx={{ borderRadius: 0 }}>
               <Tab>Icons</Tab>
-              <Tab>ATS DLC</Tab>
+              <Tab>DLC</Tab>
               <Tab>Advanced</Tab>
             </TabList>
           </Tabs>
@@ -203,9 +210,9 @@ export const Legend = (props: LegendProps) => {
               </TabPanel>
               <TabPanel sx={{ p: 0 }} value={1}>
                 <CheckList
-                  items={atsDlcs}
-                  selectedItems={props.atsDlcs.selectedItems}
-                  onItemToggle={props.atsDlcs.onItemToggle}
+                  items={props.dlcs.map === 'usa' ? atsDlcs : ets2Dlcs}
+                  selectedItems={props.dlcs.selectedItems}
+                  onItemToggle={props.dlcs.onItemToggle}
                 />
               </TabPanel>
               <TabPanel sx={{ p: 0 }} value={2}>
@@ -230,9 +237,9 @@ export const Legend = (props: LegendProps) => {
           {activeTab === 1 && (
             <DlcFooter
               enableSelectAll={
-                props.atsDlcs.selectedItems.size === atsDlcs.size
+                props.dlcs.selectedItems.size === props.dlcs.allItems.size
               }
-              onSelectAllToggle={props.atsDlcs.onSelectAllToggle}
+              onSelectAllToggle={props.dlcs.onSelectAllToggle}
             />
           )}
         </Sheet>

@@ -1110,8 +1110,6 @@ function createDlcGuardFilter(
     dlcGuards = toAtsDlcGuards(selectedDlcs as ReadonlySet<AtsSelectableDlc>);
   } else {
     dlcGuards = toEts2DlcGuards(selectedDlcs as ReadonlySet<Ets2SelectableDlc>);
-    // HACK temporary condition until `normalizeDlcGuards` supports ETS2
-    dlcGuards.add(null as unknown as Ets2SelectableDlc);
   }
 
   return ['in', ['get', 'dlcGuard'], ['literal', [...dlcGuards]]];

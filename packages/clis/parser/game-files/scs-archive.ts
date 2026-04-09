@@ -164,7 +164,10 @@ export class ScsArchive {
   private readonly header;
   private entries: Entries | undefined;
 
-  constructor(readonly path: string) {
+  constructor(
+    readonly path: string,
+    readonly scsSource: string,
+  ) {
     this.fd = fs.openSync(path, 'r');
 
     const buffer = Buffer.alloc(FileHeader.size());
@@ -205,7 +208,7 @@ export class ScsArchive {
     const directories: DirectoryEntry[] = [];
     const files: FileEntry[] = [];
     for (const header of entryHeaders) {
-      const entry = createEntry(this.fd, header, metadataMap);
+      const entry = createEntry(this.fd, header, this.scsSource, metadataMap);
       if (entry.type === 'directory') {
         directories.push(entry);
       } else {
@@ -329,10 +332,11 @@ interface EntryMetadata {
 function createEntry(
   fd: number,
   header: BaseOf<typeof EntryHeader>,
+  scsSource: string,
   metadataMap: Map<number, MetadataEntry>,
 ): DirectoryEntry | FileEntry {
   if (header.metadataCount === 3) {
-    return createTobjEntry(fd, header, metadataMap);
+    return createTobjEntry(fd, header, scsSource, metadataMap);
   }
 
   if (header.metadataCount === 2) {
@@ -375,13 +379,14 @@ function createEntry(
   };
 
   return metadata.isDirectory
-    ? new ScsArchiveDirectory(fd, metadata)
-    : new ScsArchiveFile(fd, metadata);
+    ? new ScsArchiveDirectory(fd, metadata, scsSource)
+    : new ScsArchiveFile(fd, metadata, scsSource);
 }
 
 function createTobjEntry(
   fd: number,
   header: BaseOf<typeof EntryHeader>,
+  scsSource: string,
   metadataMap: Map<number, MetadataEntry>,
 ): FileEntry {
   Preconditions.checkArgument(
@@ -413,6 +418,7 @@ function createTobjEntry(
       compression: plainMeta.packedCompressionInfo.compression,
       isDirectory: header.flags.isDirectory,
     },
+    scsSource,
     imageMeta,
   );
 }
@@ -420,6 +426,7 @@ function createTobjEntry(
 export interface FileEntry {
   readonly type: 'file';
   readonly hash: bigint;
+  readonly scsSource: string;
 
   read(): Buffer;
 }
@@ -427,6 +434,7 @@ export interface FileEntry {
 export interface DirectoryEntry {
   readonly type: 'directory';
   readonly hash: bigint;
+  readonly scsSource: string;
   readonly subdirectories: readonly string[];
   readonly files: readonly string[];
 }
@@ -445,6 +453,7 @@ abstract class ScsArchiveEntry {
   protected constructor(
     protected readonly fd: number,
     protected readonly metadata: EntryMetadata,
+    readonly scsSource: string,
   ) {}
 
   get hash(): bigint {
@@ -508,8 +517,8 @@ abstract class ScsArchiveEntry {
 class ScsArchiveFile extends ScsArchiveEntry implements FileEntry {
   readonly type = 'file';
 
-  constructor(fd: number, metadata: EntryMetadata) {
-    super(fd, metadata);
+  constructor(fd: number, metadata: EntryMetadata, scsSource: string) {
+    super(fd, metadata, scsSource);
   }
 }
 
@@ -517,9 +526,10 @@ class ScsArchiveTobjFile extends ScsArchiveFile {
   constructor(
     fd: number,
     metadata: EntryMetadata,
+    scsSource: string,
     private readonly imageMetadata: BaseOf<typeof ImageMeta>,
   ) {
-    super(fd, metadata);
+    super(fd, metadata, scsSource);
   }
 
   override read() {
@@ -618,8 +628,8 @@ class ScsArchiveDirectory extends ScsArchiveEntry implements DirectoryEntry {
   readonly subdirectories: readonly string[];
   readonly files: readonly string[];
 
-  constructor(fd: number, metadata: EntryMetadata) {
-    super(fd, metadata);
+  constructor(fd: number, metadata: EntryMetadata, scsSource: string) {
+    super(fd, metadata, scsSource);
 
     const reader = new r.DecodeStream(this.read());
     const numStrings = reader.readBuffer(4).readUInt32LE();

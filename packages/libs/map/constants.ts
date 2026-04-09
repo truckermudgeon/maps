@@ -177,6 +177,28 @@ for (const dlcGuard of Object.values(AtsCountryIdToDlcGuard)) {
   assert(AtsDlcGuards[dlcGuard].size === 1);
 }
 
+export const AtsScsSourceToDlcGuard: Record<string, AtsDlcGuard> = {
+  'base_map.scs': 0,
+  'dlc_nevada.scs': 1,
+  'dlc_arizona.scs': 2,
+  'dlc_co.scs': 13,
+  'dlc_id.scs': 9,
+  'dlc_nm.scs': 3,
+  'dlc_or.scs': 4,
+  'dlc_tx.scs': 20,
+  'dlc_ut.scs': 7,
+  'dlc_wa.scs': 5,
+  'dlc_ks.scs': 29,
+  'dlc_mt.scs': 22,
+  'dlc_ok.scs': 25,
+  'dlc_wy.scs': 16,
+  'dlc_ne.scs': 32,
+  'dlc_ar.scs': 36,
+  'dlc_mo.scs': 39,
+  'dlc_ia.scs': 44,
+  'dlc_la.scs': 47,
+};
+
 export function toAtsDlcGuards(
   selectedDlcs: ReadonlySet<AtsSelectableDlc>,
 ): Set<AtsDlcGuard> {
@@ -223,6 +245,21 @@ export const Ets2SelectableDlcs: ReadonlySet<Ets2SelectableDlc> = new Set([
   Ets2Dlc.Feldbinder,
 ]);
 
+export const Ets2DlcInfo: Record<Ets2SelectableDlc, string> = {
+  [Ets2Dlc.GoingEast]: 'Going East!',
+  [Ets2Dlc.Scandinavia]: 'Scandinavia',
+  [Ets2Dlc.ViveLaFrance]: 'Vive la France!',
+  [Ets2Dlc.Italia]: 'Italia',
+  [Ets2Dlc.BeyondTheBalticSea]: 'Beyond the Baltic Sea',
+  [Ets2Dlc.RoadToTheBlackSea]: 'Road to the Black Sea',
+  [Ets2Dlc.Iberia]: 'Iberia',
+  [Ets2Dlc.WestBalkans]: 'West Balkans',
+  [Ets2Dlc.Greece]: 'Greece',
+  [Ets2Dlc.NordicHorizons]: 'Nordic Horizons',
+  [Ets2Dlc.Krone]: 'Krone Trailer Pack',
+  [Ets2Dlc.Feldbinder]: 'Feldbinder Trailer Pack',
+};
+
 export type Ets2DlcGuard = Range<0, 26>;
 
 export const Ets2DlcGuards: Record<number, ReadonlySet<Ets2SelectableDlc>> = {
@@ -252,6 +289,20 @@ export const Ets2DlcGuards: Record<number, ReadonlySet<Ets2SelectableDlc>> = {
   23: new Set([Ets2Dlc.NordicHorizons]),
   24: new Set([Ets2Dlc.NordicHorizons, Ets2Dlc.BeyondTheBalticSea]),
   25: new Set([Ets2Dlc.NordicHorizons, Ets2Dlc.Scandinavia]),
+};
+
+export const Ets2ScsSourceToDlcGuard: Record<string, Ets2DlcGuard> = {
+  'base_map.scs': 0,
+  'dlc_east.scs': 1,
+  'dlc_north.scs': 2,
+  'dlc_fr.scs': 3,
+  'dlc_it.scs': 4,
+  'dlc_balt.scs': 6,
+  'dlc_balkan_e.scs': 9,
+  'dlc_iberia.scs': 11,
+  'dlc_balkan_w.scs': 16,
+  'dlc_greece.scs': 20,
+  'dlc_polar.scs': 23,
 };
 
 export function toEts2DlcGuards(

@@ -457,7 +457,7 @@ describe.skip('detectRouteEvents bugs', () => {
     const startNode = assertExists(nodes.get(0x4e7602203bdf0000n));
     const endNode = assertExists(nodes.get(0x4eeffb7b499f0003n));
     let testRoute = await generateRouteFromKeys(
-      [createRouteKey(startNode.uid, endNode.uid, 'forward', 'fastest')],
+      [createRouteKey(startNode.uid, endNode.uid, 'forward', 'fastest', 'usa')],
       { graphAndMapData, routing: routingService },
     );
     const testTelemetry = aTelemetryWith({
