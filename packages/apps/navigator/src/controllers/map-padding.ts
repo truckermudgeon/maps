@@ -77,14 +77,19 @@ export class MapPaddingStoreImpl implements MapPaddingStore {
     // offset map so that player marker is toward the bottom of the screen,
     // above the route stack (if visible).
     const markerHeight = 50;
-    const routeStackHeight =
-      this.uiEnvStore.orientation === 'portrait' && this.appStore.activeRoute
-        ? routeStackBottom
-        : 0;
+    const bottomControlsHeight =
+      this.uiEnvStore.orientation === 'portrait' &&
+      this.appStore.showNavSheet &&
+      navSheetPagesRequiringMapVisibility.has(this.navStore.currentPageKey)
+        ? this.uiEnvStore.height * 0.4
+        : this.uiEnvStore.orientation === 'portrait' &&
+            this.appStore.activeRoute
+          ? routeStackBottom
+          : 0;
     const padding = this.appStore.activeRoute
       ? markerHeight + verticalPadding
       : markerHeight + verticalPadding / 2;
-    const offsetY = this.uiEnvStore.height / 2 - routeStackHeight - padding;
+    const offsetY = this.uiEnvStore.height / 2 - bottomControlsHeight - padding;
     return [0, offsetY];
   }
 }
