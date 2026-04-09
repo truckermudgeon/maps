@@ -690,9 +690,26 @@ function withDlcGuard<T extends CityFeature | PoiFeature | ExitFeature>(
     feature.properties.dlcGuard != null &&
     feature.properties.dlcGuard !== 0
   ) {
-    // TODO assert that the quad tree would return feature.properties.dlcGuard.
-    //  test it on ATS and ETS2 data. if no assertions fail, remove this entire
-    //  if statement.
+    // looks like some POIs have a dlcGuard that differs from what the
+    // dlc quadtree would return, e.g.: a parking_ico on a road that's only
+    // visible when both MO and OK are present, but has a MO-only dlcGuard.
+    // If the MO DLC is present and the OK DLC is absent, users will see
+    // a floating parking_ico 😕
+
+    // ignore this inconsistency for now, and return the data that's present
+    // in the map files, as-is.
+
+    // const [x, y] = feature.geometry.coordinates;
+    // const entryGuard = assertExists(dlcQuadTree.find(x, y)).dlcGuard;
+    // if (entryGuard !== feature.properties.dlcGuard) {
+    //   logger.warn(
+    //     feature.properties,
+    //     'at',
+    //     [x, y],
+    //     'should have dlcGuard',
+    //     entryGuard,
+    //   );
+    // }
     return feature;
   }
 
