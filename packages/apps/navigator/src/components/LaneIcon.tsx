@@ -4,6 +4,7 @@ import {
   PlaceOutlined,
 } from '@mui/icons-material';
 import { assert } from '@truckermudgeon/base/assert';
+import { toRadians } from '@truckermudgeon/base/geom';
 import { UnreachableError } from '@truckermudgeon/base/precon';
 import { BranchType } from '@truckermudgeon/navigation/constants';
 
@@ -25,8 +26,8 @@ export const LaneIcon = (props: LaneIconProps) => {
     // sort `branches` so that `activeBranch` is last.
     a === activeBranch ? 1 : b === activeBranch ? -1 : 0,
   );
-  const hasLeft = branchArr.some(b => 0 < Number(b) && Number(b) < 10);
-  const hasRight = branchArr.some(b => Number(b) >= 10);
+  const hasLeft = branchArr.some(b => 0 < Number(b) && Number(b) <= 10);
+  const hasRight = branchArr.some(b => 10 < Number(b) && Number(b) <= 20);
 
   const iconType: 'single' | 'left' | 'right' | 'left-and-right' =
     branchArr.length === 1
@@ -267,6 +268,23 @@ export const LaneIcon = (props: LaneIconProps) => {
           />
         );
       }
+      case BranchType.ROUND_BR:
+      case BranchType.ROUND_R:
+      case BranchType.ROUND_TR:
+      case BranchType.ROUND_T:
+      case BranchType.ROUND_TL:
+      case BranchType.ROUND_L:
+      case BranchType.ROUND_BL:
+      case BranchType.ROUND_B:
+        assert(branches.length === 1, 'ROUND_X must appear alone');
+        return (
+          <Roundabout
+            key={index}
+            type={type}
+            highlightColor={highlightColor}
+            dimColor={dimColor}
+          />
+        );
       case BranchType.MERGE:
         assert(branches.length === 1, 'MERGE must appear alone');
         return (
@@ -580,6 +598,104 @@ const Merge = (props: MergeProps) => {
         }
       />
       <use href="#arrow" x={arrow[0]} y={arrow[1]} />
+    </g>
+  );
+};
+
+interface RoundaboutProps {
+  type:
+    | BranchType.ROUND_BR
+    | BranchType.ROUND_R
+    | BranchType.ROUND_TR
+    | BranchType.ROUND_T
+    | BranchType.ROUND_TL
+    | BranchType.ROUND_L
+    | BranchType.ROUND_BL
+    | BranchType.ROUND_B;
+  highlightColor: string;
+  dimColor: string;
+}
+
+const roundaboutDegrees: Record<RoundaboutProps['type'], number> = {
+  [BranchType.ROUND_BR]: 45,
+  [BranchType.ROUND_R]: 90,
+  [BranchType.ROUND_TR]: 135,
+  [BranchType.ROUND_T]: 180,
+  [BranchType.ROUND_TL]: 225,
+  [BranchType.ROUND_L]: 270,
+  [BranchType.ROUND_BL]: 315,
+  [BranchType.ROUND_B]: 359,
+};
+
+const Roundabout = (props: RoundaboutProps) => {
+  const { type, highlightColor, dimColor } = props;
+  const center = 12;
+  const radius = 4.5;
+  const strokeWidth = 2;
+
+  const degrees = roundaboutDegrees[type];
+  const startAngle = 90;
+  const endAngle = startAngle - degrees; // CCW means decreasing angle
+
+  const start = {
+    x: center + radius * Math.cos(toRadians(startAngle)),
+    y: center + radius * Math.sin(toRadians(startAngle)),
+  };
+  const end = {
+    x: center + radius * Math.cos(toRadians(endAngle)),
+    y: center + radius * Math.sin(toRadians(endAngle)),
+  };
+  const arcPath =
+    `M ${start.x} ${start.y}` +
+    `A ${radius} ${radius} 0 ${degrees > 180 ? 1 : 0} 0 ${end.x} ${end.y}`;
+
+  const stemLength = 5;
+  const arrowStemStart = {
+    x: end.x + (-strokeWidth / 2) * Math.cos(toRadians(endAngle)),
+    y: end.y + (-strokeWidth / 2) * Math.sin(toRadians(endAngle)),
+  };
+  const arrowStemEnd = {
+    x:
+      end.x +
+      (-strokeWidth / 2 + stemLength + 1) * Math.cos(toRadians(endAngle)),
+    y:
+      end.y +
+      (-strokeWidth / 2 + stemLength + 1) * Math.sin(toRadians(endAngle)),
+  };
+  const arrow = {
+    x: end.x + (stemLength + 2) * Math.cos(toRadians(endAngle)),
+    y: end.y + (stemLength + 2) * Math.sin(toRadians(endAngle)),
+  };
+
+  return (
+    <g stroke={highlightColor} strokeWidth={strokeWidth}>
+      <circle
+        stroke={dimColor}
+        fill={'none'}
+        cx={center}
+        cy={center}
+        r={radius}
+      />
+      <path fill="none" d={arcPath} />
+      <line
+        x1={start.x}
+        y1={start.y - strokeWidth / 2}
+        x2={start.x}
+        y2={start.y - strokeWidth / 2 + stemLength}
+      />
+      <line
+        x1={arrowStemStart.x}
+        y1={arrowStemStart.y}
+        x2={arrowStemEnd.x}
+        y2={arrowStemEnd.y}
+      />
+      <use
+        href="#arrow"
+        x={arrow.x}
+        y={arrow.y}
+        transform-origin={`${arrow.x} ${arrow.y}`}
+        transform={`rotate(${180 - degrees})`}
+      />
     </g>
   );
 };
