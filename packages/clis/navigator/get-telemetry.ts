@@ -17,6 +17,7 @@ export type TelemetryReader = () => TelemetryData | undefined;
 
 export function createTelemetryReader(
   opts: TelemetryReaderOptions,
+  debugClose?: () => void,
 ): TelemetryReader {
   let getTelemetry: () => TelemetryData | undefined = () => undefined;
   switch (opts.mode) {
@@ -52,6 +53,9 @@ export function createTelemetryReader(
       ) => {
         if (key.ctrl && key.name === 'c') {
           process.exit();
+        }
+        if (key.name === 'd' && debugClose) {
+          debugClose();
         }
 
         const delta = key.shift ? 10 : 1;

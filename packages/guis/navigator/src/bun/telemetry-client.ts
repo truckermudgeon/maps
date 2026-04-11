@@ -19,7 +19,7 @@ export async function startTelemetryClient(rpc: WebviewRPC) {
   }
 
   const clientPromise = new Promise<TelemetryClient>((resolve, reject) => {
-    const telemetryClient = createTelemetryClient({
+    const { telemetryClient } = createTelemetryClient({
       apiUrl,
       onError: (maybeEvent: Event | undefined) => {
         console.error(maybeEvent);
