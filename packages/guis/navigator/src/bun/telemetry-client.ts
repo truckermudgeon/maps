@@ -19,6 +19,7 @@ export async function startTelemetryClient(rpc: WebviewRPC) {
   }
 
   const clientPromise = new Promise<TelemetryClient>((resolve, reject) => {
+    // TODO: wire up `debugClose` fn to test reconnect logic
     const { telemetryClient } = createTelemetryClient({
       apiUrl,
       onError: (maybeEvent: Event | undefined) => {
