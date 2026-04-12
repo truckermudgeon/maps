@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import type { TRPCRequestInfo } from '@trpc/server/http';
 import { Preconditions } from '@truckermudgeon/base/precon';
-import type crypto from 'crypto';
+import crypto from 'crypto';
 import type http from 'http';
 import type { WebSocket } from 'ws';
 import { AuthState } from '../domain/auth/auth-state';
@@ -74,7 +74,8 @@ export async function createContext(opts: {
 
   switch (req.url) {
     case '/telemetry':
-      return {
+    case '/telemetry?connectionParams=1': {
+      const unauthenticatedContext: TelemetryContext = {
         type: 'telemetry',
         clientId,
         auth: { state: AuthState.UNAUTHENTICATED },
@@ -86,58 +87,114 @@ export async function createContext(opts: {
         },
         wsConnectionState,
       };
-    case '/navigator':
-    case '/navigator?connectionParams=1': {
-      // TODO de-dupe some of this code and `navigatorRouter.reconnect`
+
       if (
-        info.connectionParams?.['viewerId'] != null &&
-        typeof info.connectionParams['viewerId'] === 'string'
+        info.connectionParams?.telemetryId == null ||
+        info.connectionParams.signature == null ||
+        info.connectionParams.timestamp == null
       ) {
-        // try to reauthenticate.
-        // note: failure will still require user to reload if they're in the
-        // middle of a tRPC reconnect, because they'll be unauthenticated but
-        // will try to restore subscriptions.
-        const viewerId = info.connectionParams['viewerId'];
-        const telemetryId = await services.kv.get(
-          navigatorKeys.viewerId(viewerId),
-        );
-        if (telemetryId) {
-          const actor = services.sessionActors.getOrCreate(telemetryId);
-          if (!actor.attachClient(clientId)) {
-            throw new TRPCError({
-              code: 'CONFLICT',
-              message: 'Too many clients connected to this code',
-            });
-          }
-
-          logger.info('successful reconnect', {
-            clientId,
-            viewerId,
-            telemetryId,
-          });
-
-          return {
-            type: 'navigator',
-            clientId,
-            auth: { state: AuthState.VIEWER_AUTHENTICATED, viewerId },
-            services,
-            wsConnectionState,
-          };
-        } else {
-          logger.warn(
-            '(reconnect): no telemetry id associated with viewer id: ' +
-              viewerId,
-          );
-        }
+        return unauthenticatedContext;
       }
 
+      // TODO de-dupe some of this code and `telemetryRouter.reconnect`
+      const {
+        telemetryId,
+        signature,
+        timestamp: _timestamp,
+      } = info.connectionParams;
+      const timestamp = Number(_timestamp);
+      const { kv } = services;
+      const publicKey = await kv.get(navigatorKeys.publicKey(telemetryId));
+      if (!publicKey) {
+        logger.warn('(reconnect): unknown public key', {
+          clientId,
+          telemetryId,
+        });
+        return unauthenticatedContext;
+      }
+      const now = Date.now();
+      const isTimestampValid =
+        now - 30_000 < timestamp && timestamp <= now + 5_000;
+      if (!isTimestampValid) {
+        logger.warn('(reconnect): invalid timestamp', {
+          clientId,
+          telemetryId,
+        });
+        return unauthenticatedContext;
+      }
+      const isSignatureValid = await crypto.subtle.verify(
+        'Ed25519',
+        publicKey,
+        Buffer.from(signature, 'base64url'),
+        Buffer.from(JSON.stringify({ telemetryId, timestamp }), 'base64url'),
+      );
+      if (!isSignatureValid) {
+        logger.warn('(reconnect): invalid signature', {
+          clientId,
+          telemetryId,
+        });
+        return unauthenticatedContext;
+      }
+
+      logger.info('successful reconnect (telemetry)', {
+        clientId,
+        telemetryId,
+      });
+
       return {
+        ...unauthenticatedContext,
+        auth: {
+          state: AuthState.DEVICE_AUTHENTICATED,
+          deviceId: telemetryId,
+        },
+      };
+    }
+    case '/navigator':
+    case '/navigator?connectionParams=1': {
+      const unauthenticatedContext: NavigatorContext = {
         type: 'navigator',
         clientId,
         auth: { state: AuthState.UNAUTHENTICATED },
         services,
         wsConnectionState,
       };
+
+      if (info.connectionParams?.viewerId == null) {
+        return unauthenticatedContext;
+      }
+
+      // TODO de-dupe some of this code and `navigatorRouter.reconnect`
+      const viewerId = info.connectionParams.viewerId;
+      const telemetryId = await services.kv.get(
+        navigatorKeys.viewerId(viewerId),
+      );
+      if (telemetryId) {
+        const actor = services.sessionActors.getOrCreate(telemetryId);
+        if (!actor.attachClient(clientId)) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Too many clients connected to this code',
+          });
+        }
+
+        logger.info('successful reconnect (navigator)', {
+          clientId,
+          viewerId,
+          telemetryId,
+        });
+
+        return {
+          ...unauthenticatedContext,
+          auth: { state: AuthState.VIEWER_AUTHENTICATED, viewerId },
+        };
+      } else {
+        logger.warn('(reconnect): no telemetry id associated with viewer id', {
+          clientId,
+          viewerId,
+          telemetryId,
+        });
+        return unauthenticatedContext;
+      }
     }
     default:
       throw new TRPCError({

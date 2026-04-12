@@ -20,6 +20,7 @@ export async function handleUpgrade(
   const metrics = opts.services.metrics.ws;
   if (
     req.url !== '/telemetry' &&
+    req.url !== '/telemetry?connectionParams=1' &&
     req.url !== '/navigator' &&
     req.url !== '/navigator?connectionParams=1'
   ) {
@@ -31,7 +32,8 @@ export async function handleUpgrade(
 
   let maybeClientHeadersOk = true;
   switch (req.url) {
-    case '/telemetry': {
+    case '/telemetry':
+    case '/telemetry?connectionParams=1': {
       maybeClientHeadersOk =
         req.headers.origin == null &&
         (req.headers['user-agent'] === 'node' ||
