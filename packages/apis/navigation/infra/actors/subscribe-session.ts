@@ -145,6 +145,7 @@ export function subscribeSession(
     } else {
       const { lookup, ...route } = rwl;
       queue.push({ type: 'routeUpdate', data: route });
+      queue.push({ type: 'routeProgress', data: actor.readRouteIndex() });
     }
 
     while (!signal?.aborted) {

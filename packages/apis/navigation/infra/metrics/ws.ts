@@ -14,8 +14,8 @@ export interface WsMetrics {
     inc(meta: { reason: UpgradeRejectionReason }): void;
   };
   connectionsActive: {
-    inc(): void;
-    dec(): void;
+    inc(meta: { type: string }): void;
+    dec(meta: { type: string }): void;
   };
   connectionsOpened: {
     inc(): void;
@@ -39,8 +39,8 @@ export class ConsoleWsMetrics extends ConsoleMetrics implements WsMetrics {
   };
 
   connectionsActive = {
-    inc: () => this.inc('connectionsActive'),
-    dec: () => this.dec('connectionsActive'),
+    inc: (meta: { type: string }) => this.inc('connectionsActive', meta),
+    dec: (meta: { type: string }) => this.dec('connectionsActive', meta),
   };
 
   connectionsClosed = {
@@ -68,6 +68,7 @@ export class PrometheusWsMetrics implements WsMetrics {
   private active = new Prometheus.Gauge({
     name: 'ws_connections_active',
     help: 'Number of active websocket connections',
+    labelNames: ['type'],
   });
 
   private closed = new Prometheus.Counter({
@@ -95,8 +96,14 @@ export class PrometheusWsMetrics implements WsMetrics {
   };
 
   connectionsActive = {
-    inc: () => this.active.inc(),
-    dec: () => this.active.dec(),
+    inc: (meta: { type: string }) =>
+      this.active.inc({
+        type: meta.type,
+      }),
+    dec: (meta: { type: string }) =>
+      this.active.dec({
+        type: meta.type,
+      }),
   };
 
   connectionsClosed = {

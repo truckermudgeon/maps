@@ -253,6 +253,22 @@ export function toStepText(maneuver: StepManeuver): string {
       case BranchType.U_TURN_RIGHT:
         strings.push('make a U-turn');
         break;
+      case BranchType.ROUND_BR:
+      case BranchType.ROUND_R:
+      case BranchType.ROUND_TR:
+      case BranchType.ROUND_T:
+      case BranchType.ROUND_TL:
+      case BranchType.ROUND_L:
+      case BranchType.ROUND_BL:
+      case BranchType.ROUND_B:
+        // TODO
+        if (!strings.length) {
+          strings.push('at the traffic circle, ');
+        } else {
+          strings.push('enter the traffic circle, then');
+        }
+        strings.push('take the Nth exit');
+        break;
       case BranchType.MERGE:
         strings.push('merge');
         break;

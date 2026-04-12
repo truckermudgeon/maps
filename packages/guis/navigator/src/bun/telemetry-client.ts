@@ -19,7 +19,8 @@ export async function startTelemetryClient(rpc: WebviewRPC) {
   }
 
   const clientPromise = new Promise<TelemetryClient>((resolve, reject) => {
-    const telemetryClient = createTelemetryClient({
+    // TODO: wire up `debugClose` fn to test reconnect logic
+    const { telemetryClient } = createTelemetryClient({
       apiUrl,
       onError: (maybeEvent: Event | undefined) => {
         console.error(maybeEvent);
@@ -63,14 +64,16 @@ export async function startTelemetryClient(rpc: WebviewRPC) {
     return;
   }
 
-  try {
-    const pairingCode =
-      await telemetryClient.requestAdditionalPairingCode.mutate();
-    rpc.send('pairingCode', pairingCode);
-    rpc.send('reconnected');
-  } catch {
-    // TODO update UI to reflect error? try again? something else?
-  }
+  telemetryClient.subscribeToPairingCodes.subscribe(void 0, {
+    onData: pairingCode => {
+      rpc.send('pairingCode', pairingCode);
+      rpc.send('reconnected');
+    },
+    onError: err => {
+      // TODO update UI to reflect error? try again? something else?
+      console.error('error:', err.message);
+    },
+  });
 
   const getTelemetry = createTelemetryReader({ mode: 'live' });
   startTelemetryLoop({

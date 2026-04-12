@@ -13,8 +13,6 @@ import {
 } from './helpers';
 
 async function main() {
-  const telemetryReaderOptions = parseArguments(process.argv);
-  const getTelemetry = createTelemetryReader(telemetryReaderOptions);
   //checkIsPluginInstalled();
 
   const healthCheck = await checkIsServerUp(healthUrl);
@@ -23,7 +21,7 @@ async function main() {
   }
 
   // TODO add simple check if client is outdated
-  const telemetryClient = createTelemetryClient({
+  const { telemetryClient, debugClose } = createTelemetryClient({
     apiUrl,
     onError: (maybeEvent: Event | undefined) => {
       console.error(maybeEvent);
@@ -37,9 +35,14 @@ async function main() {
       if (maybeCause?.code === 1001) {
         console.log('the server shut down.');
       }
-      process.exit(maybeCause?.code ?? 7);
     },
   });
+
+  const telemetryReaderOptions = parseArguments(process.argv);
+  const getTelemetry = createTelemetryReader(
+    telemetryReaderOptions,
+    debugClose,
+  );
 
   // server handshake
   const telemetryId = getTelemetryId();
@@ -60,14 +63,19 @@ async function main() {
       }
     },
   });
-
   // at this point, client is authenticated and can start sending telemetry.
-  const pairingCode =
-    await telemetryClient.requestAdditionalPairingCode.mutate();
-  console.log(
-    'to connect an additional device, use pairing code:',
-    pairingCode,
-  );
+
+  telemetryClient.subscribeToPairingCodes.subscribe(void 0, {
+    onData: pairingCode =>
+      console.log(
+        'to connect an additional device, use pairing code:',
+        pairingCode,
+      ),
+    onError: err => {
+      console.error('error:', err.message);
+      process.exit(5);
+    },
+  });
 
   // TODO only send telemetry if there are viewers connected.
   startTelemetryLoop({
