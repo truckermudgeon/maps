@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import crypto from 'crypto';
 import { z } from 'zod';
+import { pairingCodeTtlMs } from '../../constants';
 import { AuthState } from '../../domain/auth/auth-state';
 import { transition } from '../../domain/auth/transition';
 import { generatePairingCode } from '../../domain/pairing-code';
@@ -131,16 +132,21 @@ export const telemetryRouter = router({
       } = ctx;
       const code = generatePairingCode();
       const telemetryId = crypto.randomUUID();
-      await kv.set(navigatorKeys.pairing(code), {
-        telemetryId,
-        redeemed: false,
-      });
+      await kv.set(
+        navigatorKeys.pairing(code),
+        {
+          telemetryId,
+          redeemed: false,
+        },
+        { ttlMs: pairingCodeTtlMs },
+      );
       transition(ctx.auth, AuthState.DEVICE_PROVISIONAL_WITH_CODE);
       assert(ctx.auth.state === AuthState.DEVICE_PROVISIONAL_WITH_CODE);
       ctx.auth.pairingCode = code;
 
       return code;
     }),
+  /** @deprecated use `subscribeToPairingCodes` */
   requestAdditionalPairingCode: telemetryProcedure
     .use(requireAuthState([AuthState.DEVICE_AUTHENTICATED]))
     .use(limitOncePerSession)
@@ -152,12 +158,49 @@ export const telemetryRouter = router({
       // TODO limit the number of "open" pairing codes out there
       const code = generatePairingCode();
       const telemetryId = ctx.auth.deviceId;
-      await kv.set(navigatorKeys.pairing(code), {
-        telemetryId,
-        redeemed: false,
-        cleanupOnRedemption: true,
-      });
+      await kv.set(
+        navigatorKeys.pairing(code),
+        {
+          telemetryId,
+          redeemed: false,
+          cleanupOnRedemption: true,
+        },
+        { ttlMs: pairingCodeTtlMs },
+      );
       return code;
+    }),
+  subscribeToPairingCodes: telemetryProcedure
+    .use(requireAuthState([AuthState.DEVICE_AUTHENTICATED]))
+    .use(limitOncePerSession)
+    .subscription(async function* ({ ctx, signal }) {
+      assert(ctx.auth.state === AuthState.DEVICE_AUTHENTICATED);
+      const {
+        services: { kv },
+      } = ctx;
+
+      while (!signal?.aborted) {
+        const code = generatePairingCode();
+        await kv.set(
+          navigatorKeys.pairing(code),
+          {
+            telemetryId: ctx.auth.deviceId,
+            redeemed: false,
+            cleanupOnRedemption: true,
+          },
+          { ttlMs: pairingCodeTtlMs },
+        );
+
+        yield code;
+
+        while (!signal?.aborted) {
+          const hasCode = await kv.has(navigatorKeys.pairing(code));
+          if (!hasCode) {
+            // code has expired or has been redeemed
+            break;
+          }
+          await delay(5000);
+        }
+      }
     }),
   waitForPairing: telemetryProcedure
     .use(requireAuthState([AuthState.DEVICE_PROVISIONAL_WITH_CODE]))
@@ -179,7 +222,7 @@ export const telemetryRouter = router({
             navigatorKeys.publicKey(telemetryId),
             ctx.auth.publicKey,
             {
-              ttlMs: 12 * 60 * 60 * 1000,
+              ttlMs: 12 * 60 * 60_000, // 12 hours
             },
           );
 

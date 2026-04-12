@@ -52,3 +52,5 @@ export type RoundaboutBranchType =
   | BranchType.ROUND_B;
 
 export type NonRoundaboutBranchType = Exclude<BranchType, RoundaboutBranchType>;
+
+export const pairingCodeTtlMs = 10 * 60_000;
