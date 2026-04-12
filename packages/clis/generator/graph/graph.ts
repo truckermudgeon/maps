@@ -1180,13 +1180,13 @@ function getNeighborsInDirection(
         dir === 'forward'
           ? nextNode.backwardCountryId
           : nextNode.forwardCountryId,
-      ) ?? context.countriesById.get(1)!; // fallback to California
+      ) ?? context.countriesById.get(1)!; // fallback to California or Austria
 
     // TODO there's an urban limit value... use it if node is in a city area.
     const speedMph =
-      nextCountry.truckSpeedLimits[speedClass]?.limit ??
-      nextCountry.truckSpeedLimits.localRoad?.limit ??
-      30;
+      (nextCountry.truckSpeedLimits[speedClass]?.limit ??
+        nextCountry.truckSpeedLimits.localRoad?.limit ??
+        30) * (context.map === 'usa' ? 1 : 0.6213712);
 
     return {
       nodeUid: nextNode.uid,
