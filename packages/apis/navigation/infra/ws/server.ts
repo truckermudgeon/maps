@@ -20,7 +20,7 @@ export function attachWSServer({
     'connection',
     (
       ws: WebSocket,
-      _req: IncomingMessage,
+      req: IncomingMessage,
       connCtx: { ip: string; websocketKey: string },
     ) => {
       const state = {
@@ -31,8 +31,23 @@ export function attachWSServer({
       };
       wsRegistry.set(ws, state);
 
+      let connectionType: 'navigator' | 'telemetry' | 'unknown';
+      switch (req.url) {
+        case '/telemetry':
+        case '/telemetry?connectionParams=1':
+          connectionType = 'telemetry';
+          break;
+        case '/navigator':
+        case '/navigator?connectionParams=1':
+          connectionType = 'navigator';
+          break;
+        default:
+          connectionType = 'unknown';
+          break;
+      }
+
       metrics.ws.connectionsOpened.inc();
-      metrics.ws.connectionsActive.inc();
+      metrics.ws.connectionsActive.inc({ type: connectionType });
 
       ws.once('close', (code, reason) => {
         const connectionCtx = wsRegistry.get(ws);
@@ -61,7 +76,7 @@ export function attachWSServer({
         }
         wsRegistry.delete(ws);
 
-        metrics.ws.connectionsActive.dec();
+        metrics.ws.connectionsActive.dec({ type: connectionType });
         metrics.ws.connectionsClosed.inc();
         metrics.ws.connectionLifetimeMs.observe(Date.now() - state.connectedAt);
       });
