@@ -35,7 +35,6 @@ async function main() {
       if (maybeCause?.code === 1001) {
         console.log('the server shut down.');
       }
-      //process.exit(maybeCause?.code ?? 7);
     },
   });
 
