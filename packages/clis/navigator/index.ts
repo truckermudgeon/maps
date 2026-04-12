@@ -63,14 +63,19 @@ async function main() {
       }
     },
   });
-
   // at this point, client is authenticated and can start sending telemetry.
-  const pairingCode =
-    await telemetryClient.requestAdditionalPairingCode.mutate();
-  console.log(
-    'to connect an additional device, use pairing code:',
-    pairingCode,
-  );
+
+  telemetryClient.subscribeToPairingCodes.subscribe(void 0, {
+    onData: pairingCode =>
+      console.log(
+        'to connect an additional device, use pairing code:',
+        pairingCode,
+      ),
+    onError: err => {
+      console.error('error:', err.message);
+      process.exit(5);
+    },
+  });
 
   // TODO only send telemetry if there are viewers connected.
   startTelemetryLoop({
