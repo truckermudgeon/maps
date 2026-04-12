@@ -6,6 +6,8 @@ import { createReconnectRequest } from './telemetry-id';
 
 export type TelemetryClient = TRPCClient<AppRouter>['telemetry'];
 
+export const telemetryClientVersion = '0.2';
+
 export function createTelemetryClient(options: {
   apiUrl: string;
   onError: (maybeEvent: Event | undefined) => void;
@@ -19,18 +21,25 @@ export function createTelemetryClient(options: {
   const wsClient = createWSClient({
     url: options.apiUrl,
     connectionParams: async () => {
+      const baseParams = {
+        telemetryClientVersion,
+      };
+
       if (!attemptReconnect) {
         attemptReconnect = true;
-        return null;
+        return baseParams;
       }
 
       const req = await createReconnectRequest();
       return req
         ? {
+            ...baseParams,
             ...req,
             timestamp: req.timestamp.toString(),
           }
-        : null;
+        : {
+            ...baseParams,
+          };
     },
     onError: options.onError,
     onClose: options.onClose,
@@ -45,12 +54,10 @@ export function createTelemetryClient(options: {
   const debugClose =
     NODE_ENV === 'development'
       ? () =>
-          // HACK access private `activeConnection` field, so we can
-          // ungracefully close the underlying websocket in order to test
-          // reconnect logic in the client and the server.
-          (
-            wsClient as unknown as { activeConnection: { close: () => void } }
-          ).activeConnection.close()
+          // N.B.: this callback is used to ungracefully close the underlying
+          // websocket in order to test reconnect logic in the client and the
+          // server.
+          wsClient.connection?.ws.close()
       : () => void 0;
 
   const client = createTRPCProxyClient<AppRouter>({
