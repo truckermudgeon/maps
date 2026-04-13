@@ -1,3 +1,4 @@
+import { putIfAbsent } from '@truckermudgeon/base/map';
 import { Preconditions } from '@truckermudgeon/base/precon';
 import type { MappedData } from '@truckermudgeon/io';
 import { ItemType } from '@truckermudgeon/map/constants';
@@ -5,13 +6,16 @@ import type {
   City,
   CompanyItem,
   Country,
+  GraphData,
   MapData,
+  Neighbor,
   Node,
   Prefab,
   Road,
   RoadLook,
   WithToken,
 } from '@truckermudgeon/map/types';
+import { detectRoundabouts } from '../detect-roundabouts';
 import { generateGraph } from '../graph';
 import { d_farm_grg, d_oil_gst3, prefab_us_405 } from './fixtures';
 
@@ -390,6 +394,68 @@ describe('generateGraph', () => {
     });
   });
 });
+
+describe('roundabout detection', () => {
+  it('detects SCCs', () => {
+    const forwardOnlyGraph: GraphData['graph'] = new Map();
+    const addEdge = (from: number, to: number) =>
+      addDirectedEdge(forwardOnlyGraph, 'forward', from, to);
+
+    addEdge(0, 1);
+    addEdge(1, 2);
+    addEdge(1, 7);
+    addEdge(2, 3);
+    addEdge(2, 6);
+    addEdge(3, 4);
+    addEdge(4, 2);
+    addEdge(4, 5);
+    addEdge(6, 3);
+    addEdge(6, 5);
+    addEdge(7, 0);
+    addEdge(7, 6);
+
+    const roundabouts = detectRoundabouts(forwardOnlyGraph);
+  });
+});
+
+function aNeighborWith(
+  neighbor: Partial<Neighbor> & { nodeUid: bigint },
+): Neighbor {
+  return {
+    distance: 0,
+    duration: 0,
+    dlcGuard: 0,
+    direction: 'forward',
+    ...neighbor,
+  };
+}
+
+function addDirectedEdge(
+  graph: GraphData['graph'],
+  direction: 'forward' | 'backward',
+  from: number,
+  to: number,
+) {
+  const neighbors = putIfAbsent(
+    BigInt(from),
+    {
+      forward: [],
+      backward: [],
+    },
+    graph,
+  );
+  const mutableNeighbors = neighbors as {
+    forward: Neighbor[];
+    backward: Neighbor[];
+  };
+
+  mutableNeighbors[direction].push(
+    aNeighborWith({
+      nodeUid: BigInt(to),
+      direction,
+    }),
+  );
+}
 
 function aNodeWith({
   uid,
