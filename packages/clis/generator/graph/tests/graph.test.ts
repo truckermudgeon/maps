@@ -1,6 +1,7 @@
 import { putIfAbsent } from '@truckermudgeon/base/map';
 import { Preconditions } from '@truckermudgeon/base/precon';
 import type { MappedData } from '@truckermudgeon/io';
+import { readGraphData } from '@truckermudgeon/io';
 import { ItemType } from '@truckermudgeon/map/constants';
 import type {
   City,
@@ -15,6 +16,8 @@ import type {
   RoadLook,
   WithToken,
 } from '@truckermudgeon/map/types';
+import path from 'node:path';
+import url from 'node:url';
 import { detectRoundabouts } from '../detect-roundabouts';
 import { generateGraph } from '../graph';
 import { d_farm_grg, d_oil_gst3, prefab_us_405 } from './fixtures';
@@ -396,6 +399,17 @@ describe('generateGraph', () => {
 });
 
 describe('roundabout detection', () => {
+  it('detects SCCs (full graph)', () => {
+    const __filename = url.fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const outDir = path.join(__dirname, '../../../../../out');
+    const graphData = readGraphData(outDir, 'usa');
+
+    const start = Date.now();
+    detectRoundabouts(graphData.graph);
+    console.log('time', (Date.now() - start) / 1000, 'seconds');
+  });
+
   it('detects SCCs', () => {
     const forwardOnlyGraph: GraphData['graph'] = new Map();
     const addEdge = (from: number, to: number) =>
