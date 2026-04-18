@@ -6,24 +6,40 @@ import {
   fromEts2CoordsToWgs84,
 } from '@truckermudgeon/map/projections';
 import type { Neighbor, Neighbors } from '@truckermudgeon/map/types';
-import { featureCollection, point } from '@turf/helpers';
 
 export function detectRoundabouts(
   graph: Map<bigint, Neighbors>,
   tsMapData: Pick<MappedData, 'nodes' | 'map'>,
 ): Map<bigint, Neighbors> {
   const adjacencyList = convertToAdjacencyList(graph);
+  for (const [key, adjs] of adjacencyList) {
+    const nodeUid = BigInt(key.split('-')[0]);
+    const nodeDir = key.split('-')[1];
+    const node = tsMapData.nodes.get(nodeUid);
+    if (!node) {
+      continue;
+    }
+
+    for (const adj of adjs) {
+      const adjUid = BigInt(adj.split('-')[0]);
+      const adjDir = adj.split('-')[1];
+      console.log(
+        nodeUid.toString(16) + '-' + nodeDir,
+        '->',
+        `${adjUid.toString(16)}-${adjDir}`,
+      );
+    }
+  }
+
   const toLngLat =
     tsMapData.map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
 
   const res = new Map<string, Set<string>>();
 
   let sccs = findSCCsIterative1(mapValues(adjacencyList, v => [...v]));
-  console.log(sccs);
+  //console.log(sccs);
 
-  sccs = sccs.filter(
-    component => component.length >= 8 && component.length <= 8,
-  );
+  sccs = sccs.filter(component => component.length >= 3);
   const nodeUids = sccs.map(component =>
     component.map(s => BigInt(s.split('-')[0])),
   );
@@ -47,10 +63,10 @@ export function detectRoundabouts(
       coords.push([lng, lat]);
     }
   }
-  console.log(
-    JSON.stringify(featureCollection(coords.map(c => point(c))), null, 2),
-  );
-  console.log(sccs);
+  //console.log(
+  //  JSON.stringify(featureCollection(coords.map(c => point(c))), null, 2),
+  //);
+  //console.log(sccs);
 
   return convertToNeighbors(res, graph);
 }
@@ -198,13 +214,8 @@ function convertToAdjacencyList(
 ): Map<string, Set<string>> {
   const adjacencyList = new Map<string, Set<string>>();
 
-  for (const [nodeUid, { forward, backward }] of graph) {
+  for (const [fromNodeUid, { forward, backward }] of graph) {
     for (const nodeDirection of ['forward', 'backward']) {
-      //const adjacents = putIfAbsent(
-      //  `${nodeUid}`,
-      //  new Set<string>(),
-      //  adjacencyList,
-      //);
       const neighbors = nodeDirection === 'forward' ? forward : backward;
       const adjacents = new Set<string>();
       for (const { nodeUid, direction } of neighbors) {
@@ -213,7 +224,7 @@ function convertToAdjacencyList(
         adjacents.add(toNode);
       }
       if (adjacents.size) {
-        adjacencyList.set(`${nodeUid}-${nodeDirection}`, adjacents);
+        adjacencyList.set(`${fromNodeUid}-${nodeDirection}`, adjacents);
         //adjacencyList.set(`${nodeUid}`, adjacents);
       }
     }

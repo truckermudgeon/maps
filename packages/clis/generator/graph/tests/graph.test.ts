@@ -407,7 +407,8 @@ describe('roundabout detection', () => {
     const graphData = readGraphData(outDir, map);
     const nodes = readMapData(outDir + '/parser', map, {
       mapDataKeys: ['nodes'],
-      //focus: { city: 'paris', radiusMeters: 5000, type: 'city' },
+      focus: { city: 'paris', radiusMeters: 5000, type: 'city' },
+      //focus: { type: 'coords', radiusMeters: 1000, coords: [-27400, 7500] },
       //focus: { city: 'sacramento', radiusMeters: 2000, type: 'city' },
     });
 
@@ -432,6 +433,45 @@ describe('roundabout detection', () => {
     addEdge(6, 3);
     addEdge(6, 5);
     addEdge(7, 0);
+    addEdge(7, 6);
+
+    const roundabouts = detectRoundabouts(forwardOnlyGraph, {
+      nodes: new Map(),
+      map: 'usa',
+    });
+  });
+
+  it('detects SCCs demo', () => {
+    const forwardOnlyGraph: GraphData['graph'] = new Map();
+    const addEdge = (from: number, to: number) =>
+      addDirectedEdge(forwardOnlyGraph, 'forward', from, to);
+
+    /*
+    var g = [][]int{
+    0: {1},
+    2: {0},
+    5: {2, 6},
+    6: {5},
+    1: {2},
+    3: {1, 2, 4},
+    4: {5, 3},
+    7: {4, 7, 6},
+}
+     */
+
+    addEdge(0, 1);
+    addEdge(2, 0);
+    addEdge(5, 2);
+    addEdge(5, 6);
+    addEdge(6, 5);
+    addEdge(1, 2);
+    addEdge(3, 1);
+    addEdge(3, 2);
+    addEdge(3, 4);
+    addEdge(4, 5);
+    addEdge(4, 3);
+    addEdge(7, 4);
+    addEdge(7, 7);
     addEdge(7, 6);
 
     const roundabouts = detectRoundabouts(forwardOnlyGraph, {
