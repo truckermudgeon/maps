@@ -1,4 +1,5 @@
-import { assertExists } from '@truckermudgeon/base/assert';
+import { assert, assertExists } from '@truckermudgeon/base/assert';
+import { distance } from '@truckermudgeon/base/geom';
 import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
 import type { MappedData } from '@truckermudgeon/io';
 import {
@@ -7,11 +8,303 @@ import {
 } from '@truckermudgeon/map/projections';
 import type { Neighbor, Neighbors } from '@truckermudgeon/map/types';
 
+type Graph = Map<string, Set<string>>;
+
+function normalizeGraph(graph: Graph) {
+  for (const neighbors of graph.values()) {
+    for (const v of neighbors) {
+      if (!graph.has(v)) {
+        graph.set(v, new Set());
+      }
+    }
+  }
+}
+
+function computeDegrees(graph: Graph): {
+  inDeg: Map<string, number>;
+  outDeg: Map<string, number>;
+} {
+  const inDeg = new Map<string, number>();
+  const outDeg = new Map<string, number>();
+
+  for (const [v, neighbors] of graph) {
+    outDeg.set(v, neighbors.size);
+
+    for (const w of neighbors) {
+      inDeg.set(w, (inDeg.get(w) ?? 0) + 1);
+    }
+
+    if (!inDeg.has(v)) {
+      inDeg.set(v, 0);
+    }
+  }
+
+  return { inDeg, outDeg };
+}
+
+function pruneDeadEnds(graph: Graph): Graph {
+  const g = new Map(graph);
+  let changed = true;
+
+  while (changed) {
+    changed = false;
+
+    const { inDeg, outDeg } = computeDegrees(g);
+
+    for (const v of g.keys()) {
+      if ((inDeg.get(v) ?? 0) === 0 || (outDeg.get(v) ?? 0) === 0) {
+        g.delete(v);
+        for (const neighbors of g.values()) {
+          neighbors.delete(v);
+        }
+        changed = true;
+      }
+    }
+  }
+
+  return g;
+}
+
+function collapseDirectedChains(graph: Graph): Graph {
+  const { inDeg, outDeg } = computeDegrees(graph);
+
+  const isChainNode = (v: string) =>
+    (inDeg.get(v) ?? 0) === 1 && (outDeg.get(v) ?? 0) === 1;
+
+  const result: Graph = new Map();
+  const visited = new Set<string>();
+  const emptySet: ReadonlySet<string> = new Set();
+
+  function addEdge(a: string, b: string) {
+    putIfAbsent(a, new Set(), result).add(b);
+  }
+
+  for (const v of graph.keys()) {
+    if (isChainNode(v)) {
+      continue;
+    }
+
+    for (const n of assertExists(graph.get(v))) {
+      let curr = n;
+
+      while (isChainNode(curr) && !visited.has(curr)) {
+        visited.add(curr);
+        assert(graph.get(curr)!.size === 1);
+        curr = graph.get(curr)!.values().next().value!;
+      }
+
+      if (curr !== v) addEdge(v, curr);
+    }
+  }
+
+  // Handle pure cycles (all nodes are chain nodes)
+  for (const v of graph.keys()) {
+    if (isChainNode(v) && !visited.has(v)) {
+      const cycle: string[] = [];
+      let curr = v;
+
+      do {
+        visited.add(curr);
+        cycle.push(curr);
+        assert(graph.get(curr)!.size === 1);
+        curr = graph.get(curr)!.values().next().value!;
+      } while (curr !== v);
+
+      // collapse cycle into a single self-loop node (pick representative)
+      const rep = cycle[0];
+      console.log('pure cycle', cycle);
+      addEdge(rep, rep);
+    }
+  }
+
+  normalizeGraph(result);
+  return result;
+}
+
+function collapseDirectedChainsWithRoundabouts(
+  graph: Graph,
+  tsMapNodes: Pick<MappedData, 'nodes'>,
+): {
+  graph: Graph;
+  roundabouts: string[][];
+} {
+  const { inDeg, outDeg } = computeDegrees(graph);
+
+  const isChainNode = (v: string) =>
+    assertExists(inDeg.get(v)) === 1 && assertExists(outDeg.get(v)) === 1;
+
+  const visited = new Set<string>();
+  const result: Graph = new Map();
+  const roundabouts: string[][] = [];
+
+  function addEdge(a: string, b: string) {
+    putIfAbsent(a, new Set(), result).add(b);
+  }
+
+  // --- geometry helpers (optional) ---
+
+  function isCircular(nodes: string[]): boolean {
+    const pts = nodes.map(n => {
+      const nodeUid = BigInt(n.split('-')[0]);
+      return assertExists(tsMapNodes.nodes.get(nodeUid));
+    });
+    const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
+    const cy = pts.reduce((s, p) => s + p.y, 0) / pts.length;
+
+    const radii = pts.map(p => distance(p, { x: cx, y: cy }));
+    const mean = radii.reduce((a, b) => a + b, 0) / radii.length;
+    const variance =
+      radii.reduce((a, r) => a + (r - mean) ** 2, 0) / radii.length;
+
+    const relStd = Math.sqrt(variance) / (mean || 1);
+
+    return relStd < 0.3; // tune
+  }
+
+  function isRoundaboutCycle(nodes: string[]): boolean {
+    return nodes.length >= 3 && nodes.length <= 12 && isCircular(nodes);
+  }
+
+  // --- main collapse ---
+  for (const v of graph.keys()) {
+    if (isChainNode(v)) continue;
+
+    for (const n of assertExists(graph.get(v))) {
+      let curr = n;
+      const path: string[] = [];
+
+      const localVisited = new Set<string>();
+
+      while (isChainNode(curr)) {
+        if (localVisited.has(curr)) {
+          // cycle detected
+          const cycleStart = curr;
+          const cycle: string[] = [];
+
+          let x = curr;
+          do {
+            cycle.push(x);
+            assert(graph.get(curr)!.size === 1);
+            x = graph.get(curr)!.values().next().value!;
+          } while (x !== cycleStart);
+
+          // classify
+          if (isRoundaboutCycle(cycle)) {
+            console.log('roundabout', cycle);
+            roundabouts.push(cycle);
+
+            // mark all nodes so we don't collapse them
+            for (const node of cycle) visited.add(node);
+
+            break;
+          } else {
+            // not roundabout → collapse anyway
+            for (const node of cycle) visited.add(node);
+            break;
+          }
+        }
+
+        localVisited.add(curr);
+        path.push(curr);
+        assert(graph.get(curr)!.size === 1);
+        curr = graph.get(curr)!.values().next().value!;
+      }
+
+      if (!visited.has(curr) && curr !== v) {
+        addEdge(v, curr);
+      }
+    }
+  }
+
+  // --- handle isolated chain cycles (not reached above) ---
+  for (const v of graph.keys()) {
+    if (isChainNode(v) && !visited.has(v)) {
+      const cycle: string[] = [];
+      let curr = v;
+
+      do {
+        cycle.push(curr);
+        visited.add(curr);
+        assert(
+          graph.get(curr)!.size === 1,
+          'unexpected size ' + graph.get(curr)!.size,
+        );
+        curr = graph.get(curr)!.values().next().value!;
+      } while (curr !== v);
+
+      if (isRoundaboutCycle(cycle)) {
+        roundabouts.push(cycle);
+      }
+    }
+  }
+
+  normalizeGraph(result);
+
+  return {
+    graph: result,
+    roundabouts,
+  };
+}
+
 export function detectRoundabouts(
   graph: Map<bigint, Neighbors>,
   tsMapData: Pick<MappedData, 'nodes' | 'map'>,
 ): Map<bigint, Neighbors> {
-  const adjacencyList = convertToAdjacencyList(graph);
+  let adjacencyList = convertToAdjacencyList(graph);
+  normalizeGraph(adjacencyList);
+  console.log(adjacencyList.size, 'nodes');
+  let edges = 0;
+  for (const neighbors of adjacencyList.values()) {
+    edges += neighbors.size;
+  }
+  console.log(edges, 'edges');
+
+  //adjacencyList = pruneDeadEnds(adjacencyList);
+
+  console.log('collapsing....');
+  //const graphAndRoundabouts = collapseDirectedChainsWithRoundabouts(
+  //  adjacencyList,
+  //  tsMapData,
+  //);
+  //adjacencyList = graphAndRoundabouts.graph;
+  adjacencyList = collapseDirectedChains(adjacencyList);
+  console.log(adjacencyList.size, 'nodes');
+  let maxEdges = 0;
+  edges = 0;
+  for (const neighbors of adjacencyList.values()) {
+    edges += neighbors.size;
+    maxEdges = neighbors.size > maxEdges ? neighbors.size : maxEdges;
+  }
+  console.log(edges, 'edges');
+  console.log(maxEdges, 'maxEdges');
+  //console.log('roundabouts', graphAndRoundabouts.roundabouts.length);
+
+  // filter graph to nodes that exist / are known (due to load-time filtering)
+  let deletedCount = 0;
+  for (const [key, adjs] of adjacencyList) {
+    const nodeUid = BigInt(key.split('-')[0]);
+    const nodeDir = key.split('-')[1];
+    const node = tsMapData.nodes.get(nodeUid);
+    if (!node) {
+      graph.delete(nodeUid);
+      deletedCount++;
+      continue;
+    }
+
+    for (const adj of adjs) {
+      const adjUid = BigInt(adj.split('-')[0]);
+      const adjDir = adj.split('-')[1];
+      //console.log(
+      //  nodeUid.toString(16) + '-' + nodeDir,
+      //  '->',
+      //  `${adjUid.toString(16)}-${adjDir}`,
+      //);
+    }
+  }
+  console.log('deleted', deletedCount, 'keys');
+
+  // print out adjacency list edges
+  adjacencyList = convertToAdjacencyList(graph);
   for (const [key, adjs] of adjacencyList) {
     const nodeUid = BigInt(key.split('-')[0]);
     const nodeDir = key.split('-')[1];
@@ -37,7 +330,25 @@ export function detectRoundabouts(
   const res = new Map<string, Set<string>>();
 
   let sccs = findSCCsIterative1(mapValues(adjacencyList, v => [...v]));
-  //console.log(sccs);
+  //let sccs = findAllSimpleCycles(mapValues(adjacencyList, v => [...v]));
+  sccs = sccs.filter(component => component.length >= 4);
+
+  console.log('components', sccs.length);
+
+  sccs.forEach(components => {
+    console.log(components.length);
+    //console.log(
+    //  JSON.stringify(
+    //    components.map(entry => {
+    //      const uid = BigInt(entry.split('-')[0]);
+    //      const dir = entry.split('-')[1];
+    //      return uid.toString(16) + '-' + dir;
+    //    }),
+    //    null,
+    //    2,
+    //  ),
+    //);
+  });
 
   sccs = sccs.filter(component => component.length >= 3);
   const nodeUids = sccs.map(component =>
@@ -153,6 +464,124 @@ export function findSCCsIterative1(graph: Map<string, string[]>): string[][] {
           } while (w !== node);
 
           result.push(component);
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
+function findAllSimpleCycles(
+  graph: Map<string, string[]>,
+  minLen = 10,
+  maxLen = 20,
+): string[][] {
+  const nodes = Array.from(graph.keys()).sort(); // stable ordering
+  const indexMap = new Map(nodes.map((n, i) => [n, i]));
+
+  const result: string[][] = [];
+
+  const blocked = new Set<string>();
+  const B = new Map<string, Set<string>>();
+  for (const v of nodes) B.set(v, new Set());
+
+  const path: string[] = [];
+
+  function unblock(start: string) {
+    const stack = [start];
+    while (stack.length) {
+      const v = stack.pop()!;
+      if (blocked.has(v)) {
+        blocked.delete(v);
+        for (const w of B.get(v)!) {
+          stack.push(w);
+        }
+        B.get(v)!.clear();
+      }
+    }
+  }
+
+  interface Frame {
+    v: string;
+    i: number;
+    neighbors: string[];
+    foundCycle: boolean;
+  }
+
+  for (let sIdx = 0; sIdx < nodes.length; sIdx++) {
+    const s = nodes[sIdx];
+
+    // Build subgraph with nodes >= s
+    const subgraph = new Map<string, string[]>();
+    for (let i = sIdx; i < nodes.length; i++) {
+      const v = nodes[i];
+      const filtered = (graph.get(v) ?? []).filter(
+        w => indexMap.get(w)! >= sIdx,
+      );
+      subgraph.set(v, filtered);
+    }
+
+    // Reset state
+    blocked.clear();
+    for (const v of nodes) B.get(v)!.clear();
+
+    const stack: Frame[] = [];
+
+    stack.push({
+      v: s,
+      i: 0,
+      neighbors: subgraph.get(s) ?? [],
+      foundCycle: false,
+    });
+
+    path.length = 0;
+    path.push(s);
+    blocked.add(s);
+
+    while (stack.length) {
+      const frame = stack[stack.length - 1];
+      const { v } = frame;
+
+      if (frame.i < frame.neighbors.length) {
+        const w = frame.neighbors[frame.i++];
+
+        // Enforce max length before going deeper
+        if (path.length >= maxLen) {
+          continue;
+        }
+
+        if (w === s) {
+          // Enforce minimum length
+          if (path.length >= minLen) {
+            result.push([...path, s]);
+          }
+          frame.foundCycle = true;
+        } else if (!blocked.has(w)) {
+          path.push(w);
+          stack.push({
+            v: w,
+            i: 0,
+            neighbors: subgraph.get(w) ?? [],
+            foundCycle: false,
+          });
+          blocked.add(w);
+        }
+      } else {
+        // Backtrack
+        if (frame.foundCycle) {
+          unblock(v);
+        } else {
+          for (const w of subgraph.get(v) ?? []) {
+            B.get(w)!.add(v);
+          }
+        }
+
+        stack.pop();
+        path.pop();
+
+        if (stack.length) {
+          stack[stack.length - 1].foundCycle ||= frame.foundCycle;
         }
       }
     }

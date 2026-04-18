@@ -415,7 +415,7 @@ describe('roundabout detection', () => {
     const start = Date.now();
     detectRoundabouts(graphData.graph, nodes);
     console.log('time', (Date.now() - start) / 1000, 'seconds');
-  });
+  }, 600);
 
   it('detects SCCs demo', () => {
     const forwardOnlyGraph: GraphData['graph'] = new Map();
