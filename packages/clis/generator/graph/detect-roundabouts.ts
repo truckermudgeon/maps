@@ -1,5 +1,4 @@
 import { assert, assertExists } from '@truckermudgeon/base/assert';
-import { distance } from '@truckermudgeon/base/geom';
 import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
 import type { MappedData } from '@truckermudgeon/io';
 import {
@@ -121,163 +120,12 @@ function collapseDirectedChains(graph: Graph): Graph {
   return result;
 }
 
-function collapseDirectedChainsWithRoundabouts(
-  graph: Graph,
-  tsMapNodes: Pick<MappedData, 'nodes'>,
-): {
-  graph: Graph;
-  roundabouts: string[][];
-} {
-  const { inDeg, outDeg } = computeDegrees(graph);
-
-  const isChainNode = (v: string) =>
-    assertExists(inDeg.get(v)) === 1 && assertExists(outDeg.get(v)) === 1;
-
-  const visited = new Set<string>();
-  const result: Graph = new Map();
-  const roundabouts: string[][] = [];
-
-  function addEdge(a: string, b: string) {
-    putIfAbsent(a, new Set(), result).add(b);
-  }
-
-  // --- geometry helpers (optional) ---
-
-  function isCircular(nodes: string[]): boolean {
-    const pts = nodes.map(n => {
-      const nodeUid = BigInt(n.split('-')[0]);
-      return assertExists(tsMapNodes.nodes.get(nodeUid));
-    });
-    const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
-    const cy = pts.reduce((s, p) => s + p.y, 0) / pts.length;
-
-    const radii = pts.map(p => distance(p, { x: cx, y: cy }));
-    const mean = radii.reduce((a, b) => a + b, 0) / radii.length;
-    const variance =
-      radii.reduce((a, r) => a + (r - mean) ** 2, 0) / radii.length;
-
-    const relStd = Math.sqrt(variance) / (mean || 1);
-
-    return relStd < 0.3; // tune
-  }
-
-  function isRoundaboutCycle(nodes: string[]): boolean {
-    return nodes.length >= 3 && nodes.length <= 12 && isCircular(nodes);
-  }
-
-  // --- main collapse ---
-  for (const v of graph.keys()) {
-    if (isChainNode(v)) continue;
-
-    for (const n of assertExists(graph.get(v))) {
-      let curr = n;
-      const path: string[] = [];
-
-      const localVisited = new Set<string>();
-
-      while (isChainNode(curr)) {
-        if (localVisited.has(curr)) {
-          // cycle detected
-          const cycleStart = curr;
-          const cycle: string[] = [];
-
-          let x = curr;
-          do {
-            cycle.push(x);
-            assert(graph.get(curr)!.size === 1);
-            x = graph.get(curr)!.values().next().value!;
-          } while (x !== cycleStart);
-
-          // classify
-          if (isRoundaboutCycle(cycle)) {
-            console.log('roundabout', cycle);
-            roundabouts.push(cycle);
-
-            // mark all nodes so we don't collapse them
-            for (const node of cycle) visited.add(node);
-
-            break;
-          } else {
-            // not roundabout → collapse anyway
-            for (const node of cycle) visited.add(node);
-            break;
-          }
-        }
-
-        localVisited.add(curr);
-        path.push(curr);
-        assert(graph.get(curr)!.size === 1);
-        curr = graph.get(curr)!.values().next().value!;
-      }
-
-      if (!visited.has(curr) && curr !== v) {
-        addEdge(v, curr);
-      }
-    }
-  }
-
-  // --- handle isolated chain cycles (not reached above) ---
-  for (const v of graph.keys()) {
-    if (isChainNode(v) && !visited.has(v)) {
-      const cycle: string[] = [];
-      let curr = v;
-
-      do {
-        cycle.push(curr);
-        visited.add(curr);
-        assert(
-          graph.get(curr)!.size === 1,
-          'unexpected size ' + graph.get(curr)!.size,
-        );
-        curr = graph.get(curr)!.values().next().value!;
-      } while (curr !== v);
-
-      if (isRoundaboutCycle(cycle)) {
-        roundabouts.push(cycle);
-      }
-    }
-  }
-
-  normalizeGraph(result);
-
-  return {
-    graph: result,
-    roundabouts,
-  };
-}
-
 export function detectRoundabouts(
   graph: Map<bigint, Neighbors>,
   tsMapData: Pick<MappedData, 'nodes' | 'map'>,
 ): Map<bigint, Neighbors> {
   let adjacencyList = convertToAdjacencyList(graph);
   normalizeGraph(adjacencyList);
-  console.log(adjacencyList.size, 'nodes');
-  let edges = 0;
-  for (const neighbors of adjacencyList.values()) {
-    edges += neighbors.size;
-  }
-  console.log(edges, 'edges');
-
-  //adjacencyList = pruneDeadEnds(adjacencyList);
-
-  console.log('collapsing....');
-  //const graphAndRoundabouts = collapseDirectedChainsWithRoundabouts(
-  //  adjacencyList,
-  //  tsMapData,
-  //);
-  //adjacencyList = graphAndRoundabouts.graph;
-  adjacencyList = collapseDirectedChains(adjacencyList);
-  console.log(adjacencyList.size, 'nodes');
-  let maxEdges = 0;
-  edges = 0;
-  for (const neighbors of adjacencyList.values()) {
-    edges += neighbors.size;
-    maxEdges = neighbors.size > maxEdges ? neighbors.size : maxEdges;
-  }
-  console.log(edges, 'edges');
-  console.log(maxEdges, 'maxEdges');
-  //console.log('roundabouts', graphAndRoundabouts.roundabouts.length);
 
   // filter graph to nodes that exist / are known (due to load-time filtering)
   let deletedCount = 0;
@@ -305,6 +153,49 @@ export function detectRoundabouts(
 
   // print out adjacency list edges
   adjacencyList = convertToAdjacencyList(graph);
+  console.log(adjacencyList.size, 'nodes');
+  let edges = 0;
+  for (const neighbors of adjacencyList.values()) {
+    edges += neighbors.size;
+  }
+  console.log(edges, 'edges');
+
+  //adjacencyList = pruneDeadEnds(adjacencyList);
+
+  console.log('collapsing....');
+  //const graphAndRoundabouts = collapseDirectedChainsWithRoundabouts(
+  //  adjacencyList,
+  //  tsMapData,
+  //);
+  //adjacencyList = graphAndRoundabouts.graph;
+  adjacencyList = collapseDirectedChains(adjacencyList);
+  console.log(adjacencyList.size, 'nodes');
+  let maxEdges = 0;
+  edges = 0;
+  for (const neighbors of adjacencyList.values()) {
+    edges += neighbors.size;
+    maxEdges = neighbors.size > maxEdges ? neighbors.size : maxEdges;
+  }
+  console.log(edges, 'edges');
+  console.log(maxEdges, 'maxEdges');
+
+  //console.log('collapsing AGAIN...');
+  //const collapseRes = collapseDirectedChainsWithRoundabouts(
+  //  adjacencyList,
+  //  tsMapData,
+  //);
+  //console.log(collapseRes.graph.size, 'nodes');
+  //edges = 0;
+  //maxEdges = 0;
+  //for (const neighbors of collapseRes.graph.values()) {
+  //  edges += neighbors.size;
+  //  maxEdges = neighbors.size > maxEdges ? neighbors.size : maxEdges;
+  //}
+  //console.log(edges, 'edges');
+  //console.log(maxEdges, 'maxEdges');
+
+  //console.log('roundabouts', collapseRes.roundabouts);
+
   for (const [key, adjs] of adjacencyList) {
     const nodeUid = BigInt(key.split('-')[0]);
     const nodeDir = key.split('-')[1];
@@ -329,25 +220,25 @@ export function detectRoundabouts(
 
   const res = new Map<string, Set<string>>();
 
-  let sccs = findSCCsIterative1(mapValues(adjacencyList, v => [...v]));
-  //let sccs = findAllSimpleCycles(mapValues(adjacencyList, v => [...v]));
-  sccs = sccs.filter(component => component.length >= 4);
+  //let sccs = findSCCsIterative1(mapValues(adjacencyList, v => [...v]));
+  let sccs = findAllSimpleCycles(mapValues(adjacencyList, v => [...v]));
+  //sccs = sccs.filter(component => component.length >= 4);
 
   console.log('components', sccs.length);
 
   sccs.forEach(components => {
     console.log(components.length);
-    //console.log(
-    //  JSON.stringify(
-    //    components.map(entry => {
-    //      const uid = BigInt(entry.split('-')[0]);
-    //      const dir = entry.split('-')[1];
-    //      return uid.toString(16) + '-' + dir;
-    //    }),
-    //    null,
-    //    2,
-    //  ),
-    //);
+    console.log(
+      JSON.stringify(
+        components.map(entry => {
+          const uid = BigInt(entry.split('-')[0]);
+          const dir = entry.split('-')[1];
+          return uid.toString(16) + '-' + dir;
+        }),
+        null,
+        2,
+      ),
+    );
   });
 
   sccs = sccs.filter(component => component.length >= 3);
@@ -474,8 +365,8 @@ export function findSCCsIterative1(graph: Map<string, string[]>): string[][] {
 
 function findAllSimpleCycles(
   graph: Map<string, string[]>,
-  minLen = 10,
-  maxLen = 20,
+  minLen = 4,
+  maxLen = 15,
 ): string[][] {
   const nodes = Array.from(graph.keys()).sort(); // stable ordering
   const indexMap = new Map(nodes.map((n, i) => [n, i]));

@@ -407,8 +407,8 @@ describe('roundabout detection', () => {
     const graphData = readGraphData(outDir, map);
     const nodes = readMapData(outDir + '/parser', map, {
       mapDataKeys: ['nodes'],
-      focus: { city: 'paris', radiusMeters: 5000, type: 'city' },
-      //focus: { type: 'coords', radiusMeters: 1000, coords: [-27400, 7500] },
+      //focus: { city: 'paris', radiusMeters: 5000, type: 'city' },
+      focus: { type: 'coords', radiusMeters: 2000, coords: [-27400, 7500] },
       //focus: { city: 'sacramento', radiusMeters: 2000, type: 'city' },
     });
 
