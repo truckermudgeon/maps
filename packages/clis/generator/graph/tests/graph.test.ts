@@ -18,7 +18,7 @@ import type {
 } from '@truckermudgeon/map/types';
 import path from 'node:path';
 import url from 'node:url';
-import { detectRoundabouts } from '../detect-roundabouts';
+import { detectPrefabRoundabouts } from '../detect-roundabouts';
 import { generateGraph } from '../graph';
 import { d_farm_grg, d_oil_gst3, prefab_us_405 } from './fixtures';
 
@@ -400,20 +400,21 @@ describe('generateGraph', () => {
 
 describe('roundabout detection', () => {
   it('detects SCCs (full graph)', () => {
-    const map = 'europe';
+    const map = 'usa';
     const __filename = url.fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
     const outDir = path.join(__dirname, '../../../../../out');
     const graphData = readGraphData(outDir, map);
-    const nodes = readMapData(outDir + '/parser', map, {
-      mapDataKeys: ['nodes'],
+    const tsMapData = readMapData(outDir + '/parser', map, {
+      mapDataKeys: ['nodes', 'prefabs', 'prefabDescriptions'],
       //focus: { city: 'paris', radiusMeters: 5000, type: 'city' },
-      focus: { type: 'coords', radiusMeters: 2000, coords: [-27400, 7500] },
+      //focus: { type: 'coords', radiusMeters: 2000, coords: [-27400, 7500] },
       //focus: { city: 'sacramento', radiusMeters: 2000, type: 'city' },
     });
 
     const start = Date.now();
-    detectRoundabouts(graphData.graph, nodes);
+    detectPrefabRoundabouts(tsMapData);
+    //detectRoundabouts(graphData.graph, nodes);
     console.log('time', (Date.now() - start) / 1000, 'seconds');
   }, 600);
 
@@ -435,10 +436,10 @@ describe('roundabout detection', () => {
     addEdge(7, 0);
     addEdge(7, 6);
 
-    const roundabouts = detectRoundabouts(forwardOnlyGraph, {
-      nodes: new Map(),
-      map: 'usa',
-    });
+    //const roundabouts = detectRoundabouts(forwardOnlyGraph, {
+    //  nodes: new Map(),
+    //  map: 'usa',
+    //});
   });
 
   it('detects SCCs demo', () => {
@@ -474,10 +475,10 @@ describe('roundabout detection', () => {
     addEdge(7, 7);
     addEdge(7, 6);
 
-    const roundabouts = detectRoundabouts(forwardOnlyGraph, {
-      nodes: new Map(),
-      map: 'usa',
-    });
+    //const roundabouts = detectRoundabouts(forwardOnlyGraph, {
+    //  nodes: new Map(),
+    //  map: 'usa',
+    //});
   });
 
   it('detects SCCs hardcoded', () => {
@@ -521,10 +522,10 @@ describe('roundabout detection', () => {
 
     addEdge(k, l);
 
-    const roundabouts = detectRoundabouts(forwardOnlyGraph, {
-      nodes: new Map(),
-      map: 'usa',
-    });
+    //const roundabouts = detectRoundabouts(forwardOnlyGraph, {
+    //  nodes: new Map(),
+    //  map: 'usa',
+    //});
   });
 });
 

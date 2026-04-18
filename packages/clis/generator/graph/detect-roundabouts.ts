@@ -1,6 +1,11 @@
 import { assert, assertExists } from '@truckermudgeon/base/assert';
+import { center, distance, getExtent } from '@truckermudgeon/base/geom';
 import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
 import type { MappedData } from '@truckermudgeon/io';
+import {
+  calculateLaneInfo,
+  calculateNodeConnections,
+} from '@truckermudgeon/map/prefabs';
 import {
   fromAtsCoordsToWgs84,
   fromEts2CoordsToWgs84,
@@ -120,9 +125,186 @@ function collapseDirectedChains(graph: Graph): Graph {
   return result;
 }
 
+function cicularity(points: { x: number; y: number }[]): number {
+  // centroid
+  //const cx = points.reduce((s, p) => s + p.x, 0) / points.length;
+  //const cy = points.reduce((s, p) => s + p.y, 0) / points.length;
+
+  // center
+  const [cx, cy] = center(getExtent(points));
+
+  const radii = points.map(p => distance(p, { x: cx, y: cy }));
+  const mean = radii.reduce((a, b) => a + b, 0) / radii.length;
+  const variance =
+    radii.reduce((a, r) => a + (r - mean) ** 2, 0) / radii.length;
+
+  return 1 - Math.sqrt(variance) / (mean || 1);
+}
+
+function bearing(
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+): number {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  return (Math.atan2(dy, dx) * 180) / Math.PI;
+}
+
+function isConsistentTurning(path: { x: number; y: number }[]): boolean {
+  const turnSigns: number[] = [];
+
+  for (let i = 0; i < path.length - 1; i++) {
+    const a = path[i];
+    const b = path[0];
+    const c = path[i + 1];
+
+    const ab = bearing(b, a);
+    const bc = bearing(b, c);
+
+    let diff = bc - ab;
+    while (diff < -180) diff += 360;
+    while (diff > 180) diff -= 360;
+
+    turnSigns.push(Math.sign(diff));
+  }
+
+  const positives = turnSigns.filter(t => t > 0).length;
+  const negatives = turnSigns.filter(t => t < 0).length;
+
+  return positives === 0 || negatives === 0;
+}
+
+function circularityByRadius(coords: [number, number][]) {
+  const cx = coords.reduce((s, c) => s + c[0], 0) / coords.length;
+  const cy = coords.reduce((s, c) => s + c[1], 0) / coords.length;
+
+  const distances = coords.map(([x, y]) => Math.hypot(x - cx, y - cy));
+
+  const mean = distances.reduce((s, d) => s + d, 0) / distances.length;
+
+  const variance =
+    distances.reduce((s, d) => s + (d - mean) ** 2, 0) / distances.length;
+
+  const stdDev = Math.sqrt(variance);
+
+  return {
+    center: [cx, cy] as [number, number],
+    meanRadius: mean,
+    score: stdDev / mean, // 🔥 key metric
+  };
+}
+
+function turningConsistency(coords: [number, number][]) {
+  let positive = 0;
+  let negative = 0;
+
+  for (let i = 1; i < coords.length - 1; i++) {
+    const [x1, y1] = coords[i - 1];
+    const [x2, y2] = coords[i];
+    const [x3, y3] = coords[i + 1];
+
+    const cross = (x2 - x1) * (y3 - y2) - (y2 - y1) * (x3 - x2);
+
+    if (cross > 0) positive++;
+    if (cross < 0) negative++;
+  }
+
+  const total = positive + negative;
+  const dominant = Math.max(positive, negative);
+
+  return total === 0 ? 0 : dominant / total;
+}
+
+export function detectPrefabRoundabouts(
+  tsmapData: Pick<MappedData, 'prefabDescriptions'>,
+): Set<string> {
+  const results = new Set<string>();
+  const { prefabDescriptions } = tsmapData;
+  for (const desc of prefabDescriptions.values()) {
+    if (cicularity(desc.nodes) < 0.65) {
+      continue;
+    }
+
+    const connections = calculateNodeConnections(desc);
+    if (
+      connections.size < 3 ||
+      connections.values().some(exits => exits.length !== connections.size)
+    ) {
+      if (
+        connections.size > 3 &&
+        connections
+          .values()
+          .every(exits => exits.length >= connections.size - 1) &&
+        connections.values().some(exits => exits.length === connections.size)
+      ) {
+        // do nothing; let it slip through to next phase of filtering
+        console.log('allowed', desc.path, desc.token);
+        //console.log(desc.path, desc.token, desc.nodes.length, connections);
+      } else {
+        continue;
+      }
+    }
+
+    if (!connections.get(0)?.includes(0)) {
+      // first node doesn't loop back onto itself.
+      // not a strong sign, but good enough.
+      //console.log('no 0-th loopback', desc.path);
+      //continue;
+    }
+
+    // get the path of the first-node-loopback.
+    const laneInfo = calculateLaneInfo(desc);
+    const path: [number, number][] = [];
+    for (const lane of laneInfo.values()) {
+      for (const inputLane of lane) {
+        for (const branch of inputLane.branches) {
+          //if (branch.targetNodeIndex === 0) {
+          for (const curvePoint of branch.curvePoints) {
+            path.push(curvePoint);
+          }
+          //}
+        }
+      }
+    }
+    const score = circularityByRadius(path);
+    const turning = turningConsistency(path);
+    //console.log(desc.path, {
+    //  ...score,
+    //  scoreAdj: score.score / connections.size,
+    //  turning,
+    //});
+    if (score.score / connections.size > 0.1) {
+      console.log('not circular enough', desc.path);
+      console.log(desc.path, {
+        ...score,
+        scoreAdj: score.score / connections.size,
+        turning,
+      });
+      continue;
+    }
+    //if (!isConsistentTurning(path)) {
+    //  console.log('inconsistent', desc.path);
+    //  continue;
+    //}
+
+    //if (connections.size !== desc.nodes.length) {
+    //  console.log(connections);
+    //  console.log(desc.path);
+    //}
+
+    results.add(desc.path);
+  }
+  console.log(results.size);
+  console.log(results);
+  return results;
+}
+
 export function detectRoundabouts(
   graph: Map<bigint, Neighbors>,
-  tsMapData: Pick<MappedData, 'nodes' | 'map'>,
+  tsMapData: Pick<
+    MappedData,
+    'nodes' | 'prefabs' | 'prefabDescriptions' | 'map'
+  >,
 ): Map<bigint, Neighbors> {
   let adjacencyList = convertToAdjacencyList(graph);
   normalizeGraph(adjacencyList);
@@ -196,6 +378,7 @@ export function detectRoundabouts(
 
   //console.log('roundabouts', collapseRes.roundabouts);
 
+  /*
   for (const [key, adjs] of adjacencyList) {
     const nodeUid = BigInt(key.split('-')[0]);
     const nodeDir = key.split('-')[1];
@@ -214,6 +397,8 @@ export function detectRoundabouts(
       );
     }
   }
+
+   */
 
   const toLngLat =
     tsMapData.map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
@@ -271,96 +456,6 @@ export function detectRoundabouts(
   //console.log(sccs);
 
   return convertToNeighbors(res, graph);
-}
-
-// Tarjan
-export function findSCCsIterative1(graph: Map<string, string[]>): string[][] {
-  let index = 0;
-
-  const indices = new Map<string, number>();
-  const lowlink = new Map<string, number>();
-  const onStack = new Set<string>();
-  const stack: string[] = [];
-
-  const result: string[][] = [];
-
-  interface Frame {
-    node: string;
-    parent?: string;
-    neighborIndex: number;
-  }
-
-  for (const startNode of graph.keys()) {
-    if (indices.has(startNode)) continue;
-
-    const callStack: Frame[] = [];
-    callStack.push({ node: startNode, neighborIndex: 0 });
-
-    while (callStack.length > 0) {
-      const frame = callStack[callStack.length - 1];
-      const { node } = frame;
-
-      // First time visiting node
-      if (!indices.has(node)) {
-        indices.set(node, index);
-        lowlink.set(node, index);
-        index++;
-
-        stack.push(node);
-        onStack.add(node);
-      }
-
-      const neighbors = graph.get(node) ?? [];
-
-      if (frame.neighborIndex < neighbors.length) {
-        const neighbor = neighbors[frame.neighborIndex];
-        frame.neighborIndex++;
-
-        if (!indices.has(neighbor)) {
-          // Recurse (push new frame)
-          callStack.push({
-            node: neighbor,
-            parent: node,
-            neighborIndex: 0,
-          });
-        } else if (onStack.has(neighbor)) {
-          // Back edge
-          lowlink.set(
-            node,
-            Math.min(lowlink.get(node)!, indices.get(neighbor)!),
-          );
-        }
-      } else {
-        // Done exploring neighbors → backtrack
-        callStack.pop();
-
-        if (frame.parent != null) {
-          const parent = frame.parent;
-
-          lowlink.set(
-            parent,
-            Math.min(lowlink.get(parent)!, lowlink.get(node)!),
-          );
-        }
-
-        // Root of SCC
-        if (lowlink.get(node) === indices.get(node)) {
-          const component: string[] = [];
-          let w: string;
-
-          do {
-            w = stack.pop()!;
-            onStack.delete(w);
-            component.push(w);
-          } while (w !== node);
-
-          result.push(component);
-        }
-      }
-    }
-  }
-
-  return result;
 }
 
 function findAllSimpleCycles(
@@ -475,54 +570,6 @@ function findAllSimpleCycles(
           stack[stack.length - 1].foundCycle ||= frame.foundCycle;
         }
       }
-    }
-  }
-
-  return result;
-}
-
-function findSCCs(graph: Map<string, Set<string>>): string[][] {
-  let index = 0;
-  const stack: string[] = [];
-  const indices = new Map<string, number>();
-  const lowlink = new Map<string, number>();
-  const onStack = new Set<string>();
-  const result: string[][] = [];
-
-  function strongconnect(v: string) {
-    indices.set(v, index);
-    lowlink.set(v, index);
-    index++;
-
-    stack.push(v);
-    onStack.add(v);
-
-    for (const w of graph.get(v) ?? []) {
-      if (!indices.has(w)) {
-        strongconnect(w);
-        lowlink.set(v, Math.min(lowlink.get(v)!, lowlink.get(w)!));
-      } else if (onStack.has(w)) {
-        lowlink.set(v, Math.min(lowlink.get(v)!, indices.get(w)!));
-      }
-    }
-
-    if (lowlink.get(v) === indices.get(v)) {
-      const component: string[] = [];
-      let w: string;
-
-      do {
-        w = stack.pop()!;
-        onStack.delete(w);
-        component.push(w);
-      } while (w !== v);
-
-      result.push(component);
-    }
-  }
-
-  for (const v of graph.keys()) {
-    if (!indices.has(v)) {
-      strongconnect(v);
     }
   }
 
