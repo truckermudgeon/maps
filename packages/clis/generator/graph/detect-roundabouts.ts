@@ -1,5 +1,5 @@
 import { assert, assertExists } from '@truckermudgeon/base/assert';
-import { center, distance, getExtent } from '@truckermudgeon/base/geom';
+import { getExtent } from '@truckermudgeon/base/geom';
 import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
 import type { MappedData } from '@truckermudgeon/io';
 import {
@@ -125,22 +125,6 @@ function collapseDirectedChains(graph: Graph): Graph {
   return result;
 }
 
-function cicularity(points: { x: number; y: number }[]): number {
-  // centroid
-  //const cx = points.reduce((s, p) => s + p.x, 0) / points.length;
-  //const cy = points.reduce((s, p) => s + p.y, 0) / points.length;
-
-  // center
-  const [cx, cy] = center(getExtent(points));
-
-  const radii = points.map(p => distance(p, { x: cx, y: cy }));
-  const mean = radii.reduce((a, b) => a + b, 0) / radii.length;
-  const variance =
-    radii.reduce((a, r) => a + (r - mean) ** 2, 0) / radii.length;
-
-  return 1 - Math.sqrt(variance) / (mean || 1);
-}
-
 function bearing(
   a: { x: number; y: number },
   b: { x: number; y: number },
@@ -221,7 +205,7 @@ export function detectPrefabRoundabouts(
   const results = new Set<string>();
   const { prefabDescriptions } = tsmapData;
   for (const desc of prefabDescriptions.values()) {
-    if (cicularity(desc.nodes) < 0.65) {
+    if (circularityByRadius(desc.nodes.map(n => [n.x, n.y])).score > 0.35) {
       continue;
     }
 
@@ -255,32 +239,56 @@ export function detectPrefabRoundabouts(
     // get the path of the first-node-loopback.
     const laneInfo = calculateLaneInfo(desc);
     const path: [number, number][] = [];
+    const turningCons: number[] = [];
     for (const lane of laneInfo.values()) {
       for (const inputLane of lane) {
         for (const branch of inputLane.branches) {
           //if (branch.targetNodeIndex === 0) {
-          for (const curvePoint of branch.curvePoints) {
-            path.push(curvePoint);
-          }
+          const interiorCurvePoints = branch.curvePoints.slice(
+            Math.floor(branch.curvePoints.length / 4),
+            -Math.floor(branch.curvePoints.length / 4),
+          );
+          turningCons.push(turningConsistency(interiorCurvePoints));
+
+          path.push(...interiorCurvePoints);
           //}
         }
       }
     }
-    const score = circularityByRadius(path);
-    const turning = turningConsistency(path);
-    //console.log(desc.path, {
-    //  ...score,
-    //  scoreAdj: score.score / connections.size,
-    //  turning,
-    //});
-    if (score.score / connections.size > 0.1) {
+    const bounds = getExtent(path);
+    const aspect =
+      Math.abs(bounds[0] - bounds[2]) / Math.abs(bounds[1] - bounds[3]);
+
+    const turning =
+      turningCons.reduce((acc, i) => acc + i, 0) / turningCons.length;
+    const score = {
+      ...circularityByRadius(path),
+      aspect,
+      turning,
+      conns: connections.size,
+    };
+    const compScore = (1 - score.score) * turning;
+    if (
+      Number(turning.toFixed(2)) < 0.79 ||
+      score.meanRadius > 70 ||
+      score.aspect < 0.7
+    ) {
       console.log('not circular enough', desc.path);
       console.log(desc.path, {
         ...score,
         scoreAdj: score.score / connections.size,
-        turning,
       });
       continue;
+    } else if (!desc.path.includes('round')) {
+      console.log('suspect', desc.path, {
+        ...score,
+        scoreAdj: score.score / connections.size,
+      });
+    } else {
+      console.log('ok', desc.path, {
+        ...score,
+        scoreAdj: score.score / connections.size,
+      });
     }
     //if (!isConsistentTurning(path)) {
     //  console.log('inconsistent', desc.path);
@@ -296,6 +304,7 @@ export function detectPrefabRoundabouts(
   }
   console.log(results.size);
   console.log(results);
+  console.log([...results].filter(p => !p.includes('round')));
   return results;
 }
 
