@@ -136,17 +136,21 @@ export function readMapData<
 
   const allCities = readArrayFile<City>(toJsonFilePath('cities'));
   let focusCoords: [number, number] | undefined;
+  let focusCity: string | undefined;
   if (focusOptions) {
     switch (focusOptions.type) {
       case 'city': {
         const maybeCity = allCities.find(
-          c => c.name.toLowerCase() === focusOptions.city.toLowerCase(),
+          c =>
+            c.name.toLowerCase() === focusOptions.city.toLowerCase() ||
+            c.token.startsWith(focusOptions.city.toLowerCase()),
         );
         if (!maybeCity) {
           logger.error('unknown focus city', focusOptions.city);
           process.exit(2);
         }
         focusCoords = [maybeCity.x, maybeCity.y];
+        focusCity = maybeCity.name;
         break;
       }
       case 'coords':
@@ -164,7 +168,7 @@ export function readMapData<
   if (focusCoords) {
     logger.info(
       'focusing on',
-      focusCoords,
+      focusCity ?? focusCoords,
       toWgs84(focusCoords).map(n => Number(n.toFixed(3))),
       `(${focusOptions?.radiusMeters} meters)`,
     );
