@@ -196,7 +196,10 @@ function turningConsistency(coords: [number, number][]) {
   const total = positive + negative;
   const dominant = Math.max(positive, negative);
 
-  return total === 0 ? 0 : dominant / total;
+  return {
+    score: total === 0 ? 0 : dominant / total,
+    direction: positive > negative ? 1 : positive === negative ? 0 : -1,
+  };
 }
 
 export function detectPrefabRoundabouts(
@@ -210,43 +213,31 @@ export function detectPrefabRoundabouts(
     }
 
     const connections = calculateNodeConnections(desc);
-    if (
-      connections.size < 3 ||
-      connections.values().some(exits => exits.length !== connections.size)
-    ) {
-      if (
-        connections.size > 3 &&
-        connections
-          .values()
-          .every(exits => exits.length >= connections.size - 1) &&
-        connections.values().some(exits => exits.length === connections.size)
-      ) {
-        // do nothing; let it slip through to next phase of filtering
-        console.log('allowed', desc.path, desc.token);
-        //console.log(desc.path, desc.token, desc.nodes.length, connections);
-      } else {
-        continue;
-      }
-    }
+    const fullyConnectedRoundabout =
+      connections.size >= 3 &&
+      connections.values().every(exits => exits.length === connections.size);
+    const mostlyConnectedRoundabout =
+      connections.size > 3 &&
+      connections
+        .values()
+        .every(exits => exits.length >= connections.size - 1) &&
+      connections.values().some(exits => exits.length === connections.size);
 
-    if (!connections.get(0)?.includes(0)) {
-      // first node doesn't loop back onto itself.
-      // not a strong sign, but good enough.
-      //console.log('no 0-th loopback', desc.path);
-      //continue;
+    if (!fullyConnectedRoundabout && !mostlyConnectedRoundabout) {
+      continue;
     }
 
     // get the path of the first-node-loopback.
     const laneInfo = calculateLaneInfo(desc);
     const path: [number, number][] = [];
-    const turningCons: number[] = [];
+    const turningCons: { score: number; direction: number }[] = [];
     for (const lane of laneInfo.values()) {
       for (const inputLane of lane) {
         for (const branch of inputLane.branches) {
           //if (branch.targetNodeIndex === 0) {
           const interiorCurvePoints = branch.curvePoints.slice(
-            Math.floor(branch.curvePoints.length / 4),
-            -Math.floor(branch.curvePoints.length / 4),
+            Math.floor(branch.curvePoints.length / 3),
+            -Math.floor(branch.curvePoints.length / 3),
           );
           turningCons.push(turningConsistency(interiorCurvePoints));
 
@@ -260,12 +251,17 @@ export function detectPrefabRoundabouts(
       Math.abs(bounds[0] - bounds[2]) / Math.abs(bounds[1] - bounds[3]);
 
     const turning =
-      turningCons.reduce((acc, i) => acc + i, 0) / turningCons.length;
+      turningCons.reduce((acc, i) => acc + i.score, 0) / turningCons.length;
     const score = {
       ...circularityByRadius(path),
       aspect,
       turning,
       conns: connections.size,
+      allTurns: turningCons.every(s => s.direction === 1)
+        ? 'positive'
+        : turningCons.every(s => s.direction === -1)
+          ? 'negative'
+          : 'mixedOrZero',
     };
     const compScore = (1 - score.score) * turning;
     if (
@@ -300,7 +296,7 @@ export function detectPrefabRoundabouts(
     //  console.log(desc.path);
     //}
 
-    results.add(desc.path);
+    results.add(desc.token + ' ' + desc.path);
   }
   console.log(results.size);
   console.log(results);
