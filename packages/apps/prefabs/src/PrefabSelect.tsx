@@ -51,9 +51,9 @@ export const PrefabSelect = (props: PrefabSelectProps) => {
     assert(options.length === 0);
 
     const [descs, items, nodes] = (await Promise.all([
-      fetch('/usa-prefabDescriptions.json').then(res => res.json()),
-      fetch('/usa-prefabs.json').then(res => res.json()),
-      fetch('/usa-nodes.json').then(res => res.json()),
+      fetch('/europe-prefabDescriptions.json').then(res => res.json()),
+      fetch('/europe-prefabs.json').then(res => res.json()),
+      fetch('/europe-nodes.json').then(res => res.json()),
     ])) as [PrefabDescription[], Prefab[], Node[]];
 
     return toOptions(descs, items, nodes);
