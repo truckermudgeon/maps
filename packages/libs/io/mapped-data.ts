@@ -218,17 +218,19 @@ export function readMapData<
     switch (key) {
       case 'nodes': {
         mapData.nodes = mapify(
-          readArrayFile<Node>(toJsonFilePath(key), focusXYPlus(1000)),
+          readArrayFile<Node>(toJsonFilePath(key), {
+            filter: focusXYPlus(1000),
+          }),
           n => n.uid,
         );
         break;
       }
       case 'roads':
         mapData.roads = mapify(
-          readArrayFile<Road>(
-            toJsonFilePath(key),
-            r => (includeHiddenRoadsAndPrefabs || !r.hidden) && focusXY(r),
-          ),
+          readArrayFile<Road>(toJsonFilePath(key), {
+            filter: r =>
+              (includeHiddenRoadsAndPrefabs || !r.hidden) && focusXY(r),
+          }),
           r => r.uid,
         );
         mapData.roads.values().forEach(road => {
@@ -238,7 +240,7 @@ export function readMapData<
         break;
       case 'ferries':
         mapData.ferries = mapify(
-          readArrayFile<Ferry>(toJsonFilePath(key), focusXY),
+          readArrayFile<Ferry>(toJsonFilePath(key), { filter: focusXY }),
           f => f.token,
         );
         mapData.ferries.values().forEach(ferry => {
@@ -250,15 +252,19 @@ export function readMapData<
         break;
       case 'prefabs':
         mapData.prefabs = mapify(
-          readArrayFile<Prefab>(toJsonFilePath(key), p => {
-            const isCompanyPrefab = allCompanyPrefabs.has(p.uid);
-            // N.B.: all company prefabs are returned, regardless of whether
-            // they're hidden, because there's no such thing as a
-            // hidden-from-the-map-ui company (e.g., Rock Port in St Louis, MO)
-            return (
-              (includeHiddenRoadsAndPrefabs || isCompanyPrefab || !p.hidden) &&
-              focusXY(p)
-            );
+          readArrayFile<Prefab>(toJsonFilePath(key), {
+            filter: p => {
+              const isCompanyPrefab = allCompanyPrefabs.has(p.uid);
+              // N.B.: all company prefabs are returned, regardless of whether
+              // they're hidden, because there's no such thing as a
+              // hidden-from-the-map-ui company (e.g., Rock Port in St Louis, MO)
+              return (
+                (includeHiddenRoadsAndPrefabs ||
+                  isCompanyPrefab ||
+                  !p.hidden) &&
+                focusXY(p)
+              );
+            },
           }),
           p => p.uid,
         );
@@ -268,7 +274,7 @@ export function readMapData<
         break;
       case 'signs':
         mapData.signs = mapify(
-          readArrayFile<Sign>(toJsonFilePath(key), focusXY),
+          readArrayFile<Sign>(toJsonFilePath(key), { filter: focusXY }),
           t => t.uid,
         );
         mapData.signs.values().forEach(sign => {
@@ -283,7 +289,7 @@ export function readMapData<
         break;
       case 'models':
         mapData.models = mapify(
-          readArrayFile<Model>(toJsonFilePath(key), focusXY),
+          readArrayFile<Model>(toJsonFilePath(key), { filter: focusXY }),
           m => m.uid,
         );
         mapData.models.values().forEach(model => {
@@ -292,7 +298,9 @@ export function readMapData<
         break;
       case 'mapAreas':
         mapData.mapAreas = mapify(
-          readArrayFile<MapArea>(toJsonFilePath(key), focusXYPlus(200)),
+          readArrayFile<MapArea>(toJsonFilePath(key), {
+            filter: focusXYPlus(200),
+          }),
           m => m.uid,
         );
         mapData.mapAreas.values().forEach(mapArea => {
@@ -301,7 +309,9 @@ export function readMapData<
         break;
       case 'dividers':
         mapData.dividers = mapify(
-          readArrayFile<Building | Curve>(toJsonFilePath(key), focusXY),
+          readArrayFile<Building | Curve>(toJsonFilePath(key), {
+            filter: focusXY,
+          }),
           d => d.uid,
         );
         mapData.dividers.values().forEach(divider => {
@@ -314,17 +324,18 @@ export function readMapData<
         break;
       case 'countries':
         mapData.countries = mapify(
-          readArrayFile<Country>(toJsonFilePath(key), country =>
-            countryTokens.has(country.token),
-          ),
+          readArrayFile<Country>(toJsonFilePath(key), {
+            filter: country => countryTokens.has(country.token),
+          }),
           c => c.token,
         );
         break;
       case 'companyDefs':
         mapData.companyDefs = mapify(
-          readArrayFile<WithToken<Company>>(toJsonFilePath(key), company =>
-            company.cityTokens.some(token => cityTokens.has(token)),
-          ),
+          readArrayFile<WithToken<Company>>(toJsonFilePath(key), {
+            filter: company =>
+              company.cityTokens.some(token => cityTokens.has(token)),
+          }),
           c => c.token,
         );
         break;
@@ -414,7 +425,9 @@ export function readMapData<
         break;
       // N.B.: the following data is always in array form.
       case 'pois':
-        mapData.pois = readArrayFile<Poi>(toJsonFilePath(key), focusXY);
+        mapData.pois = readArrayFile<Poi>(toJsonFilePath(key), {
+          filter: focusXY,
+        });
         mapData.pois.forEach(poi => {
           switch (poi.type) {
             case 'landmark':
@@ -450,7 +463,7 @@ export function readMapData<
       case 'elevation':
         mapData.elevation = readArrayFile<[number, number, number]>(
           toJsonFilePath(key),
-          focusXYArray,
+          { filter: focusXYArray },
         );
         break;
       default:
@@ -539,7 +552,10 @@ function checkJsonFilesPresent(
  * - string properties named `uid` or ending in `Uid` into bigints
  * - string array properties with key name ending in `Uids` into bigint arrays
  */
-function readArrayFile<T>(filepath: string, filter?: (t: T) => boolean): T[] {
+function readArrayFile<T>(
+  filepath: string,
+  options: { transform?: (t: T) => T; filter?: (t: T) => boolean } = {},
+): T[] {
   const basename = path.basename(filepath, '.json');
   const start = Date.now();
   const reviver =
@@ -555,6 +571,8 @@ function readArrayFile<T>(filepath: string, filter?: (t: T) => boolean): T[] {
   if (!Array.isArray(results)) {
     throw new Error();
   }
+
+  const { transform, filter } = options;
   const filtered = filter ? (results as T[]).filter(filter) : (results as T[]);
   if (basename.endsWith('nodes')) {
     for (const t of filtered) {
