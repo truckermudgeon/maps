@@ -1,7 +1,8 @@
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { distance, getExtent } from '@truckermudgeon/base/geom';
 import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
-import type { MappedData } from '@truckermudgeon/io';
+import type { MappedData, MappedDataForKeys } from '@truckermudgeon/io';
+import type { Lane } from '@truckermudgeon/map/prefabs';
 import {
   calculateLaneInfo,
   calculateNodeConnections,
@@ -256,6 +257,29 @@ export function detectPrefabRoundabouts(
   return results;
 }
 
+type CompositeRoundabouts = Map<
+  // ordered nodeUids of entry/exit nodes in a composite roundabout.
+  // ordering is the same as that of prefab description nodes: clockwise.
+  bigint[],
+  ReturnType<typeof calculateLaneInfo>
+>;
+
+export function detectCompositeRoundabouts(
+  _graph: Map<bigint, Neighbors>,
+  _tsMapData: MappedDataForKeys<['nodes', 'prefabs', 'prefabDescriptions']>,
+): Map<bigint[], Map<number, Lane[]>> {
+  const res: CompositeRoundabouts = new Map();
+
+  // 1. prune graph by removing nodes associated with prefab roundabouts.
+  // 2. convert graph to adjacency list, calculate nodes' degrees, collapse chains.
+  // 3. cluster nodes by degrees >= 3, with a radius of 200m (in game units)
+  // 4. for each cluster, detect cycles
+  // 5. filter cycles by cycle-path circularity and turning consistency
+  // 6. build LaneInfo map for cycles, using uncollapsed graph
+
+  return res;
+}
+
 export function detectRoundabouts(
   graph: Map<bigint, Neighbors>,
   tsMapData: Pick<
@@ -268,24 +292,12 @@ export function detectRoundabouts(
 
   // filter graph to nodes that exist / are known (due to load-time filtering)
   let deletedCount = 0;
-  for (const [key, adjs] of adjacencyList) {
+  for (const key of adjacencyList.keys()) {
     const nodeUid = BigInt(key.split('-')[0]);
-    const nodeDir = key.split('-')[1];
     const node = tsMapData.nodes.get(nodeUid);
     if (!node) {
       graph.delete(nodeUid);
       deletedCount++;
-      continue;
-    }
-
-    for (const adj of adjs) {
-      const adjUid = BigInt(adj.split('-')[0]);
-      const adjDir = adj.split('-')[1];
-      //console.log(
-      //  nodeUid.toString(16) + '-' + nodeDir,
-      //  '->',
-      //  `${adjUid.toString(16)}-${adjDir}`,
-      //);
     }
   }
   console.log('deleted', deletedCount, 'keys');
