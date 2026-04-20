@@ -76,6 +76,11 @@ export const builder = (yargs: Argv) =>
       coerce: untildify,
       demandOption: true,
     })
+    .option('dataOverridesPath', {
+      describe: 'Path to overrides.json file',
+      type: 'string',
+      coerce: untildify,
+    })
     .option('type', {
       alias: 't',
       describe:

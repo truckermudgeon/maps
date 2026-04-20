@@ -18,6 +18,7 @@ import type {
   Ferry,
   MapArea,
   MapData,
+  MappedDataOverride,
   MileageTarget,
   Model,
   ModelDescription,
@@ -118,6 +119,11 @@ interface Options<K extends keyof MapData> {
    */
   includeHiddenRoadsAndPrefabs?: boolean;
   focus?: FocusOptions;
+  /**
+   * if present, then the data returned will be processed with any overrides
+   * present in the JSON file at the given path.
+   */
+  dataOverridesJsonPath?: string;
 }
 
 export function readMapData<
@@ -132,7 +138,16 @@ export function readMapData<
   checkJsonFilesPresent(inputDir, map, new Set(options.mapDataKeys));
   const toJsonFilePath = (key: string) =>
     path.join(inputDir, map + '-' + key + '.json');
-  const { includeHiddenRoadsAndPrefabs = false, focus: focusOptions } = options;
+  const {
+    includeHiddenRoadsAndPrefabs = false,
+    focus: focusOptions,
+    dataOverridesJsonPath,
+  } = options;
+
+  let overrides: MappedDataOverride[] = [];
+  if (dataOverridesJsonPath != null && fs.existsSync(dataOverridesJsonPath)) {
+    overrides = readArrayFile<MappedDataOverride>(dataOverridesJsonPath);
+  }
 
   const allCities = readArrayFile<City>(toJsonFilePath('cities'));
   let focusCoords: [number, number] | undefined;
