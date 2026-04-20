@@ -145,9 +145,33 @@ export function readMapData<
   } = options;
 
   let overrides: MappedDataOverride[] = [];
+  const forceSecretUids = new Set<bigint>();
   if (dataOverridesJsonPath != null && fs.existsSync(dataOverridesJsonPath)) {
     overrides = readArrayFile<MappedDataOverride>(dataOverridesJsonPath);
+    for (const override of overrides) {
+      switch (override.type) {
+        case 'forceSecret':
+          logger.info('loading forceSecret override:', override.comment);
+          override.roadAndPrefabUids.forEach(uid => forceSecretUids.add(uid));
+          break;
+        default:
+          throw new UnreachableError(override.type);
+      }
+    }
   }
+  const maybeForceSecret: <T extends Road | Prefab>(
+    roadOrPrefab: T,
+  ) => T = roadOrPrefab => {
+    if (forceSecretUids.has(roadOrPrefab.uid)) {
+      return {
+        ...roadOrPrefab,
+        hidden: undefined,
+        secret: true,
+      };
+    } else {
+      return roadOrPrefab;
+    }
+  };
 
   const allCities = readArrayFile<City>(toJsonFilePath('cities'));
   let focusCoords: [number, number] | undefined;
@@ -228,6 +252,7 @@ export function readMapData<
       case 'roads':
         mapData.roads = mapify(
           readArrayFile<Road>(toJsonFilePath(key), {
+            transform: maybeForceSecret,
             filter: r =>
               (includeHiddenRoadsAndPrefabs || !r.hidden) && focusXY(r),
           }),
@@ -253,6 +278,7 @@ export function readMapData<
       case 'prefabs':
         mapData.prefabs = mapify(
           readArrayFile<Prefab>(toJsonFilePath(key), {
+            transform: maybeForceSecret,
             filter: p => {
               const isCompanyPrefab = allCompanyPrefabs.has(p.uid);
               // N.B.: all company prefabs are returned, regardless of whether
@@ -573,7 +599,10 @@ function readArrayFile<T>(
   }
 
   const { transform, filter } = options;
-  const filtered = filter ? (results as T[]).filter(filter) : (results as T[]);
+  const transformed = transform
+    ? (results as T[]).map(transform)
+    : (results as T[]);
+  const filtered = filter ? transformed.filter(filter) : transformed;
   if (basename.endsWith('nodes')) {
     for (const t of filtered) {
       const node = t as { -readonly [K in keyof Node]: Node[K] };
