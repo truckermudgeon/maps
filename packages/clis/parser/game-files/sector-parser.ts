@@ -1,3 +1,4 @@
+import { assert } from '@truckermudgeon/base/assert';
 import { normalizeRadians } from '@truckermudgeon/base/geom';
 import { Preconditions } from '@truckermudgeon/base/precon';
 import {
@@ -470,23 +471,44 @@ const SimpleItemStruct = {
     nodeUids: new r.Array(uint64le, r.uint32le),
   },
   [ItemType.Curve]: {
-    model: token64,
     startNodeUid: uint64le,
     endNodeUid: uint64le,
     paddingUids: new r.Array(uint64le, 2),
     length: r.floatle,
-    randomSeed: r.uint32le,
-    stretchCoef: r.floatle,
-    scale: r.floatle,
-    fixedStep: r.floatle,
-    material: token64,
-    color: r.uint32le,
-    terrainRot: r.floatle,
-    firstPart: token64,
-    lastPart: token64,
-    centerPartVariation: token64,
-    modelLook: token64,
-    heightOffsets: new r.Array(r.floatle, r.uint32le),
+    subcurveUseMask: r.uint32le,
+    subcurves: new r.Array(
+      new r.Struct({
+        model: token64,
+        flags: r.uint32le,
+        randomSeed: r.uint32le,
+        stretchCoef: r.floatle,
+        scale: r.floatle,
+        fixedStep: r.floatle,
+        material: token64,
+        color: r.uint32le,
+        terrainRot: r.floatle,
+        firstPart: token64,
+        lastPart: token64,
+        centerPartVariation: token64,
+        modelLook: token64,
+        heightOffsets: new r.Array(r.floatle, r.uint32le),
+        initialHeightOffset: r.floatle,
+        offsetFromBaseCurveStartX: r.floatle,
+        offsetFromBaseCurveStartY: r.floatle,
+        offsetFromBaseCurveEndX: r.floatle,
+        offsetFromBaseCurveEndY: r.floatle,
+      }),
+      (parent: { subcurveUseMask: number }) => {
+        let n = parent.subcurveUseMask;
+        // count number of bits set in `n`
+        let count = 0;
+        while (n !== 0) {
+          n &= n - 1;
+          count++;
+        }
+        return count;
+      },
+    ),
   },
   [ItemType.CameraPath]: {
     tags: new r.Array(token64, r.uint32le),
@@ -584,7 +606,7 @@ export function parseSector(
   ignoreNodeUids: ReadonlySet<bigint>,
 ) {
   const version = buffer.readUint32LE();
-  if (version !== 906) {
+  if (version !== 907) {
     if (!versionWarnings.has(version)) {
       logger.warn('unknown .base file version', version);
       logger.warn('errors may come up, and parse results may be inaccurate.');
@@ -851,15 +873,21 @@ function toBuilding(
 }
 
 function toCurve(rawItem: SectorItem<ItemType.Curve>): Curve | undefined {
-  if (rawItem.model !== '0i03a' && rawItem.model !== '0i03b') {
+  assert(rawItem.subcurves.length >= 1, 'curve has no subcurves');
+  if (
+    rawItem.subcurves.every(sc => sc.model !== '0i03a') &&
+    rawItem.subcurves.every(sc => sc.model !== '0i03b')
+  ) {
     return;
   }
 
   return {
     ...toBaseItem(rawItem),
-    model: rawItem.model,
-    look: rawItem.modelLook,
-    numBuildings: rawItem.heightOffsets.length,
+    subcurves: rawItem.subcurves.map(sc => ({
+      model: sc.model,
+      look: sc.modelLook,
+      numBuildings: sc.heightOffsets.length,
+    })),
     startNodeUid: rawItem.startNodeUid,
     endNodeUid: rawItem.endNodeUid,
   };

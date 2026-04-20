@@ -375,9 +375,11 @@ export type Building = BaseItem &
 export type Curve = BaseItem &
   Readonly<{
     type: ItemType.Curve;
-    model: string;
-    look: string;
-    numBuildings: number;
+    subcurves: {
+      model: string;
+      look: string;
+      numBuildings: number;
+    }[];
     startNodeUid: bigint;
     endNodeUid: bigint;
   }>;
