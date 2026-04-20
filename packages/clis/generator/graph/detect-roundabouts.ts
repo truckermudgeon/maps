@@ -178,16 +178,15 @@ export function detectPrefabRoundabouts(
       continue;
     }
 
-    const connections = calculateNodeConnections(desc);
+    const connections = calculateNodeConnections(desc).values().toArray();
     const fullyConnectedRoundabout =
-      connections.size >= 3 &&
-      connections.values().every(exits => exits.length === connections.size);
+      connections.length >= 3 &&
+      connections.every(exits => exits.length === connections.length);
     const mostlyConnectedRoundabout =
-      connections.size > 3 &&
-      connections
-        .values()
-        .every(exits => exits.length >= connections.size - 1) &&
-      connections.values().some(exits => exits.length === connections.size);
+      connections.length >= 4 &&
+      connections.every(exits => exits.length >= connections.length - 1) &&
+      connections.filter(exits => exits.length === connections.length).length >=
+        connections.length / 2;
 
     if (!fullyConnectedRoundabout && !mostlyConnectedRoundabout) {
       continue;
@@ -221,7 +220,7 @@ export function detectPrefabRoundabouts(
       ...circularityByRadius(path),
       aspect,
       turning,
-      conns: connections.size,
+      conns: connections.length,
       allTurns: turningCons.every(s => s.direction === 1)
         ? 'positive'
         : turningCons.every(s => s.direction === -1)
@@ -237,25 +236,23 @@ export function detectPrefabRoundabouts(
       console.log('not circular enough', desc.path);
       console.log(desc.path, {
         ...score,
-        scoreAdj: score.score / connections.size,
+        scoreAdj: score.score / connections.length,
       });
       continue;
     } else if (!desc.path.includes('round')) {
       console.log('suspect', desc.path, {
         ...score,
-        scoreAdj: score.score / connections.size,
+        scoreAdj: score.score / connections.length,
       });
     } else {
       console.log('ok', desc.path, {
         ...score,
-        scoreAdj: score.score / connections.size,
+        scoreAdj: score.score / connections.length,
       });
     }
     results.add(desc.token);
   }
-  console.log(results.size);
   console.log(results);
-  console.log([...results].filter(p => !p.includes('round')));
   return results;
 }
 

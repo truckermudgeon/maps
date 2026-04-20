@@ -400,7 +400,7 @@ describe('generateGraph', () => {
 
 describe('roundabout detection', () => {
   it('detects SCCs (full graph)', () => {
-    const map = 'europe';
+    const map = 'usa';
     const __filename = url.fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
     const outDir = path.join(__dirname, '../../../../../out');
