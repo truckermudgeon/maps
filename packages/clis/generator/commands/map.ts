@@ -138,6 +138,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
     includeHiddenRoadsAndPrefabs: args.includeHidden,
     focus: focusOptions,
     mapDataKeys: geoJsonMapDataKeys,
+    dataOverridesJsonPath: args.dataOverridesPath,
   });
 
   logger.log('converting parsed map data to GeoJSON...');

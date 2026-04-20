@@ -146,7 +146,7 @@ export function readMapData<
 
   let overrides: MappedDataOverride[] = [];
   const forceSecretUids = new Set<bigint>();
-  if (dataOverridesJsonPath != null && fs.existsSync(dataOverridesJsonPath)) {
+  if (dataOverridesJsonPath != null) {
     overrides = readArrayFile<MappedDataOverride>(dataOverridesJsonPath);
     for (const override of overrides) {
       switch (override.type) {
