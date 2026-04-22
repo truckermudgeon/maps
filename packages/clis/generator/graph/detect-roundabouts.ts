@@ -1,6 +1,6 @@
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { distance, getExtent } from '@truckermudgeon/base/geom';
-import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
+import { putIfAbsent } from '@truckermudgeon/base/map';
 import type { MappedData, MappedDataForKeys } from '@truckermudgeon/io';
 import type { Lane } from '@truckermudgeon/map/prefabs';
 import {
@@ -12,10 +12,15 @@ import {
   fromEts2CoordsToWgs84,
 } from '@truckermudgeon/map/projections';
 import type { Neighbor, Neighbors } from '@truckermudgeon/map/types';
+import type { DbscanProps } from '@turf/clusters-dbscan';
+import { clustersDbscan } from '@turf/clusters-dbscan';
+import { featureCollection, point } from '@turf/helpers';
+import fs from 'fs';
 
-type Graph = Map<string, Set<string>>;
+type AdjacencyList = Map<string, Set<string>>;
 
-function normalizeGraph(graph: Graph) {
+// ensures that graph has a key for every edge's start + end nodes.
+function normalizeGraph(graph: AdjacencyList) {
   for (const neighbors of graph.values()) {
     for (const v of neighbors) {
       if (!graph.has(v)) {
@@ -25,7 +30,7 @@ function normalizeGraph(graph: Graph) {
   }
 }
 
-function computeDegrees(graph: Graph): {
+function computeDegrees(graph: AdjacencyList): {
   inDeg: Map<string, number>;
   outDeg: Map<string, number>;
 } {
@@ -47,7 +52,7 @@ function computeDegrees(graph: Graph): {
   return { inDeg, outDeg };
 }
 
-function pruneDeadEnds(graph: Graph): Graph {
+function pruneDeadEnds(graph: AdjacencyList): AdjacencyList {
   const g = new Map(graph);
   let changed = true;
 
@@ -70,13 +75,13 @@ function pruneDeadEnds(graph: Graph): Graph {
   return g;
 }
 
-function collapseDirectedChains(graph: Graph): Graph {
+function collapseDirectedChains(graph: AdjacencyList): AdjacencyList {
   const { inDeg, outDeg } = computeDegrees(graph);
 
   const isChainNode = (v: string) =>
     (inDeg.get(v) ?? 0) === 1 && (outDeg.get(v) ?? 0) === 1;
 
-  const result: Graph = new Map();
+  const result: AdjacencyList = new Map();
   const visited = new Set<string>();
 
   function addEdge(a: string, b: string) {
@@ -265,16 +270,106 @@ type CompositeRoundabouts = Map<
 >;
 
 export function detectCompositeRoundabouts(
-  _graph: Map<bigint, Neighbors>,
-  _tsMapData: MappedDataForKeys<['nodes', 'prefabs', 'prefabDescriptions']>,
+  graph: ReadonlyMap<bigint, Neighbors>,
+  tsMapData: MappedDataForKeys<['nodes', 'prefabs', 'prefabDescriptions']>,
 ): Map<bigint[], Map<number, Lane[]>> {
   const res: CompositeRoundabouts = new Map();
 
   // 1. prune graph by removing nodes associated with prefab roundabouts.
-  // 2. convert graph to adjacency list, calculate nodes' degrees, collapse chains.
+  const roundaboutPrefabTokens = detectPrefabRoundabouts(tsMapData);
+  const roundaboutPrefabNodeUids = new Set<bigint>(
+    tsMapData.prefabs
+      .values()
+      .flatMap(prefab =>
+        roundaboutPrefabTokens.has(prefab.token) ? prefab.nodeUids : [],
+      ),
+  );
+  const prunedGraph = new Map(
+    graph.entries().filter(([key]) => !roundaboutPrefabNodeUids.has(key)),
+  );
+  console.log(
+    graph.size - prunedGraph.size,
+    'prefab-roundbout nodes pruned from graph',
+  );
+
+  // 2. convert graph to adjacency list, collapse chains.
+  let adjacencyList = convertToAdjacencyList(prunedGraph);
+  normalizeGraph(adjacencyList);
+  adjacencyList = collapseDirectedChains(adjacencyList);
+
   // 3. cluster nodes by degrees >= 3, with a radius of 200m (in game units)
+  const { inDeg, outDeg } = computeDegrees(adjacencyList);
+  const possibleRoundaboutNodeUids = new Set<bigint>();
+  let unknownNodeUids = 0;
+  for (const key of adjacencyList.keys()) {
+    const inDegrees = assertExists(inDeg.get(key));
+    const outDegrees = assertExists(outDeg.get(key));
+    if (!inDegrees || !outDegrees) {
+      continue;
+    }
+    const totalDegrees = inDegrees + outDegrees;
+    // N.B.: loosening to >= 2 increases detected clusters by 2%.
+    if (totalDegrees >= 3) {
+      const nodeUid = BigInt(key.split('-')[0]);
+      if (tsMapData.nodes.has(nodeUid)) {
+        possibleRoundaboutNodeUids.add(nodeUid);
+      } else {
+        unknownNodeUids++;
+      }
+    }
+  }
+  // TODO: why are there unknown node uids? hidden roads/prefabs?
+  console.log(unknownNodeUids, 'unknown node uids');
+
+  const toLngLat =
+    tsMapData.map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
+
+  const nodeFeatures = featureCollection(
+    possibleRoundaboutNodeUids
+      .values()
+      .toArray()
+      .map(nodeUid => {
+        const node = assertExists(tsMapData.nodes.get(nodeUid));
+        return point(toLngLat([node.x, node.y]), {
+          nodeUid: nodeUid.toString(),
+        });
+      }),
+  );
+
+  clustersDbscan(
+    nodeFeatures,
+    // ideally, scale factor should depend on map (and in ETS2 case: whether
+    //  point is in UK). but it's ok to be looser with filtering at this stage.
+    (200 * 20) / 1000, // kilometers
+    { mutate: true },
+  );
+  const clusters = new Map<number, bigint[]>();
+  for (const { properties } of nodeFeatures.features) {
+    const clusterId = (properties as DbscanProps).cluster;
+    if (clusterId != null) {
+      putIfAbsent(clusterId, [], clusters).push(BigInt(properties.nodeUid));
+    }
+  }
+  console.log(clusters.size, 'clusters');
+
   // 4. for each cluster, detect cycles
+
   // 5. filter cycles by cycle-path circularity and turning consistency
+
+  fs.writeFileSync(
+    'roundabouts.geojson',
+    JSON.stringify(
+      featureCollection(
+        nodeFeatures.features.filter(
+          f => (f.properties as DbscanProps).cluster != null,
+        ),
+      ),
+      null,
+      2,
+    ),
+    'utf-8',
+  );
+
   // 6. build LaneInfo map for cycles, using uncollapsed graph
 
   return res;
@@ -375,7 +470,7 @@ export function detectRoundabouts(
   const res = new Map<string, Set<string>>();
 
   //let sccs = findSCCsIterative1(mapValues(adjacencyList, v => [...v]));
-  let sccs = findAllSimpleCycles(mapValues(adjacencyList, v => [...v]));
+  let sccs = findAllSimpleCycles(adjacencyList);
   //sccs = sccs.filter(component => component.length >= 4);
 
   console.log('components', sccs.length);
@@ -428,7 +523,7 @@ export function detectRoundabouts(
 }
 
 function findAllSimpleCycles(
-  graph: Map<string, string[]>,
+  graph: AdjacencyList,
   minLen = 4,
   maxLen = 15,
 ): string[][] {
@@ -471,9 +566,10 @@ function findAllSimpleCycles(
     const subgraph = new Map<string, string[]>();
     for (let i = sIdx; i < nodes.length; i++) {
       const v = nodes[i];
-      const filtered = (graph.get(v) ?? []).filter(
-        w => indexMap.get(w)! >= sIdx,
-      );
+      const filtered = (graph.get(v) ?? new Set())
+        .values()
+        .toArray()
+        .filter(w => indexMap.get(w)! >= sIdx);
       subgraph.set(v, filtered);
     }
 

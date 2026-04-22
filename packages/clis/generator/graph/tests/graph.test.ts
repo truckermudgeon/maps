@@ -18,7 +18,7 @@ import type {
 } from '@truckermudgeon/map/types';
 import path from 'node:path';
 import url from 'node:url';
-import { detectPrefabRoundabouts } from '../detect-roundabouts';
+import { detectCompositeRoundabouts } from '../detect-roundabouts';
 import { generateGraph } from '../graph';
 import { d_farm_grg, d_oil_gst3, prefab_us_405 } from './fixtures';
 
@@ -400,7 +400,7 @@ describe('generateGraph', () => {
 
 describe('roundabout detection', () => {
   it('detects SCCs (full graph)', () => {
-    const map = 'usa';
+    const map = 'europe';
     const __filename = url.fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
     const outDir = path.join(__dirname, '../../../../../out');
@@ -413,7 +413,8 @@ describe('roundabout detection', () => {
     });
 
     const start = Date.now();
-    detectPrefabRoundabouts(tsMapData);
+    //detectPrefabRoundabouts(tsMapData);
+    detectCompositeRoundabouts(graphData.graph, tsMapData);
     //detectRoundabouts(graphData.graph, nodes);
     console.log('time', (Date.now() - start) / 1000, 'seconds');
   }, 600);
