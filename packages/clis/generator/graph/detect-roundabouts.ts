@@ -293,9 +293,9 @@ export function detectCompositeRoundabouts(
   );
 
   // 2. convert graph to adjacency list, collapse chains.
-  let adjacencyList = convertToAdjacencyList(prunedGraph);
+  const adjacencyList = convertToAdjacencyList(prunedGraph);
   normalizeGraph(adjacencyList);
-  adjacencyList = collapseDirectedChains(adjacencyList);
+  //  adjacencyList = collapseDirectedChains(adjacencyList);
 
   // 3. cluster nodes by degrees >= 3, with a radius of 200m (in game units)
   const { inDeg, outDeg } = computeDegrees(adjacencyList);
@@ -309,7 +309,7 @@ export function detectCompositeRoundabouts(
     }
     const totalDegrees = inDegrees + outDegrees;
     // N.B.: loosening to >= 2 increases detected clusters by 2%.
-    if (totalDegrees >= 3) {
+    if (totalDegrees >= 2) {
       const nodeUid = BigInt(key.split('-')[0]);
       if (tsMapData.nodes.has(nodeUid)) {
         possibleRoundaboutNodeUids.add(nodeUid);
@@ -374,7 +374,7 @@ export function detectCompositeRoundabouts(
       }
     }
 
-    const simpleCycles = findAllSimpleCycles(subGraph, 3);
+    const simpleCycles = findAllSimpleCycles(subGraph, 3, 30);
     for (const cycle of simpleCycles) {
       const nodeUids = new Set(cycle.map(v => BigInt(v.split('-')[0])));
       const nodes = nodeUids
