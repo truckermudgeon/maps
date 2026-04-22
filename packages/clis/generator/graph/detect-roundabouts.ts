@@ -273,6 +273,9 @@ export function detectCompositeRoundabouts(
   graph: ReadonlyMap<bigint, Neighbors>,
   tsMapData: MappedDataForKeys<['nodes', 'prefabs', 'prefabDescriptions']>,
 ): Map<bigint[], Map<number, Lane[]>> {
+  const toLngLat =
+    tsMapData.map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
+
   const res: CompositeRoundabouts = new Map();
 
   // 1. prune graph by removing nodes associated with prefab roundabouts.
@@ -291,6 +294,22 @@ export function detectCompositeRoundabouts(
     graph.size - prunedGraph.size,
     'prefab-roundbout nodes pruned from graph',
   );
+  const roundaboutPrefabNodes = roundaboutPrefabNodeUids
+    .values()
+    .toArray()
+    .filter(nid => tsMapData.nodes.has(nid))
+    .map(nid => assertExists(tsMapData.nodes.get(nid)));
+  //fs.writeFileSync(
+  //  'roundabout-prefabs.geojson',
+  //  JSON.stringify(
+  //    featureCollection(
+  //      roundaboutPrefabNodes.map(n => point(toLngLat([n.x, n.y]))),
+  //    ),
+  //    null,
+  //    2,
+  //  ),
+  //  'utf-8',
+  //);
 
   // 2. convert graph to adjacency list, collapse chains.
   const adjacencyList = convertToAdjacencyList(prunedGraph);
@@ -320,9 +339,6 @@ export function detectCompositeRoundabouts(
   }
   // TODO: why are there unknown node uids? hidden roads/prefabs?
   console.log(unknownNodeUids, 'unknown node uids');
-
-  const toLngLat =
-    tsMapData.map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
 
   const nodeFeatures = featureCollection(
     possibleRoundaboutNodeUids
