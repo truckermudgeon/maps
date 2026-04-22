@@ -343,21 +343,74 @@ export function detectCompositeRoundabouts(
     (200 * 20) / 1000, // kilometers
     { mutate: true },
   );
-  const clusters = new Map<number, bigint[]>();
+  const clusters = new Map<number, Set<bigint>>();
   for (const { properties } of nodeFeatures.features) {
     const clusterId = (properties as DbscanProps).cluster;
     if (clusterId != null) {
-      putIfAbsent(clusterId, [], clusters).push(BigInt(properties.nodeUid));
+      putIfAbsent(clusterId, new Set(), clusters).add(
+        BigInt(properties.nodeUid),
+      );
     }
   }
   console.log(clusters.size, 'clusters');
 
   // 4. for each cluster, detect cycles
+  const cycles: string[][] = [];
+  for (const [clusterId, nodeUids] of clusters) {
+    // build a graph of just the nodeUids
+    const subGraph: AdjacencyList = new Map<string, Set<string>>();
+    for (const nodeUid of nodeUids) {
+      for (const direction of ['forward', 'backward']) {
+        const key = `${nodeUid}-${direction}`;
+        const neighbors = new Set<string>();
+        const allNeighbors = adjacencyList.get(key) ?? new Set();
+        for (const neighbor of allNeighbors) {
+          const neighborNodeUid = BigInt(neighbor.split('-')[0]);
+          if (nodeUids.has(neighborNodeUid)) {
+            neighbors.add(neighbor);
+          }
+        }
+        subGraph.set(key, neighbors);
+      }
+    }
+
+    const simpleCycles = findAllSimpleCycles(subGraph, 3);
+    for (const cycle of simpleCycles) {
+      const nodeUids = new Set(cycle.map(v => BigInt(v.split('-')[0])));
+      const nodes = nodeUids
+        .values()
+        .toArray()
+        .map(nid => assertExists(tsMapData.nodes.get(nid)));
+      if (circularityByRadius(nodes.map(n => [n.x, n.y])).score > 0.35) {
+        continue;
+      }
+      cycles.push(cycle);
+    }
+  }
+
+  console.log(cycles.length, 'cycles');
 
   // 5. filter cycles by cycle-path circularity and turning consistency
 
+  const uniqueNodeUids = new Set(
+    cycles.flatMap(vertices => vertices.map(v => BigInt(v.split('-')[0]))),
+  );
+  const uniqueNodes = uniqueNodeUids
+    .values()
+    .toArray()
+    .map(nid => assertExists(tsMapData.nodes.get(nid)));
   fs.writeFileSync(
     'roundabouts.geojson',
+    JSON.stringify(
+      featureCollection(uniqueNodes.map(n => point(toLngLat([n.x, n.y])))),
+      null,
+      2,
+    ),
+    'utf-8',
+  );
+
+  fs.writeFileSync(
+    'clusters.geojson',
     JSON.stringify(
       featureCollection(
         nodeFeatures.features.filter(
