@@ -29,12 +29,13 @@ export type Node = Readonly<{
 export type City = Readonly<{
   token: string;
   name: string;
-  nameLocalized: string | undefined;
+  nameLocalized: string;
   countryToken: string;
   population: number;
   x: number;
   y: number;
   areas: readonly CityArea[];
+  dlcGuard: number;
 }>;
 
 export type Country = Readonly<{
@@ -79,6 +80,7 @@ export type Company = Readonly<{
   cityTokens: string[];
   cargoInTokens: string[];
   cargoOutTokens: string[];
+  dlcGuard: number;
 }>;
 
 export type FerryConnection = Readonly<{
@@ -111,6 +113,7 @@ export type Ferry = Readonly<{
   x: number;
   y: number;
   connections: FerryConnection[];
+  dlcGuard: number;
 }>;
 
 export type Cargo = Readonly<{
@@ -126,6 +129,7 @@ export type Cargo = Readonly<{
   overweight?: true;
   valuable?: true;
   group?: string[];
+  dlcGuard: number;
 }>;
 
 export type MileageTarget = Readonly<{
@@ -764,6 +768,7 @@ export interface DebugProperties {
 
 export interface CityProperties {
   type: 'city';
+  dlcGuard: number;
   name: string;
   scaleRank: number;
   capital: 0 | 1 | 2;

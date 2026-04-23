@@ -1,7 +1,11 @@
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import type { Extent } from '@truckermudgeon/base/geom';
 import { Preconditions } from '@truckermudgeon/base/precon';
-import { isLaneSpeedClass } from '@truckermudgeon/map/constants';
+import {
+  AtsScsSourceToDlcGuard,
+  Ets2ScsSourceToDlcGuard,
+  isLaneSpeedClass,
+} from '@truckermudgeon/map/constants';
 import type {
   Achievement,
   Cargo,
@@ -92,14 +96,15 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
 
   const processAndAdd = <T extends object, U extends { token: string }>(
     path: string,
+    dlcGuard: number,
     schema: JSONSchemaType<T>,
     p: (t: T, e: Entries) => U | undefined,
-    m: Map<string, U>,
+    m: Map<string, U & { dlcGuard: number }>,
   ) => {
     const t = convertSiiToJson(path, entries, schema);
     const u = p(t, entries);
     if (u) {
-      m.set(u.token, u);
+      m.set(u.token, { ...u, dlcGuard });
     }
   };
 
@@ -113,10 +118,17 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
     if (/\b(?:xmas2023|mod_halloween_2025_event)\b/.test(f)) {
       continue; // skip Winterland, Halloween community events
     }
+    const dlc = /dlc_[^.]+/.exec(f)?.[0] ?? '';
+    const dlcGuard: number | undefined =
+      application === 'ats'
+        ? AtsScsSourceToDlcGuard[dlc]
+        : Ets2ScsSourceToDlcGuard[dlc];
+    assertExists(dlcGuard, `unknown dlc: ${dlc}`);
+
     const includePaths = parseIncludeOnlySii(`def/${f}`, entries);
     for (const path of includePaths) {
       if (f.startsWith('city.')) {
-        processAndAdd(path, CitySiiSchema, processCityJson, cities);
+        processAndAdd(path, dlcGuard, CitySiiSchema, processCityJson, cities);
       } else if (f.startsWith('country.')) {
         const partialCountry = processCountryJson(
           convertSiiToJson(path, entries, CountrySiiSchema),
@@ -135,11 +147,29 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
           });
         }
       } else if (f.startsWith('company.')) {
-        processAndAdd(path, CompanySiiSchema, processCompanyJson, companies);
+        processAndAdd(
+          path,
+          dlcGuard,
+          CompanySiiSchema,
+          processCompanyJson,
+          companies,
+        );
       } else if (f.startsWith('cargo.')) {
-        processAndAdd(path, CargoDataSiiSchema, processCargoJson, cargoes);
+        processAndAdd(
+          path,
+          dlcGuard,
+          CargoDataSiiSchema,
+          processCargoJson,
+          cargoes,
+        );
       } else if (f.startsWith('ferry.')) {
-        processAndAdd(path, FerrySiiSchema, processFerryJson, ferries);
+        processAndAdd(
+          path,
+          dlcGuard,
+          FerrySiiSchema,
+          processFerryJson,
+          ferries,
+        );
       } else {
         throw new Error();
       }
@@ -164,6 +194,7 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
       cityTokens: [],
       cargoInTokens: [],
       cargoOutTokens: [],
+      dlcGuard: 0,
     };
     if (token.startsWith('pt_trk_')) {
       companies.set(token, {
@@ -394,7 +425,10 @@ function processSpeedLimitJson(obj: SpeedLimitsSii) {
   }, {} as SpeedLimits);
 }
 
-function processCompanyJson(obj: CompanySii, entries: Entries): Company {
+function processCompanyJson(
+  obj: CompanySii,
+  entries: Entries,
+): Omit<Company, 'dlcGuard'> {
   const objEntries = Object.entries(obj.companyPermanent);
   const [token, rawCompany] = objEntries[0];
   const companyToken = token.split('.')[2];
@@ -444,7 +478,7 @@ function processCompanyJson(obj: CompanySii, entries: Entries): Company {
   };
 }
 
-function processCargoJson(obj: CargoDataSii): Cargo {
+function processCargoJson(obj: CargoDataSii): Omit<Cargo, 'dlcGuard'> {
   const objEntries = Object.entries(obj.cargoData);
   const [tokenPath, rawCargo] = objEntries[0];
   const token = tokenPath.split('.')[1];
