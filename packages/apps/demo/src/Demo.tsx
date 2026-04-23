@@ -505,6 +505,7 @@ const Demo = (props: {
             game={'ets2'}
             mode={mode}
             enableAutoHide={autoHide}
+            dlcs={visibleEts2Dlcs}
           />
         )}
       </GameMapStyle>
