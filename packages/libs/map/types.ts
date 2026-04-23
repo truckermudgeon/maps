@@ -644,6 +644,19 @@ export interface DefData {
   cargoes: Cargo[];
 }
 
+// MappedData Overrides
+
+export type MappedDataOverride = ForceSecretOverride;
+
+interface ForceSecretOverride {
+  // modifies roads/prefabs with the given uids such that:
+  // - `secret` is `true`
+  // - `hidden` is `false`/`undefined`.
+  type: 'forceSecret';
+  comment: string;
+  roadAndPrefabUids: bigint[];
+}
+
 // GeoJSON
 
 export type DebugFeature = GeoJSON.Feature<

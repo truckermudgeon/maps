@@ -76,6 +76,11 @@ export const builder = (yargs: Argv) =>
       coerce: untildify,
       demandOption: true,
     })
+    .option('dataOverridesPath', {
+      describe: 'Path to overrides.json file',
+      type: 'string',
+      coerce: untildify,
+    })
     .option('type', {
       alias: 't',
       describe:
@@ -133,6 +138,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
     includeHiddenRoadsAndPrefabs: args.includeHidden,
     focus: focusOptions,
     mapDataKeys: geoJsonMapDataKeys,
+    dataOverridesJsonPath: args.dataOverridesPath,
   });
 
   logger.log('converting parsed map data to GeoJSON...');
