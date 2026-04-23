@@ -689,11 +689,7 @@ function withDlcGuard<T extends CityFeature | PoiFeature | ExitFeature>(
   feature: T,
   dlcQuadTree: Quadtree<{ x: number; y: number; dlcGuard: number }>,
 ): T {
-  if (
-    'dlcGuard' in feature.properties &&
-    feature.properties.dlcGuard != null &&
-    feature.properties.dlcGuard !== 0
-  ) {
+  if ('dlcGuard' in feature.properties && feature.properties.dlcGuard != null) {
     // looks like some POIs have a dlcGuard that differs from what the
     // dlc quadtree would return, e.g.: a parking_ico on a road that's only
     // visible when both MO and OK are present, but has a MO-only dlcGuard.
