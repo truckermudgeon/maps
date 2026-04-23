@@ -15,7 +15,7 @@ function mapOfCity(array: CityFixture[]): Map<string, City> {
       city.token,
       {
         areas: [],
-        nameLocalized: undefined,
+        nameLocalized: '',
         ...city,
       },
     ]),
@@ -247,6 +247,7 @@ export const unreleased_mo = mapOf<MileageTarget>([
 export const citiesAts = mapOfCity([
   {
     token: 'san_jose',
+    dlcGuard: 0,
     name: 'San Jose',
     countryToken: 'california',
     population: 1600000,
@@ -255,6 +256,7 @@ export const citiesAts = mapOfCity([
   },
   {
     token: 'fort_smith',
+    dlcGuard: 36,
     name: 'Fort Smith',
     countryToken: 'arkansas',
     population: 89500,
@@ -263,6 +265,7 @@ export const citiesAts = mapOfCity([
   },
   {
     token: 'colorado_spr',
+    dlcGuard: 13,
     name: 'Colorado Springs',
     countryToken: 'colorado',
     population: 484000,
@@ -271,6 +274,7 @@ export const citiesAts = mapOfCity([
   },
   {
     token: 'sidney',
+    dlcGuard: 22,
     name: 'Sidney',
     countryToken: 'montana',
     population: 6200,
@@ -279,6 +283,7 @@ export const citiesAts = mapOfCity([
   },
   {
     token: 'steamboat_sp',
+    dlcGuard: 13,
     name: 'Steamboat Springs',
     countryToken: 'colorado',
     population: 13000,
@@ -453,6 +458,7 @@ export const unreleased_ru = mapOf<MileageTarget>([
 export const citiesEts2 = mapOfCity([
   {
     countryToken: 'czech',
+    dlcGuard: 0,
     name: 'Praha',
     population: 1350000,
     token: 'prague',
@@ -461,6 +467,7 @@ export const citiesEts2 = mapOfCity([
   },
   {
     countryToken: 'austria',
+    dlcGuard: 0,
     name: 'Klagenfurt am Wörthersee',
     population: 100000,
     token: 'klagenfurt',

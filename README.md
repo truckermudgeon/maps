@@ -74,7 +74,7 @@ packages/clis/generator/resources/extra-labels/script/csv2json.pl \
   packages/clis/generator/resources/extra-labels/US/*.csv \
   -o packages/clis/generator/resources/usa-labels-meta.json
 npx generator extra-labels -m usa -i dirWithParserOutput -o dirToWriteFilesTo
-npx generator ets2-villages -o dirToWriteFileTo
+npx generator ets2-villages -i dirWithParserOutput -o dirToWriteFileTo
 
 # generate ATS and ETS2 geojson files used for POI searches
 npx generator search -m usa -i dirWithParserOutput -o dirToWriteFileTo -x pathToExtraLabelsGeoJSON

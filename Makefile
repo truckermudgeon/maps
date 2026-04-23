@@ -104,8 +104,8 @@ NAVIGATION_FILES += $(GENERATOR_OUT_DIR)/extra-labels.geojson
 
 
 # Create ETS2 villages.geojson file
-$(GENERATOR_OUT_DIR)/ets2-villages.geojson: $(RESOURCES_DIR)/villages-in-ets2.csv
-	npx generator ets2-villages -o $(GENERATOR_OUT_DIR)
+$(GENERATOR_OUT_DIR)/ets2-villages.geojson: $(ETS2_PARSER_JSON_FILES) $(RESOURCES_DIR)/villages-in-ets2.csv
+	npx generator ets2-villages -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR)
 
 DEMO_FILES += $(GENERATOR_OUT_DIR)/ets2-villages.geojson
 

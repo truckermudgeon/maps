@@ -23,8 +23,8 @@ import path from 'path';
 import type { BBox } from 'rbush';
 import RBush from 'rbush';
 import type { Argv, BuilderArguments } from 'yargs';
-import type { DlcGuardQuadTree } from '../dlc-guards';
-import { dlcGuardMapDataKeys, normalizeDlcGuards } from '../dlc-guards';
+import type { DlcGuardSpatialIndex } from '../dlc-guards';
+import { buildDlcGuardSpatialIndex, dlcGuardMapDataKeys } from '../dlc-guards';
 import { createNormalizeFeature } from '../geo-json/normalize';
 import { ets2IsoA2, isoA2Ets2 } from '../geo-json/populated-places';
 import { logger } from '../logger';
@@ -104,12 +104,10 @@ type ExtraLabelsGeoJSON = GeoJSON.FeatureCollection<
 export function handler(args: BuilderArguments<typeof builder>) {
   logger.log('creating search.geojson...');
 
-  const tsMapData = normalizeDlcGuards(
-    readMapData(args.inputDir, args.map, {
-      mapDataKeys: searchMapDataKeys,
-    }),
-  );
-  const dlcGuardQuadTree = tsMapData.dlcGuardQuadTree;
+  const tsMapData = readMapData(args.inputDir, args.map, {
+    mapDataKeys: searchMapDataKeys,
+  });
+  const dlcGuardSpatialIndex = buildDlcGuardSpatialIndex(tsMapData);
 
   let sceneryTowns: ExtraLabelsGeoJSON;
   switch (args.map) {
@@ -148,7 +146,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
   const context = {
     ...tsMapData,
     ...createSpatialIndices(tsMapData, sceneryTowns),
-    dlcGuardQuadTree,
+    dlcGuardSpatialIndex,
   };
 
   const pois = disambiguateCompanies(tsMapData.pois).flatMap(p =>
@@ -177,7 +175,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
     }
     return point(f.geometry.coordinates, {
       dlcGuard: assertExists(
-        context.dlcGuardQuadTree.find(
+        context.dlcGuardSpatialIndex.findClosest(
           f.geometry.coordinates[0],
           f.geometry.coordinates[1],
         ),
@@ -378,7 +376,7 @@ function disambiguateCompanies(pois: readonly Poi[]): Poi[] {
 function poiToSearchFeature(
   poi: Poi,
   context: MappedDataForKeys<typeof searchMapDataKeys> & {
-    dlcGuardQuadTree: DlcGuardQuadTree;
+    dlcGuardSpatialIndex: DlcGuardSpatialIndex;
     cityRTree: RBush<BBox & { cityName: string; stateCode: string }>;
     cityPointRTree: PointRBush<{
       x: number;
@@ -389,10 +387,10 @@ function poiToSearchFeature(
     nodePointRTree: PointRBush<{ x: number; y: number; node: Node }>;
   },
 ): SearchFeature<SearchPoiProperties>[] {
-  const { dlcGuardQuadTree, nodePointRTree, cityPointRTree, cityRTree } =
+  const { dlcGuardSpatialIndex, nodePointRTree, cityPointRTree, cityRTree } =
     context;
   const getDlcGuard = (p: { x: number; y: number }): number =>
-    assertExists(dlcGuardQuadTree.find(p.x, p.y)).dlcGuard;
+    dlcGuardSpatialIndex.findClosest(p.x, p.y).dlcGuard;
 
   const closestNode = nodePointRTree.findClosest(poi.x, poi.y).node;
   const countriesById = new Map<number, Country>(
@@ -547,17 +545,18 @@ function poiToSearchFeature(
 function cityToSearchFeature(
   city: City,
   context: MappedDataForKeys<typeof searchMapDataKeys> & {
-    dlcGuardQuadTree: DlcGuardQuadTree;
+    dlcGuardSpatialIndex: DlcGuardSpatialIndex;
   },
 ): SearchFeature<SearchCityProperties> {
-  const { dlcGuardQuadTree } = context;
+  const { dlcGuardSpatialIndex } = context;
   const cityArea = assertExists(city.areas.find(a => !a.hidden));
   const coordinates = [
     city.x + cityArea.width / 2,
     city.y + cityArea.height / 2,
   ];
-  const { dlcGuard } = assertExists(
-    dlcGuardQuadTree.find(coordinates[0], coordinates[1]),
+  const { dlcGuard } = dlcGuardSpatialIndex.findClosest(
+    coordinates[0],
+    coordinates[1],
   );
   const country = assertExists(context.countries.get(city.countryToken));
 
