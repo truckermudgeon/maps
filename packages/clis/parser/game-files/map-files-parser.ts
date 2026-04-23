@@ -53,20 +53,26 @@ import {
 
 export function parseMapFiles(
   scsFilePaths: string[],
-  { includeDlc, onlyDefs }: { includeDlc: boolean; onlyDefs: boolean },
+  { includeDlc, mode }: { includeDlc: boolean; mode: 'defs' | 'icons' | 'all' },
 ):
   | {
-      onlyDefs: false;
+      data: 'all';
       map: 'usa' | 'europe';
       version: string;
       mapData: MapData;
       icons: Map<string, Buffer>;
     }
   | {
-      onlyDefs: true;
+      data: 'defs';
       map: 'usa' | 'europe';
       version: string;
       defData: DefData;
+    }
+  | {
+      data: 'icons';
+      map: 'usa' | 'europe';
+      version: string;
+      icons: Map<string, Buffer>;
     } {
   const requiredFiles = new Set([
     'base.scs',
@@ -90,23 +96,36 @@ export function parseMapFiles(
   const entries = new CombinedEntries(archives);
   try {
     const version = parseVersionSii(entries);
+    const map = version.application === 'ats' ? 'usa' : 'europe';
+    const baseResult = {
+      map,
+      version: version.version,
+    } as const;
+
+    if (mode === 'icons') {
+      const icons = parseIconMatFiles(entries);
+      return {
+        ...baseResult,
+        data: 'icons',
+        icons,
+      };
+    }
+
     const defData = parseDefFiles(entries, version.application);
     const l10n = assertExists(parseLocaleFiles(entries).get('en_us'));
-    if (onlyDefs) {
+    if (mode === 'defs') {
       return {
-        onlyDefs: true,
-        map: version.application === 'ats' ? 'usa' : 'europe',
-        version: version.version,
+        ...baseResult,
+        data: 'defs',
         defData: toDefData(defData, l10n),
       };
     }
 
-    const icons = parseIconMatFiles(entries);
     const sectorData = parseSectorFiles(entries);
     return {
-      onlyDefs: false,
-      version: version.version,
-      ...postProcess(defData, sectorData, icons, l10n),
+      ...baseResult,
+      data: 'all',
+      ...postProcess(defData, sectorData, parseIconMatFiles(entries), l10n),
     };
   } finally {
     archives.forEach(a => a.dispose());
