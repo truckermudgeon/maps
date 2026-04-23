@@ -11,7 +11,11 @@ import {
 import { mapValues, putIfAbsent } from '@truckermudgeon/base/map';
 import { Preconditions } from '@truckermudgeon/base/precon';
 import type { MapDataKeys, MappedDataForKeys } from '@truckermudgeon/io';
-import { isLabeledPoi } from '@truckermudgeon/map/constants';
+import {
+  AtsDlcGuards,
+  Ets2DlcGuards,
+  isLabeledPoi,
+} from '@truckermudgeon/map/constants';
 import { toDealerLabel } from '@truckermudgeon/map/labels';
 import type { Polygon, RoadString } from '@truckermudgeon/map/prefabs';
 import {
@@ -1074,6 +1078,25 @@ function ferryToFeature(
 ): FerryFeature {
   Preconditions.checkArgument(ferry.connections.length === 1);
   const conn = ferry.connections[0];
+  let dlcGuard: number | undefined = undefined;
+  if (ferry.dlcGuard === conn.dlcGuard) {
+    dlcGuard = ferry.dlcGuard;
+  } else {
+    const guards: Record<number, ReadonlySet<number>> = map === 'usa'
+      ? AtsDlcGuards
+      : Ets2DlcGuards;
+    const firstDlcSet = [...assertExists(guards[ferry.dlcGuard])];
+    const secondDlcSet = [...assertExists(guards[conn.dlcGuard])];
+    for (const [guardString, dlcs] of Object.entries(guards)) {
+      if (
+        firstDlcSet.every(dlc => dlcs.has(dlc)) &&
+        secondDlcSet.every(dlc => dlcs.has(dlc))
+      ) {
+        dlcGuard = Number(guardString);
+      }
+    }
+  }
+  dlcGuard = assertExists(dlcGuard);
 
   const nameAndCountry = [ferry, conn]
     .map(ferry => {
@@ -1127,6 +1150,7 @@ function ferryToFeature(
       properties: {
         type: ferry.train ? 'train' : 'ferry',
         name: nameAndCountry,
+        dlcGuard,
       },
     };
   }
@@ -1189,6 +1213,7 @@ function ferryToFeature(
     properties: {
       type: ferry.train ? 'train' : 'ferry',
       name: nameAndCountry,
+      dlcGuard,
     },
   };
 }

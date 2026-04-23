@@ -362,6 +362,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           'all',
           ['==', ['geometry-type'], 'LineString'],
           ['==', ['get', 'type'], 'ferry'],
+          dlcGuardFilter,
         ]}
         paint={{
           'line-color': colors.ferryLine,
@@ -380,6 +381,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             'all',
             ['==', ['geometry-type'], 'LineString'],
             ['==', ['get', 'type'], 'train'],
+            dlcGuardFilter,
           ],
           [
             'all',

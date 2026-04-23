@@ -100,6 +100,7 @@ export type FerryConnection = Readonly<{
     y: number;
     rotation: number;
   }[];
+  dlcGuard: number;
 }>;
 
 export type Ferry = Readonly<{
@@ -743,6 +744,7 @@ export interface RoadLookProperties {
 export interface FerryProperties {
   type: 'ferry' | 'train';
   name: string;
+  dlcGuard: number;
 }
 
 export interface PrefabProperties {

@@ -516,6 +516,16 @@ function processFerryJson(obj: FerrySii, entries: Entries) {
   // this is A LOT of repeated work.
   // TODO read every file in the def/ferry/connections folder once, then match things up based on tokens.
   for (const f of defFerryConnection.files) {
+    const dlc = /dlc_[^.]+/.exec(f)?.[0] ?? '';
+    let dlcGuard: number | undefined =
+      dlc === ''
+        ? 0
+        : (AtsScsSourceToDlcGuard[dlc + '.scs'] ??
+          Ets2ScsSourceToDlcGuard[dlc + '.scs']);
+    if (dlcGuard == null) {
+      logger.warn(`unknown dlc guard for ${dlc} (${f}); falling back to 0`);
+      dlcGuard = 0;
+    }
     const json = convertSiiToJson(
       `def/ferry/connection/${f}`,
       entries,
@@ -554,6 +564,7 @@ function processFerryJson(obj: FerrySii, entries: Entries) {
       time: connection.time,
       distance: connection.distance,
       intermediatePoints,
+      dlcGuard,
     });
   }
 
