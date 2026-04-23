@@ -16,7 +16,7 @@ import type {
   Trigger,
   WithToken,
 } from '@truckermudgeon/map/types';
-import { normalizeDlcGuards } from '../dlc-guards';
+import { buildDlcGuardSpatialIndex } from '../dlc-guards';
 import { logger } from '../logger';
 import { createNormalizeFeature } from './normalize';
 
@@ -58,18 +58,15 @@ export function convertToAchievementsGeoJson(tsMapData: AchievementsMapData) {
     pois,
     routes,
     trajectories,
-    dlcGuardQuadTree,
-  } = normalizeDlcGuards(tsMapData);
+  } = tsMapData;
+  const dlcGuardSpatialIndex = buildDlcGuardSpatialIndex(tsMapData);
   const getDlcGuard = ({ x, y }: { x: number; y: number }): number => {
-    if (!dlcGuardQuadTree) {
+    if (!dlcGuardSpatialIndex) {
       // dlc guards unsupported for current map.
       return 0;
     }
-    const g = dlcGuardQuadTree.find(x, y)?.dlcGuard ?? -1;
-    if (g == -1) {
-      logger.warn('-1 dlc guard!');
-    }
-    return g;
+    // TODO rely on achievement's intrinsic dlcGuard info.
+    return dlcGuardSpatialIndex.findClosest(x, y).dlcGuard;
   };
 
   const cityTokenToPoint = (t: string): Point => {

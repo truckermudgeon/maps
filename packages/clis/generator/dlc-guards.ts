@@ -1,25 +1,10 @@
 import { assertExists } from '@truckermudgeon/base/assert';
-import { putIfAbsent } from '@truckermudgeon/base/map';
-import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
+import { center, getExtent } from '@truckermudgeon/base/geom';
+import { UnreachableError } from '@truckermudgeon/base/precon';
 import type { MapDataKeys, MappedDataForKeys } from '@truckermudgeon/io';
-import {
-  AtsCountryIdToDlcGuard,
-  AtsDlcGuards,
-  Ets2DlcGuards,
-  type AtsCountryId,
-} from '@truckermudgeon/map/constants';
-import type { Node } from '@truckermudgeon/map/types';
-import type { Quadtree } from 'd3-quadtree';
-import { quadtree } from 'd3-quadtree';
+import { AtsDlcGuards, Ets2DlcGuards } from '@truckermudgeon/map/constants';
+import { PointRBush } from '@truckermudgeon/map/point-rbush';
 import { logger } from './logger';
-
-interface QtDlcGuardEntry {
-  x: number;
-  y: number;
-  dlcGuard: number;
-}
-
-export type DlcGuardQuadTree = Quadtree<QtDlcGuardEntry>;
 
 export const dlcGuardMapDataKeys = [
   'nodes',
@@ -36,26 +21,24 @@ export const dlcGuardMapDataKeys = [
 
 export type DlcGuardMappedData = MappedDataForKeys<typeof dlcGuardMapDataKeys>;
 
+interface DlcGuardPoint {
+  x: number;
+  y: number;
+  dlcGuard: number;
+}
+
+export type DlcGuardSpatialIndex = PointRBush<DlcGuardPoint>;
+
 /**
- * Returns a copy of `tsMapData`, where the items in the collections have
- * best-effort normalized `dlcGuard` values, along with a quadtree that can
- * be used to find the closest normalized `dlcGuard` for a given point.
- *
- * An item with a `dlcGuard` of 0 does _not_ mean that the item belongs to the
- * base-game map content. In order for DLC hiding to work as if that were the
- * case, 0-values are normalized based on the country IDs of the Nodes
- * associated with the item.
+ * Returns a spatial index that can be used to find the closest `dlcGuard` for
+ * a given point. The spatial index is based on the centers of map items with
+ * a `dlcGuard` field.
  */
-export function normalizeDlcGuards<T extends DlcGuardMappedData>(
+export function buildDlcGuardSpatialIndex<T extends DlcGuardMappedData>(
   tsMapData: T,
-): T & { dlcGuardQuadTree: DlcGuardQuadTree } {
-  const nodes = new Map(tsMapData.nodes);
-  const roads = new Map(tsMapData.roads);
-  const prefabs = new Map(tsMapData.prefabs);
-  const mapAreas = new Map(tsMapData.mapAreas);
-  const triggers = new Map(tsMapData.triggers);
-  const cutscenes = new Map(tsMapData.cutscenes);
-  const pois = new Array(...tsMapData.pois);
+): DlcGuardSpatialIndex {
+  const { nodes, roads, prefabs, mapAreas, triggers, cutscenes, pois } =
+    tsMapData;
   let dlcGuards: Record<number, unknown>;
   switch (tsMapData.map) {
     case 'usa':
@@ -68,151 +51,52 @@ export function normalizeDlcGuards<T extends DlcGuardMappedData>(
       throw new UnreachableError(tsMapData.map);
   }
 
-  const dlcGuardQuadTree: DlcGuardQuadTree = quadtree<QtDlcGuardEntry>()
-    .x(e => e.x)
-    .y(e => e.y);
   const unknownDlcGuards = new Set<number>();
-
-  // returns a normalized dlc guard (i.e., a guard value where `0` means "base
-  // map content") for the given `nodeUids`, or `undefined` if dlcGuard
-  // cannot / should not be normalized.
-  // TODO uhhhhh... wat. this needs to be re-examined.
-  const normalizeDlcGuard = (
-    dlcGuard: number,
-    nodeUids: readonly bigint[],
-  ): number | undefined => {
-    Preconditions.checkArgument(nodeUids.length > 0);
-    if (dlcGuards[dlcGuard] == null) {
-      unknownDlcGuards.add(dlcGuard);
-      return;
-    }
-    nodeUids = nodeUids.filter(nid => nodes.has(nid));
-    if (nodeUids.length === 0) {
-      return;
-    }
-
-    if (dlcGuard !== 0) {
-      for (const nid of nodeUids) {
-        const node = assertExists(nodes.get(nid));
-        dlcGuardQuadTree.add({
-          x: node.x,
-          y: node.y,
-          dlcGuard,
-        });
-      }
-      return;
-    }
-
-    if (tsMapData.map === 'usa') {
-      // Map of country ids to number of occurrences
-      const countryIdCounts = new Map<number, number>();
-
-      // count non-zero country ids for corresponding nodes
-      for (const cid of nodeUids.flatMap(nid => getCountryIds(nid, nodes))) {
-        const curCount = putIfAbsent(cid, 0, countryIdCounts);
-        countryIdCounts.set(cid, curCount + 1);
-      }
-
-      // find the most frequently ref'd country id
-      const mostReferencedEntries = [...countryIdCounts.entries()].sort(
-        ([, av], [, bv]) => bv - av,
-      );
-      if (mostReferencedEntries.length === 0) {
-        // no non-zero country IDs. Fallback to the dlc guard associated with the
-        // closest node.
-        const node = assertExists(nodes.get(nodeUids[0]));
-        const closestNode = dlcGuardQuadTree.find(node.x, node.y);
-        return closestNode?.dlcGuard;
-      }
-
-      const countryId = mostReferencedEntries[0][0];
-      const equivDlcGuard = AtsCountryIdToDlcGuard[countryId as AtsCountryId];
-      if (equivDlcGuard == null) {
-        // no matching dlc guard for country id
-        logger.warn('unknown country id', countryId);
-        return;
-      }
-
-      for (const nid of nodeUids) {
-        const node = assertExists(nodes.get(nid));
-        dlcGuardQuadTree.add({
-          x: node.x,
-          y: node.y,
-          dlcGuard: equivDlcGuard,
-        });
-      }
-      return equivDlcGuard;
-    } else {
-      for (const nid of nodeUids) {
-        const node = assertExists(nodes.get(nid));
-        dlcGuardQuadTree.add({
-          x: node.x,
-          y: node.y,
-          dlcGuard,
-        });
-      }
-      return dlcGuard;
-    }
-  };
-
-  const updateMap = <T extends { dlcGuard: number }>(
-    map: Map<bigint, T>,
+  const points: DlcGuardPoint[] = [];
+  const updateItems = <T extends { dlcGuard: number }>(
+    collection: Iterable<T>,
     getNodeUids: (t: T) => readonly bigint[],
   ) => {
-    for (const [key, t] of map) {
-      const dlcGuard = normalizeDlcGuard(t.dlcGuard, getNodeUids(t));
-      if (dlcGuard != null) {
-        map.set(key, { ...t, dlcGuard });
+    for (const t of collection) {
+      const itemNodes = getNodeUids(t).map(nid => assertExists(nodes.get(nid)));
+      const itemCenter = center(getExtent(itemNodes));
+      points.push({
+        x: itemCenter[0],
+        y: itemCenter[1],
+        dlcGuard: t.dlcGuard,
+      });
+      if (dlcGuards[t.dlcGuard] == null) {
+        unknownDlcGuards.add(t.dlcGuard);
       }
     }
   };
 
-  // Roads must be processed first, so that the QuadTree can be populated with
-  // accurate-ish dlc guard values for use as fallbacks by other Items.
-  updateMap(roads, road => [road.startNodeUid, road.endNodeUid]);
+  updateItems(roads.values(), road => [road.startNodeUid, road.endNodeUid]);
+  updateItems(prefabs.values(), prefab => prefab.nodeUids);
+  updateItems(mapAreas.values(), mapArea => mapArea.nodeUids);
+  updateItems(triggers.values(), trigger => trigger.nodeUids);
+  updateItems(cutscenes.values(), cutscene => [cutscene.nodeUid]);
 
-  updateMap(prefabs, prefab => prefab.nodeUids);
-  updateMap(mapAreas, mapArea => mapArea.nodeUids);
-  updateMap(triggers, trigger => trigger.nodeUids);
-  updateMap(cutscenes, cutscene => [cutscene.nodeUid]);
-
-  for (let i = 0; i < pois.length; i++) {
-    const poi = pois[i];
+  const dlcGuardedPois: (DlcGuardPoint & { nodeUids: readonly bigint[] })[] =
+    [];
+  for (const poi of pois) {
     if (poi.type === 'landmark' || poi.type === 'road') {
-      const dlcGuard = normalizeDlcGuard(poi.dlcGuard, [poi.nodeUid]);
-      if (dlcGuard != null) {
-        pois[i] = { ...poi, dlcGuard };
-      }
+      dlcGuardedPois.push({
+        ...poi,
+        nodeUids: [poi.nodeUid],
+      });
     } else if (poi.type === 'facility' && poi.icon === 'parking_ico') {
-      const dlcGuard = normalizeDlcGuard(poi.dlcGuard, poi.itemNodeUids);
-      if (dlcGuard != null) {
-        pois[i] = { ...poi, dlcGuard };
-      }
+      dlcGuardedPois.push({
+        ...poi,
+        nodeUids: poi.itemNodeUids,
+      });
     }
   }
+  updateItems(dlcGuardedPois, poi => poi.nodeUids);
+
+  const rtree = new PointRBush<{ x: number; y: number; dlcGuard: number }>();
+  rtree.load(points);
 
   logger.warn('Unknown', tsMapData.map, 'dlc guards', unknownDlcGuards);
-  return {
-    ...tsMapData,
-    nodes,
-    roads,
-    prefabs,
-    mapAreas,
-    triggers,
-    cutscenes,
-    dlcGuardQuadTree,
-  };
-}
-
-function getCountryIds(
-  nodeUid: bigint,
-  nodes: ReadonlyMap<bigint, Node>,
-): number[] {
-  const node = assertExists(nodes.get(nodeUid));
-  const { forwardCountryId, backwardCountryId } = node;
-  if (forwardCountryId !== backwardCountryId) {
-    logger.warn('country mismatch', forwardCountryId, backwardCountryId);
-  }
-  // Filter out 0, which isn't a valid country id.
-  return [forwardCountryId, backwardCountryId].filter(id => id !== 0);
+  return rtree;
 }

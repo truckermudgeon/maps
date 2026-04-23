@@ -17,6 +17,7 @@ import {
   isLabeledPoi,
 } from '@truckermudgeon/map/constants';
 import { toDealerLabel } from '@truckermudgeon/map/labels';
+import type { PointRBush } from '@truckermudgeon/map/point-rbush';
 import type { Polygon, RoadString } from '@truckermudgeon/map/prefabs';
 import {
   toMapPosition,
@@ -57,7 +58,7 @@ import lineOffset from '@turf/line-offset';
 import type { Quadtree } from 'd3-quadtree';
 import { quadtree } from 'd3-quadtree';
 import type { GeoJSON } from 'geojson';
-import { dlcGuardMapDataKeys, normalizeDlcGuards } from '../dlc-guards';
+import { buildDlcGuardSpatialIndex, dlcGuardMapDataKeys } from '../dlc-guards';
 import { logger } from '../logger';
 import { createNormalizeFeature } from './normalize';
 import { ets2IsoA2, getCitiesByCountryIsoA2 } from './populated-places';
@@ -121,8 +122,8 @@ export function convertToMapGeoJson(
     roadLooks,
     prefabDescriptions,
     signDescriptions,
-    dlcGuardQuadTree,
-  } = normalizeDlcGuards(tsMapData);
+  } = tsMapData;
+  const dlcGuardSpatialIndex = buildDlcGuardSpatialIndex(tsMapData);
 
   const normalizeFeature = createNormalizeFeature(map);
 
@@ -668,9 +669,9 @@ export function convertToMapGeoJson(
     ...processedRoadFeatures,
     ...cityFeatures,
     ...countryFeatures,
-    ...poiFeatures.map(p => withDlcGuard(p, dlcGuardQuadTree)),
+    ...poiFeatures.map(p => withDlcGuard(p, dlcGuardSpatialIndex)),
     ...trafficFeatures,
-    ...exitFeatures.map(e => withDlcGuard(e, dlcGuardQuadTree)),
+    ...exitFeatures.map(e => withDlcGuard(e, dlcGuardSpatialIndex)),
     //...dividerFeatures,
     ...debugNodeFeatures,
     ...ferryFeatures,
@@ -687,7 +688,7 @@ export function convertToMapGeoJson(
  */
 function withDlcGuard<T extends CityFeature | PoiFeature | ExitFeature>(
   feature: T,
-  dlcQuadTree: Quadtree<{ x: number; y: number; dlcGuard: number }>,
+  dlcGuardSpatialIndex: PointRBush<{ x: number; y: number; dlcGuard: number }>,
 ): T {
   if ('dlcGuard' in feature.properties && feature.properties.dlcGuard != null) {
     // looks like some POIs have a dlcGuard that differs from what the
@@ -700,7 +701,7 @@ function withDlcGuard<T extends CityFeature | PoiFeature | ExitFeature>(
     // in the map files, as-is.
 
     // const [x, y] = feature.geometry.coordinates;
-    // const entryGuard = assertExists(dlcQuadTree.find(x, y)).dlcGuard;
+    // const entryGuard = assertExists(dlcGuardSpatialIndex.find(x, y)).dlcGuard;
     // if (entryGuard !== feature.properties.dlcGuard) {
     //   logger.warn(
     //     feature.properties,
@@ -714,7 +715,7 @@ function withDlcGuard<T extends CityFeature | PoiFeature | ExitFeature>(
   }
 
   const [x, y] = feature.geometry.coordinates;
-  const entry = dlcQuadTree.find(x, y);
+  const entry = dlcGuardSpatialIndex.findClosest(x, y);
   if (!entry) {
     return feature;
   }

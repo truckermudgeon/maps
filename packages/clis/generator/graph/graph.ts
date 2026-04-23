@@ -40,7 +40,7 @@ import { lineString, point } from '@turf/helpers';
 import type { Quadtree } from 'd3-quadtree';
 import { quadtree } from 'd3-quadtree';
 import type { GeoJSON } from 'geojson';
-import { dlcGuardMapDataKeys, normalizeDlcGuards } from '../dlc-guards';
+import { buildDlcGuardSpatialIndex, dlcGuardMapDataKeys } from '../dlc-guards';
 import { createNormalizeFeature } from '../geo-json/normalize';
 import { logger } from '../logger';
 
@@ -102,10 +102,10 @@ export function generateGraph(
     mapAreas,
     prefabDescriptions,
     roadLooks,
-    dlcGuardQuadTree,
-  } = normalizeDlcGuards(tsMapData);
+  } = tsMapData;
+  const dlcGuardSpatialIndex = buildDlcGuardSpatialIndex(tsMapData);
   const getDlcGuard = (node: Node): number =>
-    assertExists(dlcGuardQuadTree.find(node.x, node.y)).dlcGuard;
+    assertExists(dlcGuardSpatialIndex.findClosest(node.x, node.y)).dlcGuard;
   const toNode = (nodeUid: bigint): Node => assertExists(nodes.get(nodeUid));
 
   const graphDebug: DebugFC = {
