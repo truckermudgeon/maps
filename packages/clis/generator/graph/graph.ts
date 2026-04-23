@@ -79,6 +79,7 @@ export const graphMapDataKeys = [
   ...dlcGuardMapDataKeys,
   'companies',
   'ferries',
+  'mapAreas',
   'prefabDescriptions',
   'roadLooks',
   'countries',
