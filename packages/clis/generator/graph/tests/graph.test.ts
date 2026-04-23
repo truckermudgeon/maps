@@ -517,6 +517,7 @@ function createFakeMapData(arrays: PartialMapData): MappedData<'usa'> {
     token: 'city',
     x: 0,
     y: 0,
+    dlcGuard: 0,
   };
   const country: Country = {
     code: 'CO',

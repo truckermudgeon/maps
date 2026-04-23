@@ -538,6 +538,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             ['==', ['get', 'type'], 'poi'],
             ['==', ['get', 'poiType'], 'road'],
             ['!', ['in', ['get', 'sprite'], ['literal', allRoadFacilityIcons]]],
+            dlcGuardFilter,
             secretFilter,
           ]}
           layout={iconLayout(

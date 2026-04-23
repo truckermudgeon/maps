@@ -143,6 +143,14 @@ export function normalizeDlcGuards<T extends DlcGuardMappedData>(
       }
       return equivDlcGuard;
     } else {
+      for (const nid of nodeUids) {
+        const node = assertExists(nodes.get(nid));
+        dlcGuardQuadTree.add({
+          x: node.x,
+          y: node.y,
+          dlcGuard,
+        });
+      }
       return dlcGuard;
     }
   };

@@ -662,7 +662,7 @@ export function convertToMapGeoJson(
     ...mapAreaFeatures,
     ...prefabFeatures,
     ...processedRoadFeatures,
-    ...cityFeatures.map(c => withDlcGuard(c, dlcGuardQuadTree)),
+    ...cityFeatures,
     ...countryFeatures,
     ...poiFeatures.map(p => withDlcGuard(p, dlcGuardQuadTree)),
     ...trafficFeatures,
@@ -1233,6 +1233,7 @@ function cityToFeature(city: CityWithScaleRank): CityFeature {
       name: city.name,
       scaleRank: city.scaleRank,
       capital: city.capital,
+      dlcGuard: city.dlcGuard,
     },
     geometry: {
       type: 'Point',
