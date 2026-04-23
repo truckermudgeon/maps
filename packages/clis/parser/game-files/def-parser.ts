@@ -119,11 +119,16 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
       continue; // skip Winterland, Halloween community events
     }
     const dlc = /dlc_[^.]+/.exec(f)?.[0] ?? '';
-    const dlcGuard: number | undefined =
-      application === 'ats'
-        ? AtsScsSourceToDlcGuard[dlc]
-        : Ets2ScsSourceToDlcGuard[dlc];
-    assertExists(dlcGuard, `unknown dlc: ${dlc}`);
+    let dlcGuard: number | undefined =
+      dlc === ''
+        ? 0
+        : application === 'ats'
+          ? AtsScsSourceToDlcGuard[dlc + '.scs']
+          : Ets2ScsSourceToDlcGuard[dlc + '.scs'];
+    if (dlcGuard == null) {
+      logger.warn(`unknown dlc guard for ${dlc} (${f}); falling back to 0`);
+      dlcGuard = 0;
+    }
 
     const includePaths = parseIncludeOnlySii(`def/${f}`, entries);
     for (const path of includePaths) {
