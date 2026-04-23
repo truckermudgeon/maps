@@ -37,6 +37,7 @@ import type {
 } from '@truckermudgeon/map/types';
 import * as cliProgress from 'cli-progress';
 import path from 'path';
+import { PNG } from 'pngjs';
 import { logger } from '../logger';
 import { CombinedEntries } from './combined-entries';
 import { convertSiiToJson } from './convert-sii-to-json';
@@ -373,10 +374,10 @@ function parseIconMatFiles(entries: Entries) {
       'companies_ico',
       'road_numbers_ico',
       // these 4 files can be combined to help trace state / country borders
-      // 'map0',
-      // 'map1',
-      // 'map2',
-      // 'map3',
+      'map0',
+      'map1',
+      'map2',
+      'map3',
     ].map(n => `${n}.mat`),
   );
   readTobjPathsFromMatFiles('material/ui/map', f => otherMatFiles.has(f));
@@ -394,6 +395,29 @@ function parseIconMatFiles(entries: Entries) {
     // header-ful .dds file.
     pngs.set(key, parseDds(tobj.read(), sdfAuxData.get(key)));
   }
+
+  const mapPngs = [0, 1, 2, 3].map(i =>
+    PNG.sync.read(assertExists(pngs.get(`map${i}`))),
+  );
+  // verify that mapX pngs are square
+  const size = mapPngs[0].width;
+  assert(mapPngs.every(p => p.width === p.height && p.width === size));
+  // stitch together mapX pngs:
+  //    0 2
+  //    1 3
+  const stitched = new PNG({
+    width: mapPngs[0].width * 2,
+    height: mapPngs[0].height * 2,
+  });
+  PNG.bitblt(mapPngs[0], stitched, 0, 0, size, size, 0, 0);
+  PNG.bitblt(mapPngs[1], stitched, 0, 0, size, size, 0, size);
+  PNG.bitblt(mapPngs[2], stitched, 0, 0, size, size, size, 0);
+  PNG.bitblt(mapPngs[3], stitched, 0, 0, size, size, size, size);
+  if (pngs.has('map4k')) {
+    throw new Error('an icon with name `map4k` already exists');
+  }
+  pngs.set('map4k', PNG.sync.write(stitched));
+
   return pngs;
 }
 
