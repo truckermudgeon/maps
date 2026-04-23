@@ -7,12 +7,10 @@ import { logger } from './logger';
 
 export const dlcGuardMapDataKeys = [
   'nodes',
-  // making use of dlcGuard info for:
-  // - roads
-  // - prefabs
-  // - landmark POIs
   'roads',
   'prefabs',
+  // N.B.: can't trust triggers
+  'cutscenes',
   'pois',
 ] satisfies MapDataKeys;
 
@@ -34,7 +32,7 @@ export type DlcGuardSpatialIndex = PointRBush<DlcGuardPoint>;
 export function buildDlcGuardSpatialIndex<T extends DlcGuardMappedData>(
   tsMapData: T,
 ): DlcGuardSpatialIndex {
-  const { nodes, roads, prefabs, pois } = tsMapData;
+  const { nodes, roads, prefabs, cutscenes, pois } = tsMapData;
   let dlcGuards: Record<number, unknown>;
   switch (tsMapData.map) {
     case 'usa':
@@ -70,6 +68,7 @@ export function buildDlcGuardSpatialIndex<T extends DlcGuardMappedData>(
 
   updateItems(roads.values(), road => [road.startNodeUid, road.endNodeUid]);
   updateItems(prefabs.values(), prefab => prefab.nodeUids);
+  updateItems(cutscenes.values(), cutscene => [cutscene.nodeUid]);
   updateItems(
     pois.filter(p => p.type === 'landmark'),
     poi => [poi.nodeUid],
