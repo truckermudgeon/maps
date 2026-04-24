@@ -1,11 +1,7 @@
 import { assertExists } from '@truckermudgeon/base/assert';
 import { getExtent, toRadians } from '@truckermudgeon/base/geom';
 import { putIfAbsent } from '@truckermudgeon/base/map';
-import type {
-  MapDataKeys,
-  MappedData,
-  MappedDataForKeys,
-} from '@truckermudgeon/io';
+import type { MapDataKeys, MappedDataForKeys } from '@truckermudgeon/io';
 import { ItemType } from '@truckermudgeon/map/constants';
 import { getLineString } from '@truckermudgeon/map/linestring';
 import type { Lane } from '@truckermudgeon/map/prefabs';
@@ -28,7 +24,6 @@ import type { GeoJSON } from 'geojson';
 import { logger } from '../logger';
 import type { AdjacencyList } from './graph';
 import {
-  collapseDirectedChains,
   computeDegrees,
   convertToAdjacencyList,
   normalizeGraph,
@@ -61,18 +56,7 @@ type CompositeRoundabouts = Map<
 
 export function detectCompositeRoundabouts(
   graph: ReadonlyMap<bigint, Neighbors>,
-  tsMapData: MappedDataForKeys<
-    [
-      'nodes',
-      'roads',
-      'prefabs',
-      'companies',
-      'ferries',
-      'roadLooks',
-      'prefabDescriptions',
-      'ferries',
-    ]
-  >,
+  tsMapData: MappedDataForKeys<typeof detectRoundaboutsMapDataKeys>,
 ): Map<bigint[], Map<number, Lane[]>> {
   const toLngLat =
     tsMapData.map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
@@ -129,26 +113,10 @@ export function detectCompositeRoundabouts(
   const prunedGraph = new Map(
     graph.entries().filter(([key]) => !roundaboutPrefabNodeUids.has(key)),
   );
-  console.log(
+  logger.info(
     graph.size - prunedGraph.size,
-    'prefab-roundbout nodes pruned from graph',
+    'roundabout and T/X prefab nodes pruned from graph',
   );
-  const roundaboutPrefabNodes = roundaboutPrefabNodeUids
-    .values()
-    .toArray()
-    .filter(nid => tsMapData.nodes.has(nid))
-    .map(nid => assertExists(tsMapData.nodes.get(nid)));
-  //fs.writeFileSync(
-  //  'roundabout-prefabs.geojson',
-  //  JSON.stringify(
-  //    featureCollection(
-  //      roundaboutPrefabNodes.map(n => point(toLngLat([n.x, n.y]))),
-  //    ),
-  //    null,
-  //    2,
-  //  ),
-  //  'utf-8',
-  //);
 
   // 2. convert graph to adjacency list, collapse chains.
   const adjacencyList = convertToAdjacencyList(prunedGraph);
@@ -178,7 +146,9 @@ export function detectCompositeRoundabouts(
     }
   }
   // TODO: why are there unknown node uids? hidden roads/prefabs?
-  console.log(unknownNodeUids, 'unknown node uids');
+  if (unknownNodeUids) {
+    logger.warn(unknownNodeUids, 'unknown node uids');
+  }
 
   const nodeFeatures = featureCollection(
     possibleRoundaboutNodeUids
@@ -268,11 +238,11 @@ export function detectCompositeRoundabouts(
   }
 
   console.log(cycles.length, 'cycles');
-  fs.writeFileSync('cycles.json', JSON.stringify(cycles, null, 2), 'utf-8');
+  //fs.writeFileSync('cycles.json', JSON.stringify(cycles, null, 2), 'utf-8');
   //throw new Error();
 
   // 5. filter cycles by cycle-path circularity and turning consistency
-  filterCycles(cycles, graph, tsMapData);
+  filterCycles(cycles, tsMapData);
 
   // 5a. verify that no sub-cycles exist
 
@@ -281,8 +251,8 @@ export function detectCompositeRoundabouts(
 
   // 6. build LaneInfo map for cycles
 
-  // 7. FURTHER filter out cycles that involve 90-degree turns (to filter
-  //    out a cycle that's really just a BOX and not a CIRCLE)
+  // 7. FURTHER filter out cycles that have only one entrance + one exit, and
+  //    the entry + exit share the same node (to filter out "courts").
 
   // debug
 
@@ -321,22 +291,9 @@ export function detectCompositeRoundabouts(
 
 export function filterCycles(
   cycles: string[][],
-  _graph: ReadonlyMap<bigint, Neighbors>,
-  tsMapData: MappedDataForKeys<
-    [
-      'nodes',
-      'roads',
-      'prefabs',
-      'companies',
-      'ferries',
-      'roadLooks',
-      'prefabDescriptions',
-      'ferries',
-    ]
-  >,
+  tsMapData: MappedDataForKeys<typeof detectRoundaboutsMapDataKeys>,
 ) {
   // N.B.: cycles have the same start and end nodes in list.
-  console.log(cycles[0]);
 
   // TODO precalc this lookup. And consider merging Ferry & FerryItem types.
   const ferriesByUid = new Map<bigint, FerryItem>(
@@ -369,7 +326,7 @@ export function filterCycles(
       aspect,
       turning,
     };
-    // 259 detected in ETS2
+    // 340 roundabouts in ETS2
     const compositeScore = calculateScore(score);
     if (compositeScore < 0.55) {
       fails.push(
@@ -442,151 +399,6 @@ function calculateScore(score: {
   const circularityScore = 1 - score.score;
 
   return radiusScore * aspectScore * turningScore * circularityScore;
-}
-
-export function detectRoundabouts(
-  graph: Map<bigint, Neighbors>,
-  tsMapData: Pick<
-    MappedData,
-    'nodes' | 'prefabs' | 'prefabDescriptions' | 'map'
-  >,
-) {
-  let adjacencyList = convertToAdjacencyList(graph);
-  normalizeGraph(adjacencyList);
-
-  // filter graph to nodes that exist / are known (due to load-time filtering)
-  let deletedCount = 0;
-  for (const key of adjacencyList.keys()) {
-    const nodeUid = BigInt(key.split('-')[0]);
-    const node = tsMapData.nodes.get(nodeUid);
-    if (!node) {
-      graph.delete(nodeUid);
-      deletedCount++;
-    }
-  }
-  console.log('deleted', deletedCount, 'keys');
-
-  // print out adjacency list edges
-  adjacencyList = convertToAdjacencyList(graph);
-  console.log(adjacencyList.size, 'nodes');
-  let edges = 0;
-  for (const neighbors of adjacencyList.values()) {
-    edges += neighbors.size;
-  }
-  console.log(edges, 'edges');
-
-  //adjacencyList = pruneDeadEnds(adjacencyList);
-
-  console.log('collapsing....');
-  //const graphAndRoundabouts = collapseDirectedChainsWithRoundabouts(
-  //  adjacencyList,
-  //  tsMapData,
-  //);
-  //adjacencyList = graphAndRoundabouts.graph;
-  adjacencyList = collapseDirectedChains(adjacencyList);
-  console.log(adjacencyList.size, 'nodes');
-  let maxEdges = 0;
-  edges = 0;
-  for (const neighbors of adjacencyList.values()) {
-    edges += neighbors.size;
-    maxEdges = neighbors.size > maxEdges ? neighbors.size : maxEdges;
-  }
-  console.log(edges, 'edges');
-  console.log(maxEdges, 'maxEdges');
-
-  //console.log('collapsing AGAIN...');
-  //const collapseRes = collapseDirectedChainsWithRoundabouts(
-  //  adjacencyList,
-  //  tsMapData,
-  //);
-  //console.log(collapseRes.graph.size, 'nodes');
-  //edges = 0;
-  //maxEdges = 0;
-  //for (const neighbors of collapseRes.graph.values()) {
-  //  edges += neighbors.size;
-  //  maxEdges = neighbors.size > maxEdges ? neighbors.size : maxEdges;
-  //}
-  //console.log(edges, 'edges');
-  //console.log(maxEdges, 'maxEdges');
-
-  //console.log('roundabouts', collapseRes.roundabouts);
-
-  /*
-  for (const [key, adjs] of adjacencyList) {
-    const nodeUid = BigInt(key.split('-')[0]);
-    const nodeDir = key.split('-')[1];
-    const node = tsMapData.nodes.get(nodeUid);
-    if (!node) {
-      continue;
-    }
-
-    for (const adj of adjs) {
-      const adjUid = BigInt(adj.split('-')[0]);
-      const adjDir = adj.split('-')[1];
-      console.log(
-        nodeUid.toString(16) + '-' + nodeDir,
-        '->',
-        `${adjUid.toString(16)}-${adjDir}`,
-      );
-    }
-  }
-
-   */
-
-  const toLngLat =
-    tsMapData.map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
-
-  const res = new Map<string, Set<string>>();
-
-  //let sccs = findSCCsIterative1(mapValues(adjacencyList, v => [...v]));
-  let sccs = findAllSimpleCycles(adjacencyList);
-  //sccs = sccs.filter(component => component.length >= 4);
-
-  console.log('components', sccs.length);
-
-  sccs.forEach(components => {
-    console.log(components.length);
-    console.log(
-      JSON.stringify(
-        components.map(entry => {
-          const uid = BigInt(entry.split('-')[0]);
-          const dir = entry.split('-')[1];
-          return uid.toString(16) + '-' + dir;
-        }),
-        null,
-        2,
-      ),
-    );
-  });
-
-  sccs = sccs.filter(component => component.length >= 3);
-  const nodeUids = sccs.map(component =>
-    component.map(s => BigInt(s.split('-')[0])),
-  );
-  console.log('components', nodeUids.length);
-  const coords: [number, number][] = [];
-  for (const components of nodeUids) {
-    const node = tsMapData.nodes.get(components[0]);
-    if (!node) {
-      continue;
-    }
-    const [lng, lat] = toLngLat([node.x, node.y]);
-    const latlng = `${lat.toFixed(6)}/${lng.toFixed(6)}`;
-    console.log(`http://localhost:5173/?mlat=${lat}&mlon=${lng}#14/${latlng}`);
-
-    for (const c of components) {
-      const node = tsMapData.nodes.get(c);
-      if (!node) {
-        continue;
-      }
-      const [lng, lat] = toLngLat([node.x, node.y]);
-      coords.push([lng, lat]);
-    }
-  }
-  //console.log(
-  //  JSON.stringify(featureCollection(coords.map(c => point(c))), null, 2),
-  //);
-  //console.log(sccs);
 }
 
 function findAllSimpleCycles(

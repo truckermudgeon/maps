@@ -3,6 +3,7 @@ import fs from 'fs';
 import type { Argv, BuilderArguments } from 'yargs';
 import { logger } from '../logger';
 import {
+  detectCompositeRoundabouts,
   detectRoundaboutsMapDataKeys,
   filterCycles,
 } from '../roundabouts/detect-roundabouts';
@@ -58,12 +59,14 @@ export function handler(args: BuilderArguments<typeof builder>) {
     mapDataKeys: detectRoundaboutsMapDataKeys,
   });
 
-  //detectCompositeRoundabouts(graphData.graph, tsMapData);
+  if (Math.random() > 2) {
+    detectCompositeRoundabouts(graphData.graph, tsMapData);
+  }
 
   const cycles = JSON.parse(
     fs.readFileSync('cycles.json', 'utf-8'),
   ) as string[][];
-  filterCycles(cycles, graphData.graph, tsMapData);
+  filterCycles(cycles, tsMapData);
 
   logger.success('done.');
 }
