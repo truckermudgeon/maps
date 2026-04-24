@@ -57,6 +57,7 @@ type CompositeRoundabouts = Map<
 export function detectCompositeRoundabouts(
   graph: ReadonlyMap<bigint, Neighbors>,
   tsMapData: MappedDataForKeys<typeof detectRoundaboutsMapDataKeys>,
+  options: { writeDebugFiles: boolean } = { writeDebugFiles: false },
 ): Map<bigint[], Map<number, Lane[]>> {
   const toLngLat =
     tsMapData.map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
@@ -238,11 +239,13 @@ export function detectCompositeRoundabouts(
   }
 
   console.log(cycles.length, 'cycles');
-  //fs.writeFileSync('cycles.json', JSON.stringify(cycles, null, 2), 'utf-8');
+  if (options.writeDebugFiles) {
+    fs.writeFileSync('cycles.json', JSON.stringify(cycles, null, 2), 'utf-8');
+  }
   //throw new Error();
 
   // 5. filter cycles by cycle-path circularity and turning consistency
-  filterCycles(cycles, tsMapData);
+  filterCycles(cycles, tsMapData, options);
 
   // 5a. verify that no sub-cycles exist
 
@@ -256,44 +259,48 @@ export function detectCompositeRoundabouts(
 
   // debug
 
-  const uniqueNodeUids = new Set(
-    cycles.flatMap(vertices => vertices.map(v => BigInt(v.split('-')[0]))),
-  );
-  const uniqueNodes = uniqueNodeUids
-    .values()
-    .toArray()
-    .map(nid => assertExists(tsMapData.nodes.get(nid)));
-  fs.writeFileSync(
-    'roundabouts.geojson',
-    JSON.stringify(
-      featureCollection(uniqueNodes.map(n => point(toLngLat([n.x, n.y])))),
-      null,
-      2,
-    ),
-    'utf-8',
-  );
-
-  fs.writeFileSync(
-    'clusters.geojson',
-    JSON.stringify(
-      featureCollection(
-        nodeFeatures.features.filter(
-          f => (f.properties as DbscanProps).cluster != null,
-        ),
+  if (options.writeDebugFiles) {
+    const uniqueNodeUids = new Set(
+      cycles.flatMap(vertices => vertices.map(v => BigInt(v.split('-')[0]))),
+    );
+    const uniqueNodes = uniqueNodeUids
+      .values()
+      .toArray()
+      .map(nid => assertExists(tsMapData.nodes.get(nid)));
+    fs.writeFileSync(
+      'roundabouts.geojson',
+      JSON.stringify(
+        featureCollection(uniqueNodes.map(n => point(toLngLat([n.x, n.y])))),
+        null,
+        2,
       ),
-      null,
-      2,
-    ),
-    'utf-8',
-  );
+      'utf-8',
+    );
+    fs.writeFileSync(
+      'clusters.geojson',
+      JSON.stringify(
+        featureCollection(
+          nodeFeatures.features.filter(
+            f => (f.properties as DbscanProps).cluster != null,
+          ),
+        ),
+        null,
+        2,
+      ),
+      'utf-8',
+    );
+  }
+
   return res;
 }
 
 export function filterCycles(
   cycles: string[][],
   tsMapData: MappedDataForKeys<typeof detectRoundaboutsMapDataKeys>,
-) {
+  options: { writeDebugFiles: boolean } = { writeDebugFiles: false },
+): string[][] {
   // N.B.: cycles have the same start and end nodes in list.
+  const results: string[][] = [];
 
   // TODO precalc this lookup. And consider merging Ferry & FerryItem types.
   const ferriesByUid = new Map<bigint, FerryItem>(
@@ -340,6 +347,7 @@ export function filterCycles(
         }),
       );
     } else {
+      results.push(cycle);
       points.push(
         point(fromEts2CoordsToWgs84(score.center), {
           meanRadius: score.meanRadius,
@@ -352,34 +360,40 @@ export function filterCycles(
       );
     }
   }
-  console.log({
+  logger.log({
     fails: fails.length,
     passes: points.length,
   });
-  fs.writeFileSync(
-    'failedCycles.geojson',
-    JSON.stringify(featureCollection(fails), null, 2),
-    'utf-8',
-  );
-  fs.writeFileSync(
-    'filteredCycles.geojson',
-    JSON.stringify(featureCollection(points), null, 2),
-    'utf-8',
-  );
-  fs.writeFileSync(
-    'suspect.geojson',
-    JSON.stringify(
-      featureCollection(
-        points.filter(
-          p =>
-            (p.properties as { compositeScore: number }).compositeScore < 0.65,
+
+  if (options.writeDebugFiles) {
+    fs.writeFileSync(
+      'failedCycles.geojson',
+      JSON.stringify(featureCollection(fails), null, 2),
+      'utf-8',
+    );
+    fs.writeFileSync(
+      'filteredCycles.geojson',
+      JSON.stringify(featureCollection(points), null, 2),
+      'utf-8',
+    );
+    fs.writeFileSync(
+      'suspect.geojson',
+      JSON.stringify(
+        featureCollection(
+          points.filter(
+            p =>
+              (p.properties as { compositeScore: number }).compositeScore <
+              0.65,
+          ),
         ),
+        null,
+        2,
       ),
-      null,
-      2,
-    ),
-    'utf-8',
-  );
+      'utf-8',
+    );
+  }
+
+  return results;
 }
 
 // [0, 1]. the higher, the better.
