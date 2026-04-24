@@ -16,10 +16,9 @@ import type {
   RoadLook,
   WithToken,
 } from '@truckermudgeon/map/types';
-import fs from 'fs';
 import path from 'node:path';
 import url from 'node:url';
-import { filterCycles } from '../detect-roundabouts';
+import { detectCompositeRoundabouts } from '../detect-roundabouts';
 import { generateGraph } from '../graph';
 import { d_farm_grg, d_oil_gst3, prefab_us_405 } from './fixtures';
 
@@ -407,7 +406,16 @@ describe('roundabout detection', () => {
     const outDir = path.join(__dirname, '../../../../../out');
     const graphData = readGraphData(outDir, map);
     const tsMapData = readMapData(outDir + '/parser', map, {
-      mapDataKeys: ['nodes', 'prefabs', 'prefabDescriptions'],
+      mapDataKeys: [
+        'nodes',
+        'roads',
+        'prefabs',
+        'companies',
+        'ferries',
+        'roadLooks',
+        'prefabDescriptions',
+        'ferries',
+      ],
       //focus: { city: 'paris', radiusMeters: 5000, type: 'city' },
       //focus: { type: 'coords', radiusMeters: 2000, coords: [-27400, 7500] },
       //focus: { city: 'sacramento', radiusMeters: 2000, type: 'city' },
@@ -415,11 +423,11 @@ describe('roundabout detection', () => {
 
     const start = Date.now();
     //detectPrefabRoundabouts(tsMapData);
-    //detectCompositeRoundabouts(graphData.graph, tsMapData);
-    const cycles = JSON.parse(
-      fs.readFileSync('cycles.json', 'utf-8'),
-    ) as string[][];
-    filterCycles(cycles, graphData.graph, tsMapData);
+    detectCompositeRoundabouts(graphData.graph, tsMapData);
+    //const cycles = JSON.parse(
+    //  fs.readFileSync('cycles.json', 'utf-8'),
+    //) as string[][];
+    //filterCycles(cycles, graphData.graph, tsMapData);
 
     //detectRoundabouts(graphData.graph, nodes);
     console.log('time', (Date.now() - start) / 1000, 'seconds');

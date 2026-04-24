@@ -2,6 +2,8 @@ import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { distance, getExtent } from '@truckermudgeon/base/geom';
 import { putIfAbsent } from '@truckermudgeon/base/map';
 import type { MappedData, MappedDataForKeys } from '@truckermudgeon/io';
+import { ItemType } from '@truckermudgeon/map/constants';
+import { getLineString } from '@truckermudgeon/map/linestring';
 import type { Lane } from '@truckermudgeon/map/prefabs';
 import {
   calculateLaneInfo,
@@ -11,11 +13,17 @@ import {
   fromAtsCoordsToWgs84,
   fromEts2CoordsToWgs84,
 } from '@truckermudgeon/map/projections';
-import type { Neighbor, Neighbors } from '@truckermudgeon/map/types';
+import type {
+  CompanyItem,
+  FerryItem,
+  Neighbor,
+  Neighbors,
+} from '@truckermudgeon/map/types';
 import type { DbscanProps } from '@turf/clusters-dbscan';
 import { clustersDbscan } from '@turf/clusters-dbscan';
 import { featureCollection, point } from '@turf/helpers';
 import fs from 'fs';
+import type { GeoJSON } from 'geojson';
 
 type AdjacencyList = Map<string, Set<string>>;
 
@@ -131,8 +139,12 @@ function collapseDirectedChains(graph: AdjacencyList): AdjacencyList {
 }
 
 function circularityByRadius(coords: [number, number][]) {
+  // centroid
   const cx = coords.reduce((s, c) => s + c[0], 0) / coords.length;
   const cy = coords.reduce((s, c) => s + c[1], 0) / coords.length;
+
+  // center
+  //const [cx, cy] = center(getExtent(coords));
 
   const distances = coords.map(pos => distance(pos, [cx, cy]));
 
@@ -271,7 +283,18 @@ type CompositeRoundabouts = Map<
 
 export function detectCompositeRoundabouts(
   graph: ReadonlyMap<bigint, Neighbors>,
-  tsMapData: MappedDataForKeys<['nodes', 'prefabs', 'prefabDescriptions']>,
+  tsMapData: MappedDataForKeys<
+    [
+      'nodes',
+      'roads',
+      'prefabs',
+      'companies',
+      'ferries',
+      'roadLooks',
+      'prefabDescriptions',
+      'ferries',
+    ]
+  >,
 ): Map<bigint[], Map<number, Lane[]>> {
   const toLngLat =
     tsMapData.map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
@@ -410,6 +433,7 @@ export function detectCompositeRoundabouts(
   //throw new Error();
 
   // 5. filter cycles by cycle-path circularity and turning consistency
+  filterCycles(cycles, graph, tsMapData);
 
   // 5a. verify that no sub-cycles exist
 
@@ -456,10 +480,96 @@ export function detectCompositeRoundabouts(
 export function filterCycles(
   cycles: string[][],
   _graph: ReadonlyMap<bigint, Neighbors>,
-  _tsMapData: MappedDataForKeys<['nodes', 'prefabs', 'prefabDescriptions']>,
+  tsMapData: MappedDataForKeys<
+    [
+      'nodes',
+      'roads',
+      'prefabs',
+      'companies',
+      'ferries',
+      'roadLooks',
+      'prefabDescriptions',
+      'ferries',
+    ]
+  >,
 ) {
   // N.B.: cycles have the same start and end nodes in list.
   console.log(cycles[0]);
+
+  // TODO precalc this lookup. And consider merging Ferry & FerryItem types.
+  const ferriesByUid = new Map<bigint, FerryItem>(
+    tsMapData.ferries
+      .values()
+      .map(f => [f.uid, { ...f, type: ItemType.Ferry }]),
+  );
+  // TODO precalc this lookup
+  const companiesByPrefab = new Map<bigint, CompanyItem>(
+    tsMapData.companies.values().map(c => [c.prefabUid, c]),
+  );
+  const lookups = {
+    ferriesByUid,
+    companiesByPrefab,
+  };
+
+  const points: GeoJSON.Feature<GeoJSON.Point>[] = [];
+  const fails: GeoJSON.Feature<GeoJSON.Point>[] = [];
+
+  for (const cycle of cycles) {
+    const nodeUids = cycle.map(key => BigInt(key.split('-')[0]));
+    const path = getLineString(nodeUids, tsMapData, lookups);
+    const bounds = getExtent(path);
+    const aspect =
+      Math.abs(bounds[0] - bounds[2]) / Math.abs(bounds[1] - bounds[3]);
+
+    const turning = turningConsistency(path);
+    const score = {
+      ...circularityByRadius(path),
+      aspect,
+      turning,
+    };
+    // 259 detected in ETS2
+    if (
+      turning.direction !== -1 ||
+      Number(turning.score.toFixed(2)) < 0.79 ||
+      score.meanRadius > 70 ||
+      score.score > 0.075 ||
+      Math.abs(1 - score.aspect) > 0.1
+    ) {
+      fails.push(
+        point(fromEts2CoordsToWgs84(score.center), {
+          meanRadius: score.meanRadius,
+          score: score.score,
+          aspect: score.aspect,
+          turningScore: score.turning.score,
+          turningDirection: score.turning.direction,
+        }),
+      );
+    } else {
+      points.push(
+        point(fromEts2CoordsToWgs84(score.center), {
+          meanRadius: score.meanRadius,
+          score: score.score,
+          aspect: score.aspect,
+          turningScore: score.turning.score,
+          turningDirection: score.turning.direction,
+        }),
+      );
+    }
+  }
+  console.log({
+    fails: fails.length,
+    passes: points.length,
+  });
+  fs.writeFileSync(
+    'failedCycles.geojson',
+    JSON.stringify(featureCollection(fails), null, 2),
+    'utf-8',
+  );
+  fs.writeFileSync(
+    'filteredCycles.geojson',
+    JSON.stringify(featureCollection(points), null, 2),
+    'utf-8',
+  );
 }
 
 export function detectRoundabouts(
