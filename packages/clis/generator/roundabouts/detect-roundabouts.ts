@@ -1,5 +1,5 @@
-import { assert, assertExists } from '@truckermudgeon/base/assert';
-import { distance, getExtent } from '@truckermudgeon/base/geom';
+import { assertExists } from '@truckermudgeon/base/assert';
+import { getExtent, toRadians } from '@truckermudgeon/base/geom';
 import { putIfAbsent } from '@truckermudgeon/base/map';
 import type {
   MapDataKeys,
@@ -9,10 +9,7 @@ import type {
 import { ItemType } from '@truckermudgeon/map/constants';
 import { getLineString } from '@truckermudgeon/map/linestring';
 import type { Lane } from '@truckermudgeon/map/prefabs';
-import {
-  calculateLaneInfo,
-  calculateNodeConnections,
-} from '@truckermudgeon/map/prefabs';
+import { calculateLaneInfo } from '@truckermudgeon/map/prefabs';
 import {
   fromAtsCoordsToWgs84,
   fromEts2CoordsToWgs84,
@@ -20,16 +17,28 @@ import {
 import type {
   CompanyItem,
   FerryItem,
-  Neighbor,
   Neighbors,
 } from '@truckermudgeon/map/types';
 import type { DbscanProps } from '@turf/clusters-dbscan';
 import { clustersDbscan } from '@turf/clusters-dbscan';
 import { featureCollection, point } from '@turf/helpers';
+import * as cliProgress from 'cli-progress';
 import fs from 'fs';
 import type { GeoJSON } from 'geojson';
-
-type AdjacencyList = Map<string, Set<string>>;
+import { logger } from '../logger';
+import type { AdjacencyList } from './graph';
+import {
+  collapseDirectedChains,
+  computeDegrees,
+  convertToAdjacencyList,
+  normalizeGraph,
+} from './graph';
+import { detectPrefabRoundabouts } from './prefab-roundabouts';
+import {
+  aspectRatioScore,
+  circularityByRadius,
+  turningConsistency,
+} from './scoring';
 
 export const detectRoundaboutsMapDataKeys = [
   'nodes',
@@ -41,253 +50,6 @@ export const detectRoundaboutsMapDataKeys = [
   'companyDefs',
   'ferries',
 ] satisfies MapDataKeys;
-
-// ensures that graph has a key for every edge's start + end nodes.
-function normalizeGraph(graph: AdjacencyList) {
-  for (const neighbors of graph.values()) {
-    for (const v of neighbors) {
-      if (!graph.has(v)) {
-        graph.set(v, new Set());
-      }
-    }
-  }
-}
-
-function computeDegrees(graph: AdjacencyList): {
-  inDeg: Map<string, number>;
-  outDeg: Map<string, number>;
-} {
-  const inDeg = new Map<string, number>();
-  const outDeg = new Map<string, number>();
-
-  for (const [v, neighbors] of graph) {
-    outDeg.set(v, neighbors.size);
-
-    for (const w of neighbors) {
-      inDeg.set(w, (inDeg.get(w) ?? 0) + 1);
-    }
-
-    if (!inDeg.has(v)) {
-      inDeg.set(v, 0);
-    }
-  }
-
-  return { inDeg, outDeg };
-}
-
-function pruneDeadEnds(graph: AdjacencyList): AdjacencyList {
-  const g = new Map(graph);
-  let changed = true;
-
-  while (changed) {
-    changed = false;
-
-    const { inDeg, outDeg } = computeDegrees(g);
-
-    for (const v of g.keys()) {
-      if ((inDeg.get(v) ?? 0) === 0 || (outDeg.get(v) ?? 0) === 0) {
-        g.delete(v);
-        for (const neighbors of g.values()) {
-          neighbors.delete(v);
-        }
-        changed = true;
-      }
-    }
-  }
-
-  return g;
-}
-
-function collapseDirectedChains(graph: AdjacencyList): AdjacencyList {
-  const { inDeg, outDeg } = computeDegrees(graph);
-
-  const isChainNode = (v: string) =>
-    (inDeg.get(v) ?? 0) === 1 && (outDeg.get(v) ?? 0) === 1;
-
-  const result: AdjacencyList = new Map();
-  const visited = new Set<string>();
-
-  function addEdge(a: string, b: string) {
-    putIfAbsent(a, new Set(), result).add(b);
-  }
-
-  for (const v of graph.keys()) {
-    if (isChainNode(v)) {
-      continue;
-    }
-
-    for (const n of assertExists(graph.get(v))) {
-      let curr = n;
-
-      while (isChainNode(curr) && !visited.has(curr)) {
-        visited.add(curr);
-        assert(graph.get(curr)!.size === 1);
-        curr = graph.get(curr)!.values().next().value!;
-      }
-
-      if (curr !== v) addEdge(v, curr);
-    }
-  }
-
-  // Handle pure cycles (all nodes are chain nodes)
-  for (const v of graph.keys()) {
-    if (isChainNode(v) && !visited.has(v)) {
-      const cycle: string[] = [];
-      let curr = v;
-
-      do {
-        visited.add(curr);
-        cycle.push(curr);
-        assert(graph.get(curr)!.size === 1);
-        curr = graph.get(curr)!.values().next().value!;
-      } while (curr !== v);
-
-      // collapse cycle into a single self-loop node (pick representative)
-      const rep = cycle[0];
-      console.log('pure cycle', cycle);
-      addEdge(rep, rep);
-    }
-  }
-
-  normalizeGraph(result);
-  return result;
-}
-
-function circularityByRadius(coords: [number, number][]) {
-  // centroid
-  const cx = coords.reduce((s, c) => s + c[0], 0) / coords.length;
-  const cy = coords.reduce((s, c) => s + c[1], 0) / coords.length;
-
-  // center
-  //const [cx, cy] = center(getExtent(coords));
-
-  const distances = coords.map(pos => distance(pos, [cx, cy]));
-
-  const mean = distances.reduce((s, d) => s + d, 0) / distances.length;
-
-  const variance =
-    distances.reduce((s, d) => s + (d - mean) ** 2, 0) / distances.length;
-
-  const stdDev = Math.sqrt(variance);
-
-  return {
-    center: [cx, cy] as [number, number],
-    meanRadius: mean,
-    score: stdDev / mean, // 🔥 key metric
-  };
-}
-
-function turningConsistency(coords: [number, number][]) {
-  let positive = 0;
-  let negative = 0;
-
-  for (let i = 1; i < coords.length - 1; i++) {
-    const [x1, y1] = coords[i - 1];
-    const [x2, y2] = coords[i];
-    const [x3, y3] = coords[i + 1];
-
-    const cross = (x2 - x1) * (y3 - y2) - (y2 - y1) * (x3 - x2);
-
-    if (cross > 0) positive++;
-    if (cross < 0) negative++;
-  }
-
-  const total = positive + negative;
-  const dominant = Math.max(positive, negative);
-
-  return {
-    score: total === 0 ? 0 : dominant / total,
-    direction: positive > negative ? 1 : positive === negative ? 0 : -1,
-  };
-}
-
-export function detectPrefabRoundabouts(
-  tsmapData: Pick<MappedData, 'prefabDescriptions'>,
-): Set<string> {
-  const results = new Set<string>();
-  const { prefabDescriptions } = tsmapData;
-  for (const desc of prefabDescriptions.values()) {
-    if (circularityByRadius(desc.nodes.map(n => [n.x, n.y])).score > 0.35) {
-      continue;
-    }
-
-    const connections = calculateNodeConnections(desc).values().toArray();
-    const fullyConnectedRoundabout =
-      connections.length >= 3 &&
-      connections.every(exits => exits.length === connections.length);
-    const mostlyConnectedRoundabout =
-      connections.length >= 4 &&
-      connections.every(exits => exits.length >= connections.length - 1) &&
-      connections.filter(exits => exits.length === connections.length).length >=
-        connections.length / 2;
-
-    if (!fullyConnectedRoundabout && !mostlyConnectedRoundabout) {
-      continue;
-    }
-
-    // get the path of the first-node-loopback.
-    const laneInfo = calculateLaneInfo(desc);
-    const path: [number, number][] = [];
-    const turningCons: { score: number; direction: number }[] = [];
-    for (const lane of laneInfo.values()) {
-      for (const inputLane of lane) {
-        for (const branch of inputLane.branches) {
-          const interiorCurvePoints = branch.curvePoints.slice(
-            Math.floor(branch.curvePoints.length / 3),
-            -Math.floor(branch.curvePoints.length / 3),
-          );
-          turningCons.push(turningConsistency(interiorCurvePoints));
-
-          path.push(...interiorCurvePoints);
-          //}
-        }
-      }
-    }
-    const bounds = getExtent(path);
-    const aspect =
-      Math.abs(bounds[0] - bounds[2]) / Math.abs(bounds[1] - bounds[3]);
-
-    const turning =
-      turningCons.reduce((acc, i) => acc + i.score, 0) / turningCons.length;
-    const score = {
-      ...circularityByRadius(path),
-      aspect,
-      turning,
-      conns: connections.length,
-      allTurns: turningCons.every(s => s.direction === 1)
-        ? 'positive'
-        : turningCons.every(s => s.direction === -1)
-          ? 'negative'
-          : 'mixedOrZero',
-    };
-    if (
-      Number(turning.toFixed(2)) < 0.79 ||
-      score.meanRadius > 70 ||
-      score.aspect < 0.7 ||
-      score.aspect > 1.3
-    ) {
-      console.log('not circular enough', desc.path);
-      console.log(desc.path, {
-        ...score,
-        scoreAdj: score.score / connections.length,
-      });
-      continue;
-    } else if (!desc.path.includes('round')) {
-      console.log('suspect', desc.path, {
-        ...score,
-        scoreAdj: score.score / connections.length,
-      });
-    } else {
-      console.log('ok', desc.path, {
-        ...score,
-        scoreAdj: score.score / connections.length,
-      });
-    }
-    results.add(desc.token);
-  }
-  console.log(results);
-  return results;
-}
 
 type CompositeRoundabouts = Map<
   // ordered nodeUids of entry/exit nodes in a composite roundabout.
@@ -320,11 +82,47 @@ export function detectCompositeRoundabouts(
   // - prefab roundabouts
   // - prefabs containing a straight line and a 90-degree turn
   const roundaboutPrefabTokens = detectPrefabRoundabouts(tsMapData);
+  const toleranceRadians = toRadians(5);
+  const tOrXIntersectionPrefabTokens = new Set(
+    tsMapData.prefabDescriptions
+      .values()
+      .toArray()
+      .filter(prefabDesc => {
+        const laneInfo = [...calculateLaneInfo(prefabDesc).values()];
+        const straight = laneInfo.some(lanes =>
+          lanes.some(lane =>
+            lane.branches.some(
+              branch => Math.abs(branch.angle) < toleranceRadians,
+            ),
+          ),
+        );
+        const ninety = laneInfo.some(lanes =>
+          lanes.some(lane =>
+            lane.branches.some(
+              branch =>
+                Math.abs(Math.abs(branch.angle) - Math.PI / 2) <
+                toleranceRadians,
+            ),
+          ),
+        );
+        return straight && ninety;
+      })
+      .map(prefabDesc => prefabDesc.token),
+  );
+  logger.info(roundaboutPrefabTokens.size, 'roundabout prefab tokens');
+  logger.info(
+    tOrXIntersectionPrefabTokens.size,
+    'T- or X-intersection prefab tokens',
+  );
+
   const roundaboutPrefabNodeUids = new Set<bigint>(
     tsMapData.prefabs
       .values()
       .flatMap(prefab =>
-        roundaboutPrefabTokens.has(prefab.token) ? prefab.nodeUids : [],
+        roundaboutPrefabTokens.has(prefab.token) ||
+        tOrXIntersectionPrefabTokens.has(prefab.token)
+          ? prefab.nodeUids
+          : [],
       ),
   );
   const prunedGraph = new Map(
@@ -393,6 +191,12 @@ export function detectCompositeRoundabouts(
       }),
   );
 
+  const startTime = Date.now();
+  logger.start(
+    'clustering',
+    nodeFeatures.features.length,
+    'nodes... (this may take a while)',
+  );
   clustersDbscan(
     nodeFeatures,
     // ideally, scale factor should depend on map (and in ETS2 case: whether
@@ -409,11 +213,28 @@ export function detectCompositeRoundabouts(
       );
     }
   }
-  console.log(clusters.size, 'clusters');
+  logger.success(
+    clusters.size,
+    'clusters in',
+    Number(((Date.now() - startTime) / 1000).toFixed(1)),
+    'seconds',
+  );
 
   // 4. for each cluster, detect cycles
+  logger.start('checking', clusters.size, 'clusters for cycles');
+  const bar = new cliProgress.SingleBar(
+    {
+      format: `[{bar}] | {value} of {total}`,
+      stopOnComplete: true,
+      clearOnComplete: true,
+    },
+    cliProgress.Presets.rect,
+  );
+  bar.start(clusters.size, 0);
+
   const cycles: string[][] = [];
   for (const [clusterId, nodeUids] of clusters) {
+    bar.increment();
     // build a graph of just the nodeUids
     const subGraph: AdjacencyList = new Map<string, Set<string>>();
     for (const nodeUid of nodeUids) {
@@ -548,13 +369,8 @@ export function filterCycles(
       turning,
     };
     // 259 detected in ETS2
-    if (
-      turning.direction !== -1 ||
-      Number(turning.score.toFixed(2)) < 0.79 ||
-      score.meanRadius > 70 ||
-      score.score > 0.075 ||
-      Math.abs(1 - score.aspect) > 0.1
-    ) {
+    const compositeScore = calculateScore(score);
+    if (compositeScore < 0.65) {
       fails.push(
         point(fromEts2CoordsToWgs84(score.center), {
           meanRadius: score.meanRadius,
@@ -562,6 +378,7 @@ export function filterCycles(
           aspect: score.aspect,
           turningScore: score.turning.score,
           turningDirection: score.turning.direction,
+          compositeScore,
         }),
       );
     } else {
@@ -572,6 +389,7 @@ export function filterCycles(
           aspect: score.aspect,
           turningScore: score.turning.score,
           turningDirection: score.turning.direction,
+          compositeScore,
         }),
       );
     }
@@ -592,13 +410,34 @@ export function filterCycles(
   );
 }
 
+// [0, 1]. the higher, the better.
+function calculateScore(score: {
+  meanRadius: number;
+  score: number;
+  aspect: number;
+  turning: { score: number; direction: -1 | 0 | 1 };
+}): number {
+  if (score.turning.direction !== -1) {
+    return 0;
+  }
+
+  if (score.meanRadius > 80) {
+    return 0;
+  }
+
+  const aspectScore = aspectRatioScore(score.aspect);
+  const turningScore = score.turning.score;
+  const circularityScore = 1 - score.score;
+  return aspectScore * turningScore * circularityScore;
+}
+
 export function detectRoundabouts(
   graph: Map<bigint, Neighbors>,
   tsMapData: Pick<
     MappedData,
     'nodes' | 'prefabs' | 'prefabDescriptions' | 'map'
   >,
-): Map<bigint, Neighbors> {
+) {
   let adjacencyList = convertToAdjacencyList(graph);
   normalizeGraph(adjacencyList);
 
@@ -735,8 +574,6 @@ export function detectRoundabouts(
   //  JSON.stringify(featureCollection(coords.map(c => point(c))), null, 2),
   //);
   //console.log(sccs);
-
-  return convertToNeighbors(res, graph);
 }
 
 function findAllSimpleCycles(
@@ -856,76 +693,4 @@ function findAllSimpleCycles(
   }
 
   return result;
-}
-
-function convertToAdjacencyList(
-  graph: Map<bigint, Neighbors>,
-): Map<string, Set<string>> {
-  const adjacencyList = new Map<string, Set<string>>();
-
-  for (const [fromNodeUid, { forward, backward }] of graph) {
-    for (const nodeDirection of ['forward', 'backward']) {
-      const neighbors = nodeDirection === 'forward' ? forward : backward;
-      const adjacents = new Set<string>();
-      for (const { nodeUid, direction } of neighbors) {
-        const toNode = `${nodeUid}-${direction}`;
-        //const toNode = `${nodeUid}`;
-        adjacents.add(toNode);
-      }
-      if (adjacents.size) {
-        adjacencyList.set(`${fromNodeUid}-${nodeDirection}`, adjacents);
-        //adjacencyList.set(`${nodeUid}`, adjacents);
-      }
-    }
-  }
-
-  return adjacencyList;
-}
-
-function convertToNeighbors(
-  adjacencyList: Map<string, Set<string>>,
-  context: Map<bigint, Neighbors>,
-): Map<bigint, Neighbors> {
-  const graph = new Map<bigint, Neighbors>();
-
-  for (const [nodeKey, neighborKeys] of adjacencyList) {
-    const [uidStr, direction] = nodeKey.split('-') as [
-      string,
-      'forward' | 'backward',
-    ];
-    const neighbors = putIfAbsent(
-      BigInt(uidStr),
-      {
-        forward: [],
-        backward: [],
-      },
-      graph,
-    );
-
-    const mutableNeighbors = neighbors as {
-      forward: Neighbor[];
-      backward: Neighbor[];
-    };
-
-    const contextNeighbors = assertExists(context.get(BigInt(uidStr)))[
-      direction
-    ];
-    for (const neighborKey of neighborKeys) {
-      const [nUidStr, nDirection] = neighborKey.split('-') as [
-        string,
-        'forward' | 'backward',
-      ];
-      const nUid = BigInt(nUidStr);
-      const contextNeighbor = assertExists(
-        contextNeighbors.find(
-          neighbor =>
-            neighbor.nodeUid === nUid && neighbor.direction === nDirection,
-        ),
-      );
-
-      mutableNeighbors[direction].push(contextNeighbor);
-    }
-  }
-
-  return graph;
 }

@@ -1,7 +1,11 @@
 import { readGraphData, readMapData } from '@truckermudgeon/io';
+import fs from 'fs';
 import type { Argv, BuilderArguments } from 'yargs';
 import { logger } from '../logger';
-import { detectRoundaboutsMapDataKeys } from '../roundabouts/detect-roundabouts';
+import {
+  detectRoundaboutsMapDataKeys,
+  filterCycles,
+} from '../roundabouts/detect-roundabouts';
 import { maybeEnsureOutputDir, untildify } from './path-helpers';
 
 export const command = 'roundabouts';
@@ -53,6 +57,13 @@ export function handler(args: BuilderArguments<typeof builder>) {
   const tsMapData = readMapData(args.inputDir, args.map, {
     mapDataKeys: detectRoundaboutsMapDataKeys,
   });
+
+  //detectCompositeRoundabouts(graphData.graph, tsMapData);
+
+  const cycles = JSON.parse(
+    fs.readFileSync('cycles.json', 'utf-8'),
+  ) as string[][];
+  filterCycles(cycles, graphData.graph, tsMapData);
 
   logger.success('done.');
 }
