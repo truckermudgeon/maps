@@ -312,10 +312,10 @@ export function detectCompositeRoundabouts(
   //);
 
   // 2. convert graph to adjacency list, collapse chains.
-  let adjacencyList = convertToAdjacencyList(prunedGraph);
+  const adjacencyList = convertToAdjacencyList(prunedGraph);
   normalizeGraph(adjacencyList);
   // enable collapsing for quicker debugging
-  adjacencyList = collapseDirectedChains(adjacencyList);
+  //adjacencyList = collapseDirectedChains(adjacencyList);
 
   // 3. cluster nodes by degrees >= 3, with a radius of 200m (in game units)
   const { inDeg, outDeg } = computeDegrees(adjacencyList);
@@ -406,8 +406,12 @@ export function detectCompositeRoundabouts(
   }
 
   console.log(cycles.length, 'cycles');
+  //fs.writeFileSync('cycles.json', JSON.stringify(cycles, null, 2), 'utf-8');
+  //throw new Error();
 
   // 5. filter cycles by cycle-path circularity and turning consistency
+
+  // 5a. verify that no sub-cycles exist
 
   // N.B.: cycles have the same start and end nodes in list.
   console.log(cycles[0]);
@@ -447,6 +451,15 @@ export function detectCompositeRoundabouts(
     'utf-8',
   );
   return res;
+}
+
+export function filterCycles(
+  cycles: string[][],
+  _graph: ReadonlyMap<bigint, Neighbors>,
+  _tsMapData: MappedDataForKeys<['nodes', 'prefabs', 'prefabDescriptions']>,
+) {
+  // N.B.: cycles have the same start and end nodes in list.
+  console.log(cycles[0]);
 }
 
 export function detectRoundabouts(
