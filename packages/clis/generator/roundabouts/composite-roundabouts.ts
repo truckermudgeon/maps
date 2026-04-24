@@ -2,6 +2,7 @@ import { assertExists } from '@truckermudgeon/base/assert';
 import { getExtent, toRadians } from '@truckermudgeon/base/geom';
 import { putIfAbsent } from '@truckermudgeon/base/map';
 import type { MapDataKeys, MappedDataForKeys } from '@truckermudgeon/io';
+import { writeGeojsonFile } from '@truckermudgeon/io';
 import { ItemType } from '@truckermudgeon/map/constants';
 import { getLineString } from '@truckermudgeon/map/linestring';
 import type { Lane } from '@truckermudgeon/map/prefabs';
@@ -22,6 +23,7 @@ import * as cliProgress from 'cli-progress';
 import fs from 'fs';
 import type { GeoJSON } from 'geojson';
 import { logger } from '../logger';
+import { findAllSimpleCycles } from './cycles';
 import type { AdjacencyList } from './graph';
 import {
   computeDegrees,
@@ -62,34 +64,23 @@ export function detectCompositeRoundabouts(
   const toLngLat =
     tsMapData.map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
 
-  const res: CompositeRoundabouts = new Map();
-
   // 1. prune graph by removing nodes associated with:
   // - prefab roundabouts
   // - prefabs containing a straight line and a 90-degree turn
   const roundaboutPrefabTokens = detectPrefabRoundabouts(tsMapData);
   const toleranceRadians = toRadians(5);
   const tOrXIntersectionPrefabTokens = new Set(
-    tsMapData.prefabDescriptions
-      .values()
-      .toArray()
+    [...tsMapData.prefabDescriptions.values()]
       .filter(prefabDesc => {
-        const laneInfo = [...calculateLaneInfo(prefabDesc).values()];
-        const straight = laneInfo.some(lanes =>
-          lanes.some(lane =>
-            lane.branches.some(
-              branch => Math.abs(branch.angle) < toleranceRadians,
-            ),
-          ),
+        const branches = [...calculateLaneInfo(prefabDesc).values()].flatMap(
+          lanes => lanes.flatMap(lane => lane.branches),
         );
-        const ninety = laneInfo.some(lanes =>
-          lanes.some(lane =>
-            lane.branches.some(
-              branch =>
-                Math.abs(Math.abs(branch.angle) - Math.PI / 2) <
-                toleranceRadians,
-            ),
-          ),
+        const straight = branches.some(
+          branch => Math.abs(branch.angle) < toleranceRadians,
+        );
+        const ninety = branches.some(
+          branch =>
+            Math.abs(Math.abs(branch.angle) - Math.PI / 2) < toleranceRadians,
         );
         return straight && ninety;
       })
@@ -245,7 +236,9 @@ export function detectCompositeRoundabouts(
   //throw new Error();
 
   // 5. filter cycles by cycle-path circularity and turning consistency
-  filterCycles(cycles, tsMapData, options);
+  const roundaboutCycles = filterCycles(cycles, tsMapData, options);
+
+  const res: CompositeRoundabouts = new Map();
 
   // 5a. verify that no sub-cycles exist
 
@@ -267,27 +260,17 @@ export function detectCompositeRoundabouts(
       .values()
       .toArray()
       .map(nid => assertExists(tsMapData.nodes.get(nid)));
-    fs.writeFileSync(
+    writeGeojsonFile(
       'roundabouts.geojson',
-      JSON.stringify(
-        featureCollection(uniqueNodes.map(n => point(toLngLat([n.x, n.y])))),
-        null,
-        2,
-      ),
-      'utf-8',
+      featureCollection(uniqueNodes.map(n => point(toLngLat([n.x, n.y])))),
     );
-    fs.writeFileSync(
+    writeGeojsonFile(
       'clusters.geojson',
-      JSON.stringify(
-        featureCollection(
-          nodeFeatures.features.filter(
-            f => (f.properties as DbscanProps).cluster != null,
-          ),
+      featureCollection(
+        nodeFeatures.features.filter(
+          f => (f.properties as DbscanProps).cluster != null,
         ),
-        null,
-        2,
       ),
-      'utf-8',
     );
   }
 
@@ -333,31 +316,23 @@ export function filterCycles(
       aspect,
       turning,
     };
-    // 340 roundabouts in ETS2
+
     const compositeScore = calculateScore(score);
+    const centerPoint = point(fromEts2CoordsToWgs84(score.center), {
+      meanRadius: score.meanRadius,
+      score: score.score,
+      aspect: score.aspect,
+      turningScore: score.turning.score,
+      turningDirection: score.turning.direction,
+      compositeScore,
+    });
+
+    // 340 roundabouts in ETS2
     if (compositeScore < 0.55) {
-      fails.push(
-        point(fromEts2CoordsToWgs84(score.center), {
-          meanRadius: score.meanRadius,
-          score: score.score,
-          aspect: score.aspect,
-          turningScore: score.turning.score,
-          turningDirection: score.turning.direction,
-          compositeScore,
-        }),
-      );
+      fails.push(centerPoint);
     } else {
       results.push(cycle);
-      points.push(
-        point(fromEts2CoordsToWgs84(score.center), {
-          meanRadius: score.meanRadius,
-          score: score.score,
-          aspect: score.aspect,
-          turningScore: score.turning.score,
-          turningDirection: score.turning.direction,
-          compositeScore,
-        }),
-      );
+      points.push(centerPoint);
     }
   }
   logger.log({
@@ -366,30 +341,16 @@ export function filterCycles(
   });
 
   if (options.writeDebugFiles) {
-    fs.writeFileSync(
-      'failedCycles.geojson',
-      JSON.stringify(featureCollection(fails), null, 2),
-      'utf-8',
-    );
-    fs.writeFileSync(
-      'filteredCycles.geojson',
-      JSON.stringify(featureCollection(points), null, 2),
-      'utf-8',
-    );
-    fs.writeFileSync(
+    writeGeojsonFile('failedCycles.geojson', featureCollection(fails));
+    writeGeojsonFile('filteredCycles.geojson', featureCollection(points));
+    writeGeojsonFile(
       'suspect.geojson',
-      JSON.stringify(
-        featureCollection(
-          points.filter(
-            p =>
-              (p.properties as { compositeScore: number }).compositeScore <
-              0.65,
-          ),
+      featureCollection(
+        points.filter(
+          p =>
+            (p.properties as { compositeScore: number }).compositeScore < 0.65,
         ),
-        null,
-        2,
       ),
-      'utf-8',
     );
   }
 
@@ -413,123 +374,4 @@ function calculateScore(score: {
   const circularityScore = 1 - score.score;
 
   return radiusScore * aspectScore * turningScore * circularityScore;
-}
-
-function findAllSimpleCycles(
-  graph: AdjacencyList,
-  minLen = 4,
-  maxLen = 15,
-): string[][] {
-  const nodes = Array.from(graph.keys()).sort(); // stable ordering
-  const indexMap = new Map(nodes.map((n, i) => [n, i]));
-
-  const result: string[][] = [];
-
-  const blocked = new Set<string>();
-  const B = new Map<string, Set<string>>();
-  for (const v of nodes) B.set(v, new Set());
-
-  const path: string[] = [];
-
-  function unblock(start: string) {
-    const stack = [start];
-    while (stack.length) {
-      const v = stack.pop()!;
-      if (blocked.has(v)) {
-        blocked.delete(v);
-        for (const w of B.get(v)!) {
-          stack.push(w);
-        }
-        B.get(v)!.clear();
-      }
-    }
-  }
-
-  interface Frame {
-    v: string;
-    i: number;
-    neighbors: string[];
-    foundCycle: boolean;
-  }
-
-  for (let sIdx = 0; sIdx < nodes.length; sIdx++) {
-    const s = nodes[sIdx];
-
-    // Build subgraph with nodes >= s
-    const subgraph = new Map<string, string[]>();
-    for (let i = sIdx; i < nodes.length; i++) {
-      const v = nodes[i];
-      const filtered = (graph.get(v) ?? new Set())
-        .values()
-        .toArray()
-        .filter(w => indexMap.get(w)! >= sIdx);
-      subgraph.set(v, filtered);
-    }
-
-    // Reset state
-    blocked.clear();
-    for (const v of nodes) B.get(v)!.clear();
-
-    const stack: Frame[] = [];
-
-    stack.push({
-      v: s,
-      i: 0,
-      neighbors: subgraph.get(s) ?? [],
-      foundCycle: false,
-    });
-
-    path.length = 0;
-    path.push(s);
-    blocked.add(s);
-
-    while (stack.length) {
-      const frame = stack[stack.length - 1];
-      const { v } = frame;
-
-      if (frame.i < frame.neighbors.length) {
-        const w = frame.neighbors[frame.i++];
-
-        // Enforce max length before going deeper
-        if (path.length >= maxLen) {
-          continue;
-        }
-
-        if (w === s) {
-          // Enforce minimum length
-          if (path.length >= minLen) {
-            result.push([...path, s]);
-          }
-          frame.foundCycle = true;
-        } else if (!blocked.has(w)) {
-          path.push(w);
-          stack.push({
-            v: w,
-            i: 0,
-            neighbors: subgraph.get(w) ?? [],
-            foundCycle: false,
-          });
-          blocked.add(w);
-        }
-      } else {
-        // Backtrack
-        if (frame.foundCycle) {
-          unblock(v);
-        } else {
-          for (const w of subgraph.get(v) ?? []) {
-            B.get(w)!.add(v);
-          }
-        }
-
-        stack.pop();
-        path.pop();
-
-        if (stack.length) {
-          stack[stack.length - 1].foundCycle ||= frame.foundCycle;
-        }
-      }
-    }
-  }
-
-  return result;
 }
