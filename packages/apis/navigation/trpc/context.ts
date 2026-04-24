@@ -114,7 +114,7 @@ export async function createContext(opts: {
       }
       const now = Date.now();
       const isTimestampValid =
-        now - 30_000 < timestamp && timestamp <= now + 5_000;
+        now - 300_000 < timestamp && timestamp <= now + 300_000;
       if (!isTimestampValid) {
         logger.warn('(reconnect): invalid timestamp', {
           clientId,
