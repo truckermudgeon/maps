@@ -305,6 +305,12 @@ export function filterCycles(
 
   for (const cycle of cycles) {
     const nodeUids = cycle.map(key => BigInt(key.split('-')[0]));
+    const hasAdjacent = nodeUids.some((item, i) => item === nodeUids[i + 1]);
+    if (hasAdjacent) {
+      // wonky cycle; skip it.
+      continue;
+    }
+
     const path = getLineString(nodeUids, tsMapData, lookups);
     const bounds = getExtent(path);
     const aspect =
