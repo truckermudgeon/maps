@@ -1,7 +1,11 @@
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { distance, getExtent } from '@truckermudgeon/base/geom';
 import { putIfAbsent } from '@truckermudgeon/base/map';
-import type { MappedData, MappedDataForKeys } from '@truckermudgeon/io';
+import type {
+  MapDataKeys,
+  MappedData,
+  MappedDataForKeys,
+} from '@truckermudgeon/io';
 import { ItemType } from '@truckermudgeon/map/constants';
 import { getLineString } from '@truckermudgeon/map/linestring';
 import type { Lane } from '@truckermudgeon/map/prefabs';
@@ -26,6 +30,17 @@ import fs from 'fs';
 import type { GeoJSON } from 'geojson';
 
 type AdjacencyList = Map<string, Set<string>>;
+
+export const detectRoundaboutsMapDataKeys = [
+  'nodes',
+  'roads',
+  'roadLooks',
+  'prefabs',
+  'prefabDescriptions',
+  'companies',
+  'companyDefs',
+  'ferries',
+] satisfies MapDataKeys;
 
 // ensures that graph has a key for every edge's start + end nodes.
 function normalizeGraph(graph: AdjacencyList) {
@@ -301,7 +316,9 @@ export function detectCompositeRoundabouts(
 
   const res: CompositeRoundabouts = new Map();
 
-  // 1. prune graph by removing nodes associated with prefab roundabouts.
+  // 1. prune graph by removing nodes associated with:
+  // - prefab roundabouts
+  // - prefabs containing a straight line and a 90-degree turn
   const roundaboutPrefabTokens = detectPrefabRoundabouts(tsMapData);
   const roundaboutPrefabNodeUids = new Set<bigint>(
     tsMapData.prefabs
