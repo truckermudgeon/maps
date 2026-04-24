@@ -37,6 +37,7 @@ import { detectPrefabRoundabouts } from './prefab-roundabouts';
 import {
   aspectRatioScore,
   circularityByRadius,
+  meanRadiusScore,
   turningConsistency,
 } from './scoring';
 
@@ -370,7 +371,7 @@ export function filterCycles(
     };
     // 259 detected in ETS2
     const compositeScore = calculateScore(score);
-    if (compositeScore < 0.65) {
+    if (compositeScore < 0.55) {
       fails.push(
         point(fromEts2CoordsToWgs84(score.center), {
           meanRadius: score.meanRadius,
@@ -408,6 +409,20 @@ export function filterCycles(
     JSON.stringify(featureCollection(points), null, 2),
     'utf-8',
   );
+  fs.writeFileSync(
+    'suspect.geojson',
+    JSON.stringify(
+      featureCollection(
+        points.filter(
+          p =>
+            (p.properties as { compositeScore: number }).compositeScore < 0.65,
+        ),
+      ),
+      null,
+      2,
+    ),
+    'utf-8',
+  );
 }
 
 // [0, 1]. the higher, the better.
@@ -421,14 +436,12 @@ function calculateScore(score: {
     return 0;
   }
 
-  if (score.meanRadius > 80) {
-    return 0;
-  }
-
+  const radiusScore = meanRadiusScore(score.meanRadius);
   const aspectScore = aspectRatioScore(score.aspect);
   const turningScore = score.turning.score;
   const circularityScore = 1 - score.score;
-  return aspectScore * turningScore * circularityScore;
+
+  return radiusScore * aspectScore * turningScore * circularityScore;
 }
 
 export function detectRoundabouts(

@@ -69,3 +69,12 @@ export function aspectRatioScore(ratio: number, sigma = 0.1): number {
   const logDiff = Math.log(ratio); // symmetric around 1
   return Math.exp(-(logDiff * logDiff) / (2 * sigma * sigma));
 }
+
+const radiusThreshold = 70;
+export function meanRadiusScore(radius: number, decay = 10): number {
+  if (radius <= radiusThreshold) {
+    return 1;
+  }
+
+  return Math.exp(-(radius - radiusThreshold) / decay);
+}
