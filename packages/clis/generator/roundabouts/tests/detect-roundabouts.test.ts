@@ -7,7 +7,7 @@ import url from 'url';
 import {
   detectCompositeRoundabouts,
   detectRoundaboutsMapDataKeys,
-} from '../detect-roundabouts';
+} from '../composite-roundabouts';
 
 describe('roundabout detection', () => {
   it('detects SCCs (full graph)', () => {

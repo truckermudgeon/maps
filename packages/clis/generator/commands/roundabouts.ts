@@ -1,4 +1,5 @@
 import { readGraphData, readMapData } from '@truckermudgeon/io';
+import { fromEts2CoordsToWgs84 } from '@truckermudgeon/map/projections';
 import fs from 'fs';
 import type { Argv, BuilderArguments } from 'yargs';
 import { logger } from '../logger';
@@ -6,7 +7,7 @@ import {
   detectCompositeRoundabouts,
   detectRoundaboutsMapDataKeys,
   filterCycles,
-} from '../roundabouts/detect-roundabouts';
+} from '../roundabouts/composite-roundabouts';
 import { maybeEnsureOutputDir, untildify } from './path-helpers';
 
 export const command = 'roundabouts';
@@ -66,7 +67,11 @@ export function handler(args: BuilderArguments<typeof builder>) {
   const cycles = JSON.parse(
     fs.readFileSync('cycles.json', 'utf-8'),
   ) as string[][];
-  filterCycles(cycles, tsMapData);
+  const roundaboutCycles = filterCycles(cycles, tsMapData);
+  console.log(roundaboutCycles[1]);
+  const key = BigInt(roundaboutCycles[1][0].split('-')[0]);
+  const node = tsMapData.nodes.get(key)!;
+  console.log(fromEts2CoordsToWgs84([node.x, node.y]));
 
   logger.success('done.');
 }
