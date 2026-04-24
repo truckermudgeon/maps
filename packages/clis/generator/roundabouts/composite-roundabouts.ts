@@ -149,7 +149,7 @@ export function detectCompositeRoundabouts(
       .map(nodeUid => {
         const node = assertExists(tsMapData.nodes.get(nodeUid));
         return point(toLngLat([node.x, node.y]), {
-          nodeUid: nodeUid.toString(),
+          nodeUid: nodeUid.toString(16),
         });
       }),
   );
@@ -172,7 +172,7 @@ export function detectCompositeRoundabouts(
     const clusterId = (properties as DbscanProps).cluster;
     if (clusterId != null) {
       putIfAbsent(clusterId, new Set(), clusters).add(
-        BigInt(properties.nodeUid),
+        BigInt('0x' + properties.nodeUid),
       );
     }
   }
@@ -182,6 +182,16 @@ export function detectCompositeRoundabouts(
     Number(((Date.now() - startTime) / 1000).toFixed(1)),
     'seconds',
   );
+  if (options.writeDebugFiles) {
+    writeGeojsonFile(
+      'clusters.geojson',
+      featureCollection(
+        nodeFeatures.features.filter(
+          f => (f.properties as DbscanProps).cluster != null,
+        ),
+      ),
+    );
+  }
 
   // 4. for each cluster, detect cycles
   logger.start('checking', clusters.size, 'clusters for cycles');
@@ -254,7 +264,9 @@ export function detectCompositeRoundabouts(
 
   if (options.writeDebugFiles) {
     const uniqueNodeUids = new Set(
-      cycles.flatMap(vertices => vertices.map(v => BigInt(v.split('-')[0]))),
+      roundaboutCycles.flatMap(vertices =>
+        vertices.map(v => BigInt(v.split('-')[0])),
+      ),
     );
     const uniqueNodes = uniqueNodeUids
       .values()
@@ -263,14 +275,6 @@ export function detectCompositeRoundabouts(
     writeGeojsonFile(
       'roundabouts.geojson',
       featureCollection(uniqueNodes.map(n => point(toLngLat([n.x, n.y])))),
-    );
-    writeGeojsonFile(
-      'clusters.geojson',
-      featureCollection(
-        nodeFeatures.features.filter(
-          f => (f.properties as DbscanProps).cluster != null,
-        ),
-      ),
     );
   }
 

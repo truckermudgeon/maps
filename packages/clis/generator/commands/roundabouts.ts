@@ -46,6 +46,12 @@ export const builder = (yargs: Argv) =>
       coerce: untildify,
       demandOption: true,
     })
+    .option('debug', {
+      alias: 'd',
+      describe: 'Write out debug geojson files',
+      type: 'boolean',
+      default: false,
+    })
     .check(maybeEnsureOutputDir)
     .check(argv => {
       if (Array.isArray(argv.map)) {
@@ -61,7 +67,9 @@ export function handler(args: BuilderArguments<typeof builder>) {
   });
 
   if (Math.random() > 2) {
-    detectCompositeRoundabouts(graphData.graph, tsMapData);
+    detectCompositeRoundabouts(graphData.graph, tsMapData, {
+      writeDebugFiles: args.debug,
+    });
   }
 
   const cycles = JSON.parse(
