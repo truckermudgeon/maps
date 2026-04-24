@@ -429,7 +429,7 @@ export function detectCompositeRoundabouts(
   }
 
   console.log(cycles.length, 'cycles');
-  //fs.writeFileSync('cycles.json', JSON.stringify(cycles, null, 2), 'utf-8');
+  fs.writeFileSync('cycles.json', JSON.stringify(cycles, null, 2), 'utf-8');
   //throw new Error();
 
   // 5. filter cycles by cycle-path circularity and turning consistency
@@ -440,7 +440,10 @@ export function detectCompositeRoundabouts(
   // N.B.: cycles have the same start and end nodes in list.
   console.log(cycles[0]);
 
-  // 6. build LaneInfo map for cycles, using uncollapsed graph
+  // 6. build LaneInfo map for cycles
+
+  // 7. FURTHER filter out cycles that involve 90-degree turns (to filter
+  //    out a cycle that's really just a BOX and not a CIRCLE)
 
   // debug
 

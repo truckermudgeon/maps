@@ -47,6 +47,10 @@ export function getLineString(
   for (let i = 0; i < nodeUids.length - 1; i++) {
     const startNode = assertExists(tsMapData.nodes.get(nodeUids[i]));
     const endNode = assertExists(tsMapData.nodes.get(nodeUids[i + 1]));
+    if (startNode === endNode) {
+      // coincident points don't contribute to a linestring
+      continue;
+    }
 
     const item = getCommonItem(startNode.uid, endNode.uid, tsMapData, lookups);
     switch (item.type) {

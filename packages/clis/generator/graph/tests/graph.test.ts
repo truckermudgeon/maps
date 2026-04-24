@@ -16,6 +16,7 @@ import type {
   RoadLook,
   WithToken,
 } from '@truckermudgeon/map/types';
+import fs from 'fs';
 import path from 'node:path';
 import url from 'node:url';
 import { detectCompositeRoundabouts } from '../detect-roundabouts';
@@ -424,9 +425,9 @@ describe('roundabout detection', () => {
     const start = Date.now();
     //detectPrefabRoundabouts(tsMapData);
     detectCompositeRoundabouts(graphData.graph, tsMapData);
-    //const cycles = JSON.parse(
-    //  fs.readFileSync('cycles.json', 'utf-8'),
-    //) as string[][];
+    const cycles = JSON.parse(
+      fs.readFileSync('cycles.json', 'utf-8'),
+    ) as string[][];
     //filterCycles(cycles, graphData.graph, tsMapData);
 
     //detectRoundabouts(graphData.graph, nodes);
