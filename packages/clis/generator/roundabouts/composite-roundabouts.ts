@@ -117,6 +117,7 @@ export function detectCompositeRoundabouts(
     const inDegrees = assertExists(inDeg.get(key));
     const outDegrees = assertExists(outDeg.get(key));
     if (!inDegrees || !outDegrees) {
+      // ignore one-way nodes
       continue;
     }
     const totalDegrees = inDegrees + outDegrees;
@@ -136,15 +137,12 @@ export function detectCompositeRoundabouts(
   }
 
   const nodeFeatures = featureCollection(
-    possibleRoundaboutNodeUids
-      .values()
-      .toArray()
-      .map(nodeUid => {
-        const node = assertExists(tsMapData.nodes.get(nodeUid));
-        return point(toLngLat([node.x, node.y]), {
-          nodeUid: nodeUid.toString(16),
-        });
-      }),
+    [...possibleRoundaboutNodeUids].map(nodeUid => {
+      const node = assertExists(tsMapData.nodes.get(nodeUid));
+      return point(toLngLat([node.x, node.y]), {
+        nodeUid: nodeUid.toString(16),
+      });
+    }),
   );
 
   const startTime = Date.now();
@@ -211,7 +209,7 @@ export function detectCompositeRoundabouts(
     const simpleCycles = findAllSimpleCycles(subGraph, 4, 30);
     for (const cycle of simpleCycles) {
       const nodeUids = new Set(cycle.map(keyToNodeUid));
-      const nodes = [...nodeUids.values()].map(nid =>
+      const nodes = [...nodeUids].map(nid =>
         assertExists(tsMapData.nodes.get(nid)),
       );
       if (circularityByRadius(nodes.map(n => [n.x, n.y])).score > 0.35) {
@@ -246,7 +244,7 @@ export function detectCompositeRoundabouts(
     const uniqueNodeUids = new Set(
       roundaboutCycles.flatMap(vertices => vertices.map(keyToNodeUid)),
     );
-    const uniqueNodes = [...uniqueNodeUids.values()].map(nid =>
+    const uniqueNodes = [...uniqueNodeUids].map(nid =>
       assertExists(tsMapData.nodes.get(nid)),
     );
     writeGeojsonFile(
