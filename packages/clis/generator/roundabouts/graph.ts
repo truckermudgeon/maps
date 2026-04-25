@@ -99,7 +99,6 @@ export function collapseDirectedChains(graph: AdjacencyList): {
   }
 
   // Handle pure cycles (all nodes are chain nodes)
-  let hasPureCycles = false;
   for (const v of graph.keys()) {
     if (isChainNode(v) && !visited.has(v)) {
       const cycle: string[] = [];
@@ -114,12 +113,9 @@ export function collapseDirectedChains(graph: AdjacencyList): {
 
       // collapse cycle into a single self-loop node (pick representative)
       const rep = cycle[0];
-      hasPureCycles = true;
+      putIfAbsent(`${rep}-${rep}`, [], collapsedEdges).push(cycle.slice(1));
       addEdge(rep, rep);
     }
-  }
-  if (hasPureCycles) {
-    throw new Error('pure cycles detected, but no collapsing support');
   }
 
   normalizeGraph(collapsedGraph);
