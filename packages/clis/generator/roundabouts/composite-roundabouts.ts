@@ -232,19 +232,12 @@ export function detectCompositeRoundabouts(
   }
 
   logger.success(cycles.length, 'cycles found');
-  //throw new Error();
 
   // 5. filter cycles by cycle-path circularity and turning consistency
   const roundaboutCycles = filterCycles(cycles, tsMapData, options);
 
-  const res: CompositeRoundabouts = new Map();
-
-  // 5a. verify that no sub-cycles exist
-
-  // N.B.: cycles have the same start and end nodes in list.
-  //console.log(cycles[0]);
-
   // 6. build LaneInfo map for cycles
+  const res: CompositeRoundabouts = new Map();
 
   // 7. FURTHER filter out cycles that have only one entrance + one exit, and
   //    the entry + exit share the same node (to filter out "courts").

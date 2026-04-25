@@ -127,21 +127,18 @@ export function collapseDirectedChains(graph: AdjacencyList): {
 
 export function convertToAdjacencyList(
   graph: Map<bigint, Neighbors>,
-): Map<string, Set<string>> {
+): AdjacencyList {
   const adjacencyList = new Map<string, Set<string>>();
+  const addEdge = (a: string, b: string) =>
+    putIfAbsent(a, new Set(), adjacencyList).add(b);
 
   for (const [fromNodeUid, { forward, backward }] of graph) {
     for (const nodeDirection of ['forward', 'backward']) {
       const neighbors = nodeDirection === 'forward' ? forward : backward;
-      const adjacents = new Set<string>();
       for (const { nodeUid, direction } of neighbors) {
+        const fromNode = `${fromNodeUid}-${nodeDirection}`;
         const toNode = `${nodeUid}-${direction}`;
-        //const toNode = `${nodeUid}`;
-        adjacents.add(toNode);
-      }
-      if (adjacents.size) {
-        adjacencyList.set(`${fromNodeUid}-${nodeDirection}`, adjacents);
-        //adjacencyList.set(`${nodeUid}`, adjacents);
+        addEdge(fromNode, toNode);
       }
     }
   }
