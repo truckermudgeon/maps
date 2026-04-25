@@ -75,8 +75,7 @@ export function detectCompositeRoundabouts(
           branch => Math.abs(branch.angle) < toleranceRadians,
         );
         const ninety = branches.some(
-          branch =>
-            Math.abs(Math.abs(branch.angle) - Math.PI / 2) < toleranceRadians,
+          branch => Math.PI / 2 - Math.abs(branch.angle) < toleranceRadians,
         );
         return straight && ninety;
       })
@@ -88,25 +87,24 @@ export function detectCompositeRoundabouts(
     'T- or X-intersection prefab tokens',
   );
 
-  const roundaboutPrefabNodeUids = new Set<bigint>(
-    tsMapData.prefabs
-      .values()
-      .flatMap(prefab =>
-        roundaboutPrefabTokens.has(prefab.token) ||
-        tOrXIntersectionPrefabTokens.has(prefab.token)
-          ? prefab.nodeUids
-          : [],
-      ),
+  const prefabNodeUids = new Set<bigint>(
+    [...tsMapData.prefabs.values()]
+      .filter(
+        prefab =>
+          roundaboutPrefabTokens.has(prefab.token) ||
+          tOrXIntersectionPrefabTokens.has(prefab.token),
+      )
+      .flatMap(prefab => prefab.nodeUids),
   );
   const prunedGraph = new Map(
-    graph.entries().filter(([key]) => !roundaboutPrefabNodeUids.has(key)),
+    graph.entries().filter(([key]) => !prefabNodeUids.has(key)),
   );
   logger.info(
     graph.size - prunedGraph.size,
     'roundabout and T/X prefab nodes pruned from graph',
   );
 
-  // 2. convert graph to adjacency list, collapse chains.
+  // 2. convert graph to adjacency list
   const adjacencyList = convertToAdjacencyList(prunedGraph);
   // enable collapsing for quicker debugging
   //adjacencyList = collapseDirectedChains(adjacencyList);
@@ -177,16 +175,6 @@ export function detectCompositeRoundabouts(
     Number(((Date.now() - startTime) / 1000).toFixed(1)),
     'seconds',
   );
-  if (options.writeDebugFiles) {
-    writeGeojsonFile(
-      `${tsMapData.map}-clusters.geojson`,
-      featureCollection(
-        nodeFeatures.features.filter(
-          f => (f.properties as DbscanProps).cluster != null,
-        ),
-      ),
-    );
-  }
 
   // 4. for each cluster, detect cycles
   logger.start('checking', clusters.size, 'clusters for cycles');
@@ -234,13 +222,6 @@ export function detectCompositeRoundabouts(
   }
 
   console.log(cycles.length, 'cycles');
-  if (options.writeDebugFiles) {
-    fs.writeFileSync(
-      `${tsMapData.map}-cycles.json`,
-      JSON.stringify(cycles, null, 2),
-      'utf-8',
-    );
-  }
   //throw new Error();
 
   // 5. filter cycles by cycle-path circularity and turning consistency
@@ -261,6 +242,7 @@ export function detectCompositeRoundabouts(
   // debug
 
   if (options.writeDebugFiles) {
+    logger.log('writing cluster debug geojson files');
     const uniqueNodeUids = new Set(
       roundaboutCycles.flatMap(vertices => vertices.map(keyToNodeUid)),
     );
@@ -270,6 +252,14 @@ export function detectCompositeRoundabouts(
     writeGeojsonFile(
       `${tsMapData.map}-roundabouts.geojson`,
       featureCollection(uniqueNodes.map(n => point(toLngLat([n.x, n.y])))),
+    );
+    writeGeojsonFile(
+      `${tsMapData.map}-clusters.geojson`,
+      featureCollection(
+        nodeFeatures.features.filter(
+          f => (f.properties as DbscanProps).cluster != null,
+        ),
+      ),
     );
   }
 
@@ -349,6 +339,7 @@ export function filterCycles(
   });
 
   if (options.writeDebugFiles) {
+    logger.log('writing cycle debug json, geojson files');
     writeGeojsonFile(
       `${tsMapData.map}-failedCycles.geojson`,
       featureCollection(fails),
@@ -365,6 +356,11 @@ export function filterCycles(
             (p.properties as { compositeScore: number }).compositeScore < 0.65,
         ),
       ),
+    );
+    fs.writeFileSync(
+      `${tsMapData.map}-cycles.json`,
+      JSON.stringify(cycles, null, 2),
+      'utf-8',
     );
   }
 
