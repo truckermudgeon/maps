@@ -61,19 +61,20 @@ function pruneDeadEnds(graph: AdjacencyList): AdjacencyList {
   return g;
 }
 
-export function collapseDirectedChains(graph: AdjacencyList): AdjacencyList {
+export function collapseDirectedChains(graph: AdjacencyList): {
+  graph: AdjacencyList;
+  collapsedEdges: Map<`${string}-${string}`, string[]>;
+} {
   const { inDeg, outDeg } = computeDegrees(graph);
+  const collapsedGraph: AdjacencyList = new Map();
+  const collapsedEdges = new Map<`${string}-${string}`, string[]>();
 
+  const addEdge = (a: string, b: string) =>
+    putIfAbsent(a, new Set(), collapsedGraph).add(b);
   const isChainNode = (v: string) =>
     (inDeg.get(v) ?? 0) === 1 && (outDeg.get(v) ?? 0) === 1;
 
-  const result: AdjacencyList = new Map();
   const visited = new Set<string>();
-
-  function addEdge(a: string, b: string) {
-    putIfAbsent(a, new Set(), result).add(b);
-  }
-
   for (const v of graph.keys()) {
     if (isChainNode(v)) {
       continue;
@@ -81,14 +82,19 @@ export function collapseDirectedChains(graph: AdjacencyList): AdjacencyList {
 
     for (const n of assertExists(graph.get(v))) {
       let curr = n;
+      const collapsed: string[] = [];
 
       while (isChainNode(curr) && !visited.has(curr)) {
         visited.add(curr);
+        collapsed.push(curr);
         assert(graph.get(curr)!.size === 1);
         curr = graph.get(curr)!.values().next().value!;
       }
 
-      if (curr !== v) addEdge(v, curr);
+      if (curr !== v) {
+        collapsedEdges.set(`${v}-${curr}`, collapsed);
+        addEdge(v, curr);
+      }
     }
   }
 
@@ -112,8 +118,11 @@ export function collapseDirectedChains(graph: AdjacencyList): AdjacencyList {
     }
   }
 
-  normalizeGraph(result);
-  return result;
+  normalizeGraph(collapsedGraph);
+  return {
+    graph: collapsedGraph,
+    collapsedEdges,
+  };
 }
 
 export function convertToAdjacencyList(

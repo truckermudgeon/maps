@@ -25,7 +25,12 @@ import type { GeoJSON } from 'geojson';
 import { logger } from '../logger';
 import { findAllSimpleCycles } from './cycles';
 import type { AdjacencyList } from './graph';
-import { computeDegrees, convertToAdjacencyList, keyToNodeUid } from './graph';
+import {
+  collapseDirectedChains,
+  computeDegrees,
+  convertToAdjacencyList,
+  keyToNodeUid,
+} from './graph';
 import { detectPrefabRoundabouts } from './prefab-roundabouts';
 import {
   aspectRatioScore,
@@ -106,14 +111,14 @@ export function detectCompositeRoundabouts(
 
   // 2. convert graph to adjacency list
   const adjacencyList = convertToAdjacencyList(prunedGraph);
-  // enable collapsing for quicker debugging
-  //adjacencyList = collapseDirectedChains(adjacencyList);
+  const { graph: collapsedAdjacencyList, collapsedEdges } =
+    collapseDirectedChains(adjacencyList);
 
   // 3. cluster nodes by degrees >= 3, with a radius of 200m (in game units)
-  const { inDeg, outDeg } = computeDegrees(adjacencyList);
-  const possibleRoundaboutNodeUids = new Set<bigint>();
+  const { inDeg, outDeg } = computeDegrees(collapsedAdjacencyList);
+  const possibleCompositeRoundaboutNodeUids = new Set<bigint>();
   let unknownNodeUids = 0;
-  for (const key of adjacencyList.keys()) {
+  for (const key of collapsedAdjacencyList.keys()) {
     const inDegrees = assertExists(inDeg.get(key));
     const outDegrees = assertExists(outDeg.get(key));
     if (!inDegrees || !outDegrees) {
@@ -121,11 +126,10 @@ export function detectCompositeRoundabouts(
       continue;
     }
     const totalDegrees = inDegrees + outDegrees;
-    // N.B.: loosening to >= 2 increases detected clusters by 2%.
     if (totalDegrees >= 2) {
       const nodeUid = keyToNodeUid(key);
       if (tsMapData.nodes.has(nodeUid)) {
-        possibleRoundaboutNodeUids.add(nodeUid);
+        possibleCompositeRoundaboutNodeUids.add(nodeUid);
       } else {
         unknownNodeUids++;
       }
@@ -137,7 +141,7 @@ export function detectCompositeRoundabouts(
   }
 
   const nodeFeatures = featureCollection(
-    [...possibleRoundaboutNodeUids].map(nodeUid => {
+    [...possibleCompositeRoundaboutNodeUids].map(nodeUid => {
       const node = assertExists(tsMapData.nodes.get(nodeUid));
       return point(toLngLat([node.x, node.y]), {
         nodeUid: nodeUid.toString(16),
@@ -187,22 +191,30 @@ export function detectCompositeRoundabouts(
   bar.start(clusters.size, 0);
 
   const cycles: string[][] = [];
-  for (const [clusterId, nodeUids] of clusters) {
+  for (const [clusterId, collapsedClusterNodeUids] of clusters) {
     bar.increment();
     // build a graph of just the nodeUids
     const subGraph: AdjacencyList = new Map<string, Set<string>>();
-    for (const nodeUid of nodeUids) {
+    const addEdge = (a: string, b: string) =>
+      putIfAbsent(a, new Set(), subGraph).add(b);
+
+    for (const startNode of collapsedClusterNodeUids) {
       for (const direction of ['forward', 'backward']) {
-        const key = `${nodeUid}-${direction}`;
-        const neighbors = new Set<string>();
-        const allNeighbors = adjacencyList.get(key) ?? new Set();
-        for (const neighbor of allNeighbors) {
-          const neighborNodeUid = keyToNodeUid(neighbor);
-          if (nodeUids.has(neighborNodeUid)) {
-            neighbors.add(neighbor);
+        const startKey = `${startNode}-${direction}`;
+        const allNeighbors = collapsedAdjacencyList.get(startKey) ?? new Set();
+        for (const endKey of allNeighbors) {
+          const neighborNodeUid = keyToNodeUid(endKey);
+          if (collapsedClusterNodeUids.has(neighborNodeUid)) {
+            const intermediaryKeys =
+              collapsedEdges.get(`${startKey}-${endKey}`) ?? [];
+            let currKey = startKey;
+            for (const interKey of intermediaryKeys) {
+              addEdge(currKey, interKey);
+              currKey = interKey;
+            }
+            addEdge(currKey, endKey);
           }
         }
-        subGraph.set(key, neighbors);
       }
     }
 
