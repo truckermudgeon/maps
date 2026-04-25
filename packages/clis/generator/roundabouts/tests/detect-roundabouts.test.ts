@@ -1,5 +1,6 @@
 import { putIfAbsent } from '@truckermudgeon/base/map';
 import { readGraphData, readMapData } from '@truckermudgeon/io';
+import { fromEts2CoordsToWgs84 } from '@truckermudgeon/map/projections';
 import type { GraphData, Neighbor } from '@truckermudgeon/map/types';
 import fs from 'fs';
 import path from 'path';
@@ -10,6 +11,60 @@ import {
 } from '../composite-roundabouts';
 
 describe('roundabout detection', () => {
+  it('test', () => {
+    const nodes = [
+      {
+        uid: '50d5d0ab9480002',
+        x: -34843.5546875,
+        y: 38776.0625,
+        z: 35.71875,
+        rotation: 2.6850921403153425,
+        rotationQuat: [
+          -0.5287676453590393, 0.000005525564574782038, -0.8487667441368103,
+          -0.000008869526027410757,
+        ],
+        forwardItemUid: '50d5d8306780001',
+        backwardItemUid: '50d5d0a3e780001',
+        forwardCountryId: 4,
+        backwardCountryId: 4,
+      },
+      {
+        uid: '4e033f217570002',
+        x: -50133.3984375,
+        y: 10827.31640625,
+        z: 17,
+        rotation: -2.3202072413872052,
+        rotationQuat: [
+          0.9306154847145081, -0.000010239078619633801, 0.36599844694137573,
+          -0.0000013479919971359777,
+        ],
+        forwardItemUid: '4e035cf23170001',
+        backwardItemUid: '4e033f2e2770001',
+        forwardCountryId: 4,
+        backwardCountryId: 4,
+      },
+      {
+        uid: '2e92d3a40a4606ee',
+        x: -83291.98828125,
+        y: 61774.2734375,
+        z: 19.13671875,
+        rotation: 1.9722205799649153,
+        rotationQuat: [
+          -0.1993672251701355, 2.4414145372020357e-8, -0.9799249172210693,
+          -1.1999973992260493e-7,
+        ],
+        forwardItemUid: '2e92d3a49a4600fb',
+        backwardItemUid: '2e92d3a4b4c60107',
+        forwardCountryId: 42,
+        backwardCountryId: 42,
+      },
+    ];
+
+    nodes.forEach(n => {
+      console.log(fromEts2CoordsToWgs84([n.x, n.y]));
+    });
+  });
+
   it('detects SCCs (full graph)', () => {
     const map = 'europe';
     const __filename = url.fileURLToPath(import.meta.url);

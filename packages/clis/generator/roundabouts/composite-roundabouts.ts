@@ -113,6 +113,8 @@ export function detectCompositeRoundabouts(
   const adjacencyList = convertToAdjacencyList(prunedGraph);
   const { graph: collapsedAdjacencyList, collapsedEdges } =
     collapseDirectedChains(adjacencyList);
+  //const collapsedAdjacencyList = adjacencyList;
+  //const collapsedEdges = new Map();
 
   // 3. cluster nodes by degrees >= 3, with a radius of 200m (in game units)
   const { inDeg, outDeg } = computeDegrees(collapsedAdjacencyList);
@@ -150,11 +152,7 @@ export function detectCompositeRoundabouts(
   );
 
   const startTime = Date.now();
-  logger.start(
-    'clustering',
-    nodeFeatures.features.length,
-    'nodes... (this may take a while)',
-  );
+  logger.start('clustering', nodeFeatures.features.length, 'nodes...');
   clustersDbscan(
     nodeFeatures,
     // ideally, scale factor should depend on map (and in ETS2 case: whether
@@ -207,12 +205,14 @@ export function detectCompositeRoundabouts(
           if (collapsedClusterNodeUids.has(neighborNodeUid)) {
             const intermediaryKeys =
               collapsedEdges.get(`${startKey}-${endKey}`) ?? [];
-            let currKey = startKey;
-            for (const interKey of intermediaryKeys) {
-              addEdge(currKey, interKey);
-              currKey = interKey;
+            for (const interKeys of intermediaryKeys) {
+              let currKey = startKey;
+              for (const interKey of interKeys) {
+                addEdge(currKey, interKey);
+                currKey = interKey;
+              }
+              addEdge(currKey, endKey);
             }
-            addEdge(currKey, endKey);
           }
         }
       }
@@ -231,7 +231,7 @@ export function detectCompositeRoundabouts(
     }
   }
 
-  console.log(cycles.length, 'cycles');
+  logger.success(cycles.length, 'cycles found');
   //throw new Error();
 
   // 5. filter cycles by cycle-path circularity and turning consistency
@@ -242,7 +242,7 @@ export function detectCompositeRoundabouts(
   // 5a. verify that no sub-cycles exist
 
   // N.B.: cycles have the same start and end nodes in list.
-  console.log(cycles[0]);
+  //console.log(cycles[0]);
 
   // 6. build LaneInfo map for cycles
 
@@ -302,7 +302,7 @@ export function filterCycles(
     companiesByPrefab,
   };
 
-  const points: GeoJSON.Feature<GeoJSON.Point>[] = [];
+  const passes: GeoJSON.Feature<GeoJSON.Point>[] = [];
   const fails: GeoJSON.Feature<GeoJSON.Point>[] = [];
 
   for (const cycle of cycles) {
@@ -340,12 +340,12 @@ export function filterCycles(
       fails.push(centerPoint);
     } else {
       results.push(cycle);
-      points.push(centerPoint);
+      passes.push(centerPoint);
     }
   }
-  logger.log({
+  logger.info('cycle classification:', {
+    passes: passes.length,
     fails: fails.length,
-    passes: points.length,
   });
 
   if (options.writeDebugFiles) {
@@ -356,12 +356,12 @@ export function filterCycles(
     );
     writeGeojsonFile(
       `${tsMapData.map}-filteredCycles.geojson`,
-      featureCollection(points),
+      featureCollection(passes),
     );
     writeGeojsonFile(
       `${tsMapData.map}-suspect.geojson`,
       featureCollection(
-        points.filter(
+        passes.filter(
           p =>
             (p.properties as { compositeScore: number }).compositeScore < 0.65,
         ),
@@ -369,7 +369,7 @@ export function filterCycles(
     );
     fs.writeFileSync(
       `${tsMapData.map}-cycles.json`,
-      JSON.stringify(cycles, null, 2),
+      JSON.stringify(results, null, 2),
       'utf-8',
     );
   }

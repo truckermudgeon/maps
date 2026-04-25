@@ -71,25 +71,25 @@ export function detectPrefabRoundabouts(
       score.aspect < 0.7 ||
       score.aspect > 1.3
     ) {
-      console.log('not circular enough', desc.path);
-      console.log(desc.path, {
-        ...score,
-        scoreAdj: score.score / connections.length,
-      });
+      //console.log('not circular enough', desc.path);
+      //console.log(desc.path, {
+      //  ...score,
+      //  scoreAdj: score.score / connections.length,
+      //});
       continue;
     } else if (!desc.path.includes('round')) {
-      console.log('suspect', desc.path, {
-        ...score,
-        scoreAdj: score.score / connections.length,
-      });
+      //console.log('suspect', desc.path, {
+      //  ...score,
+      //  scoreAdj: score.score / connections.length,
+      //});
     } else {
-      console.log('ok', desc.path, {
-        ...score,
-        scoreAdj: score.score / connections.length,
-      });
+      //console.log('ok', desc.path, {
+      //  ...score,
+      //  scoreAdj: score.score / connections.length,
+      //});
     }
     results.add(desc.token);
   }
-  console.log(results);
+  //console.log(results);
   return results;
 }

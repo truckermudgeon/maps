@@ -63,11 +63,11 @@ function pruneDeadEnds(graph: AdjacencyList): AdjacencyList {
 
 export function collapseDirectedChains(graph: AdjacencyList): {
   graph: AdjacencyList;
-  collapsedEdges: Map<`${string}-${string}`, string[]>;
+  collapsedEdges: Map<`${string}-${string}`, string[][]>;
 } {
   const { inDeg, outDeg } = computeDegrees(graph);
   const collapsedGraph: AdjacencyList = new Map();
-  const collapsedEdges = new Map<`${string}-${string}`, string[]>();
+  const collapsedEdges = new Map<`${string}-${string}`, string[][]>();
 
   const addEdge = (a: string, b: string) =>
     putIfAbsent(a, new Set(), collapsedGraph).add(b);
@@ -92,13 +92,14 @@ export function collapseDirectedChains(graph: AdjacencyList): {
       }
 
       if (curr !== v) {
-        collapsedEdges.set(`${v}-${curr}`, collapsed);
+        putIfAbsent(`${v}-${curr}`, [], collapsedEdges).push(collapsed);
         addEdge(v, curr);
       }
     }
   }
 
   // Handle pure cycles (all nodes are chain nodes)
+  let hasPureCycles = false;
   for (const v of graph.keys()) {
     if (isChainNode(v) && !visited.has(v)) {
       const cycle: string[] = [];
@@ -113,9 +114,12 @@ export function collapseDirectedChains(graph: AdjacencyList): {
 
       // collapse cycle into a single self-loop node (pick representative)
       const rep = cycle[0];
-      console.log('pure cycle', cycle);
+      hasPureCycles = true;
       addEdge(rep, rep);
     }
+  }
+  if (hasPureCycles) {
+    throw new Error('pure cycles detected, but no collapsing support');
   }
 
   normalizeGraph(collapsedGraph);
