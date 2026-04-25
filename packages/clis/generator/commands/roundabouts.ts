@@ -8,6 +8,8 @@ import {
   detectRoundaboutsMapDataKeys,
   filterCycles,
 } from '../roundabouts/composite-roundabouts';
+import { computeDegrees, convertToAdjacencyList } from '../roundabouts/graph';
+import { calculateLaneInfo } from '../roundabouts/lane-info';
 import { maybeEnsureOutputDir, untildify } from './path-helpers';
 
 export const command = 'roundabouts';
@@ -75,8 +77,17 @@ export function handler(args: BuilderArguments<typeof builder>) {
   const cycles = JSON.parse(
     fs.readFileSync('cycles.json', 'utf-8'),
   ) as string[][];
+
   const roundaboutCycles = filterCycles(cycles, tsMapData);
+  const adjacencyList = convertToAdjacencyList(graphData.graph);
+  const degrees = computeDegrees(adjacencyList);
   console.log(roundaboutCycles[1]);
+  calculateLaneInfo(roundaboutCycles[1], {
+    tsMapData,
+    adjacencyList,
+    degrees,
+  });
+
   const key = BigInt(roundaboutCycles[1][0].split('-')[0]);
   const node = tsMapData.nodes.get(key)!;
   console.log(fromEts2CoordsToWgs84([node.x, node.y]));

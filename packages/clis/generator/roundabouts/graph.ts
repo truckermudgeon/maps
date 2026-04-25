@@ -1,6 +1,7 @@
 // ensures that graph has a key for every edge's start + end nodes.
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { putIfAbsent } from '@truckermudgeon/base/map';
+import { Preconditions } from '@truckermudgeon/base/precon';
 import type { Neighbors } from '@truckermudgeon/map/types';
 
 export type AdjacencyList = Map<string, Set<string>>;
@@ -136,5 +137,15 @@ export function convertToAdjacencyList(
     }
   }
 
+  normalizeGraph(adjacencyList);
+
   return adjacencyList;
+}
+
+export function keyToNodeUid(key: string): bigint {
+  Preconditions.checkArgument(
+    /^\d+-(?:forward|backward)$/.test(key),
+    'key must be an adjacency-list key',
+  );
+  return BigInt(key.split('-')[0]);
 }

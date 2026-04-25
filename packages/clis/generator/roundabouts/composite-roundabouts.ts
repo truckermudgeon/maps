@@ -25,11 +25,7 @@ import type { GeoJSON } from 'geojson';
 import { logger } from '../logger';
 import { findAllSimpleCycles } from './cycles';
 import type { AdjacencyList } from './graph';
-import {
-  computeDegrees,
-  convertToAdjacencyList,
-  normalizeGraph,
-} from './graph';
+import { computeDegrees, convertToAdjacencyList, keyToNodeUid } from './graph';
 import { detectPrefabRoundabouts } from './prefab-roundabouts';
 import {
   aspectRatioScore,
@@ -112,7 +108,6 @@ export function detectCompositeRoundabouts(
 
   // 2. convert graph to adjacency list, collapse chains.
   const adjacencyList = convertToAdjacencyList(prunedGraph);
-  normalizeGraph(adjacencyList);
   // enable collapsing for quicker debugging
   //adjacencyList = collapseDirectedChains(adjacencyList);
 
@@ -129,7 +124,7 @@ export function detectCompositeRoundabouts(
     const totalDegrees = inDegrees + outDegrees;
     // N.B.: loosening to >= 2 increases detected clusters by 2%.
     if (totalDegrees >= 2) {
-      const nodeUid = BigInt(key.split('-')[0]);
+      const nodeUid = keyToNodeUid(key);
       if (tsMapData.nodes.has(nodeUid)) {
         possibleRoundaboutNodeUids.add(nodeUid);
       } else {
@@ -184,7 +179,7 @@ export function detectCompositeRoundabouts(
   );
   if (options.writeDebugFiles) {
     writeGeojsonFile(
-      'clusters.geojson',
+      `${tsMapData.map}-clusters.geojson`,
       featureCollection(
         nodeFeatures.features.filter(
           f => (f.properties as DbscanProps).cluster != null,
@@ -216,7 +211,7 @@ export function detectCompositeRoundabouts(
         const neighbors = new Set<string>();
         const allNeighbors = adjacencyList.get(key) ?? new Set();
         for (const neighbor of allNeighbors) {
-          const neighborNodeUid = BigInt(neighbor.split('-')[0]);
+          const neighborNodeUid = keyToNodeUid(neighbor);
           if (nodeUids.has(neighborNodeUid)) {
             neighbors.add(neighbor);
           }
@@ -227,11 +222,10 @@ export function detectCompositeRoundabouts(
 
     const simpleCycles = findAllSimpleCycles(subGraph, 4, 30);
     for (const cycle of simpleCycles) {
-      const nodeUids = new Set(cycle.map(v => BigInt(v.split('-')[0])));
-      const nodes = nodeUids
-        .values()
-        .toArray()
-        .map(nid => assertExists(tsMapData.nodes.get(nid)));
+      const nodeUids = new Set(cycle.map(keyToNodeUid));
+      const nodes = [...nodeUids.values()].map(nid =>
+        assertExists(tsMapData.nodes.get(nid)),
+      );
       if (circularityByRadius(nodes.map(n => [n.x, n.y])).score > 0.35) {
         continue;
       }
@@ -241,7 +235,11 @@ export function detectCompositeRoundabouts(
 
   console.log(cycles.length, 'cycles');
   if (options.writeDebugFiles) {
-    fs.writeFileSync('cycles.json', JSON.stringify(cycles, null, 2), 'utf-8');
+    fs.writeFileSync(
+      `${tsMapData.map}-cycles.json`,
+      JSON.stringify(cycles, null, 2),
+      'utf-8',
+    );
   }
   //throw new Error();
 
@@ -264,16 +262,13 @@ export function detectCompositeRoundabouts(
 
   if (options.writeDebugFiles) {
     const uniqueNodeUids = new Set(
-      roundaboutCycles.flatMap(vertices =>
-        vertices.map(v => BigInt(v.split('-')[0])),
-      ),
+      roundaboutCycles.flatMap(vertices => vertices.map(keyToNodeUid)),
     );
-    const uniqueNodes = uniqueNodeUids
-      .values()
-      .toArray()
-      .map(nid => assertExists(tsMapData.nodes.get(nid)));
+    const uniqueNodes = [...uniqueNodeUids.values()].map(nid =>
+      assertExists(tsMapData.nodes.get(nid)),
+    );
     writeGeojsonFile(
-      'roundabouts.geojson',
+      `${tsMapData.map}-roundabouts.geojson`,
       featureCollection(uniqueNodes.map(n => point(toLngLat([n.x, n.y])))),
     );
   }
@@ -286,6 +281,9 @@ export function filterCycles(
   tsMapData: MappedDataForKeys<typeof detectRoundaboutsMapDataKeys>,
   options: { writeDebugFiles: boolean } = { writeDebugFiles: false },
 ): string[][] {
+  const toLngLat =
+    tsMapData.map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
+
   // N.B.: cycles have the same start and end nodes in list.
   const results: string[][] = [];
 
@@ -308,7 +306,7 @@ export function filterCycles(
   const fails: GeoJSON.Feature<GeoJSON.Point>[] = [];
 
   for (const cycle of cycles) {
-    const nodeUids = cycle.map(key => BigInt(key.split('-')[0]));
+    const nodeUids = cycle.map(keyToNodeUid);
     const hasAdjacent = nodeUids.some((item, i) => item === nodeUids[i + 1]);
     if (hasAdjacent) {
       // wonky cycle; skip it.
@@ -328,7 +326,7 @@ export function filterCycles(
     };
 
     const compositeScore = calculateScore(score);
-    const centerPoint = point(fromEts2CoordsToWgs84(score.center), {
+    const centerPoint = point(toLngLat(score.center), {
       meanRadius: score.meanRadius,
       score: score.score,
       aspect: score.aspect,
@@ -351,10 +349,16 @@ export function filterCycles(
   });
 
   if (options.writeDebugFiles) {
-    writeGeojsonFile('failedCycles.geojson', featureCollection(fails));
-    writeGeojsonFile('filteredCycles.geojson', featureCollection(points));
     writeGeojsonFile(
-      'suspect.geojson',
+      `${tsMapData.map}-failedCycles.geojson`,
+      featureCollection(fails),
+    );
+    writeGeojsonFile(
+      `${tsMapData.map}-filteredCycles.geojson`,
+      featureCollection(points),
+    );
+    writeGeojsonFile(
+      `${tsMapData.map}-suspect.geojson`,
       featureCollection(
         points.filter(
           p =>
