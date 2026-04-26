@@ -5,8 +5,7 @@ import type { MapDataKeys, MappedDataForKeys } from '@truckermudgeon/io';
 import { writeGeojsonFile } from '@truckermudgeon/io';
 import { ItemType } from '@truckermudgeon/map/constants';
 import { getLineString } from '@truckermudgeon/map/linestring';
-import type { Lane } from '@truckermudgeon/map/prefabs';
-import { calculateLaneInfo } from '@truckermudgeon/map/prefabs';
+import { calculateLaneInfo as calculatePrefabLaneInfo } from '@truckermudgeon/map/prefabs';
 import {
   fromAtsCoordsToWgs84,
   fromEts2CoordsToWgs84,
@@ -15,6 +14,7 @@ import type {
   CompanyItem,
   FerryItem,
   Neighbors,
+  RoundaboutDesc,
 } from '@truckermudgeon/map/types';
 import type { DbscanProps } from '@turf/clusters-dbscan';
 import { clustersDbscan } from '@turf/clusters-dbscan';
@@ -31,6 +31,7 @@ import {
   convertToAdjacencyList,
   keyToNodeUid,
 } from './graph';
+import { calculateLaneInfo as calculateRoundaboutLaneInfo } from './lane-info';
 import { detectPrefabRoundabouts } from './prefab-roundabouts';
 import {
   aspectRatioScore,
@@ -50,18 +51,11 @@ export const detectRoundaboutsMapDataKeys = [
   'ferries',
 ] satisfies MapDataKeys;
 
-type CompositeRoundabouts = Map<
-  // ordered nodeUids of entry/exit nodes in a composite roundabout.
-  // ordering is the same as that of prefab description nodes: clockwise.
-  bigint[],
-  ReturnType<typeof calculateLaneInfo>
->;
-
 export function detectCompositeRoundabouts(
   graph: ReadonlyMap<bigint, Neighbors>,
   tsMapData: MappedDataForKeys<typeof detectRoundaboutsMapDataKeys>,
   options: { writeDebugFiles: boolean } = { writeDebugFiles: false },
-): Map<bigint[], Map<number, Lane[]>> {
+): RoundaboutDesc[] {
   const toLngLat =
     tsMapData.map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
 
@@ -73,9 +67,9 @@ export function detectCompositeRoundabouts(
   const tOrXIntersectionPrefabTokens = new Set(
     [...tsMapData.prefabDescriptions.values()]
       .filter(prefabDesc => {
-        const branches = [...calculateLaneInfo(prefabDesc).values()].flatMap(
-          lanes => lanes.flatMap(lane => lane.branches),
-        );
+        const branches = [
+          ...calculatePrefabLaneInfo(prefabDesc).values(),
+        ].flatMap(lanes => lanes.flatMap(lane => lane.branches));
         const straight = branches.some(
           branch => Math.abs(branch.angle) < toleranceRadians,
         );
@@ -237,10 +231,16 @@ export function detectCompositeRoundabouts(
   const roundaboutCycles = filterCycles(cycles, tsMapData, options);
 
   // 6. build LaneInfo map for cycles
-  const res: CompositeRoundabouts = new Map();
+  const res = roundaboutCycles.map(cycle =>
+    calculateRoundaboutLaneInfo(cycle, {
+      tsMapData,
+      adjacencyList,
+      degrees: computeDegrees(adjacencyList),
+    }),
+  );
 
-  // 7. FURTHER filter out cycles that have only one entrance + one exit, and
-  //    the entry + exit share the same node (to filter out "courts").
+  // 7. TODO FURTHER filter out cycles that have only one entrance + one exit,
+  //     and the entry + exit share the same node (to filter out "courts").
 
   // debug
 

@@ -8,38 +8,9 @@ import {
 import { putIfAbsent } from '@truckermudgeon/base/map';
 import { Preconditions } from '@truckermudgeon/base/precon';
 import type { MappedDataForKeys } from '@truckermudgeon/io';
+import type { RoundaboutDesc, RoundaboutExit } from '@truckermudgeon/map/types';
 import type { AdjacencyList } from './graph';
 import { keyToNodeUid } from './graph';
-
-export interface RoundaboutDesc {
-  /**
-   * Uids of nodes that loop through the roundabout. Notes:
-   * - does not include entrance / exit nodes
-   * - first uid !== last uid (i.e., nodes in list are unique)
-   */
-  cycle: bigint[];
-  paths: Map<
-    // entrance
-    bigint,
-    // exit
-    Map<bigint, RoundaboutExit>
-  >;
-}
-
-export interface RoundaboutExit {
-  // index of exit, relative to entrance
-  exitIndex: number;
-  rotateStartIndex: number;
-  numInnerNodes: number;
-  /**
-   * [-Pi, Pi]
-   *
-   * -Pi/2  means lane exits 90 degrees CCW, relative to entry
-   *     0  means lane exits straight
-   * +Pi/2  means lane exits 90 degrees CW, relative to entry
-   */
-  angle: number;
-}
 
 export interface LaneInfoContext {
   tsMapData: MappedDataForKeys<['nodes']>;
@@ -152,7 +123,7 @@ export function calculateLaneInfo(
   }
 
   return {
-    cycle: cycle.map(keyToNodeUid),
+    cycleNodeUids: cycle.map(keyToNodeUid),
     paths,
   };
 }
