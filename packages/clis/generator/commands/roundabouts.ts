@@ -86,23 +86,5 @@ export function handler(args: BuilderArguments<typeof builder>) {
     path.join(args.outputDir, `${args.map}-roundabouts.json`),
   );
 
-  //const cycles = JSON.parse(
-  //  fs.readFileSync('cycles.json', 'utf-8'),
-  //) as string[][];
-
-  //const roundaboutCycles = filterCycles(cycles, tsMapData);
-  //const adjacencyList = convertToAdjacencyList(graphData.graph);
-  //const degrees = computeDegrees(adjacencyList);
-  //console.log(roundaboutCycles[1]);
-  //calculateLaneInfo(roundaboutCycles[1], {
-  //  tsMapData,
-  //  adjacencyList,
-  //  degrees,
-  //});
-
-  //const key = BigInt(roundaboutCycles[1][0].split('-')[0]);
-  //const node = tsMapData.nodes.get(key)!;
-  //console.log(fromEts2CoordsToWgs84([node.x, node.y]));
-
   logger.success('done.');
 }
