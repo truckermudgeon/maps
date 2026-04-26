@@ -1,6 +1,10 @@
 import { rotateFromIndex } from '@truckermudgeon/base/array';
 import { assertExists } from '@truckermudgeon/base/assert';
-import { angleBetweenVectors, centroid } from '@truckermudgeon/base/geom';
+import {
+  angleBetweenVectors,
+  centroid,
+  toRadians,
+} from '@truckermudgeon/base/geom';
 import { putIfAbsent } from '@truckermudgeon/base/map';
 import { Preconditions } from '@truckermudgeon/base/precon';
 import type { MappedDataForKeys } from '@truckermudgeon/io';
@@ -25,7 +29,8 @@ export interface RoundaboutDesc {
 export interface RoundaboutExit {
   // index of exit, relative to entrance
   exitIndex: number;
-  slice: [rotateStartIndex: number, rotatedSliceEndIndex: number];
+  rotateStartIndex: number;
+  numInnerNodes: number;
   /**
    * [-Pi, Pi]
    *
@@ -131,13 +136,15 @@ export function calculateLaneInfo(
         paths,
       ).set(exitNode.uid, {
         exitIndex,
-        slice: [withEntranceIndex, rotated.indexOf(node) + 1],
+        rotateStartIndex: withEntranceIndex,
+        numInnerNodes: rotated.indexOf(node) + 1,
         // TODO consider tweaking this, e.g., extending the exitNode point
-        //  so that angles are less harsh.
-        angle: angleBetweenVectors(
-          [entranceNode, cycleCenter],
-          [cycleCenter, exitNode],
-        ),
+        //  so that angles are less harsh. in the meantime: just add an offset.
+        angle:
+          angleBetweenVectors(
+            [entranceNode, cycleCenter],
+            [cycleCenter, exitNode],
+          ) - toRadians(40),
       });
 
       exitIndex++;
