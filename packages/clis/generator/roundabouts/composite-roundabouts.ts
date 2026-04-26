@@ -145,7 +145,7 @@ export function detectCompositeRoundabouts(
     }),
   );
 
-  const startTime = Date.now();
+  let startTime = Date.now();
   logger.start('clustering', nodeFeatures.features.length, 'nodes...');
   clustersDbscan(
     nodeFeatures,
@@ -172,7 +172,7 @@ export function detectCompositeRoundabouts(
 
   // 4. for each cluster, detect cycles
   logger.start('checking', clusters.size, 'clusters for cycles');
-  const bar = new cliProgress.SingleBar(
+  let bar = new cliProgress.SingleBar(
     {
       format: `[{bar}] | {value} of {total}`,
       stopOnComplete: true,
@@ -231,12 +231,35 @@ export function detectCompositeRoundabouts(
   const roundaboutCycles = filterCycles(cycles, tsMapData, options);
 
   // 6. build LaneInfo map for cycles
-  const res = roundaboutCycles.map(cycle =>
-    calculateRoundaboutLaneInfo(cycle, {
-      tsMapData,
-      adjacencyList,
-      degrees: computeDegrees(adjacencyList),
-    }),
+  startTime = Date.now();
+  logger.start(
+    'calculating',
+    roundaboutCycles.length,
+    'roundabout descriptions',
+  );
+  bar = new cliProgress.SingleBar(
+    {
+      format: `[{bar}] | {value} of {total}`,
+      stopOnComplete: true,
+      clearOnComplete: true,
+    },
+    cliProgress.Presets.rect,
+  );
+  bar.start(roundaboutCycles.length, 0);
+  const context = {
+    tsMapData,
+    adjacencyList,
+    degrees: computeDegrees(adjacencyList),
+  };
+  const res = roundaboutCycles.map(cycle => {
+    bar.increment();
+    return calculateRoundaboutLaneInfo(cycle, context);
+  });
+  logger.success(
+    roundaboutCycles.length,
+    'descriptions calculated in',
+    Number(((Date.now() - startTime) / 1000).toFixed(1)),
+    'seconds',
   );
 
   // 7. TODO FURTHER filter out cycles that have only one entrance + one exit,

@@ -34,6 +34,7 @@ export function calculateLaneInfo(
     'cycle must start and end with same vertex',
   );
   cycle = cycle.slice(0, -1);
+  const cycleSet = new Set(cycle);
   const { tsMapData, adjacencyList, degrees } = context;
 
   // an entrance is an incoming neighbor of a node with inDeg >= 2, that is
@@ -41,9 +42,10 @@ export function calculateLaneInfo(
   const withEntrances = cycle.filter(
     vertex => assertExists(degrees.inDeg.get(vertex)) >= 2,
   );
+  const allEntries = [...adjacencyList.entries()];
   const entrances = withEntrances.map(key => {
-    const neighbors = [...adjacencyList.entries()]
-      .filter(([source, dests]) => dests.has(key) && !cycle.includes(source))
+    const neighbors = allEntries
+      .filter(([source, dests]) => dests.has(key) && !cycleSet.has(source))
       .map(([key]) => key);
     return assertExists(neighbors[0]);
   });
@@ -55,7 +57,7 @@ export function calculateLaneInfo(
   );
   const exits = withExits.map(key => {
     const neighbors = assertExists(adjacencyList.get(key));
-    const exit = [...neighbors].find(vertex => !cycle.includes(vertex));
+    const exit = [...neighbors].find(vertex => !cycleSet.has(vertex));
     return assertExists(exit);
   });
 

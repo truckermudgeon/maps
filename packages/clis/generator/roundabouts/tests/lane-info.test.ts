@@ -46,7 +46,7 @@ describe('calculateLaneInfo', () => {
     const res = calculateLaneInfo(cycle, context);
     expect(res).toMatchInlineSnapshot(`
       {
-        "cycle": [
+        "cycleNodeUids": [
           4809608986306219074n,
           4809608987187022910n,
           4809608988483062847n,

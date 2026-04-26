@@ -1,10 +1,16 @@
-import { readGraphData, readMapData } from '@truckermudgeon/io';
+import {
+  readGraphData,
+  readMapData,
+  writeRoundaboutsFile,
+} from '@truckermudgeon/io';
+import path from 'path';
 import type { Argv, BuilderArguments } from 'yargs';
 import { logger } from '../logger';
 import {
   detectCompositeRoundabouts,
   detectRoundaboutsMapDataKeys,
 } from '../roundabouts/composite-roundabouts';
+import { detectPrefabRoundabouts } from '../roundabouts/prefab-roundabouts';
 import { maybeEnsureOutputDir, untildify } from './path-helpers';
 
 export const command = 'roundabouts';
@@ -63,9 +69,22 @@ export function handler(args: BuilderArguments<typeof builder>) {
     mapDataKeys: detectRoundaboutsMapDataKeys,
   });
 
-  detectCompositeRoundabouts(graphData.graph, tsMapData, {
-    writeDebugFiles: args.debug,
-  });
+  const roundaboutPrefabTokens = detectPrefabRoundabouts(tsMapData);
+  const roundaboutDescs = detectCompositeRoundabouts(
+    graphData.graph,
+    tsMapData,
+    {
+      writeDebugFiles: args.debug,
+    },
+  );
+
+  writeRoundaboutsFile(
+    {
+      prefabTokens: roundaboutPrefabTokens,
+      descs: roundaboutDescs,
+    },
+    path.join(args.outputDir, `${args.map}-roundabouts.json`),
+  );
 
   //const cycles = JSON.parse(
   //  fs.readFileSync('cycles.json', 'utf-8'),
