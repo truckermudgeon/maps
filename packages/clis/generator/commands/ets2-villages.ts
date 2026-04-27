@@ -1,8 +1,9 @@
-import { writeGeojsonFile } from '@truckermudgeon/io';
+import { readMapData, writeGeojsonFile } from '@truckermudgeon/io';
 import fs from 'fs';
 import type { GeoJSON } from 'geojson';
 import path from 'path';
 import type { Argv, BuilderArguments } from 'yargs';
+import { buildDlcGuardSpatialIndex, dlcGuardMapDataKeys } from '../dlc-guards';
 import { createNormalizeFeature } from '../geo-json/normalize';
 import { getCitiesByCountryIsoA2 } from '../geo-json/populated-places';
 import { logger } from '../logger';
@@ -14,6 +15,13 @@ export const describe =
 
 export const builder = (yargs: Argv) =>
   yargs
+    .option('inputDir', {
+      alias: 'i',
+      describe: 'Path to dir containing parser-generated JSON files',
+      type: 'string',
+      coerce: untildify,
+      demandOption: true,
+    })
     .option('outputDir', {
       alias: 'o',
       describe: 'Path to dir ets2-villages.geojson should be written to',
@@ -88,6 +96,11 @@ export function handler(args: BuilderArguments<typeof builder>) {
   logger.log('creating ets2-villages.geojson...');
   const normalizeFeature = createNormalizeFeature('europe', 4);
 
+  const tsMapData = readMapData(args.inputDir, 'europe', {
+    mapDataKeys: dlcGuardMapDataKeys,
+  });
+  const dlcGuardSpatialIndex = buildDlcGuardSpatialIndex(tsMapData);
+
   const { villages, ignoreCount } = parseEts2VillagesCsv();
 
   const points: GeoJSON.Feature<
@@ -102,6 +115,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
     properties: {
       state: v.state,
       name: v.name,
+      dlcGuard: dlcGuardSpatialIndex.findClosest(v.x, v.y).dlcGuard,
     },
   }));
 

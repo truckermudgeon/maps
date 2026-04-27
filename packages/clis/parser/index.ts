@@ -1,5 +1,6 @@
 #!/usr/bin/env -S NODE_OPTIONS=--max-old-space-size=8192 npx tsx
 
+import { UnreachableError } from '@truckermudgeon/base/precon';
 import { writeArrayFile } from '@truckermudgeon/io';
 import type { DefData, MapData } from '@truckermudgeon/map/types';
 import fs from 'fs';
@@ -39,10 +40,11 @@ function main() {
       type: 'boolean',
       default: true,
     })
-    .option('onlyDefs', {
-      describe: 'Parse data from /def files, only',
-      type: 'boolean',
-      default: false,
+    .option('mode', {
+      alias: 'm',
+      describe: 'The type of data to parse',
+      choices: ['defs', 'icons', 'all'] as const,
+      default: 'all' as 'defs' | 'icons' | 'all',
     })
     .option('dryRun', {
       describe: "Don't write out any files",
@@ -66,24 +68,20 @@ function main() {
     fs.mkdirSync(args.outputDir, { recursive: true });
   }
 
-  const data = result.onlyDefs ? result.defData : result.mapData;
-  for (const key of Object.keys(data)) {
-    const collection = data[key as keyof (MapData | DefData)];
-    const filename = `${map}-${key}.json`;
-    logger.log('writing', collection.length, `entries to ${filename}...`);
-    writeArrayFile(collection, path.join(args.outputDir, filename));
-  }
-
   const pngOutputDir = path.join(args.outputDir, 'icons');
-  if (!result.onlyDefs) {
-    const { icons } = result;
-    logger.log('writing', icons.size, `.png files to ${pngOutputDir}...`);
-    if (!fs.existsSync(pngOutputDir)) {
-      fs.mkdirSync(pngOutputDir);
-    }
-    for (const [name, buffer] of icons) {
-      fs.writeFileSync(path.join(pngOutputDir, name + '.png'), buffer);
-    }
+  switch (result.data) {
+    case 'icons':
+      writeIcons(pngOutputDir, result.icons);
+      break;
+    case 'defs':
+      writeJson(args.outputDir, map, result.defData);
+      break;
+    case 'all':
+      writeJson(args.outputDir, map, result.mapData);
+      writeIcons(pngOutputDir, result.icons);
+      break;
+    default:
+      throw new UnreachableError(result);
   }
 
   fs.writeFileSync(
@@ -92,6 +90,29 @@ function main() {
   );
 
   logger.success('done.');
+}
+
+function writeIcons(pngOutputDir: string, icons: Map<string, Buffer>) {
+  logger.log('writing', icons.size, `.png files to ${pngOutputDir}...`);
+  if (!fs.existsSync(pngOutputDir)) {
+    fs.mkdirSync(pngOutputDir);
+  }
+  for (const [name, buffer] of icons) {
+    fs.writeFileSync(path.join(pngOutputDir, name + '.png'), buffer);
+  }
+}
+
+function writeJson(
+  outputDir: string,
+  map: 'usa' | 'europe',
+  data: MapData | DefData,
+) {
+  for (const key of Object.keys(data)) {
+    const collection = data[key as keyof (MapData | DefData)];
+    const filename = `${map}-${key}.json`;
+    logger.log('writing', collection.length, `entries to ${filename}...`);
+    writeArrayFile(collection, path.join(outputDir, filename));
+  }
 }
 
 main();

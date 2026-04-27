@@ -44,10 +44,10 @@ NAVIGATOR_FILES += $(GENERATOR_OUT_DIR)/world.pmtiles
 
 
 # Create ATS and ETS2 pmtiles files
-$(GENERATOR_OUT_DIR)/ats.pmtiles: $(ATS_PARSER_JSON_FILES)
-	npx generator map -h -m usa -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR)
-$(GENERATOR_OUT_DIR)/ets2.pmtiles: $(ETS2_PARSER_JSON_FILES)
-	npx generator map -h -m europe -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR)
+$(GENERATOR_OUT_DIR)/ats.pmtiles: $(ATS_PARSER_JSON_FILES) $(RESOURCES_DIR)/trucksim-overrides.json
+	npx generator map -h -m usa -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR) --dataOverridesPath $(RESOURCES_DIR)/trucksim-overrides.json
+$(GENERATOR_OUT_DIR)/ets2.pmtiles: $(ETS2_PARSER_JSON_FILES) $(RESOURCES_DIR)/trucksim-overrides.json
+	npx generator map -h -m europe -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR) --dataOverridesPath $(RESOURCES_DIR)/trucksim-overrides.json
 
 DEMO_FILES += $(GENERATOR_OUT_DIR)/ats.pmtiles
 DEMO_FILES += $(GENERATOR_OUT_DIR)/ets2.pmtiles
@@ -104,8 +104,8 @@ NAVIGATION_FILES += $(GENERATOR_OUT_DIR)/extra-labels.geojson
 
 
 # Create ETS2 villages.geojson file
-$(GENERATOR_OUT_DIR)/ets2-villages.geojson: $(RESOURCES_DIR)/villages-in-ets2.csv
-	npx generator ets2-villages -o $(GENERATOR_OUT_DIR)
+$(GENERATOR_OUT_DIR)/ets2-villages.geojson: $(ETS2_PARSER_JSON_FILES) $(RESOURCES_DIR)/villages-in-ets2.csv
+	npx generator ets2-villages -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR)
 
 DEMO_FILES += $(GENERATOR_OUT_DIR)/ets2-villages.geojson
 

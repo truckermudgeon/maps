@@ -75,6 +75,25 @@ export function center([minX, minY, maxX, maxY]: Extent): Position {
   return midPoint([minX, minY], [maxX, maxY]);
 }
 
+export function centroid(
+  items: Iterable<{ x: number; y: number } | [number, number]>,
+): Position {
+  let cx = 0;
+  let cy = 0;
+  let count = 0;
+  for (const i of items) {
+    if (Array.isArray(i)) {
+      cx += i[0];
+      cy += i[1];
+    } else {
+      cx += i.x;
+      cy += i.y;
+    }
+    count++;
+  }
+  return [cx / count, cy / count];
+}
+
 /** returns [0, PI/2] */
 export function angleBetweenPoints(a: PositionLike, b: PositionLike) {
   return normalizeRadians(Math.acos(dot(a, b) / (magnitude(a) * magnitude(b))));

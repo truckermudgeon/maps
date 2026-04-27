@@ -37,6 +37,7 @@ import type {
 } from '@truckermudgeon/map/types';
 import * as cliProgress from 'cli-progress';
 import path from 'path';
+import { PNG } from 'pngjs';
 import { logger } from '../logger';
 import { CombinedEntries } from './combined-entries';
 import { convertSiiToJson } from './convert-sii-to-json';
@@ -53,20 +54,26 @@ import {
 
 export function parseMapFiles(
   scsFilePaths: string[],
-  { includeDlc, onlyDefs }: { includeDlc: boolean; onlyDefs: boolean },
+  { includeDlc, mode }: { includeDlc: boolean; mode: 'defs' | 'icons' | 'all' },
 ):
   | {
-      onlyDefs: false;
+      data: 'all';
       map: 'usa' | 'europe';
       version: string;
       mapData: MapData;
       icons: Map<string, Buffer>;
     }
   | {
-      onlyDefs: true;
+      data: 'defs';
       map: 'usa' | 'europe';
       version: string;
       defData: DefData;
+    }
+  | {
+      data: 'icons';
+      map: 'usa' | 'europe';
+      version: string;
+      icons: Map<string, Buffer>;
     } {
   const requiredFiles = new Set([
     'base.scs',
@@ -90,23 +97,36 @@ export function parseMapFiles(
   const entries = new CombinedEntries(archives);
   try {
     const version = parseVersionSii(entries);
+    const map = version.application === 'ats' ? 'usa' : 'europe';
+    const baseResult = {
+      map,
+      version: version.version,
+    } as const;
+
+    if (mode === 'icons') {
+      const icons = parseIconMatFiles(entries);
+      return {
+        ...baseResult,
+        data: 'icons',
+        icons,
+      };
+    }
+
     const defData = parseDefFiles(entries, version.application);
     const l10n = assertExists(parseLocaleFiles(entries).get('en_us'));
-    if (onlyDefs) {
+    if (mode === 'defs') {
       return {
-        onlyDefs: true,
-        map: version.application === 'ats' ? 'usa' : 'europe',
-        version: version.version,
+        ...baseResult,
+        data: 'defs',
         defData: toDefData(defData, l10n),
       };
     }
 
-    const icons = parseIconMatFiles(entries);
     const sectorData = parseSectorFiles(entries);
     return {
-      onlyDefs: false,
-      version: version.version,
-      ...postProcess(defData, sectorData, icons, l10n),
+      ...baseResult,
+      data: 'all',
+      ...postProcess(defData, sectorData, parseIconMatFiles(entries), l10n),
     };
   } finally {
     archives.forEach(a => a.dispose());
@@ -354,10 +374,10 @@ function parseIconMatFiles(entries: Entries) {
       'companies_ico',
       'road_numbers_ico',
       // these 4 files can be combined to help trace state / country borders
-      // 'map0',
-      // 'map1',
-      // 'map2',
-      // 'map3',
+      'map0',
+      'map1',
+      'map2',
+      'map3',
     ].map(n => `${n}.mat`),
   );
   readTobjPathsFromMatFiles('material/ui/map', f => otherMatFiles.has(f));
@@ -375,6 +395,29 @@ function parseIconMatFiles(entries: Entries) {
     // header-ful .dds file.
     pngs.set(key, parseDds(tobj.read(), sdfAuxData.get(key)));
   }
+
+  const mapPngs = [0, 1, 2, 3].map(i =>
+    PNG.sync.read(assertExists(pngs.get(`map${i}`))),
+  );
+  // verify that mapX pngs are square
+  const size = mapPngs[0].width;
+  assert(mapPngs.every(p => p.width === p.height && p.width === size));
+  // stitch together mapX pngs:
+  //    0 2
+  //    1 3
+  const stitched = new PNG({
+    width: mapPngs[0].width * 2,
+    height: mapPngs[0].height * 2,
+  });
+  PNG.bitblt(mapPngs[0], stitched, 0, 0, size, size, 0, 0);
+  PNG.bitblt(mapPngs[1], stitched, 0, 0, size, size, 0, size);
+  PNG.bitblt(mapPngs[2], stitched, 0, 0, size, size, size, 0);
+  PNG.bitblt(mapPngs[3], stitched, 0, 0, size, size, size, size);
+  if (pngs.has('map4k')) {
+    throw new Error('an icon with name `map4k` already exists');
+  }
+  pngs.set('map4k', PNG.sync.write(stitched));
+
   return pngs;
 }
 

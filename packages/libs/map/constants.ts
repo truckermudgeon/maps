@@ -303,6 +303,12 @@ export const Ets2ScsSourceToDlcGuard: Record<string, Ets2DlcGuard> = {
   'dlc_balkan_w.scs': 16,
   'dlc_greece.scs': 20,
   'dlc_polar.scs': 23,
+  // cargo
+  'dlc_feldbinder.scs': 19,
+  'dlc_krone.scs': 15,
+  // aliases
+  'dlc_grece.scs': 20,
+  'dlc_polar_circle.scs': 23,
 };
 
 export function toEts2DlcGuards(

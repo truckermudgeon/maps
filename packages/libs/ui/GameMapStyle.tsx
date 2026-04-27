@@ -362,6 +362,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           'all',
           ['==', ['geometry-type'], 'LineString'],
           ['==', ['get', 'type'], 'ferry'],
+          dlcGuardFilter,
         ]}
         paint={{
           'line-color': colors.ferryLine,
@@ -380,6 +381,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             'all',
             ['==', ['geometry-type'], 'LineString'],
             ['==', ['get', 'type'], 'train'],
+            dlcGuardFilter,
           ],
           [
             'all',
@@ -387,6 +389,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             ['==', ['get', 'type'], 'road'],
             ['==', ['get', 'roadType'], 'train'],
             ['==', ['get', 'hidden'], false],
+            dlcGuardFilter,
           ],
         ]}
         paint={{
@@ -414,6 +417,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             'all',
             ['==', ['geometry-type'], 'LineString'],
             ['==', ['get', 'type'], 'train'],
+            dlcGuardFilter,
           ],
           [
             'all',
@@ -421,6 +425,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             ['==', ['get', 'type'], 'road'],
             ['==', ['get', 'roadType'], 'train'],
             ['==', ['get', 'hidden'], false],
+            dlcGuardFilter,
           ],
         ]}
         paint={{
@@ -448,6 +453,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             'all',
             ['==', ['geometry-type'], 'LineString'],
             ['==', ['get', 'type'], 'train'],
+            dlcGuardFilter,
           ],
           [
             'all',
@@ -455,6 +461,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             ['==', ['get', 'type'], 'road'],
             ['==', ['get', 'roadType'], 'train'],
             ['==', ['get', 'hidden'], false],
+            dlcGuardFilter,
           ],
         ]}
         paint={{
@@ -474,6 +481,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           'all',
           ['==', ['geometry-type'], 'LineString'],
           ['==', ['get', 'type'], 'ferry'],
+          dlcGuardFilter,
         ]}
         layout={{
           ...baseTextLayout,
@@ -496,6 +504,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           'all',
           ['==', ['geometry-type'], 'LineString'],
           ['==', ['get', 'type'], 'train'],
+          dlcGuardFilter,
         ]}
         layout={{
           ...baseTextLayout,
@@ -538,6 +547,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             ['==', ['get', 'type'], 'poi'],
             ['==', ['get', 'poiType'], 'road'],
             ['!', ['in', ['get', 'sprite'], ['literal', allRoadFacilityIcons]]],
+            dlcGuardFilter,
             secretFilter,
           ]}
           layout={iconLayout(

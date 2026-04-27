@@ -1,4 +1,8 @@
-import type { GraphData, MapData } from '@truckermudgeon/map/types';
+import type {
+  GraphData,
+  MapData,
+  RoundaboutDesc,
+} from '@truckermudgeon/map/types';
 import * as fs from 'node:fs';
 
 export function writeArrayFile(
@@ -11,6 +15,28 @@ export function writeArrayFile(array: unknown[], outputFile: string): void {
 
 export function writeGraphFile(graph: GraphData, outputFile: string): void {
   fs.writeFileSync(outputFile, JSON.stringify(graph, graphSerializer, 2));
+}
+
+export function writeRoundaboutsFile(
+  roundabouts: { prefabTokens: Set<string>; descs: RoundaboutDesc[] },
+  outputFile: string,
+): void {
+  fs.writeFileSync(
+    outputFile,
+    JSON.stringify(
+      roundabouts,
+      (_key, value: unknown) => {
+        if (value instanceof Set) {
+          return [...value] as unknown[];
+        }
+        if (value instanceof Map) {
+          return [...value.entries()] as unknown[];
+        }
+        return value;
+      },
+      2,
+    ),
+  );
 }
 
 export function writeGeojsonFile(
