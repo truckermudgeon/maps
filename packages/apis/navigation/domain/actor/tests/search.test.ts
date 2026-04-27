@@ -15,6 +15,7 @@ import {
   createWithRelativeTruckInfoMapper,
 } from '../search';
 import { aTelemetryWith, aTruckWith } from './builders';
+import type { TestLookupService } from './test-lookup-service';
 import { testLookupService } from './test-lookup-service';
 
 const dummyEventSink: DomainEventSink = {
@@ -26,10 +27,12 @@ const dummyEventSink: DomainEventSink = {
 describe.skip('searchPoi', () => {
   let graphAndMapData: GraphAndMapData<GraphMappedData>;
   let routingService: RoutingService;
+  let atsLookupService: TestLookupService;
   beforeAll(() => {
-    graphAndMapData = testLookupService.getData().graphAndMapData;
+    atsLookupService = testLookupService('usa');
+    graphAndMapData = atsLookupService.getData().graphAndMapData;
     routingService = createRoutingService(
-      testLookupService,
+      atsLookupService,
       new ConsoleWorkerMetrics(),
     );
   }, 20_000);
@@ -72,7 +75,7 @@ describe.skip('searchPoi', () => {
     const numIters = 1000;
     const start = Date.now();
     const searchService = createSearchService(
-      testLookupService,
+      atsLookupService,
       new ConsoleWorkerMetrics(),
     );
     let searchResults: SearchResult[] = [];
@@ -142,7 +145,7 @@ describe.skip('searchPoi', () => {
     const numIters = 5;
     const start = Date.now();
     const searchService = createSearchService(
-      testLookupService,
+      atsLookupService,
       new ConsoleWorkerMetrics(),
     );
     const results: SearchResult[][] = (

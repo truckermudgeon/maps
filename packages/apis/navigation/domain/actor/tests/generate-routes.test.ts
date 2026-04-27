@@ -340,9 +340,10 @@ describe.skip('generateRoutes bugs', () => {
   let graphAndMapData: GraphAndMapData<GraphMappedData>;
   let routingService: RoutingService;
   beforeAll(() => {
-    graphAndMapData = testLookupService.getData().graphAndMapData;
+    const atsLookupService = testLookupService('usa');
+    graphAndMapData = atsLookupService.getData().graphAndMapData;
     routingService = createRoutingService(
-      testLookupService,
+      atsLookupService,
       new ConsoleWorkerMetrics(),
     );
     // routing service's thread pool ends up making copies of the routing context,
