@@ -8,11 +8,11 @@ import {
   midPoint,
   normalizeRadians,
   toRadians,
-  toSplinePoints,
 } from '@truckermudgeon/base/geom';
 import { UnreachableError } from '@truckermudgeon/base/precon';
 import type { MappedDataForKeys } from '@truckermudgeon/io';
 import { ItemType } from '@truckermudgeon/map/constants';
+import { getLineString } from '@truckermudgeon/map/linestring';
 import {
   calculateLaneInfo,
   toMapPosition,
@@ -24,16 +24,12 @@ import {
 } from '@truckermudgeon/map/projections';
 import type {
   CompanyItem,
-  Ferry,
   FerryItem,
   Node,
   Prefab,
   PrefabDescription,
   Road,
-  RoadLook,
 } from '@truckermudgeon/map/types';
-import * as turf from '@turf/helpers';
-import lineOffset from '@turf/line-offset';
 import { BranchType } from '../../constants';
 import type {
   RouteStep as _RouteStepPolyline,
@@ -69,7 +65,14 @@ type RouteStep = Omit<_RouteStepPolyline, 'geometry' | 'maneuver'> & {
 
 export class RouteStepBuilder {
   private readonly steps: RouteStep[] = [];
-  private readonly ferries: ReadonlyMap<bigint, Ferry>;
+  private readonly ferriesByUid: ReadonlyMap<
+    bigint,
+    FerryItem & { name: string }
+  >;
+  private readonly lookup: {
+    ferriesByUid: ReadonlyMap<bigint, FerryItem>;
+    companiesByPrefab: ReadonlyMap<bigint, CompanyItem>;
+  };
 
   private readonly toLonLat = (p: Position) =>
     this.context.map === 'usa'
@@ -80,7 +83,17 @@ export class RouteStepBuilder {
     private readonly context: RouteStepMappedData,
     private readonly signRTree: GraphAndMapData['signRTree'],
   ) {
-    this.ferries = new Map(this.context.ferries.values().map(f => [f.uid, f]));
+    this.ferriesByUid = new Map(
+      this.context.ferries
+        .values()
+        .map(f => [f.uid, { ...f, type: ItemType.Ferry }]),
+    );
+    this.lookup = {
+      ferriesByUid: this.ferriesByUid,
+      companiesByPrefab: new Map<bigint, CompanyItem>(
+        this.context.companies.values().map(c => [c.prefabUid, c]),
+      ),
+    };
   }
 
   add(
@@ -108,10 +121,10 @@ export class RouteStepBuilder {
       case ItemType.Ferry: {
         if (
           // traveling from origin ferry node to dest ferry node
-          (this.ferries.has(startNode.forwardItemUid) &&
-            this.ferries.has(endNode.forwardItemUid)) ||
+          (this.ferriesByUid.has(startNode.forwardItemUid) &&
+            this.ferriesByUid.has(endNode.forwardItemUid)) ||
           // traveling from dest ferry node to ferry prefab exit node
-          this.ferries.has(startNode.forwardItemUid)
+          this.ferriesByUid.has(startNode.forwardItemUid)
         ) {
           const newStep = this.toStep(item, startNode, endNode, cost);
           const prevStep = this.steps.at(-1);
@@ -119,7 +132,7 @@ export class RouteStepBuilder {
             this.averageStepJoinPoint(prevStep, newStep);
           }
           this.steps.push(newStep);
-        } else if (this.ferries.has(endNode.forwardItemUid)) {
+        } else if (this.ferriesByUid.has(endNode.forwardItemUid)) {
           // traveling from ferry prefab exit node to origin ferry node, or
           this.mergeWithPreviousStep(item, startNode, endNode, cost);
         } else {
@@ -239,16 +252,19 @@ export class RouteStepBuilder {
     endNode: Node,
     cost: { distance: number; duration: number },
   ): RouteStep {
-    let geometry: Position[];
     let maneuver: StepManeuver;
     let arrowPoints;
     const trafficIcons: {
       type: 'stop' | 'trafficLight';
       lonLat: [number, number];
     }[] = [];
+    const geometry = getLineString(
+      [startNode.uid, endNode.uid],
+      this.context,
+      this.lookup,
+    );
     switch (item.type) {
       case ItemType.Prefab:
-        geometry = this.prefabToGameGeometry(item, startNode, endNode);
         maneuver = calculateManeuver(
           startNode,
           endNode,
@@ -274,49 +290,33 @@ export class RouteStepBuilder {
         );
         break;
       case ItemType.Road:
-        geometry = this.roadToGameGeometry(
-          item,
-          assertExists(this.context.roadLooks.get(item.roadLookToken)),
-          startNode,
-          endNode,
-        );
         maneuver = {
           direction: BranchType.THROUGH,
           lonLat: this.toLonLat(geometry[0]),
         };
         break;
       case ItemType.Company:
-        geometry = [
-          [startNode.x, startNode.y],
-          [endNode.x, endNode.y],
-        ];
         maneuver = {
           direction: BranchType.THROUGH,
           lonLat: this.toLonLat(geometry[0]),
         };
         break;
       case ItemType.Ferry: {
-        // TODO geometry is either straight line,
-        //  or if from ferry-ferry: some curve.
-        geometry = [
-          [startNode.x, startNode.y],
-          [endNode.x, endNode.y],
-        ];
         if (
           // traveling from origin ferry node to dest ferry node
-          this.ferries.has(startNode.forwardItemUid) &&
-          this.ferries.has(endNode.forwardItemUid)
+          this.ferriesByUid.has(startNode.forwardItemUid) &&
+          this.ferriesByUid.has(endNode.forwardItemUid)
         ) {
           maneuver = {
             direction: BranchType.FERRY,
             lonLat: this.toLonLat(geometry[0]),
             banner: {
-              text: this.ferries.get(endNode.forwardItemUid)!.name,
+              text: this.ferriesByUid.get(endNode.forwardItemUid)!.name,
             },
           };
         } else if (
-          this.ferries.has(startNode.forwardItemUid) ||
-          this.ferries.has(endNode.forwardItemUid)
+          this.ferriesByUid.has(startNode.forwardItemUid) ||
+          this.ferriesByUid.has(endNode.forwardItemUid)
         ) {
           // traveling from dest ferry node to ferry prefab exit node
           maneuver = {
@@ -345,104 +345,6 @@ export class RouteStepBuilder {
       nodesTraveled: 1,
       trafficIcons,
     };
-  }
-
-  private prefabToGameGeometry(
-    prefab: Prefab,
-    startNode: Node,
-    endNode: Node,
-  ): Position[] {
-    if (prefab.ferryLinkUid != null) {
-      // special-case ferry prefabs: draw a simple line between the points,
-      // because ferry prefabs don't have nav curves.
-      assert(
-        prefab.nodeUids.includes(startNode.uid) &&
-          prefab.nodeUids.includes(endNode.uid),
-      );
-      return [
-        [startNode.x, startNode.y],
-        [endNode.x, endNode.y],
-      ];
-    }
-
-    const prefabDesc = assertExists(
-      this.context.prefabDescriptions.get(prefab.token),
-    );
-    const targetNodeUids = rotateRight(prefab.nodeUids, prefab.originNodeIndex);
-    const startNodeIndex = targetNodeUids.findIndex(id => id === startNode.uid);
-    const endNodeIndex = targetNodeUids.findIndex(id => id === endNode.uid);
-    assert(
-      startNodeIndex >= 0 && endNodeIndex >= 0,
-      `startNode and endNode must be referenced by prefab`,
-    );
-
-    const laneInfo = calculateLaneInfo(prefabDesc);
-    const inputLanes = assertExists(laneInfo.get(startNodeIndex));
-    let branchFound = false;
-    let geometry: Position[] | undefined = undefined;
-    for (const inputLane of inputLanes) {
-      for (const branch of inputLane.branches) {
-        if (branch.targetNodeIndex === endNodeIndex) {
-          geometry = branch.curvePoints.map(p =>
-            toMapPosition(p, prefab, prefabDesc, this.context.nodes),
-          );
-          branchFound = true;
-          break;
-        }
-      }
-    }
-    assert(
-      branchFound && geometry != null,
-      `no route geometry found for prefab ${prefab.uid.toString(16)}: node ${startNode.uid.toString(16)} => ${endNode.uid.toString(16)}`,
-    );
-    return geometry;
-  }
-
-  private roadToGameGeometry(
-    road: Road,
-    roadLook: RoadLook,
-    startNode: Node,
-    endNode: Node,
-  ): Position[] {
-    const splineStart =
-      road.startNodeUid === startNode.uid ? startNode : endNode;
-    const splineEnd = road.endNodeUid === endNode.uid ? endNode : startNode;
-
-    let roadPoints = toSplinePoints(
-      {
-        position: [splineStart.x, splineStart.y],
-        rotation: splineStart.rotation,
-      },
-      {
-        position: [splineEnd.x, splineEnd.y],
-        rotation: splineEnd.rotation,
-      },
-    );
-    if (splineStart.uid !== startNode.uid) {
-      roadPoints = roadPoints.reverse();
-    }
-
-    const offset =
-      road.maybeDivided && roadLook.laneOffset
-        ? roadLook.laneOffset
-        : roadLook.offset;
-    if (!offset) {
-      return roadPoints;
-    }
-
-    const halfOffset =
-      offset / 2 +
-      // N.B.: there are road looks out there with asymmetric lane counts.
-      // split the difference for now.
-      // TODO do asymmetric offsets, but gotta verify offsets.
-      ((roadLook.lanesLeft.length + roadLook.lanesRight.length) / 4) * 4.5;
-    // TODO add a test to make sure this works no matter the orientation of
-    // the road.
-    roadPoints = lineOffset(turf.lineString(roadPoints), -halfOffset, {
-      units: 'degrees',
-    }).geometry.coordinates as Position[];
-
-    return roadPoints;
   }
 
   private refineLaneGuidance(steps: RouteStep[]): RouteStep[] {

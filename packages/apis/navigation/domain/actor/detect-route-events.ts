@@ -3,6 +3,7 @@ import { distance } from '@truckermudgeon/base/geom';
 import { Preconditions } from '@truckermudgeon/base/precon';
 import type { MapDataKeys, MappedDataForKeys } from '@truckermudgeon/io';
 import { ItemType } from '@truckermudgeon/map/constants';
+import { getCommonItem } from '@truckermudgeon/map/get-common-item';
 import { fromAtsCoordsToWgs84 } from '@truckermudgeon/map/projections';
 import type {
   CompanyItem,
@@ -21,7 +22,6 @@ import type { GraphAndMapData } from '../lookup-data';
 import type { TelemetryEventEmitter } from '../session-actor';
 import type { RouteWithLookup, RoutingService } from './generate-routes';
 import { reroute } from './generate-routes';
-import { getCommonItem } from './guidance';
 import { scoreLine } from './score-line';
 
 export type RouteEventEmitter = EventEmitter<{
