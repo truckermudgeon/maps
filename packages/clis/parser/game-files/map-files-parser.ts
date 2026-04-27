@@ -926,6 +926,12 @@ function postProcess(
   // Augment partial ferry info from defs with start/end position info
   const ferries: Ferry[] = [];
   for (const [token, partialFerry] of defData.ferries) {
+    if (!ferryItems.has(token)) {
+      // in case we're on an installation w/o all the DLCs
+      logger.warn('skipping unknown ferry', token);
+      continue;
+    }
+
     const { nodeUid, prefabUid, train, uid } = assertExists(
       ferryItems.get(token),
     );
