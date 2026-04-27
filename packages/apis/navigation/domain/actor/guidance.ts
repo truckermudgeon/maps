@@ -32,6 +32,7 @@ export function calculateSteps(
   neighbors: Neighbor[],
   context: GuidanceMappedData,
   signRTree: GraphAndMapData['signRTree'],
+  roundaboutData: GraphAndMapData['roundaboutData'],
 ): RouteStep[] {
   Preconditions.checkArgument(
     neighbors.length > 0,
@@ -45,7 +46,7 @@ export function calculateSteps(
   console.log('first node', curNode);
   console.log('last node', neighbors.at(-1)!.nodeUid);
 
-  const builder = new RouteStepBuilder(context, signRTree);
+  const builder = new RouteStepBuilder(context, signRTree, roundaboutData);
   // TODO precalc this lookup. And consider merging Ferry & FerryItem types.
   const ferriesByUid = new Map<bigint, FerryItem>(
     context.ferries.values().map(f => [f.uid, { ...f, type: ItemType.Ferry }]),

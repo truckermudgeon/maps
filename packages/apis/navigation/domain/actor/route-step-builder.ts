@@ -30,6 +30,7 @@ import type {
   Prefab,
   PrefabDescription,
   Road,
+  RoundaboutData,
 } from '@truckermudgeon/map/types';
 import { BranchType } from '../../constants';
 import type {
@@ -76,23 +77,24 @@ export class RouteStepBuilder {
   };
 
   private readonly toLonLat = (p: Position) =>
-    this.context.map === 'usa'
+    this.tsMapData.map === 'usa'
       ? (fromAtsCoordsToWgs84(p).map(n => Number(n.toFixed(6))) as Position)
       : (fromEts2CoordsToWgs84(p).map(n => Number(n.toFixed(6))) as Position);
 
   constructor(
-    private readonly context: RouteStepMappedData,
+    private readonly tsMapData: RouteStepMappedData,
     private readonly signRTree: GraphAndMapData['signRTree'],
+    private readonly roundaboutData: RoundaboutData,
   ) {
     this.ferriesByUid = new Map(
-      this.context.ferries
+      this.tsMapData.ferries
         .values()
         .map(f => [f.uid, { ...f, type: ItemType.Ferry }]),
     );
     this.lookup = {
       ferriesByUid: this.ferriesByUid,
       companiesByPrefab: new Map<bigint, CompanyItem>(
-        this.context.companies.values().map(c => [c.prefabUid, c]),
+        this.tsMapData.companies.values().map(c => [c.prefabUid, c]),
       ),
     };
   }
@@ -162,7 +164,7 @@ export class RouteStepBuilder {
     endNode: Node,
   ): boolean {
     const prefabDesc = assertExists(
-      this.context.prefabDescriptions.get(prefab.token),
+      this.tsMapData.prefabDescriptions.get(prefab.token),
     );
     const rsap = toRoadStringsAndPolygons(prefabDesc);
 
@@ -184,7 +186,7 @@ export class RouteStepBuilder {
       endNode,
       prefab,
       prefabDesc,
-      this.context.nodes,
+      this.tsMapData.nodes,
       this.signRTree,
     );
     if (
@@ -261,7 +263,7 @@ export class RouteStepBuilder {
     }[] = [];
     const geometry = getLineString(
       [startNode.uid, endNode.uid],
-      this.context,
+      this.tsMapData,
       this.lookup,
     );
     switch (item.type) {
@@ -270,8 +272,8 @@ export class RouteStepBuilder {
           startNode,
           endNode,
           item,
-          assertExists(this.context.prefabDescriptions.get(item.token)),
-          this.context.nodes,
+          assertExists(this.tsMapData.prefabDescriptions.get(item.token)),
+          this.tsMapData.nodes,
           this.signRTree,
         );
         // TODO make this part of calculateManeuver; make that a method.
@@ -282,8 +284,8 @@ export class RouteStepBuilder {
             item,
             startNode,
             endNode,
-            assertExists(this.context.prefabDescriptions.get(item.token)),
-            this.context.nodes,
+            assertExists(this.tsMapData.prefabDescriptions.get(item.token)),
+            this.tsMapData.nodes,
           ).map(ti => ({
             ...ti,
             lonLat: this.toLonLat(ti.gameXZ),

@@ -25,6 +25,7 @@ import type { GameContext } from './game-context';
 
 export interface GraphAndMapData<T = unknown> {
   tsMapData: T;
+  roundaboutData: RoundaboutData;
   graphData: GraphData;
   graphCompaniesByNodeUid: ReadonlyMap<bigint, CompanyItem>;
   // TODO is this really needed? can the data it provides be better provided
@@ -107,7 +108,6 @@ export type ProcessedSearchData = {
 export interface LookupData {
   graphAndMapData: GraphAndMapData<GraphMappedData>;
   searchData: ProcessedSearchData;
-  roundaboutData: RoundaboutData;
   allDlcGuards: ReadonlySet<AtsDlcGuard> | ReadonlySet<Ets2DlcGuard>;
 }
 
