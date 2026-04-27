@@ -2,13 +2,7 @@ import polyline from '@mapbox/polyline';
 import { assertExists } from '@truckermudgeon/base/assert';
 import { Preconditions } from '@truckermudgeon/base/precon';
 import type { MappedDataForKeys } from '@truckermudgeon/io';
-import { ItemType } from '@truckermudgeon/map/constants';
-import { getCommonItem } from '@truckermudgeon/map/get-common-item';
-import type {
-  CompanyItem,
-  FerryItem,
-  Neighbor,
-} from '@truckermudgeon/map/types';
+import type { Neighbor } from '@truckermudgeon/map/types';
 import type { RouteStep } from '../../types';
 import type { GraphAndMapData } from '../lookup-data';
 import { RouteStepBuilder } from './route-step-builder';
@@ -46,19 +40,8 @@ export function calculateSteps(
   console.log('first node', curNode);
   console.log('last node', neighbors.at(-1)!.nodeUid);
 
+  // TODO make builder long-lived
   const builder = new RouteStepBuilder(context, signRTree, roundaboutData);
-  // TODO precalc this lookup. And consider merging Ferry & FerryItem types.
-  const ferriesByUid = new Map<bigint, FerryItem>(
-    context.ferries.values().map(f => [f.uid, { ...f, type: ItemType.Ferry }]),
-  );
-  // TODO precalc this lookup
-  const companiesByPrefab = new Map<bigint, CompanyItem>(
-    context.companies.values().map(c => [c.prefabUid, c]),
-  );
-  const lookups = {
-    ferriesByUid,
-    companiesByPrefab,
-  };
 
   for (let i = 1; i < neighbors.length; i++) {
     const neighbor = neighbors[i];
@@ -67,13 +50,7 @@ export function calculateSteps(
       // expected for degenerate routes.
       continue;
     }
-    const linkedItem = getCommonItem(
-      curNode.uid,
-      nextNode.uid,
-      context,
-      lookups,
-    );
-    builder.add(linkedItem, curNode, nextNode, neighbor);
+    builder.add(curNode, nextNode, neighbor);
     curNode = nextNode;
   }
 

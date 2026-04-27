@@ -12,6 +12,7 @@ import {
 import { UnreachableError } from '@truckermudgeon/base/precon';
 import type { MappedDataForKeys } from '@truckermudgeon/io';
 import { ItemType } from '@truckermudgeon/map/constants';
+import { getCommonItem } from '@truckermudgeon/map/get-common-item';
 import { getLineString } from '@truckermudgeon/map/linestring';
 import {
   calculateLaneInfo,
@@ -100,11 +101,17 @@ export class RouteStepBuilder {
   }
 
   add(
-    item: StepItem,
     startNode: Node,
     endNode: Node,
     cost: { distance: number; duration: number },
   ) {
+    const item = getCommonItem(
+      startNode.uid,
+      endNode.uid,
+      this.tsMapData,
+      this.lookup,
+    );
+
     switch (item.type) {
       case ItemType.Prefab: {
         if (this.shouldMergePrefab(item, startNode, endNode)) {
