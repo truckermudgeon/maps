@@ -527,7 +527,7 @@ export function readMapData<
     }
   }
 
-  if (mapData.nodes != null) {
+  if (mapData.nodes != null && referencedNodeUids.size > 0) {
     const totalNodes = mapData.nodes.size;
     logger.info(
       'preserved',

@@ -6,4 +6,10 @@ export type {
   MappedData,
   MappedDataForKeys,
 } from './mapped-data';
-export { writeArrayFile, writeGeojsonFile, writeGraphFile } from './write';
+export { readRoundaboutsData } from './roundabouts-data';
+export {
+  writeArrayFile,
+  writeGeojsonFile,
+  writeGraphFile,
+  writeRoundaboutsFile,
+} from './write';

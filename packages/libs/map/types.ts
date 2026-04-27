@@ -1089,3 +1089,40 @@ export interface StreetViewProperties {
   loop?: true;
   panos: Omit<PhotoSphereProperties, 'yaw' | 'location' | 'dlcGuard'>[];
 }
+
+export interface RoundaboutData {
+  prefabTokens: Set<string>;
+  // maps an entrance node uid to an index into `descs`
+  descsIndex: Map<bigint, number>;
+  descs: RoundaboutDesc[];
+}
+
+export interface RoundaboutDesc {
+  /**
+   * Uids of nodes that loop through the roundabout. Notes:
+   * - does not include entrance / exit nodes
+   * - first uid !== last uid (i.e., nodes in list are unique)
+   */
+  cycleNodeUids: bigint[];
+  paths: Map<
+    // entrance
+    bigint,
+    // exit
+    Map<bigint, RoundaboutExit>
+  >;
+}
+
+export interface RoundaboutExit {
+  // index of exit, relative to entrance
+  exitIndex: number;
+  rotateStartIndex: number;
+  numInnerNodes: number;
+  /**
+   * [-Pi, Pi]
+   *
+   * -Pi/2  means lane exits 90 degrees CCW, relative to entry
+   *     0  means lane exits straight
+   * +Pi/2  means lane exits 90 degrees CW, relative to entry
+   */
+  angle: number;
+}
