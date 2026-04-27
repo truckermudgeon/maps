@@ -12,6 +12,7 @@ import type {
   Poi,
   Prefab,
   Road,
+  RoundaboutData,
   Sign,
 } from '@truckermudgeon/map/types';
 import type RBush from 'rbush';
@@ -106,6 +107,7 @@ export type ProcessedSearchData = {
 export interface LookupData {
   graphAndMapData: GraphAndMapData<GraphMappedData>;
   searchData: ProcessedSearchData;
+  roundaboutData: RoundaboutData;
   allDlcGuards: ReadonlySet<AtsDlcGuard> | ReadonlySet<Ets2DlcGuard>;
 }
 

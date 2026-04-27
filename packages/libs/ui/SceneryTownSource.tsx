@@ -1,5 +1,5 @@
+import type { Ets2SelectableDlc } from '@truckermudgeon/map/constants';
 import {
-  Ets2SelectableDlc,
   Ets2SelectableDlcs,
   toEts2DlcGuards,
 } from '@truckermudgeon/map/constants';

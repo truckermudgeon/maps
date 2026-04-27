@@ -11,6 +11,7 @@ import { getCommonItem } from './get-common-item';
 import { calculateLaneInfo, toMapPosition } from './prefabs';
 import type {
   CompanyItem,
+  Ferry,
   FerryItem,
   Node,
   Prefab,
@@ -33,7 +34,7 @@ export function getLineString(
     ]
   >,
   lookups: {
-    ferriesByUid: ReadonlyMap<bigint, FerryItem>;
+    ferriesByUid: ReadonlyMap<bigint, Ferry & { type: ItemType.Ferry }>;
     companiesByPrefab: ReadonlyMap<bigint, CompanyItem>;
   },
 ): Position[] {
@@ -64,11 +65,10 @@ export function getLineString(
           prefabLineString(item, startNode, endNode, tsMapData),
         );
         break;
-      case ItemType.Ferry:
-        points = points.concat(
-          ferryLineString(item, startNode, endNode, tsMapData, lookups),
-        );
+      case ItemType.Ferry: {
+        points = points.concat(ferryLineString(startNode, endNode, lookups));
         break;
+      }
       case ItemType.Company:
         points.push([startNode.x, startNode.y], [endNode.x, endNode.y]);
         break;
@@ -80,12 +80,11 @@ export function getLineString(
   return points;
 }
 
+// TODO dry this up with `ferryToFeature` in `generator`'s `map.ts`.
 function ferryLineString(
-  _ferry: FerryItem,
   startNode: Node,
   endNode: Node,
-  _tsMapData: MappedDataForKeys<['nodes', 'ferries']>,
-  lookups: { ferriesByUid: ReadonlyMap<bigint, FerryItem> },
+  lookups: { ferriesByUid: ReadonlyMap<bigint, Ferry & FerryItem> },
 ): Position[] {
   const points: Position[] = [];
 
@@ -94,9 +93,70 @@ function ferryLineString(
     lookups.ferriesByUid.has(startNode.forwardItemUid) &&
     lookups.ferriesByUid.has(endNode.forwardItemUid)
   ) {
-    // bezier for ferry route
-    // TODO
-    points.push([startNode.x, startNode.y], [endNode.x, endNode.y]);
+    const startFerry = assertExists(
+      lookups.ferriesByUid.get(startNode.forwardItemUid),
+    );
+    const endFerry = assertExists(
+      lookups.ferriesByUid.get(endNode.forwardItemUid),
+    );
+    const conn = assertExists(
+      startFerry.connections.find(conn => conn.token === endFerry.token),
+      `no ferry connection between from ${startFerry.token} to ${endFerry.token} `,
+    );
+
+    if (conn.intermediatePoints.length === 0) {
+      points.push([startNode.x, startNode.y], [endNode.x, endNode.y]);
+    } else {
+      const controlPoints = [
+        {
+          x: startFerry.x,
+          y: startFerry.y,
+          rotation:
+            // HACK give Travemunde port a tweak so that the line clears the land.
+            startFerry.token === 'travemunde_p'
+              ? -Math.PI / 4
+              : Math.atan2(
+                  conn.intermediatePoints[0].y - startFerry.y,
+                  conn.intermediatePoints[0].x - startFerry.x,
+                ),
+        },
+        ...conn.intermediatePoints,
+        {
+          x: conn.x,
+          y: conn.y,
+          rotation: Math.atan2(
+            conn.y - conn.intermediatePoints.at(-1)!.y,
+            conn.x - conn.intermediatePoints.at(-1)!.x,
+          ),
+        },
+      ].map(sp => ({
+        position: [sp.x, sp.y] as Position,
+        rotation: sp.rotation,
+      }));
+
+      // HACK: the current UK coordinate massaging ends up with ferry routes from
+      // Plymouth where everything past a certain point within a spline gets
+      // hard-shifted to the west. This is because we create splines, _then_ project
+      // every spline point to WGS84. To work around this, ignore the troublesome
+      // point.
+      const troublesomePoint = {
+        x: -60546.875,
+        y: -5859.375,
+      };
+
+      points.push(controlPoints[0].position);
+      for (let i = 1; i < controlPoints.length; i++) {
+        const prev = controlPoints[i - 1];
+        const curr = controlPoints[i];
+        if (
+          prev.position[0] === troublesomePoint.x &&
+          prev.position[1] === troublesomePoint.y
+        ) {
+          continue;
+        }
+        points.push(...toSplinePoints(prev, curr));
+      }
+    }
   } else if (
     lookups.ferriesByUid.has(startNode.forwardItemUid) ||
     lookups.ferriesByUid.has(endNode.forwardItemUid)

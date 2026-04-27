@@ -24,6 +24,7 @@ import {
 } from '@truckermudgeon/map/projections';
 import type {
   CompanyItem,
+  Ferry,
   FerryItem,
   Node,
   Prefab,
@@ -67,10 +68,10 @@ export class RouteStepBuilder {
   private readonly steps: RouteStep[] = [];
   private readonly ferriesByUid: ReadonlyMap<
     bigint,
-    FerryItem & { name: string }
+    Ferry & { type: ItemType.Ferry }
   >;
   private readonly lookup: {
-    ferriesByUid: ReadonlyMap<bigint, FerryItem>;
+    ferriesByUid: ReadonlyMap<bigint, Ferry & { type: ItemType.Ferry }>;
     companiesByPrefab: ReadonlyMap<bigint, CompanyItem>;
   };
 
