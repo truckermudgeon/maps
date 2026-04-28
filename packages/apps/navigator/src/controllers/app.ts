@@ -478,6 +478,7 @@ export class AppControllerImpl implements AppController {
         if (!firstRoute) {
           console.warn('could not find route to', toNodeUid);
         }
+        const m = firstRoute.segments[0].steps[0].maneuver;
         this.setActiveRoute(store, firstRoute, client);
       }),
     );

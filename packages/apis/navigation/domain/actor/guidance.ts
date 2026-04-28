@@ -61,6 +61,7 @@ export function calculateSteps(
   // be that of the nearest road node or prefab node?
 
   const routeSteps = builder.build();
+
   const encoded = routeSteps.map(step => {
     return {
       ...step,

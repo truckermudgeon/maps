@@ -1,7 +1,12 @@
 import type { Mode, RouteKey } from '@truckermudgeon/map/routing';
 import type { SearchProperties } from '@truckermudgeon/map/types';
 import type { z } from 'zod';
-import type { BranchType } from './constants';
+import type {
+  BranchType,
+  NonRoundaboutBranchType,
+  NonTerminalBranchType,
+  RoundaboutBranchType,
+} from './constants';
 import type {
   JobLocationSchema,
   SpeedSchema,
@@ -11,11 +16,11 @@ import type { appRouter } from './trpc/router';
 
 export type AppRouter = typeof appRouter;
 
-export interface StepManeuver {
-  direction: BranchType;
+interface BaseStepManeuver {
   /**
    * The coordinates at which the maneuver takes place. E.g., a right turn's
-   * `lonLat` could be at the center of an intersection.
+   * `lonLat` could be at the center of an intersection.; a roundabout maneuver
+   * could be at the entry point of the roundabout.
    */
   lonLat: [number, number];
   // for 'depart':
@@ -30,9 +35,25 @@ export interface StepManeuver {
     icon?: string;
     text?: string;
   };
-  laneHint?: LaneHint;
   thenHint?: ThenHint;
 }
+
+export type StepManeuver = BaseStepManeuver &
+  (
+    | {
+        direction: NonRoundaboutBranchType;
+        laneHint?: LaneHint;
+      }
+    | {
+        direction: RoundaboutBranchType;
+        laneHint?: undefined;
+        roundaboutExitIndex: number;
+      }
+  );
+
+export type NonTerminalStepManeuver = StepManeuver & {
+  direction: NonTerminalBranchType;
+};
 
 interface LaneHint {
   lanes: {

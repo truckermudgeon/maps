@@ -33,10 +33,14 @@ import type {
   Road,
   RoundaboutData,
 } from '@truckermudgeon/map/types';
-import { BranchType } from '../../constants';
+import type {
+  NonTerminalBranchType,
+  RoundaboutBranchType,
+} from '../../constants';
+import { BranchType, isRoundaboutBranchType } from '../../constants';
 import type {
   RouteStep as _RouteStepPolyline,
-  StepManeuver as _StepManeuver,
+  NonTerminalStepManeuver,
 } from '../../types';
 import type { GraphAndMapData } from '../lookup-data';
 
@@ -52,18 +56,11 @@ type RouteStepMappedData = MappedDataForKeys<
   ]
 >;
 
-type NonTerminalBranchType = Exclude<
-  BranchType,
-  BranchType.DEPART | BranchType.ARRIVE
->;
-
 type StepItem = Prefab | Road | CompanyItem | FerryItem;
-type StepManeuver = Omit<_StepManeuver, 'direction'> & {
-  direction: NonTerminalBranchType;
-};
-type RouteStep = Omit<_RouteStepPolyline, 'geometry' | 'maneuver'> & {
+type StepManeuver = NonTerminalStepManeuver;
+
+type RouteStep = Omit<_RouteStepPolyline, 'geometry'> & {
   geometry: Position[];
-  maneuver: StepManeuver;
 };
 
 export class RouteStepBuilder {
@@ -188,14 +185,11 @@ export class RouteStepBuilder {
       return true;
     }
 
-    const maneuver = calculateManeuver(
-      startNode,
-      endNode,
-      prefab,
-      prefabDesc,
-      this.tsMapData.nodes,
-      this.signRTree,
-    );
+    const maneuver = calculatePrefabManeuver(startNode, endNode, prefab, {
+      tsMapData: this.tsMapData,
+      signRTree: this.signRTree,
+      roundabouts: this.roundaboutData,
+    });
     if (
       // all lanes of the prefab can be traveled straight through, and we're
       // supposed to go straight through, anyway.
@@ -262,7 +256,7 @@ export class RouteStepBuilder {
     endNode: Node,
     cost: { distance: number; duration: number },
   ): RouteStep {
-    let maneuver: StepManeuver;
+    let maneuver: NonTerminalStepManeuver;
     let arrowPoints;
     const trafficIcons: {
       type: 'stop' | 'trafficLight';
@@ -275,14 +269,11 @@ export class RouteStepBuilder {
     );
     switch (item.type) {
       case ItemType.Prefab:
-        maneuver = calculateManeuver(
-          startNode,
-          endNode,
-          item,
-          assertExists(this.tsMapData.prefabDescriptions.get(item.token)),
-          this.tsMapData.nodes,
-          this.signRTree,
-        );
+        maneuver = calculatePrefabManeuver(startNode, endNode, item, {
+          tsMapData: this.tsMapData,
+          roundabouts: this.roundaboutData,
+          signRTree: this.signRTree,
+        });
         // TODO make this part of calculateManeuver; make that a method.
         maneuver.lonLat = this.toLonLat(center(getExtent(geometry)));
         arrowPoints = geometry.length;
@@ -408,13 +399,15 @@ export class RouteStepBuilder {
   }
 }
 
-function calculateManeuver(
+function calculatePrefabManeuver(
   startNode: Node,
   endNode: Node,
   prefab: Prefab,
-  prefabDesc: PrefabDescription,
-  nodes: ReadonlyMap<bigint, Node>,
-  signRTree: GraphAndMapData['signRTree'],
+  context: {
+    tsMapData: MappedDataForKeys<['nodes', 'prefabDescriptions']>;
+    signRTree: GraphAndMapData['signRTree'];
+    roundabouts: RoundaboutData;
+  },
 ): StepManeuver {
   if (prefab.ferryLinkUid != null) {
     // special-case ferry prefabs: it's just a "through" maneuver, from the
@@ -434,15 +427,29 @@ function calculateManeuver(
   const endNodeIndex = targetNodeUids.findIndex(id => id === endNode.uid);
   assert(startNodeIndex >= 0 && endNodeIndex >= 0);
 
+  const {
+    tsMapData: { nodes, prefabDescriptions },
+    signRTree,
+    roundabouts,
+  } = context;
+
+  const isRoundabout = roundabouts.prefabTokens.has(prefab.token);
+  const prefabDesc = assertExists(
+    prefabDescriptions.get(prefab.token),
+    `unknown prefabDesc for token "${prefab.token}"`,
+  );
   const laneInfo = calculateLaneInfo(prefabDesc);
   const inputLanes = assertExists(laneInfo.get(startNodeIndex));
   let direction: NonTerminalBranchType | undefined;
   let exitAngle: number | undefined;
+  let roundaboutExitIndex: number | undefined;
   let isMerge = false;
   for (const inputLane of inputLanes) {
     for (const branch of inputLane.branches) {
       if (branch.targetNodeIndex === endNodeIndex) {
-        direction = toBranchType(branch.angle);
+        direction = isRoundabout
+          ? toRoundaboutBranchType(branch.angle)
+          : toBranchType(branch.angle);
         const exitPointB = toMapPosition(
           assertExists(branch.curvePoints.at(-1)),
           prefab,
@@ -461,6 +468,8 @@ function calculateManeuver(
             exitPointB[0] - exitPointA[0],
           ),
         );
+
+        // clockwise, counterclockwise
 
         // naive merge detection
         const numOtherInputNodesGoingToSameNode = laneInfo
@@ -571,30 +580,58 @@ function calculateManeuver(
     }
   }
 
-  return {
-    direction: isMerge ? BranchType.MERGE : direction,
-    lonLat: [0, 0], // TODO calculate
-    laneHint:
-      !isMerge && inputLanes.length > 1
-        ? {
-            lanes: inputLanes.map(lane => {
-              const branches = lane.branches.map(({ angle }) =>
-                toBranchType(angle),
-              );
-              return {
-                branches,
-                activeBranch: branches.includes(direction)
-                  ? direction
-                  : undefined,
-              };
-            }),
-          }
-        : undefined,
+  const baseManeuver = {
+    lonLat: [0, 0] as [number, number], // TODO calculate
     banner: maybeName,
+    laneHint: undefined,
   };
+
+  if (isMerge) {
+    return {
+      ...baseManeuver,
+      direction: BranchType.MERGE,
+    };
+  } else if (!isRoundaboutBranchType(direction)) {
+    assert(
+      !isRoundabout,
+      'cannot return a non-roundabout maneuver for a roundabout prefab',
+    );
+    return {
+      ...baseManeuver,
+      direction,
+      laneHint:
+        inputLanes.length > 1
+          ? {
+              lanes: inputLanes.map(lane => {
+                const branches = lane.branches.map(({ angle }) =>
+                  toBranchType(angle),
+                );
+                return {
+                  branches,
+                  activeBranch: branches.includes(direction)
+                    ? direction
+                    : undefined,
+                };
+              }),
+            }
+          : undefined,
+    };
+  } else {
+    assert(
+      isRoundabout,
+      'cannot return a roundabout maneuver for a non-roundabout prefab',
+    );
+    return {
+      ...baseManeuver,
+      direction,
+      roundaboutExitIndex: 0, // TODO calculate
+    };
+  }
 }
 
-function toBranchType(theta: number): NonTerminalBranchType {
+function toBranchType(
+  theta: number,
+): Exclude<NonTerminalBranchType, RoundaboutBranchType> {
   const degrees = Math.round(theta * 57.29578);
   const isNeg = degrees < 0;
   const abs = Math.abs(degrees);
@@ -608,6 +645,25 @@ function toBranchType(theta: number): NonTerminalBranchType {
     return isNeg ? BranchType.SHARP_LEFT : BranchType.SHARP_RIGHT;
   } else if (abs <= 180) {
     return isNeg ? BranchType.U_TURN_LEFT : BranchType.U_TURN_RIGHT;
+  } else {
+    throw new Error('unexpected angle ' + abs);
+  }
+}
+
+function toRoundaboutBranchType(theta: number): RoundaboutBranchType {
+  const degrees = Math.round(theta * 57.29578);
+  const isNeg = degrees < 0;
+  const abs = Math.abs(degrees);
+  if (abs <= 22.5) {
+    return BranchType.ROUND_T;
+  } else if (abs <= 67.5) {
+    return isNeg ? BranchType.ROUND_TL : BranchType.ROUND_TR;
+  } else if (abs <= 112.5) {
+    return isNeg ? BranchType.ROUND_L : BranchType.ROUND_R;
+  } else if (abs <= 157.5) {
+    return isNeg ? BranchType.ROUND_BL : BranchType.ROUND_BR;
+  } else if (abs <= 180) {
+    return BranchType.ROUND_B;
   } else {
     throw new Error('unexpected angle ' + abs);
   }
