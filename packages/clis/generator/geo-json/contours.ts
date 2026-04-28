@@ -1,5 +1,6 @@
 import type { Position } from '@truckermudgeon/base/geom';
 import type { ContourFeature } from '@truckermudgeon/map/types';
+import { feature, multiPolygon } from '@turf/helpers';
 import * as cliProgress from 'cli-progress';
 import { tricontour } from 'd3-tricontour';
 import polygonclipping from 'polygon-clipping';
@@ -52,7 +53,9 @@ export function convertToContoursGeoJson({
       ],
     ]);
   }
-  const sectorUnion = polygonclipping.union(boxes[0], ...boxes.slice(1));
+  const sectorUnionCoords = normalizeCoordinates(
+    multiPolygon(polygonclipping.union(boxes[0], ...boxes.slice(1))),
+  ).geometry.coordinates as Position[][][];
 
   logger.start(
     'calculating',
@@ -77,18 +80,14 @@ export function convertToContoursGeoJson({
   const features: ContourFeature[] = [];
   tric.thresholds(Array.from({ length: levels }, (_, i) => i + min));
   for (const c of tric.contours(points.slice())) {
-    const { value, type, coordinates } = c;
+    const multiPolygonCoords = normalizeCoordinates(feature(c)).geometry
+      .coordinates as Position[][][];
+
     const intersection = polygonclipping.intersection(
-      sectorUnion,
-      coordinates as Position[][][],
+      sectorUnionCoords,
+      multiPolygonCoords,
     );
-    features.push(
-      normalizeCoordinates({
-        type: 'Feature',
-        properties: { elevation: value },
-        geometry: { type, coordinates: intersection },
-      }),
-    );
+    features.push(multiPolygon(intersection, { elevation: c.value }));
     bar.increment();
   }
 
