@@ -13,6 +13,7 @@ import type {
   LabelMeta,
   MileageTarget,
 } from '@truckermudgeon/map/types';
+import { point } from '@turf/helpers';
 import fs from 'fs';
 import type { GeoJSON } from 'geojson';
 import { logger } from '../logger';
@@ -190,14 +191,7 @@ export class GenericLabel implements Label {
       position.every(v => v != null),
       'toGeoJsonFeature(): coordinates not defined',
     );
-    return this.data.normalizeFeature({
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: position,
-      },
-      properties: meta,
-    });
+    return this.data.normalizeFeature(point(position, meta));
   }
 }
 

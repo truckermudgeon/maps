@@ -54,6 +54,7 @@ import type {
   WithToken,
 } from '@truckermudgeon/map/types';
 import * as turf from '@turf/helpers';
+import { lineString, point, polygon } from '@turf/helpers';
 import lineOffset from '@turf/line-offset';
 import type { Quadtree } from 'd3-quadtree';
 import { quadtree } from 'd3-quadtree';
@@ -645,20 +646,15 @@ export function convertToMapGeoJson(
     logger.log('creating debug features...');
     debugCityAreaFeatures.push(...rankedCities.flatMap(cityToAreaFeatures));
     for (const n of nodes.values()) {
-      debugNodeFeatures.push({
-        type: 'Feature',
-        properties: {
+      debugNodeFeatures.push(
+        point([n.x, n.y], {
           type: 'debug',
           name: 'node',
           nodeUid: n.uid,
           nodeForwardItemUid: n.forwardItemUid,
           nodeBackwardItemUid: n.backwardItemUid,
-        },
-        geometry: {
-          type: 'Point',
-          coordinates: [n.x, n.y],
-        },
-      });
+        }),
+      );
     }
   }
 
@@ -1135,21 +1131,17 @@ function ferryToFeature(
     .join(' – ');
 
   if (conn.intermediatePoints.length === 0) {
-    return {
-      type: 'Feature',
-      geometry: {
-        type: 'LineString',
-        coordinates: [
-          [ferry.x, ferry.y],
-          [conn.x, conn.y],
-        ],
-      },
-      properties: {
+    return lineString(
+      [
+        [ferry.x, ferry.y],
+        [conn.x, conn.y],
+      ],
+      {
         type: ferry.train ? 'train' : 'ferry',
         name: nameAndCountry,
         dlcGuard,
       },
-    };
+    );
   }
 
   const controlPoints = [
@@ -1201,18 +1193,11 @@ function ferryToFeature(
     }
     splinePoints.push(...toSplinePoints(prev, curr));
   }
-  return {
-    type: 'Feature',
-    geometry: {
-      type: 'LineString',
-      coordinates: splinePoints,
-    },
-    properties: {
-      type: ferry.train ? 'train' : 'ferry',
-      name: nameAndCountry,
-      dlcGuard,
-    },
-  };
+  return lineString(splinePoints, {
+    type: ferry.train ? 'train' : 'ferry',
+    name: nameAndCountry,
+    dlcGuard,
+  });
 }
 
 function poiToFeature(poi: Poi): PoiFeature {
@@ -1223,22 +1208,15 @@ function poiToFeature(poi: Poi): PoiFeature {
     poiName = toDealerLabel(poi.prefabPath);
   }
 
-  return {
-    type: 'Feature',
-    properties: {
-      type: 'poi',
-      sprite: poi.icon,
-      poiType: poi.type,
-      poiName,
-      dlcGuard: 'dlcGuard' in poi ? poi.dlcGuard : undefined,
-      prefabUid: 'prefabUid' in poi ? poi.prefabUid : undefined,
-      secret: !!poi.secret,
-    },
-    geometry: {
-      type: 'Point',
-      coordinates: [poi.x, poi.y],
-    },
-  };
+  return point([poi.x, poi.y], {
+    type: 'poi',
+    sprite: poi.icon,
+    poiType: poi.type,
+    poiName,
+    dlcGuard: 'dlcGuard' in poi ? poi.dlcGuard : undefined,
+    prefabUid: 'prefabUid' in poi ? poi.prefabUid : undefined,
+    secret: !!poi.secret,
+  });
 }
 
 type CityWithScaleRank = City & {
@@ -1248,31 +1226,19 @@ type CityWithScaleRank = City & {
 
 function cityToFeature(city: CityWithScaleRank): CityFeature {
   const cityArea = assertExists(city.areas.find(a => !a.hidden));
-  return {
-    type: 'Feature',
-    properties: {
-      type: 'city',
-      name: city.name,
-      scaleRank: city.scaleRank,
-      capital: city.capital,
-      dlcGuard: city.dlcGuard,
-    },
-    geometry: {
-      type: 'Point',
-      coordinates: [city.x + cityArea.width / 2, city.y + cityArea.height / 2],
-    },
-  };
+  return point([city.x + cityArea.width / 2, city.y + cityArea.height / 2], {
+    type: 'city',
+    name: city.name,
+    scaleRank: city.scaleRank,
+    capital: city.capital,
+    dlcGuard: city.dlcGuard,
+  });
 }
 
 function cityToAreaFeatures(city: CityWithScaleRank): DebugFeature[] {
-  return city.areas.map(area => ({
-    type: 'Feature',
-    properties: {
-      type: 'debug',
-    },
-    geometry: {
-      type: 'Polygon',
-      coordinates: [
+  return city.areas.map(area =>
+    polygon(
+      [
         [
           [area.x, area.y],
           [area.x + area.width, area.y],
@@ -1281,22 +1247,18 @@ function cityToAreaFeatures(city: CityWithScaleRank): DebugFeature[] {
           [area.x, area.y],
         ],
       ],
-    },
-  }));
+      {
+        type: 'debug',
+      },
+    ),
+  );
 }
 
 function countryToFeature(country: Country): CountryFeature {
-  return {
-    type: 'Feature',
-    properties: {
-      type: 'country',
-      name: country.name,
-    },
-    geometry: {
-      type: 'Point',
-      coordinates: [country.x, country.y],
-    },
-  };
+  return point([country.x, country.y], {
+    type: 'country',
+    name: country.name,
+  });
 }
 
 function augmentWithRoadContext(

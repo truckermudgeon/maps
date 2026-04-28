@@ -36,7 +36,7 @@ import type {
   ServiceArea,
   WithPath,
 } from '@truckermudgeon/map/types';
-import { lineString, point } from '@turf/helpers';
+import { featureCollection, lineString, point } from '@turf/helpers';
 import type { Quadtree } from 'd3-quadtree';
 import { quadtree } from 'd3-quadtree';
 import type { GeoJSON } from 'geojson';
@@ -109,10 +109,7 @@ export function generateGraph(
     assertExists(dlcGuardSpatialIndex.findClosest(node.x, node.y)).dlcGuard;
   const toNode = (nodeUid: bigint): Node => assertExists(nodes.get(nodeUid));
 
-  const graphDebug: DebugFC = {
-    type: 'FeatureCollection',
-    features: [],
-  };
+  const graphDebug: DebugFC = featureCollection([]);
 
   //
   // Set up supporting data based on input data

@@ -1,6 +1,6 @@
 import { writeGeojsonFile } from '@truckermudgeon/io';
+import { featureCollection } from '@turf/helpers';
 import fs from 'fs';
-import type { GeoJSON } from 'geojson';
 import path from 'path';
 import type { Argv, BuilderArguments } from 'yargs';
 import { logger } from '../logger';
@@ -156,12 +156,11 @@ export function handler(args: BuilderArguments<typeof builder>) {
     // For GeoJSON output, skip labels not considered "valid", which are those
     // with certain attributes missing or with a `kind` attribute of "unnamed".
     // Optionally (with --all), output everything we have coordinates for.
-    const json: GeoJSON.FeatureCollection = {
-      type: 'FeatureCollection',
-      features: labels
+    const json = featureCollection(
+      labels
         .filter(l => (args.all ? l.meta.easting && l.meta.southing : l.isValid))
         .map(l => l.toGeoJsonFeature()),
-    };
+    );
     logger.log(
       `${args.all ? 'all' : 'valid'} GeoJSON map label features:`,
       json.features.length,

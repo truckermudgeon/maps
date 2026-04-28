@@ -4,6 +4,7 @@ import { toSplinePoints } from '@truckermudgeon/base/geom';
 import type { MapDataKeys, MappedDataForKeys } from '@truckermudgeon/io';
 import { toMapPosition } from '@truckermudgeon/map/prefabs';
 import type { DebugFeature } from '@truckermudgeon/map/types';
+import { featureCollection, multiLineString } from '@turf/helpers';
 import type { GeoJSON } from 'geojson';
 import { createNormalizeFeature } from './normalize';
 
@@ -65,23 +66,15 @@ export function convertToPrefabCurvesGeoJson(
       lineStrings.push(points.map(tx));
     }
 
-    curveFeatures.push({
-      type: 'Feature',
-      properties: {
+    curveFeatures.push(
+      multiLineString(lineStrings, {
         type: 'debug',
         debugType: 'lanes',
         prefabUid: p.uid,
         prefabToken: p.token,
-      },
-      geometry: {
-        type: 'MultiLineString',
-        coordinates: lineStrings,
-      },
-    });
+      }),
+    );
   }
 
-  return {
-    type: 'FeatureCollection',
-    features: curveFeatures.map(normalizeFeature),
-  };
+  return featureCollection(curveFeatures.map(normalizeFeature));
 }

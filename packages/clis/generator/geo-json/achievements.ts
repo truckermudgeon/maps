@@ -16,6 +16,7 @@ import type {
   Trigger,
   WithToken,
 } from '@truckermudgeon/map/types';
+import { featureCollection, point } from '@turf/helpers';
 import { buildDlcGuardSpatialIndex } from '../dlc-guards';
 import { logger } from '../logger';
 import { createNormalizeFeature } from './normalize';
@@ -438,19 +439,14 @@ export function convertToAchievementsGeoJson(tsMapData: AchievementsMapData) {
         ...new Set<string>(points.map(p => JSON.stringify(p))),
       ].map(s => JSON.parse(s) as Point);
 
-      return uniqPoints.map(({ coordinates: { x, y }, dlcGuard }) => ({
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: [x, y] },
-        properties: { name, dlcGuard },
-      }));
+      return uniqPoints.map(({ coordinates: { x, y }, dlcGuard }) =>
+        point([x, y], { name, dlcGuard }),
+      );
     },
   );
 
   const normalizeCoordinates = createNormalizeFeature(map, 4);
-  return {
-    type: 'FeatureCollection',
-    features: features.map(normalizeCoordinates),
-  } as const;
+  return featureCollection(features.map(normalizeCoordinates));
 }
 
 function calcDlcGuard(startDlc: number, endDlc: number) {
