@@ -252,15 +252,9 @@ export function convertToMapGeoJson(
       startNodeUid: d.startNodeUid,
       endNodeUid: d.endNodeUid,
     };
-    dividerFeatures.push({
-      type: 'Feature',
-      id: d.uid.toString(16),
-      properties,
-      geometry: {
-        type: 'LineString',
-        coordinates: points,
-      },
-    });
+    dividerFeatures.push(
+      lineString(points, properties, { id: d.uid.toString(16) }),
+    );
   }
 
   logger.log('creating roads and quadtree of prefab-adjacent roads...');
@@ -1043,19 +1037,14 @@ function areaToFeature(
   // Polygon coordinates need to end where they start.
   points.push(points[0]);
   return {
-    type: 'Feature',
-    id: area.uid.toString(16),
-    properties: {
+    ...polygon([points], {
       type: 'mapArea',
       dlcGuard: area.dlcGuard,
       secret: !!area.secret,
       zIndex: area.drawOver ? 1 : 0,
       color: area.color,
-    },
-    geometry: {
-      type: 'Polygon',
-      coordinates: [points],
-    },
+    }),
+    id: area.uid.toString(16),
   };
 }
 
@@ -1352,23 +1341,19 @@ function prefabToFeatures(
       .find(n => distance(n, point) < 10);
 
   return [
-    ...polygons.map<PrefabFeature>((polygon, i) => {
-      const txPoints = polygon.points.map(tx);
+    ...polygons.map<PrefabFeature>((poly, i) => {
+      const txPoints = poly.points.map(tx);
+      // Polygon coordinates need to end where they start.
+      txPoints.push(txPoints[0]);
       return {
-        type: 'Feature',
-        id: prefab.uid.toString(16) + 'poly' + i,
-        properties: {
+        ...polygon([txPoints], {
           type: 'prefab',
           dlcGuard: prefab.dlcGuard,
           secret: prefab.secret ?? false,
-          zIndex: polygon.zIndex,
-          color: polygon.color,
-        },
-        geometry: {
-          type: 'Polygon',
-          // Polygon coordinates need to end where they start.
-          coordinates: [[...txPoints, txPoints.at(-1)!]],
-        },
+          zIndex: poly.zIndex,
+          color: poly.color,
+        }),
+        id: prefab.uid.toString(16) + 'poly' + i,
       };
     }),
     ...roadStrings.map<RoadFeature>((road, i) => {
@@ -1443,9 +1428,7 @@ function prefabToFeatures(
         );
       }
       return {
-        type: 'Feature',
-        id: prefab.uid.toString(16) + 'road' + i,
-        properties: {
+        ...lineString(txPoints, {
           type: 'road',
           dlcGuard: prefab.dlcGuard,
           secret: prefab.secret ?? false,
@@ -1457,11 +1440,8 @@ function prefabToFeatures(
           hidden: !!prefab.hidden,
           startNodeUid: findClosestNode(txPoints[0])?.uid,
           endNodeUid: findClosestNode(txPoints.at(-1)!)?.uid,
-        },
-        geometry: {
-          type: 'LineString',
-          coordinates: txPoints,
-        },
+        }),
+        id: prefab.uid.toString(16) + 'road' + i,
       };
     }),
   ];
@@ -1531,16 +1511,11 @@ function roadToFeature(
     // single carriageway
     return [
       {
-        type: 'Feature',
-        id: road.uid.toString(16),
-        properties: {
+        ...lineString(points, {
           ...properties,
           //maybeDivided: road.maybeDivided === true,
-        },
-        geometry: {
-          type: 'LineString',
-          coordinates: points,
-        },
+        }),
+        id: road.uid.toString(16),
       },
     ];
   }
@@ -1561,30 +1536,20 @@ function roadToFeature(
 
   return [
     {
-      type: 'Feature',
-      id: road.uid.toString(16),
-      properties: {
+      ...lineString(aLine.geometry.coordinates, {
         ...properties,
         leftLanes: 0,
         //offset,
-      },
-      geometry: {
-        type: 'LineString',
-        coordinates: aLine.geometry.coordinates,
-      },
+      }),
+      id: road.uid.toString(16),
     },
     {
-      type: 'Feature',
-      id: road.uid.toString(16),
-      properties: {
+      ...lineString(bLine.geometry.coordinates, {
         ...properties,
         rightLanes: 0,
         //offset,
-      },
-      geometry: {
-        type: 'LineString',
-        coordinates: bLine.geometry.coordinates,
-      },
+      }),
+      id: road.uid.toString(16),
     },
   ];
 }
