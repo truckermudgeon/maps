@@ -47,7 +47,7 @@ export type StepManeuver = BaseStepManeuver &
     | {
         direction: RoundaboutBranchType;
         laneHint?: undefined;
-        roundaboutExitIndex: number;
+        roundaboutExitNumber: number;
       }
   );
 

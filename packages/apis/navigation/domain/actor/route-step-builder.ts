@@ -10,6 +10,7 @@ import {
   toRadians,
 } from '@truckermudgeon/base/geom';
 import { UnreachableError } from '@truckermudgeon/base/precon';
+import { formatOrdinal } from '@truckermudgeon/base/text';
 import type { MappedDataForKeys } from '@truckermudgeon/io';
 import { ItemType } from '@truckermudgeon/map/constants';
 import { getCommonItem } from '@truckermudgeon/map/get-common-item';
@@ -442,7 +443,7 @@ function calculatePrefabManeuver(
   const inputLanes = assertExists(laneInfo.get(startNodeIndex));
   let direction: NonTerminalBranchType | undefined;
   let exitAngle: number | undefined;
-  let roundaboutExitIndex: number | undefined;
+  let roundaboutExitNumber: number | undefined;
   let isMerge = false;
   for (const inputLane of inputLanes) {
     for (const branch of inputLane.branches) {
@@ -469,7 +470,8 @@ function calculatePrefabManeuver(
           ),
         );
 
-        // clockwise, counterclockwise
+        roundaboutExitNumber =
+          (startNodeIndex - endNodeIndex + laneInfo.size) % laneInfo.size;
 
         // naive merge detection
         const numOtherInputNodesGoingToSameNode = laneInfo
@@ -621,10 +623,25 @@ function calculatePrefabManeuver(
       isRoundabout,
       'cannot return a roundabout maneuver for a non-roundabout prefab',
     );
+    roundaboutExitNumber = assertExists(
+      roundaboutExitNumber,
+      'roundaboutExit must be calculated',
+    );
+    // TODO looks like sometimes, Google Maps just says "turn left onto..."
+    //  instead of "take the 2nd exit to..."
+    const bannerText = `Take the ${formatOrdinal(roundaboutExitNumber)} exit`;
+    if (baseManeuver.banner?.text != null) {
+      baseManeuver.banner.text = `${bannerText} to ${baseManeuver.banner.text}`;
+    } else {
+      baseManeuver.banner ??= {
+        text: bannerText,
+      };
+    }
+
     return {
       ...baseManeuver,
       direction,
-      roundaboutExitIndex: 0, // TODO calculate
+      roundaboutExitNumber,
     };
   }
 }
