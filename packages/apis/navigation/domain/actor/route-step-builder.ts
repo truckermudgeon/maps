@@ -472,6 +472,9 @@ function calculatePrefabManeuver(
 
         roundaboutExitNumber =
           (startNodeIndex - endNodeIndex + laneInfo.size) % laneInfo.size;
+        if (roundaboutExitNumber === 0) {
+          roundaboutExitNumber = laneInfo.size;
+        }
 
         // naive merge detection
         const numOtherInputNodesGoingToSameNode = laneInfo

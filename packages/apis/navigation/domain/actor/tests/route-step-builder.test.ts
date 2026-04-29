@@ -28,6 +28,21 @@ describe('RouteStepBuilder', () => {
   it('builds steps including prefab roundabouts (prefab node to prefab node)', () => {
     // start at west end of 4-point roundabout
     const start = getNode(0x56b0ba5e5e50004n);
+    // end at west end of 4-point roundabout
+    const end = getNode(0x56b0ba5e5e50004n);
+
+    builder.add(start, end, dummyCost);
+    const steps = builder.build();
+    expect(steps.length).toBe(1);
+    expect(steps[0].maneuver).toMatchObject({
+      direction: BranchType.ROUND_B,
+      roundaboutExitNumber: 4,
+    });
+  });
+
+  it('builds steps including prefab roundabouts (prefab node to prefab node)', () => {
+    // start at west end of 4-point roundabout
+    const start = getNode(0x56b0ba5e5e50004n);
     // end at north end of 4-point roundabout
     const end = getNode(0x52ce47926150002n);
 
