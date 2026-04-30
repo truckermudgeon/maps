@@ -41,6 +41,20 @@ function kvWithPublicKey(): MockKvStore {
   });
 }
 
+async function signLegacy(
+  telemetryId: string,
+  timestamp: number,
+): Promise<string> {
+  // Mirrors the pre-2026-04 client encoding bug: JSON serialized as
+  // base64url. Kept here to verify the server's backward-compat path.
+  const payload = Buffer.from(
+    JSON.stringify({ telemetryId, timestamp }),
+    'base64url',
+  );
+  const sigBytes = await crypto.subtle.sign('Ed25519', privateKey, payload);
+  return Buffer.from(sigBytes).toString('base64url');
+}
+
 describe('verifyReconnectSignature', () => {
   it('returns ok with public key when signature, timestamp, and key are all valid', async () => {
     const timestamp = Date.now();
@@ -55,6 +69,19 @@ describe('verifyReconnectSignature', () => {
     if (result.ok) {
       expect(result.publicKey).toBe(publicKey);
     }
+  });
+
+  // TODO(2026-05-30): remove together with the legacy fallback in verify-reconnect.ts
+  it('accepts legacy base64url-encoded payload signatures (backward compat)', async () => {
+    const timestamp = Date.now();
+    const signature = await signLegacy(TELEMETRY_ID, timestamp);
+
+    const result = await verifyReconnectSignature(
+      { telemetryId: TELEMETRY_ID, timestamp, signature },
+      kvWithPublicKey(),
+    );
+
+    expect(result.ok).toBe(true);
   });
 
   it.each([

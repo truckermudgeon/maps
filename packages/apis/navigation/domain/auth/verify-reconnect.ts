@@ -32,15 +32,36 @@ export async function verifyReconnectSignature(
     return { ok: false, reason: ReconnectRejectionReason.INVALID_TIMESTAMP };
   }
 
-  const isSignatureValid = await crypto.subtle.verify(
-    'Ed25519',
-    publicKey,
-    Buffer.from(signature, 'base64url'),
-    Buffer.from(JSON.stringify({ telemetryId, timestamp }), 'utf8'),
-  );
-  if (!isSignatureValid) {
-    return { ok: false, reason: ReconnectRejectionReason.INVALID_SIGNATURE };
+  const signatureBytes = Buffer.from(signature, 'base64url');
+  const payloadJson = JSON.stringify({ telemetryId, timestamp });
+
+  if (
+    await crypto.subtle.verify(
+      'Ed25519',
+      publicKey,
+      signatureBytes,
+      Buffer.from(payloadJson, 'utf8'),
+    )
+  ) {
+    return { ok: true, publicKey };
   }
 
-  return { ok: true, publicKey };
+  // TODO(2026-05-30): remove this legacy fallback. Older clients signed the
+  // payload as Buffer.from(json, 'base64url'), which silently decoded almost
+  // none of the JSON (it contains non-base64url characters). Both signer and
+  // verifier matched, so it 'worked', but the effective signed message was
+  // nearly constant. New clients use 'utf8'; drop this branch once enough
+  // time has passed for paired clients to upgrade.
+  if (
+    await crypto.subtle.verify(
+      'Ed25519',
+      publicKey,
+      signatureBytes,
+      Buffer.from(payloadJson, 'base64url'),
+    )
+  ) {
+    return { ok: true, publicKey };
+  }
+
+  return { ok: false, reason: ReconnectRejectionReason.INVALID_SIGNATURE };
 }
