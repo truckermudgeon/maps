@@ -1309,7 +1309,7 @@ function augmentWithRoadContext(
 
 function prefabToFeatures(
   prefab: Prefab,
-  prefabDescription: PrefabDescription,
+  prefabDescription: WithPath<PrefabDescription>,
   nodes: ReadonlyMap<bigint, Node>,
   // TODO make use of this to better position roads within a prefab
   _roadMap: ReadonlyMap<bigint, Road>,
@@ -1433,6 +1433,7 @@ function prefabToFeatures(
           dlcGuard: prefab.dlcGuard,
           secret: prefab.secret ?? false,
           prefab: prefab.token,
+          prefabPath: prefabDescription.path,
           roadType: nearestRoadType,
           offset: road.offset,
           leftLanes: road.lanesLeft,
