@@ -26,6 +26,7 @@ import {
   fromWgs84ToEts2Coords,
 } from '@truckermudgeon/map/projections';
 import { distance } from '@turf/distance';
+import { featureCollection, lineString, point } from '@turf/helpers';
 import type { GeoJSON } from 'geojson';
 import type {
   GeoJSONSource,
@@ -178,25 +179,14 @@ export const ContextMenu = () => {
 
     // based on https://maplibre.org/maplibre-gl-js/docs/examples/measure-distances/
 
-    const linestring: GeoJSON.Feature<GeoJSON.LineString, { id: number }> = {
-      type: 'Feature',
-      geometry: {
-        type: 'LineString',
-        coordinates: measuringPoints,
-      },
-      properties: { id: newId() },
-    };
-
-    const geojson: GeoJSON.FeatureCollection<
+    const linestring = lineString(measuringPoints, { id: newId() });
+    const geojson = featureCollection<
       GeoJSON.Point | GeoJSON.LineString,
       { id: number }
-    > = {
-      type: 'FeatureCollection',
-      features: [
-        ...measuringPoints.map(p => point(p, newId())),
-        ...(measuringPoints.length > 1 ? [linestring] : []),
-      ],
-    };
+    >([
+      ...measuringPoints.map(p => point(p, { id: newId() })),
+      ...(measuringPoints.length > 1 ? [linestring] : []),
+    ]);
 
     const setCursor = (e: MapMouseEvent) => {
       const features = map.queryRenderedFeatures(e.point, {
@@ -239,7 +229,7 @@ export const ContextMenu = () => {
         const id = (features[0].properties as { id: number }).id;
         geojson.features = geojson.features.filter(p => p.properties.id !== id);
       } else {
-        geojson.features.push(point(e.lngLat.toArray(), newId()));
+        geojson.features.push(point(e.lngLat.toArray(), { id: newId() }));
       }
 
       if (geojson.features.length > 1) {
@@ -508,19 +498,6 @@ function toFixedString(n: number, fracDigits: number): string {
   return Number(n.toFixed(fracDigits)).toLocaleString(undefined, {
     maximumFractionDigits: fracDigits,
   });
-}
-
-function point(lngLat: [number, number], id: number): PointFeature {
-  return {
-    type: 'Feature',
-    geometry: {
-      type: 'Point',
-      coordinates: lngLat,
-    },
-    properties: {
-      id,
-    },
-  };
 }
 
 function getDistanceReadout(
