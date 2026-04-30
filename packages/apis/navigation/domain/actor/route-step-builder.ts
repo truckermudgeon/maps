@@ -327,7 +327,6 @@ export class RouteStepBuilder {
       };
     }
 
-    step.arrowPoints = step.geometry.length;
     const prevStep = this.steps.at(-1);
     if (prevStep) {
       this.averageStepJoinPoint(prevStep, step);

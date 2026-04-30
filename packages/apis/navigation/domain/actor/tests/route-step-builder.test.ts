@@ -56,7 +56,7 @@ describe('RouteStepBuilder', () => {
         },
         // entry step: full path inside the roundabout, excluding the exit curve
         geometry: Array(27).fill(expect.anything()),
-        arrowPoints: 27,
+        arrowPoints: 5,
       },
       {
         maneuver: {
