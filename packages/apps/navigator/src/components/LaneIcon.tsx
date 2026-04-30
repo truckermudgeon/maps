@@ -636,6 +636,54 @@ const roundaboutDegrees: Record<RoundaboutProps['type'], number> = {
   [BranchType.ROUND_B]: 359,
 };
 
+function roundaboutArcPath(
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  radius: number,
+  sweepDegrees: number,
+): string {
+  return (
+    `M ${from.x} ${from.y}` +
+    `A ${radius} ${radius} 0 ${sweepDegrees > 180 ? 1 : 0} 0 ${to.x} ${to.y}`
+  );
+}
+
+const RoundaboutExitArrow = (props: {
+  end: { x: number; y: number };
+  endAngle: number;
+  strokeWidth: number;
+  arrowRotation: number;
+}) => {
+  const { end, endAngle, strokeWidth, arrowRotation } = props;
+  const stemLength = 5;
+  const cos = Math.cos(toRadians(endAngle));
+  const sin = Math.sin(toRadians(endAngle));
+  const stemStart = {
+    x: end.x + (-strokeWidth / 2) * cos,
+    y: end.y + (-strokeWidth / 2) * sin,
+  };
+  const stemEnd = {
+    x: end.x + (-strokeWidth / 2 + stemLength + 1) * cos,
+    y: end.y + (-strokeWidth / 2 + stemLength + 1) * sin,
+  };
+  const arrow = {
+    x: end.x + (stemLength + 2) * cos,
+    y: end.y + (stemLength + 2) * sin,
+  };
+  return (
+    <>
+      <line x1={stemStart.x} y1={stemStart.y} x2={stemEnd.x} y2={stemEnd.y} />
+      <use
+        href="#arrow"
+        x={arrow.x}
+        y={arrow.y}
+        transform-origin={`${arrow.x} ${arrow.y}`}
+        transform={`rotate(${arrowRotation})`}
+      />
+    </>
+  );
+};
+
 const Roundabout = (props: RoundaboutProps) => {
   const { type, highlightColor, dimColor } = props;
   const center = 12;
@@ -646,35 +694,15 @@ const Roundabout = (props: RoundaboutProps) => {
   const startAngle = 90;
   const endAngle = startAngle - degrees; // CCW means decreasing angle
 
-  const start = {
-    x: center + radius * Math.cos(toRadians(startAngle)),
-    y: center + radius * Math.sin(toRadians(startAngle)),
-  };
-  const end = {
-    x: center + radius * Math.cos(toRadians(endAngle)),
-    y: center + radius * Math.sin(toRadians(endAngle)),
-  };
-  const arcPath =
-    `M ${start.x} ${start.y}` +
-    `A ${radius} ${radius} 0 ${degrees > 180 ? 1 : 0} 0 ${end.x} ${end.y}`;
+  const pt = (angle: number) => ({
+    x: center + radius * Math.cos(toRadians(angle)),
+    y: center + radius * Math.sin(toRadians(angle)),
+  });
+  const start = pt(startAngle);
+  const end = pt(endAngle);
+  const arcPath = roundaboutArcPath(start, end, radius, degrees);
 
   const stemLength = 5;
-  const arrowStemStart = {
-    x: end.x + (-strokeWidth / 2) * Math.cos(toRadians(endAngle)),
-    y: end.y + (-strokeWidth / 2) * Math.sin(toRadians(endAngle)),
-  };
-  const arrowStemEnd = {
-    x:
-      end.x +
-      (-strokeWidth / 2 + stemLength + 1) * Math.cos(toRadians(endAngle)),
-    y:
-      end.y +
-      (-strokeWidth / 2 + stemLength + 1) * Math.sin(toRadians(endAngle)),
-  };
-  const arrow = {
-    x: end.x + (stemLength + 2) * Math.cos(toRadians(endAngle)),
-    y: end.y + (stemLength + 2) * Math.sin(toRadians(endAngle)),
-  };
 
   return (
     <g stroke={highlightColor} strokeWidth={strokeWidth}>
@@ -692,18 +720,11 @@ const Roundabout = (props: RoundaboutProps) => {
         x2={start.x}
         y2={start.y - strokeWidth / 2 + stemLength}
       />
-      <line
-        x1={arrowStemStart.x}
-        y1={arrowStemStart.y}
-        x2={arrowStemEnd.x}
-        y2={arrowStemEnd.y}
-      />
-      <use
-        href="#arrow"
-        x={arrow.x}
-        y={arrow.y}
-        transform-origin={`${arrow.x} ${arrow.y}`}
-        transform={`rotate(${180 - degrees})`}
+      <RoundaboutExitArrow
+        end={end}
+        endAngle={endAngle}
+        strokeWidth={strokeWidth}
+        arrowRotation={180 - degrees}
       />
     </g>
   );
@@ -732,33 +753,13 @@ const ExitRoundabout = (props: {
   const end = pt(endAngle);
   const dimEnd = pt(dimEndAngle);
 
-  const arc = (
-    from: { x: number; y: number },
-    to: { x: number; y: number },
-    degrees: number,
-  ) =>
-    `M ${from.x} ${from.y}A ${radius} ${radius} 0 ${degrees > 180 ? 1 : 0} 0 ${to.x} ${to.y}`;
-
-  const dimArcPath = arc(start, dimEnd, startAngle - dimEndAngle);
-  const arcPath = arc(start, end, startAngle - endAngle);
-
-  const stemLength = 5;
-  const arrowStemStart = {
-    x: end.x + (-strokeWidth / 2) * Math.cos(toRadians(endAngle)),
-    y: end.y + (-strokeWidth / 2) * Math.sin(toRadians(endAngle)),
-  };
-  const arrowStemEnd = {
-    x:
-      end.x +
-      (-strokeWidth / 2 + stemLength + 1) * Math.cos(toRadians(endAngle)),
-    y:
-      end.y +
-      (-strokeWidth / 2 + stemLength + 1) * Math.sin(toRadians(endAngle)),
-  };
-  const arrow = {
-    x: end.x + (stemLength + 2) * Math.cos(toRadians(endAngle)),
-    y: end.y + (stemLength + 2) * Math.sin(toRadians(endAngle)),
-  };
+  const dimArcPath = roundaboutArcPath(
+    start,
+    dimEnd,
+    radius,
+    startAngle - dimEndAngle,
+  );
+  const arcPath = roundaboutArcPath(start, end, radius, startAngle - endAngle);
 
   return (
     <g
@@ -768,13 +769,12 @@ const ExitRoundabout = (props: {
     >
       <path stroke={dimColor} fill="none" d={dimArcPath} />
       <path fill="none" d={arcPath} />
-      <line
-        x1={arrowStemStart.x}
-        y1={arrowStemStart.y}
-        x2={arrowStemEnd.x}
-        y2={arrowStemEnd.y}
+      <RoundaboutExitArrow
+        end={end}
+        endAngle={endAngle}
+        strokeWidth={strokeWidth}
+        arrowRotation={0}
       />
-      <use href="#arrow" x={arrow.x} y={arrow.y} />
     </g>
   );
 };
