@@ -911,21 +911,19 @@ const emptyFeatureCollection: GeoJSON.FeatureCollection = {
   features: [],
 } as const;
 
-export function toRouteFeatures(route: Route): GeoJSON.FeatureCollection {
+export function toRouteFeatures(
+  route: Route,
+): GeoJSON.FeatureCollection<GeoJSON.Point | GeoJSON.LineString> {
+  // TODO define a type for these Point properties
   const iconFeatures: GeoJSON.Feature<GeoJSON.Point>[] = route.segments.flatMap(
     segment =>
       segment.steps.flatMap(step =>
-        step.trafficIcons.flatMap(icon => ({
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: icon.lonLat,
-          },
-          properties: {
+        step.trafficIcons.flatMap(icon =>
+          point(icon.lonLat, {
             type: 'traffic',
             sprite: icon.type === 'stop' ? 'stopsign' : 'trafficlight',
-          },
-        })),
+          }),
+        ),
       ),
   );
   if (route.segments.length && route.segments[0].steps.length) {
@@ -940,22 +938,14 @@ export function toRouteFeatures(route: Route): GeoJSON.FeatureCollection {
     }
   }
 
-  return {
-    type: 'FeatureCollection',
-    features: [
-      {
-        type: 'Feature',
-        geometry: {
-          type: 'LineString',
-          coordinates: route.segments.flatMap(segment =>
-            segment.steps.flatMap(step => polyline.decode(step.geometry)),
-          ),
-        },
-        properties: null,
-      },
-      ...iconFeatures,
-    ],
-  };
+  return featureCollection<GeoJSON.Point | GeoJSON.LineString>([
+    lineString(
+      route.segments.flatMap(segment =>
+        segment.steps.flatMap(step => polyline.decode(step.geometry)),
+      ),
+    ),
+    ...iconFeatures,
+  ]);
 }
 
 function calculateDelta(currBearing: number, nextBearing: number): number {

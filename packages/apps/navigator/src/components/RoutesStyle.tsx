@@ -1,5 +1,6 @@
 import { Preconditions } from '@truckermudgeon/base/precon';
 import { routingModes } from '@truckermudgeon/map/routing';
+import { featureCollection } from '@turf/helpers';
 import type {
   DataDrivenPropertyValueSpecification,
   ExpressionSpecification,
@@ -59,12 +60,7 @@ export const RoutesStyle = () => {
         id={'activeRoute'}
         type={'geojson'}
         lineMetrics={true}
-        data={
-          {
-            type: 'FeatureCollection',
-            features: [],
-          } as GeoJSON.FeatureCollection
-        }
+        data={featureCollection([])}
       >
         <Layer
           id={'activeRouteLayer-case'}
@@ -166,12 +162,7 @@ export const RoutesStyle = () => {
           id={`previewRoute-${i}`}
           type={'geojson'}
           lineMetrics={true}
-          data={
-            {
-              type: 'FeatureCollection',
-              features: [],
-            } as GeoJSON.FeatureCollection
-          }
+          data={featureCollection([])}
         >
           <Layer
             id={`previewRouteLayer-${i}-case`}

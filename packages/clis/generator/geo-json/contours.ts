@@ -1,6 +1,6 @@
 import type { Position } from '@truckermudgeon/base/geom';
 import type { ContourFeature } from '@truckermudgeon/map/types';
-import { feature, multiPolygon } from '@turf/helpers';
+import { feature, featureCollection, multiPolygon } from '@turf/helpers';
 import * as cliProgress from 'cli-progress';
 import { tricontour } from 'd3-tricontour';
 import polygonclipping from 'polygon-clipping';
@@ -98,8 +98,5 @@ export function convertToContoursGeoJson({
     'seconds',
   );
 
-  return {
-    type: 'FeatureCollection',
-    features,
-  } as const;
+  return featureCollection(features);
 }

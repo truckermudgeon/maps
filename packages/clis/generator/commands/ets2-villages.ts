@@ -1,6 +1,6 @@
 import { readMapData, writeGeojsonFile } from '@truckermudgeon/io';
+import { featureCollection, point } from '@turf/helpers';
 import fs from 'fs';
-import type { GeoJSON } from 'geojson';
 import path from 'path';
 import type { Argv, BuilderArguments } from 'yargs';
 import { buildDlcGuardSpatialIndex, dlcGuardMapDataKeys } from '../dlc-guards';
@@ -103,31 +103,22 @@ export function handler(args: BuilderArguments<typeof builder>) {
 
   const { villages, ignoreCount } = parseEts2VillagesCsv();
 
-  const points: GeoJSON.Feature<
-    GeoJSON.Point,
-    { state: string; name: string }
-  >[] = villages.map(v => ({
-    type: 'Feature',
-    geometry: {
-      type: 'Point',
-      coordinates: [v.x, v.y],
-    },
-    properties: {
+  const points = villages.map(v =>
+    point([v.x, v.y], {
       state: v.state,
       name: v.name,
       dlcGuard: dlcGuardSpatialIndex.findClosest(v.x, v.y).dlcGuard,
-    },
-  }));
+    }),
+  );
 
-  const featureCollection: GeoJSON.FeatureCollection = {
-    type: 'FeatureCollection',
-    features: points.map(f => normalizeFeature(f)),
-  };
+  const villageFeatures = featureCollection(
+    points.map(f => normalizeFeature(f)),
+  );
   writeGeojsonFile(
     path.join(args.outputDir, 'ets2-villages.geojson'),
-    featureCollection,
+    villageFeatures,
   );
-  logger.info(featureCollection.features.length, 'villages written');
+  logger.info(villageFeatures.features.length, 'villages written');
   logger.info(ignoreCount, 'villages ignored');
   logger.success('done.');
 }
