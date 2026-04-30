@@ -40,7 +40,7 @@ export function strip(t: TelemetryData): TruckSimTelemetry {
     },
     game: {
       game: {
-        name: t.game.game.name,
+        name: t.game.game.name as 'ats' | 'ets2',
       },
       paused: t.game.paused,
       timestamp: {
