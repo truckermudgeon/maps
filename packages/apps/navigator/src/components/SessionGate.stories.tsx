@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { delay } from '@truckermudgeon/base/delay';
 import { memo } from 'react';
 import type { AppClient } from '../controllers/types';
 
@@ -14,8 +15,6 @@ const meta = {
 export default meta;
 
 type Story = StoryObj<typeof meta>;
-
-const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 const appClient: Pick<AppClient, 'redeemCode' | 'reconnect'> = {
   reconnect: {

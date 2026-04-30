@@ -42,7 +42,7 @@ export interface AppStore {
 
   segmentComplete: SegmentInfo | undefined;
 
-  readonly distanceToNextManeuver: number | undefined;
+  readonly distanceToNextManeuver: number;
   readonly activeRouteDirection: StepManeuver | undefined;
   readonly activeStepLine:
     | { line: GeoJSON.Feature<GeoJSON.LineString>; length: number }
