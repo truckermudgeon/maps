@@ -36,7 +36,7 @@ export async function verifyReconnectSignature(
     'Ed25519',
     publicKey,
     Buffer.from(signature, 'base64url'),
-    Buffer.from(JSON.stringify({ telemetryId, timestamp }), 'base64url'),
+    Buffer.from(JSON.stringify({ telemetryId, timestamp }), 'utf8'),
   );
   if (!isSignatureValid) {
     return { ok: false, reason: ReconnectRejectionReason.INVALID_SIGNATURE };

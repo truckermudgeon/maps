@@ -142,7 +142,7 @@ export function makeTelemetryIdManager(
     const buffer = await crypto.subtle.sign(
       'Ed25519',
       privateKey,
-      Buffer.from(JSON.stringify({ telemetryId, timestamp }), 'base64url'),
+      Buffer.from(JSON.stringify({ telemetryId, timestamp }), 'utf8'),
     );
     const signature = Buffer.from(buffer).toString('base64url');
     return {

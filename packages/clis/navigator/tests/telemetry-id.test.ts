@@ -122,7 +122,7 @@ describe('challenge handshake', () => {
       Buffer.from(signature, 'base64url'),
       Buffer.from(
         JSON.stringify({ telemetryId: clientTelemetryId, timestamp }),
-        'base64url',
+        'utf8',
       ),
     );
     expect(isValid).toBe(true);
