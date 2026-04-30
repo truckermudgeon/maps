@@ -337,7 +337,7 @@ export class RouteStepBuilder {
       lastStep.maneuver = {
         lonLat: lastStep.maneuver.lonLat,
         banner: lastStep.maneuver.banner,
-        direction: BranchType.MERGE,
+        direction: BranchType.ROUND_EXIT,
       };
       this.averageStepJoinPoint(step, lastStep);
       this.steps.push(lastStep);

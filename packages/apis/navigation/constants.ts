@@ -33,6 +33,7 @@ export const enum BranchType {
   ROUND_L,
   ROUND_BL,
   ROUND_B,
+  ROUND_EXIT,
 
   // misc.
   MERGE = -1,

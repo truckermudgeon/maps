@@ -272,6 +272,9 @@ export function toStepText(maneuver: StepManeuver): string {
           `take the ${formatOrdinal(maneuver.roundaboutExitNumber)} exit`,
         );
         break;
+      case BranchType.ROUND_EXIT:
+        strings.push('exit the roundabout');
+        break;
       case BranchType.MERGE:
         strings.push('merge');
         break;

@@ -285,6 +285,15 @@ export const LaneIcon = (props: LaneIconProps) => {
             dimColor={dimColor}
           />
         );
+      case BranchType.ROUND_EXIT:
+        assert(branches.length === 1, 'ROUND_EXIT must appear alone');
+        return (
+          <ExitRoundabout
+            key={index}
+            highlightColor={highlightColor}
+            dimColor={dimColor}
+          />
+        );
       case BranchType.MERGE:
         assert(branches.length === 1, 'MERGE must appear alone');
         return (
@@ -696,6 +705,69 @@ const Roundabout = (props: RoundaboutProps) => {
         transform-origin={`${arrow.x} ${arrow.y}`}
         transform={`rotate(${180 - degrees})`}
       />
+    </g>
+  );
+};
+
+const ExitRoundabout = (props: {
+  highlightColor: string;
+  dimColor: string;
+}) => {
+  const { highlightColor, dimColor } = props;
+  const center = 12;
+  const radius = 4.5;
+  const strokeWidth = 2;
+
+  // Arc from bottom-right (45°) CCW to top (-90°), 135° sweep, no entry stem
+  const startAngle = 45;
+  const endAngle = -90;
+
+  const start = {
+    x: center + radius * Math.cos(toRadians(startAngle)),
+    y: center + radius * Math.sin(toRadians(startAngle)),
+  };
+  const end = {
+    x: center + radius * Math.cos(toRadians(endAngle)),
+    y: center + radius * Math.sin(toRadians(endAngle)),
+  };
+  const arcPath =
+    `M ${start.x} ${start.y}` + `A ${radius} ${radius} 0 0 0 ${end.x} ${end.y}`;
+
+  const stemLength = 5;
+  const arrowStemStart = {
+    x: end.x + (-strokeWidth / 2) * Math.cos(toRadians(endAngle)),
+    y: end.y + (-strokeWidth / 2) * Math.sin(toRadians(endAngle)),
+  };
+  const arrowStemEnd = {
+    x:
+      end.x +
+      (-strokeWidth / 2 + stemLength + 1) * Math.cos(toRadians(endAngle)),
+    y:
+      end.y +
+      (-strokeWidth / 2 + stemLength + 1) * Math.sin(toRadians(endAngle)),
+  };
+  const arrow = {
+    x: end.x + (stemLength + 2) * Math.cos(toRadians(endAngle)),
+    y: end.y + (stemLength + 2) * Math.sin(toRadians(endAngle)),
+  };
+
+  return (
+    <g stroke={highlightColor} strokeWidth={strokeWidth}>
+      <circle
+        stroke={dimColor}
+        fill={'none'}
+        cx={center}
+        cy={center}
+        r={radius}
+      />
+      <path fill="none" d={arcPath} />
+      <line
+        x1={arrowStemStart.x}
+        y1={arrowStemStart.y}
+        x2={arrowStemEnd.x}
+        y2={arrowStemEnd.y}
+      />
+      <use href="#arrow" x={arrow.x} y={arrow.y} />
     </g>
   );
 };

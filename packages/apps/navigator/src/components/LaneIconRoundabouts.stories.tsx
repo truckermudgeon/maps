@@ -34,6 +34,7 @@ function LaneIconCombinations(props: Props) {
     BranchType.ROUND_L,
     BranchType.ROUND_BL,
     BranchType.ROUND_B,
+    BranchType.ROUND_EXIT,
   ];
   for (const activeBranch of branchTypes) {
     elems.push(
