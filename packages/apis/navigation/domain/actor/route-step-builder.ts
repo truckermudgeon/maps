@@ -300,7 +300,6 @@ export class RouteStepBuilder {
     wip.step.duration += newStep.duration;
     wip.step.trafficIcons.push(...newStep.trafficIcons);
     wip.step.arrowPoints = wip.step.geometry.length;
-    wip.step.maneuver = newStep.maneuver;
     wip.exitNodeUid = endNode.uid;
   }
 
@@ -311,26 +310,33 @@ export class RouteStepBuilder {
     const { step, descIndex, entryNodeUid, exitNodeUid } = this.roundaboutWip;
     this.roundaboutWip = undefined;
 
-    const exit = assertExists(
-      this.roundaboutData.descs[descIndex].paths
-        .get(entryNodeUid)
-        ?.get(exitNodeUid),
-      `no roundabout exit for entry ${entryNodeUid.toString(16)} → ${exitNodeUid.toString(16)}`,
+    const exit = this.roundaboutData.descs[descIndex].paths
+      .get(entryNodeUid)
+      ?.get(exitNodeUid);
+    assert(
+      exit != null ||
+        this.roundaboutData.descs[descIndex].cycleNodeUids.includes(
+          exitNodeUid,
+        ),
+      `roundabout flush at unexpected node ${exitNodeUid.toString(16)}`,
     );
-    const direction = toRoundaboutBranchType(exit.angle);
-    const roundaboutExitNumber = exit.exitIndex + 1;
-    const bannerText = `Take the ${formatOrdinal(roundaboutExitNumber)} exit`;
-    const existingToward = step.maneuver.banner?.text?.match(/ to (.+)$/)?.[1];
-    step.maneuver = {
-      lonLat: step.maneuver.lonLat,
-      banner: {
-        text: existingToward
-          ? `${bannerText} to ${existingToward}`
-          : bannerText,
-      },
-      direction,
-      roundaboutExitNumber,
-    };
+    if (exit != null) {
+      const direction = toRoundaboutBranchType(exit.angle);
+      const roundaboutExitNumber = exit.exitIndex + 1;
+      const bannerText = `Take the ${formatOrdinal(roundaboutExitNumber)} exit`;
+      const existingToward =
+        step.maneuver.banner?.text?.match(/ to (.+)$/)?.[1];
+      step.maneuver = {
+        lonLat: step.maneuver.lonLat,
+        banner: {
+          text: existingToward
+            ? `${bannerText} to ${existingToward}`
+            : bannerText,
+        },
+        direction,
+        roundaboutExitNumber,
+      };
+    }
 
     const prevStep = this.steps.at(-1);
     if (prevStep) {
