@@ -25,63 +25,45 @@ describe('RouteStepBuilder', () => {
   const getNode = (nid: bigint) =>
     assertExists(graphAndMapData.tsMapData.nodes.get(nid));
 
-  it('builds steps including prefab roundabouts (prefab node to prefab node)', () => {
-    // start at west end of 4-point roundabout
-    const start = getNode(0x56b0ba5e5e50004n);
-    // end at west end of 4-point roundabout
-    const end = getNode(0x56b0ba5e5e50004n);
-
-    builder.add(start, end, dummyCost);
-    const steps = builder.build();
-    expect(steps.length).toBe(1);
-    expect(steps[0].maneuver).toMatchObject({
+  it.each([
+    {
+      label: 'west > west (full loop)',
+      startNid: 0x56b0ba5e5e50004n,
+      endNid: 0x56b0ba5e5e50004n,
       direction: BranchType.ROUND_B,
       roundaboutExitNumber: 4,
-    });
-  });
-
-  it('builds steps including prefab roundabouts (prefab node to prefab node)', () => {
-    // start at west end of 4-point roundabout
-    const start = getNode(0x56b0ba5e5e50004n);
-    // end at north end of 4-point roundabout
-    const end = getNode(0x52ce47926150002n);
-
-    builder.add(start, end, dummyCost);
-    const steps = builder.build();
-    expect(steps.length).toBe(1);
-    expect(steps[0].maneuver).toMatchObject({
+    },
+    {
+      label: 'west > north',
+      startNid: 0x56b0ba5e5e50004n,
+      endNid: 0x52ce47926150002n,
       direction: BranchType.ROUND_L,
       roundaboutExitNumber: 3,
-    });
-  });
-
-  it('builds steps including prefab roundabouts (prefab node to prefab node)', () => {
-    // start at north end of 4-point roundabout
-    const start = getNode(0x52ce47926150002n);
-    // end at west end of 4-point roundabout
-    const end = getNode(0x56b0ba5e5e50004n);
-
-    builder.add(start, end, dummyCost);
-    const steps = builder.build();
-    expect(steps.length).toBe(1);
-    expect(steps[0].maneuver).toMatchObject({
+    },
+    {
+      label: 'north > west',
+      startNid: 0x52ce47926150002n,
+      endNid: 0x56b0ba5e5e50004n,
       direction: BranchType.ROUND_R,
       roundaboutExitNumber: 1,
-    });
-  });
-
-  it('builds steps including prefab roundabouts (prefab node to prefab node)', () => {
-    // start at north end of 4-point roundabout
-    const start = getNode(0x52ce47926150002n);
-    // end at south end of 4-point roundabout
-    const end = getNode(0x56b0ba56aa50003n);
-
-    builder.add(start, end, dummyCost);
-    const steps = builder.build();
-    expect(steps.length).toBe(1);
-    expect(steps[0].maneuver).toMatchObject({
+    },
+    {
+      label: 'north > south',
+      startNid: 0x52ce47926150002n,
+      endNid: 0x56b0ba56aa50003n,
       direction: BranchType.ROUND_T,
       roundaboutExitNumber: 2,
-    });
-  });
+    },
+  ])(
+    'builds prefab roundabout step ($label)',
+    ({ startNid, endNid, direction, roundaboutExitNumber }) => {
+      builder.add(getNode(startNid), getNode(endNid), dummyCost);
+      const steps = builder.build();
+      expect(steps.length).toBe(1);
+      expect(steps[0].maneuver).toMatchObject({
+        direction,
+        roundaboutExitNumber,
+      });
+    },
+  );
 });
