@@ -66,6 +66,14 @@ type RouteStep = Omit<_RouteStepPolyline, 'geometry'> & {
 
 export class RouteStepBuilder {
   private readonly steps: RouteStep[] = [];
+  private roundaboutWip:
+    | {
+        step: RouteStep;
+        entryNodeUid: bigint;
+        exitNodeUid: bigint;
+        descIndex: number;
+      }
+    | undefined = undefined;
   private readonly ferriesByUid: ReadonlyMap<
     bigint,
     Ferry & { type: ItemType.Ferry }
@@ -109,6 +117,34 @@ export class RouteStepBuilder {
       this.tsMapData,
       this.lookup,
     );
+
+    // If we're inside a multi-prefab roundabout, check whether startNode is
+    // still an internal cycle node. If yes, accumulate regardless of item type.
+    // If no, we've exited — flush before normal processing.
+    if (this.roundaboutWip != null) {
+      const { cycleNodeUids } =
+        this.roundaboutData.descs[this.roundaboutWip.descIndex];
+      if (cycleNodeUids.includes(startNode.uid)) {
+        this.accumulateIntoRoundaboutWip(
+          this.toStep(item, startNode, endNode, cost),
+          endNode,
+        );
+        return;
+      }
+      this.flushRoundaboutWip();
+    }
+
+    // Check whether startNode is an entrance to a multi-prefab roundabout.
+    const descIdx = this.roundaboutData.descsIndex.get(startNode.uid);
+    if (descIdx != null) {
+      this.roundaboutWip = {
+        step: this.toStep(item, startNode, endNode, cost),
+        entryNodeUid: startNode.uid,
+        exitNodeUid: endNode.uid,
+        descIndex: descIdx,
+      };
+      return;
+    }
 
     switch (item.type) {
       case ItemType.Prefab: {
@@ -154,7 +190,7 @@ export class RouteStepBuilder {
       }
       case ItemType.Road:
       case ItemType.Company:
-        // traveling through a road or prefab doesn't involve a significant
+        // traveling through a road or company doesn't involve a significant
         // maneuver. merge its geometry with the current wip step.
         this.mergeWithPreviousStep(item, startNode, endNode, cost);
         break;
@@ -249,6 +285,58 @@ export class RouteStepBuilder {
     prevPoint[1] = mp[1];
     firstPoint[0] = mp[0];
     firstPoint[1] = mp[1];
+  }
+
+  private accumulateIntoRoundaboutWip(newStep: RouteStep, endNode: Node): void {
+    const wip = assertExists(this.roundaboutWip);
+    const prevPoint = wip.step.geometry.at(-1)!;
+    const firstPoint = newStep.geometry[0];
+    const mp = midPoint(prevPoint, firstPoint);
+    prevPoint[0] = mp[0];
+    prevPoint[1] = mp[1];
+    wip.step.geometry.push(...newStep.geometry.slice(1));
+    wip.step.nodesTraveled += newStep.nodesTraveled;
+    wip.step.distanceMeters += newStep.distanceMeters;
+    wip.step.duration += newStep.duration;
+    wip.step.trafficIcons.push(...newStep.trafficIcons);
+    wip.step.arrowPoints = wip.step.geometry.length;
+    wip.step.maneuver = newStep.maneuver;
+    wip.exitNodeUid = endNode.uid;
+  }
+
+  private flushRoundaboutWip(): void {
+    if (!this.roundaboutWip) {
+      return;
+    }
+    const { step, descIndex, entryNodeUid, exitNodeUid } = this.roundaboutWip;
+    this.roundaboutWip = undefined;
+
+    const exit = assertExists(
+      this.roundaboutData.descs[descIndex].paths
+        .get(entryNodeUid)
+        ?.get(exitNodeUid),
+      `no roundabout exit for entry ${entryNodeUid.toString(16)} → ${exitNodeUid.toString(16)}`,
+    );
+    const direction = toRoundaboutBranchType(exit.angle);
+    const roundaboutExitNumber = exit.exitIndex + 1;
+    const bannerText = `Take the ${formatOrdinal(roundaboutExitNumber)} exit`;
+    const existingToward = step.maneuver.banner?.text?.match(/ to (.+)$/)?.[1];
+    step.maneuver = {
+      lonLat: step.maneuver.lonLat,
+      banner: {
+        text: existingToward
+          ? `${bannerText} to ${existingToward}`
+          : bannerText,
+      },
+      direction,
+      roundaboutExitNumber,
+    };
+
+    const prevStep = this.steps.at(-1);
+    if (prevStep) {
+      this.averageStepJoinPoint(prevStep, step);
+    }
+    this.steps.push(step);
   }
 
   private toStep(
@@ -390,6 +478,7 @@ export class RouteStepBuilder {
   }
 
   build(): RouteStep[] {
+    this.flushRoundaboutWip();
     const steps = this.steps.slice();
     this.steps.length = 0;
     return this.refineLaneGuidance(steps).map(step => {
