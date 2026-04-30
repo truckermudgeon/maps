@@ -32,6 +32,7 @@ import {
   atsIcons,
   defaultMapStyle,
 } from '@truckermudgeon/ui';
+import { featureCollection, lineString } from '@turf/helpers';
 import type { GeoJSONSource } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useCallback, useEffect, useState } from 'react';
@@ -114,16 +115,7 @@ const RoutesDemo = (props: { tileRootUrl: string }) => {
             enableAutoHide={autoHide}
             enabledStates={visibleStates}
           />
-          <Source
-            id={'route1'}
-            type={'geojson'}
-            data={
-              {
-                type: 'FeatureCollection',
-                features: [],
-              } as GeoJSON.FeatureCollection
-            }
-          >
+          <Source id={'route1'} type={'geojson'} data={featureCollection([])}>
             <Layer
               type={'line'}
               paint={{
@@ -293,10 +285,7 @@ const RouteControl = (props: { dlcs: ReadonlySet<AtsSelectableDlc> }) => {
         );
         if (maybeLineStrings.some(s => s == null)) {
           alert('Cannot calculate a route 🙁');
-          routeSource.setData({
-            type: 'FeatureCollection',
-            features: [],
-          } as GeoJSON.FeatureCollection);
+          routeSource.setData(featureCollection([]));
           return;
         }
         const lineStrings =
@@ -467,19 +456,17 @@ function fakeFind(
       return;
     }
 
-    resolve({
-      type: 'Feature',
-      geometry: {
-        type: 'LineString',
-        coordinates: route.route.map(neighbor => {
+    resolve(
+      lineString(
+        route.route.map(neighbor => {
           const node = assertExists(context.nodeLUT.get(neighbor.nodeUid));
           return [node.x, node.y];
         }),
-      },
-      properties: {
-        distance: route.distance,
-        mode: mode,
-      },
-    });
+        {
+          distance: route.distance,
+          mode: mode,
+        },
+      ),
+    );
   });
 }

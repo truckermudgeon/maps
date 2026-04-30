@@ -28,6 +28,7 @@ import {
   SceneryTownSource,
   trafficMapIcons,
 } from '@truckermudgeon/ui';
+import { featureCollection } from '@turf/helpers';
 import nearestPointOnLine from '@turf/nearest-point-on-line';
 import type { GeoJSON } from 'geojson';
 import type { MapMouseEvent } from 'maplibre-gl';
@@ -509,14 +510,7 @@ const Demo = (props: {
           />
         )}
       </GameMapStyle>
-      <Source
-        id={'measure'}
-        type={'geojson'}
-        data={{
-          type: 'FeatureCollection',
-          features: [],
-        }}
-      >
+      <Source id={'measure'} type={'geojson'} data={featureCollection([])}>
         <Layer
           id={'measure-lines'}
           type={'line'}

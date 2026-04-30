@@ -309,20 +309,24 @@ export function parseDefFiles(entries: Entries, application: 'ats' | 'eut2') {
   logger.info('parsed', achievements.size, 'achievements');
 
   const routes = new Map<string, Route>();
-  const oversizeOfferData = convertSiiToJson(
-    'def/oversize_offer_data.sii',
-    entries,
-    OversizeOfferSiiSchema,
-  );
-  for (const f of def.files) {
-    if (/^route\.(\w+\.)?sii$/.test(f)) {
-      processRouteJson(
-        convertSiiToJson('def/route.sii', entries, RouteSiiSchema),
-        oversizeOfferData,
-      ).forEach((v, k) => routes.set(k, v));
+  if (def.files.includes('oversize_offer_data.sii')) {
+    const oversizeOfferData = convertSiiToJson(
+      'def/oversize_offer_data.sii',
+      entries,
+      OversizeOfferSiiSchema,
+    );
+    for (const f of def.files) {
+      if (/^route\.(\w+\.)?sii$/.test(f)) {
+        processRouteJson(
+          convertSiiToJson('def/route.sii', entries, RouteSiiSchema),
+          oversizeOfferData,
+        ).forEach((v, k) => routes.set(k, v));
+      }
     }
+    logger.info('parsed', routes.size, 'special transport routes');
+  } else {
+    logger.info('skipping parsing of special transport routes');
   }
-  logger.info('parsed', routes.size, 'special transport routes');
 
   return {
     achievements,

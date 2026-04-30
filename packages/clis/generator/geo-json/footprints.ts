@@ -2,10 +2,8 @@ import { assertExists } from '@truckermudgeon/base/assert';
 import type { Position } from '@truckermudgeon/base/geom';
 import { add, nonUniformScale, rotate } from '@truckermudgeon/base/geom';
 import type { MapDataKeys, MappedDataForKeys } from '@truckermudgeon/io';
-import type {
-  FootprintFeature,
-  FootprintProperties,
-} from '@truckermudgeon/map/types';
+import type { FootprintProperties } from '@truckermudgeon/map/types';
+import { featureCollection, polygon } from '@turf/helpers';
 import type { GeoJSON } from 'geojson';
 import { createNormalizeFeature } from './normalize';
 
@@ -23,9 +21,8 @@ export function convertToFootprintsGeoJson(
   const { map, nodes, models, modelDescriptions } = tsMapData;
   const normalizeCoordinates = createNormalizeFeature(map);
 
-  return {
-    type: 'FeatureCollection',
-    features: [...models.values()]
+  return featureCollection(
+    [...models.values()]
       .map(m => {
         const node = assertExists(nodes.get(m.nodeUid));
         const md = assertExists(modelDescriptions.get(m.token));
@@ -42,18 +39,11 @@ export function convertToFootprintsGeoJson(
             o,
           ),
         );
-        return {
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [[tl, tr, br, bl, tl]],
-          },
-          properties: {
-            type: 'footprint',
-            height: Math.round(md.height * m.scale.z),
-          },
-        } as FootprintFeature;
+        return polygon([[tl, tr, br, bl, tl]], {
+          type: 'footprint' as const,
+          height: Math.round(md.height * m.scale.z),
+        });
       })
       .map(f => normalizeCoordinates(f)),
-  };
+  );
 }

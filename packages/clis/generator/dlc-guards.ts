@@ -52,7 +52,9 @@ export function buildDlcGuardSpatialIndex<T extends DlcGuardMappedData>(
     getNodeUids: (t: T) => readonly bigint[],
   ) => {
     for (const t of collection) {
-      const itemNodes = getNodeUids(t).map(nid => assertExists(nodes.get(nid)));
+      const itemNodes = getNodeUids(t)
+        .filter(nid => nodes.has(nid))
+        .map(nid => assertExists(nodes.get(nid)));
       for (const node of itemNodes) {
         points.push({
           x: node.x,
