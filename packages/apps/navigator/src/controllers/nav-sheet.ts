@@ -266,6 +266,9 @@ export class NavSheetControllerImpl implements NavSheetController {
   reset(store: NavSheetStore) {
     console.log('nav sheet reset');
     store.pageStack.length = 1;
+    // overwrite [0]: callers may invoke reset() without a follow-up start*Flow
+    // (e.g., on nav sheet dismiss), so the prior page key must not linger.
+    store.pageStack[0] = NavPageKey.CHOOSE_DESTINATION;
 
     store.isLoading = false;
 
