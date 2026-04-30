@@ -256,22 +256,23 @@ export class RouteStepBuilder {
       this.steps.push(step);
       return;
     }
+    this.appendToStep(this.steps.at(-1)!, step);
+  }
 
-    const prevStep = this.steps.at(-1)!;
-    const prevPoint = prevStep.geometry.at(-1)!;
-    const firstPoint = step.geometry[0];
+  private appendToStep(target: RouteStep, source: RouteStep): void {
+    const prevPoint = target.geometry.at(-1)!;
+    const firstPoint = source.geometry[0];
     // HACK smooth out transitions, e.g. from roads to prefabs that don't line
     // up, because routing along a road uses road nodes, but routing along a
     // prefab uses nav curves that aren't aligned with nodes.
     const mp = midPoint(prevPoint, firstPoint);
     prevPoint[0] = mp[0];
     prevPoint[1] = mp[1];
-
-    prevStep.geometry.push(...step.geometry.slice(1));
-    prevStep.nodesTraveled += step.nodesTraveled;
-    prevStep.distanceMeters += step.distanceMeters;
-    prevStep.duration += step.duration;
-    prevStep.trafficIcons.push(...step.trafficIcons);
+    target.geometry.push(...source.geometry.slice(1));
+    target.nodesTraveled += source.nodesTraveled;
+    target.distanceMeters += source.distanceMeters;
+    target.duration += source.duration;
+    target.trafficIcons.push(...source.trafficIcons);
   }
 
   private averageStepJoinPoint(a: RouteStep, b: RouteStep) {
@@ -289,16 +290,7 @@ export class RouteStepBuilder {
 
   private accumulateIntoRoundaboutWip(newStep: RouteStep, endNode: Node): void {
     const wip = assertExists(this.roundaboutWip);
-    const prevPoint = wip.step.geometry.at(-1)!;
-    const firstPoint = newStep.geometry[0];
-    const mp = midPoint(prevPoint, firstPoint);
-    prevPoint[0] = mp[0];
-    prevPoint[1] = mp[1];
-    wip.step.geometry.push(...newStep.geometry.slice(1));
-    wip.step.nodesTraveled += newStep.nodesTraveled;
-    wip.step.distanceMeters += newStep.distanceMeters;
-    wip.step.duration += newStep.duration;
-    wip.step.trafficIcons.push(...newStep.trafficIcons);
+    this.appendToStep(wip.step, newStep);
     wip.step.arrowPoints = wip.step.geometry.length;
     wip.exitNodeUid = endNode.uid;
   }
