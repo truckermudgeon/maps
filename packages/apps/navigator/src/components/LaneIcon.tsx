@@ -718,20 +718,29 @@ const ExitRoundabout = (props: {
   const radius = 4.5;
   const strokeWidth = 2;
 
-  // Arc from bottom-right (45°) CCW to top (-90°), 135° sweep, no entry stem
-  const startAngle = 45;
+  // Highlighted arc: right (0°) CCW to top (-90°)
+  // Dim arc: same start, continues 60° past exit
+  const startAngle = 0;
   const endAngle = -90;
+  const dimEndAngle = endAngle - 60;
 
-  const start = {
-    x: center + radius * Math.cos(toRadians(startAngle)),
-    y: center + radius * Math.sin(toRadians(startAngle)),
-  };
-  const end = {
-    x: center + radius * Math.cos(toRadians(endAngle)),
-    y: center + radius * Math.sin(toRadians(endAngle)),
-  };
-  const arcPath =
-    `M ${start.x} ${start.y}` + `A ${radius} ${radius} 0 0 0 ${end.x} ${end.y}`;
+  const pt = (angle: number) => ({
+    x: center + radius * Math.cos(toRadians(angle)),
+    y: center + radius * Math.sin(toRadians(angle)),
+  });
+  const start = pt(startAngle);
+  const end = pt(endAngle);
+  const dimEnd = pt(dimEndAngle);
+
+  const arc = (
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+    degrees: number,
+  ) =>
+    `M ${from.x} ${from.y}A ${radius} ${radius} 0 ${degrees > 180 ? 1 : 0} 0 ${to.x} ${to.y}`;
+
+  const dimArcPath = arc(start, dimEnd, startAngle - dimEndAngle);
+  const arcPath = arc(start, end, startAngle - endAngle);
 
   const stemLength = 5;
   const arrowStemStart = {
@@ -752,14 +761,12 @@ const ExitRoundabout = (props: {
   };
 
   return (
-    <g stroke={highlightColor} strokeWidth={strokeWidth}>
-      <circle
-        stroke={dimColor}
-        fill={'none'}
-        cx={center}
-        cy={center}
-        r={radius}
-      />
+    <g
+      stroke={highlightColor}
+      strokeWidth={strokeWidth}
+      transform={'translate(0 4)'}
+    >
+      <path stroke={dimColor} fill="none" d={dimArcPath} />
       <path fill="none" d={arcPath} />
       <line
         x1={arrowStemStart.x}
