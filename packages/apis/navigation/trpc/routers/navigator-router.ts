@@ -14,13 +14,11 @@ import crypto from 'node:crypto';
 import { z } from 'zod';
 import { PoiType, ScopeType } from '../../constants';
 import { toGameState } from '../../domain/actor/game-state';
-import type { RouteWithLookup } from '../../domain/actor/generate-routes';
 import {
-  addWaypoint,
+  buildRouteFromNodeUids,
   generateRouteFromKeys,
-  generateRoutes,
 } from '../../domain/actor/generate-routes';
-import { generateSummary } from '../../domain/actor/generate-summary';
+import { computePreviewRoutes } from '../../domain/actor/preview-routes';
 import type { SearchRequest } from '../../domain/actor/search';
 import {
   createSearchRequest,
@@ -187,7 +185,7 @@ export const navigatorRouter = router({
       }),
     )
     .query<SearchResultWithRelativeTruckInfo[]>(async ({ input, ctx }) => {
-      console.log('search request', input);
+      logger.debug('search request', { input });
       const { readTelemetry, readActiveRoute, gameContext } = ctx.sessionActor;
       const { type: poiType, scope } = input;
       const addRelativeTruckInfo = createWithRelativeTruckInfoMapper(
@@ -285,53 +283,14 @@ export const navigatorRouter = router({
         ctx.sessionActor;
       const { lookups, domainEventSink, routing } = ctx.services;
       const toNodeUid = BigInt('0x' + input.toNodeUid);
-      const activeRoute = readActiveRoute();
       const truck = Preconditions.checkExists(readTelemetry()).truck;
-      const graphAndMapData = lookups.getData(gameContext).graphAndMapData;
+      const { graphAndMapData } = lookups.getData(gameContext);
 
-      const routesWithLookup: RouteWithLookup[] = [];
-      if (!activeRoute) {
-        routesWithLookup.push(
-          ...(await generateRoutes(
-            toNodeUid,
-            ['smallRoads', 'shortest', 'fastest'],
-            {
-              graphAndMapData,
-              routing,
-              truck,
-              domainEventSink,
-            },
-          )),
-        );
-      } else {
-        const withWaypoint = await addWaypoint(toNodeUid, activeRoute, 'auto', {
-          graphAndMapData,
-          routing,
-          routeIndex: assertExists(readRouteIndex()),
-          truck: Preconditions.checkExists(readTelemetry()).truck,
-          domainEventSink,
-        });
-        routesWithLookup.push(withWaypoint);
-      }
-
-      const routes = routesWithLookup.map(rwl => {
-        const { lookup, ...route } = rwl;
-        return {
-          ...route,
-          // TODO
-          summary: generateSummary(rwl, graphAndMapData),
-        };
-      });
-      // HACK look into deep equal libs?
-      const uniqueRoutes = new Map<string, RouteWithSummary>(
-        routes.map(route => {
-          const segmentsAsString = route.segments
-            .flatMap(segment => segment.steps.flatMap(step => step.geometry))
-            .join();
-          return [segmentsAsString, route];
-        }),
+      return computePreviewRoutes(
+        toNodeUid,
+        { activeRoute: readActiveRoute(), routeIndex: readRouteIndex(), truck },
+        { graphAndMapData, routing, domainEventSink },
       );
-      return [...uniqueRoutes.values()].reverse();
     }),
   generateRouteFromNodeUids: navigatorGameProcedure
     .use(
@@ -349,35 +308,17 @@ export const navigatorRouter = router({
     .query<Route>(async ({ input, ctx }) => {
       const { lookups, routing, domainEventSink } = ctx.services;
       const { readActiveRoute, readTelemetry, gameContext } = ctx.sessionActor;
-      const graphAndMapData = lookups.getData(gameContext).graphAndMapData;
-
+      const { graphAndMapData } = lookups.getData(gameContext);
       const truck = Preconditions.checkExists(readTelemetry()).truck;
       const nodeUids = input.map(v => BigInt('0x' + v));
-      const lastNodeUid = nodeUids.pop()!;
+      const strategy = readActiveRoute()?.segments[0].strategy ?? 'fastest';
 
-      const routeToEnd = (
-        await generateRoutes(
-          lastNodeUid,
-          [readActiveRoute()?.segments[0].strategy ?? 'fastest'],
-          { graphAndMapData, routing, truck, domainEventSink },
-        )
-      )[0];
-      if (!routeToEnd) {
-        throw new Error('no route to endpoint ' + lastNodeUid.toString(16));
-      }
-
-      let finalRoute = routeToEnd;
-      for (const waypoint of nodeUids) {
-        finalRoute = await addWaypoint(waypoint, finalRoute, 'last', {
-          graphAndMapData,
-          routing,
-          truck,
-          routeIndex: { segmentIndex: 0, stepIndex: 0, nodeIndex: 0 },
-          domainEventSink,
-        });
-      }
-
-      const { lookup, ...route } = finalRoute;
+      const { lookup, ...route } = await buildRouteFromNodeUids(
+        nodeUids,
+        strategy,
+        truck,
+        { graphAndMapData, routing, domainEventSink },
+      );
       return route;
     }),
   setActiveRoute: navigatorGameProcedure
@@ -394,17 +335,17 @@ export const navigatorRouter = router({
       const graphAndMapData = lookups.getData(gameContext).graphAndMapData;
 
       if (input == null) {
-        console.log('clearing active route');
+        logger.debug('clearing active route');
         setActiveRoute(undefined);
       } else {
-        console.log('generating and setting active route');
+        logger.debug('generating and setting active route');
         setActiveRoute(
           await generateRouteFromKeys(input as RouteKey[], {
             graphAndMapData,
             routing,
           }),
         );
-        console.log('active route set:', readActiveRoute()?.id);
+        logger.debug('active route set', { id: readActiveRoute()?.id });
       }
     }),
   unpauseRouteEvents: navigatorSessionProcedure
