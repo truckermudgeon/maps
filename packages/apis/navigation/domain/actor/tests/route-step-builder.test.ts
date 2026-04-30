@@ -54,9 +54,17 @@ describe('RouteStepBuilder', () => {
           direction: BranchType.ROUND_T,
           roundaboutExitNumber: 2,
         },
-        // the arrow we show should be the entire path within the roundabout
-        geometry: Array(31).fill(expect.anything()),
-        arrowPoints: 31,
+        // entry step: full path inside the roundabout, excluding the exit curve
+        geometry: Array(27).fill(expect.anything()),
+        arrowPoints: 27,
+      },
+      {
+        maneuver: {
+          direction: BranchType.MERGE,
+        },
+        // exit step: the final curve from the last cycle node to the exit node
+        geometry: Array(5).fill(expect.anything()),
+        arrowPoints: 5,
       },
     ]);
   });

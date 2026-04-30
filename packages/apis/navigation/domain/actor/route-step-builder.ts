@@ -68,6 +68,7 @@ export class RouteStepBuilder {
   private roundaboutWip:
     | {
         step: RouteStep;
+        lastStep: RouteStep | undefined;
         entryNodeUid: bigint;
         exitNodeUid: bigint;
         descIndex: number;
@@ -138,6 +139,7 @@ export class RouteStepBuilder {
     if (descIdx != null) {
       this.roundaboutWip = {
         step: this.toStep(item, startNode, endNode, cost),
+        lastStep: undefined,
         entryNodeUid: startNode.uid,
         exitNodeUid: endNode.uid,
         descIndex: descIdx,
@@ -289,8 +291,10 @@ export class RouteStepBuilder {
 
   private accumulateIntoRoundaboutWip(newStep: RouteStep, endNode: Node): void {
     const wip = assertExists(this.roundaboutWip);
-    this.appendToStep(wip.step, newStep);
-    wip.step.arrowPoints = wip.step.geometry.length;
+    if (wip.lastStep != null) {
+      this.appendToStep(wip.step, wip.lastStep);
+    }
+    wip.lastStep = newStep;
     wip.exitNodeUid = endNode.uid;
   }
 
@@ -298,7 +302,8 @@ export class RouteStepBuilder {
     if (!this.roundaboutWip) {
       return;
     }
-    const { step, descIndex, entryNodeUid, exitNodeUid } = this.roundaboutWip;
+    const { step, lastStep, descIndex, entryNodeUid, exitNodeUid } =
+      this.roundaboutWip;
     this.roundaboutWip = undefined;
 
     const exit = this.roundaboutData.descs[descIndex].paths
@@ -322,11 +327,22 @@ export class RouteStepBuilder {
       };
     }
 
+    step.arrowPoints = step.geometry.length;
     const prevStep = this.steps.at(-1);
     if (prevStep) {
       this.averageStepJoinPoint(prevStep, step);
     }
     this.steps.push(step);
+
+    if (lastStep != null) {
+      lastStep.maneuver = {
+        lonLat: lastStep.maneuver.lonLat,
+        banner: lastStep.maneuver.banner,
+        direction: BranchType.MERGE,
+      };
+      this.averageStepJoinPoint(step, lastStep);
+      this.steps.push(lastStep);
+    }
   }
 
   private toStep(
