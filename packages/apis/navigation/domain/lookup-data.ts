@@ -11,6 +11,7 @@ import type {
   Poi,
   Prefab,
   Road,
+  RoundaboutData,
   Sign,
 } from '@truckermudgeon/map/types';
 import type RBush from 'rbush';
@@ -22,6 +23,7 @@ import { searchMapDateKeys } from './actor/search';
 
 export interface GraphAndMapData<T = unknown> {
   tsMapData: T;
+  roundaboutData: RoundaboutData;
   graphData: GraphData;
   graphCompaniesByNodeUid: ReadonlyMap<bigint, CompanyItem>;
   // TODO is this really needed? can the data it provides be better provided

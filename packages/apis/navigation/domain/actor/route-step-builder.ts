@@ -12,6 +12,7 @@ import {
 import { UnreachableError } from '@truckermudgeon/base/precon';
 import type { MappedDataForKeys } from '@truckermudgeon/io';
 import { ItemType } from '@truckermudgeon/map/constants';
+import { getCommonItem } from '@truckermudgeon/map/get-common-item';
 import { getLineString } from '@truckermudgeon/map/linestring';
 import {
   calculateLaneInfo,
@@ -24,16 +25,22 @@ import {
 } from '@truckermudgeon/map/projections';
 import type {
   CompanyItem,
+  Ferry,
   FerryItem,
   Node,
   Prefab,
   PrefabDescription,
   Road,
+  RoundaboutData,
 } from '@truckermudgeon/map/types';
-import { BranchType } from '../../constants';
+import type {
+  NonTerminalBranchType,
+  RoundaboutBranchType,
+} from '../../constants';
+import { BranchType, isRoundaboutBranchType } from '../../constants';
 import type {
   RouteStep as _RouteStepPolyline,
-  StepManeuver as _StepManeuver,
+  NonTerminalStepManeuver,
 } from '../../types';
 import type { GraphAndMapData } from '../lookup-data';
 
@@ -49,59 +56,97 @@ type RouteStepMappedData = MappedDataForKeys<
   ]
 >;
 
-type NonTerminalBranchType = Exclude<
-  BranchType,
-  BranchType.DEPART | BranchType.ARRIVE
->;
-
 type StepItem = Prefab | Road | CompanyItem | FerryItem;
-type StepManeuver = Omit<_StepManeuver, 'direction'> & {
-  direction: NonTerminalBranchType;
-};
-type RouteStep = Omit<_RouteStepPolyline, 'geometry' | 'maneuver'> & {
+type StepManeuver = NonTerminalStepManeuver;
+
+type RouteStep = Omit<_RouteStepPolyline, 'geometry'> & {
   geometry: Position[];
-  maneuver: StepManeuver;
 };
 
 export class RouteStepBuilder {
   private readonly steps: RouteStep[] = [];
+  private roundaboutWip:
+    | {
+        step: RouteStep;
+        lastStep: RouteStep | undefined;
+        entryNodeUid: bigint;
+        exitNodeUid: bigint;
+        descIndex: number;
+      }
+    | undefined = undefined;
   private readonly ferriesByUid: ReadonlyMap<
     bigint,
-    FerryItem & { name: string }
+    Ferry & { type: ItemType.Ferry }
   >;
   private readonly lookup: {
-    ferriesByUid: ReadonlyMap<bigint, FerryItem>;
+    ferriesByUid: ReadonlyMap<bigint, Ferry & { type: ItemType.Ferry }>;
     companiesByPrefab: ReadonlyMap<bigint, CompanyItem>;
   };
 
   private readonly toLonLat = (p: Position) =>
-    this.context.map === 'usa'
+    this.tsMapData.map === 'usa'
       ? (fromAtsCoordsToWgs84(p).map(n => Number(n.toFixed(6))) as Position)
       : (fromEts2CoordsToWgs84(p).map(n => Number(n.toFixed(6))) as Position);
 
   constructor(
-    private readonly context: RouteStepMappedData,
+    private readonly tsMapData: RouteStepMappedData,
     private readonly signRTree: GraphAndMapData['signRTree'],
+    private readonly roundaboutData: RoundaboutData,
   ) {
     this.ferriesByUid = new Map(
-      this.context.ferries
+      this.tsMapData.ferries
         .values()
         .map(f => [f.uid, { ...f, type: ItemType.Ferry }]),
     );
     this.lookup = {
       ferriesByUid: this.ferriesByUid,
       companiesByPrefab: new Map<bigint, CompanyItem>(
-        this.context.companies.values().map(c => [c.prefabUid, c]),
+        this.tsMapData.companies.values().map(c => [c.prefabUid, c]),
       ),
     };
   }
 
   add(
-    item: StepItem,
     startNode: Node,
     endNode: Node,
     cost: { distance: number; duration: number },
   ) {
+    const item = getCommonItem(
+      startNode.uid,
+      endNode.uid,
+      this.tsMapData,
+      this.lookup,
+    );
+
+    // If we're inside a multi-prefab roundabout, check whether startNode is
+    // still an internal cycle node. If yes, accumulate regardless of item type.
+    // If no, we've exited — flush before normal processing.
+    if (this.roundaboutWip != null) {
+      const { cycleNodeUids } =
+        this.roundaboutData.descs[this.roundaboutWip.descIndex];
+      if (cycleNodeUids.includes(startNode.uid)) {
+        this.accumulateIntoRoundaboutWip(
+          this.toStep(item, startNode, endNode, cost),
+          endNode,
+        );
+        return;
+      }
+      this.flushRoundaboutWip();
+    }
+
+    // Check whether startNode is an entrance to a multi-prefab roundabout.
+    const descIdx = this.roundaboutData.descsIndex.get(startNode.uid);
+    if (descIdx != null) {
+      this.roundaboutWip = {
+        step: this.toStep(item, startNode, endNode, cost),
+        lastStep: undefined,
+        entryNodeUid: startNode.uid,
+        exitNodeUid: endNode.uid,
+        descIndex: descIdx,
+      };
+      return;
+    }
+
     switch (item.type) {
       case ItemType.Prefab: {
         if (this.shouldMergePrefab(item, startNode, endNode)) {
@@ -146,7 +191,7 @@ export class RouteStepBuilder {
       }
       case ItemType.Road:
       case ItemType.Company:
-        // traveling through a road or prefab doesn't involve a significant
+        // traveling through a road or company doesn't involve a significant
         // maneuver. merge its geometry with the current wip step.
         this.mergeWithPreviousStep(item, startNode, endNode, cost);
         break;
@@ -161,7 +206,7 @@ export class RouteStepBuilder {
     endNode: Node,
   ): boolean {
     const prefabDesc = assertExists(
-      this.context.prefabDescriptions.get(prefab.token),
+      this.tsMapData.prefabDescriptions.get(prefab.token),
     );
     const rsap = toRoadStringsAndPolygons(prefabDesc);
 
@@ -178,14 +223,11 @@ export class RouteStepBuilder {
       return true;
     }
 
-    const maneuver = calculateManeuver(
-      startNode,
-      endNode,
-      prefab,
-      prefabDesc,
-      this.context.nodes,
-      this.signRTree,
-    );
+    const maneuver = calculatePrefabManeuver(startNode, endNode, prefab, {
+      tsMapData: this.tsMapData,
+      signRTree: this.signRTree,
+      roundabouts: this.roundaboutData,
+    });
     if (
       // all lanes of the prefab can be traveled straight through, and we're
       // supposed to go straight through, anyway.
@@ -215,22 +257,23 @@ export class RouteStepBuilder {
       this.steps.push(step);
       return;
     }
+    this.appendToStep(this.steps.at(-1)!, step);
+  }
 
-    const prevStep = this.steps.at(-1)!;
-    const prevPoint = prevStep.geometry.at(-1)!;
-    const firstPoint = step.geometry[0];
+  private appendToStep(target: RouteStep, source: RouteStep): void {
+    const prevPoint = target.geometry.at(-1)!;
+    const firstPoint = source.geometry[0];
     // HACK smooth out transitions, e.g. from roads to prefabs that don't line
     // up, because routing along a road uses road nodes, but routing along a
     // prefab uses nav curves that aren't aligned with nodes.
     const mp = midPoint(prevPoint, firstPoint);
     prevPoint[0] = mp[0];
     prevPoint[1] = mp[1];
-
-    prevStep.geometry.push(...step.geometry.slice(1));
-    prevStep.nodesTraveled += step.nodesTraveled;
-    prevStep.distanceMeters += step.distanceMeters;
-    prevStep.duration += step.duration;
-    prevStep.trafficIcons.push(...step.trafficIcons);
+    target.geometry.push(...source.geometry.slice(1));
+    target.nodesTraveled += source.nodesTraveled;
+    target.distanceMeters += source.distanceMeters;
+    target.duration += source.duration;
+    target.trafficIcons.push(...source.trafficIcons);
   }
 
   private averageStepJoinPoint(a: RouteStep, b: RouteStep) {
@@ -246,13 +289,68 @@ export class RouteStepBuilder {
     firstPoint[1] = mp[1];
   }
 
+  private accumulateIntoRoundaboutWip(newStep: RouteStep, endNode: Node): void {
+    const wip = assertExists(this.roundaboutWip);
+    if (wip.lastStep != null) {
+      this.appendToStep(wip.step, wip.lastStep);
+    }
+    wip.lastStep = newStep;
+    wip.exitNodeUid = endNode.uid;
+  }
+
+  private flushRoundaboutWip(): void {
+    if (!this.roundaboutWip) {
+      return;
+    }
+    const { step, lastStep, descIndex, entryNodeUid, exitNodeUid } =
+      this.roundaboutWip;
+    this.roundaboutWip = undefined;
+
+    const exit = this.roundaboutData.descs[descIndex].paths
+      .get(entryNodeUid)
+      ?.get(exitNodeUid);
+    assert(
+      exit != null ||
+        this.roundaboutData.descs[descIndex].cycleNodeUids.includes(
+          exitNodeUid,
+        ),
+      `roundabout flush at unexpected node ${exitNodeUid.toString(16)}`,
+    );
+    if (exit != null) {
+      const direction = toRoundaboutBranchType(exit.angle);
+      const roundaboutExitNumber = exit.exitIndex + 1;
+      step.maneuver = {
+        lonLat: step.maneuver.lonLat,
+        banner: step.maneuver.banner,
+        direction,
+        roundaboutExitNumber,
+      };
+    }
+
+    const prevStep = this.steps.at(-1);
+    if (prevStep) {
+      this.averageStepJoinPoint(prevStep, step);
+    }
+    this.steps.push(step);
+
+    if (lastStep != null) {
+      lastStep.maneuver = {
+        lonLat: lastStep.maneuver.lonLat,
+        banner: lastStep.maneuver.banner,
+        direction: BranchType.ROUND_EXIT,
+      };
+      this.averageStepJoinPoint(step, lastStep);
+      this.steps.push(lastStep);
+    }
+  }
+
   private toStep(
     item: StepItem,
     startNode: Node,
     endNode: Node,
     cost: { distance: number; duration: number },
   ): RouteStep {
-    let maneuver: StepManeuver;
+    let maneuver: NonTerminalStepManeuver;
     let arrowPoints;
     const trafficIcons: {
       type: 'stop' | 'trafficLight';
@@ -260,19 +358,16 @@ export class RouteStepBuilder {
     }[] = [];
     const geometry = getLineString(
       [startNode.uid, endNode.uid],
-      this.context,
+      this.tsMapData,
       this.lookup,
     );
     switch (item.type) {
       case ItemType.Prefab:
-        maneuver = calculateManeuver(
-          startNode,
-          endNode,
-          item,
-          assertExists(this.context.prefabDescriptions.get(item.token)),
-          this.context.nodes,
-          this.signRTree,
-        );
+        maneuver = calculatePrefabManeuver(startNode, endNode, item, {
+          tsMapData: this.tsMapData,
+          roundabouts: this.roundaboutData,
+          signRTree: this.signRTree,
+        });
         // TODO make this part of calculateManeuver; make that a method.
         maneuver.lonLat = this.toLonLat(center(getExtent(geometry)));
         arrowPoints = geometry.length;
@@ -281,8 +376,8 @@ export class RouteStepBuilder {
             item,
             startNode,
             endNode,
-            assertExists(this.context.prefabDescriptions.get(item.token)),
-            this.context.nodes,
+            assertExists(this.tsMapData.prefabDescriptions.get(item.token)),
+            this.tsMapData.nodes,
           ).map(ti => ({
             ...ti,
             lonLat: this.toLonLat(ti.gameXZ),
@@ -388,6 +483,7 @@ export class RouteStepBuilder {
   }
 
   build(): RouteStep[] {
+    this.flushRoundaboutWip();
     const steps = this.steps.slice();
     this.steps.length = 0;
     return this.refineLaneGuidance(steps).map(step => {
@@ -398,13 +494,15 @@ export class RouteStepBuilder {
   }
 }
 
-function calculateManeuver(
+function calculatePrefabManeuver(
   startNode: Node,
   endNode: Node,
   prefab: Prefab,
-  prefabDesc: PrefabDescription,
-  nodes: ReadonlyMap<bigint, Node>,
-  signRTree: GraphAndMapData['signRTree'],
+  context: {
+    tsMapData: MappedDataForKeys<['nodes', 'prefabDescriptions']>;
+    signRTree: GraphAndMapData['signRTree'];
+    roundabouts: RoundaboutData;
+  },
 ): StepManeuver {
   if (prefab.ferryLinkUid != null) {
     // special-case ferry prefabs: it's just a "through" maneuver, from the
@@ -424,15 +522,29 @@ function calculateManeuver(
   const endNodeIndex = targetNodeUids.findIndex(id => id === endNode.uid);
   assert(startNodeIndex >= 0 && endNodeIndex >= 0);
 
+  const {
+    tsMapData: { nodes, prefabDescriptions },
+    signRTree,
+    roundabouts,
+  } = context;
+
+  const isRoundabout = roundabouts.prefabTokens.has(prefab.token);
+  const prefabDesc = assertExists(
+    prefabDescriptions.get(prefab.token),
+    `unknown prefabDesc for token "${prefab.token}"`,
+  );
   const laneInfo = calculateLaneInfo(prefabDesc);
   const inputLanes = assertExists(laneInfo.get(startNodeIndex));
   let direction: NonTerminalBranchType | undefined;
   let exitAngle: number | undefined;
+  let roundaboutExitNumber: number | undefined;
   let isMerge = false;
   for (const inputLane of inputLanes) {
     for (const branch of inputLane.branches) {
       if (branch.targetNodeIndex === endNodeIndex) {
-        direction = toBranchType(branch.angle);
+        direction = isRoundabout
+          ? toRoundaboutBranchType(branch.angle)
+          : toBranchType(branch.angle);
         const exitPointB = toMapPosition(
           assertExists(branch.curvePoints.at(-1)),
           prefab,
@@ -451,6 +563,12 @@ function calculateManeuver(
             exitPointB[0] - exitPointA[0],
           ),
         );
+
+        roundaboutExitNumber =
+          (startNodeIndex - endNodeIndex + laneInfo.size) % laneInfo.size;
+        if (roundaboutExitNumber === 0) {
+          roundaboutExitNumber = laneInfo.size;
+        }
 
         // naive merge detection
         const numOtherInputNodesGoingToSameNode = laneInfo
@@ -561,30 +679,62 @@ function calculateManeuver(
     }
   }
 
-  return {
-    direction: isMerge ? BranchType.MERGE : direction,
-    lonLat: [0, 0], // TODO calculate
-    laneHint:
-      !isMerge && inputLanes.length > 1
-        ? {
-            lanes: inputLanes.map(lane => {
-              const branches = lane.branches.map(({ angle }) =>
-                toBranchType(angle),
-              );
-              return {
-                branches,
-                activeBranch: branches.includes(direction)
-                  ? direction
-                  : undefined,
-              };
-            }),
-          }
-        : undefined,
+  const baseManeuver = {
+    lonLat: [0, 0] as [number, number], // TODO calculate
     banner: maybeName,
+    laneHint: undefined,
   };
+
+  if (isMerge) {
+    return {
+      ...baseManeuver,
+      direction: BranchType.MERGE,
+    };
+  } else if (!isRoundaboutBranchType(direction)) {
+    assert(
+      !isRoundabout,
+      'cannot return a non-roundabout maneuver for a roundabout prefab',
+    );
+    return {
+      ...baseManeuver,
+      direction,
+      laneHint:
+        inputLanes.length > 1
+          ? {
+              lanes: inputLanes.map(lane => {
+                const branches = lane.branches.map(({ angle }) =>
+                  toBranchType(angle),
+                );
+                return {
+                  branches,
+                  activeBranch: branches.includes(direction)
+                    ? direction
+                    : undefined,
+                };
+              }),
+            }
+          : undefined,
+    };
+  } else {
+    assert(
+      isRoundabout,
+      'cannot return a roundabout maneuver for a non-roundabout prefab',
+    );
+    roundaboutExitNumber = assertExists(
+      roundaboutExitNumber,
+      'roundaboutExit must be calculated',
+    );
+    return {
+      ...baseManeuver,
+      direction,
+      roundaboutExitNumber,
+    };
+  }
 }
 
-function toBranchType(theta: number): NonTerminalBranchType {
+function toBranchType(
+  theta: number,
+): Exclude<NonTerminalBranchType, RoundaboutBranchType> {
   const degrees = Math.round(theta * 57.29578);
   const isNeg = degrees < 0;
   const abs = Math.abs(degrees);
@@ -598,6 +748,25 @@ function toBranchType(theta: number): NonTerminalBranchType {
     return isNeg ? BranchType.SHARP_LEFT : BranchType.SHARP_RIGHT;
   } else if (abs <= 180) {
     return isNeg ? BranchType.U_TURN_LEFT : BranchType.U_TURN_RIGHT;
+  } else {
+    throw new Error('unexpected angle ' + abs);
+  }
+}
+
+function toRoundaboutBranchType(theta: number): RoundaboutBranchType {
+  const degrees = Math.round(theta * 57.29578);
+  const isNeg = degrees < 0;
+  const abs = Math.abs(degrees);
+  if (abs <= 22.5) {
+    return BranchType.ROUND_T;
+  } else if (abs <= 67.5) {
+    return isNeg ? BranchType.ROUND_TL : BranchType.ROUND_TR;
+  } else if (abs <= 112.5) {
+    return isNeg ? BranchType.ROUND_L : BranchType.ROUND_R;
+  } else if (abs <= 157.5) {
+    return isNeg ? BranchType.ROUND_BL : BranchType.ROUND_BR;
+  } else if (abs <= 180) {
+    return BranchType.ROUND_B;
   } else {
     throw new Error('unexpected angle ' + abs);
   }

@@ -33,6 +33,7 @@ export const enum BranchType {
   ROUND_L,
   ROUND_BL,
   ROUND_B,
+  ROUND_EXIT,
 
   // misc.
   MERGE = -1,
@@ -51,6 +52,27 @@ export type RoundaboutBranchType =
   | BranchType.ROUND_BL
   | BranchType.ROUND_B;
 
+const roundaboutBranchTypes = new Set([
+  BranchType.ROUND_BR,
+  BranchType.ROUND_R,
+  BranchType.ROUND_TR,
+  BranchType.ROUND_T,
+  BranchType.ROUND_TL,
+  BranchType.ROUND_L,
+  BranchType.ROUND_BL,
+  BranchType.ROUND_B,
+]);
+export function isRoundaboutBranchType(
+  branch: BranchType,
+): branch is RoundaboutBranchType {
+  return roundaboutBranchTypes.has(branch);
+}
+
 export type NonRoundaboutBranchType = Exclude<BranchType, RoundaboutBranchType>;
+
+export type NonTerminalBranchType = Exclude<
+  BranchType,
+  BranchType.DEPART | BranchType.ARRIVE
+>;
 
 export const pairingCodeTtlMs = 10 * 60_000;

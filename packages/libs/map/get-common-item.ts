@@ -1,6 +1,7 @@
-import { assertExists } from '@truckermudgeon/base/assert';
-import { Preconditions } from '@truckermudgeon/base/precon';
+import { rotateRight } from '@truckermudgeon/base/array';
+import { assert, assertExists } from '@truckermudgeon/base/assert';
 import type { MappedDataForKeys } from '@truckermudgeon/io';
+import { calculateNodeConnections } from './prefabs';
 import type { CompanyItem, FerryItem, Prefab, Road } from './types';
 
 /**
@@ -14,14 +15,15 @@ import type { CompanyItem, FerryItem, Prefab, Road } from './types';
 export function getCommonItem(
   aNodeUid: bigint,
   bNodeUid: bigint,
-  tsMapData: MappedDataForKeys<['nodes', 'roads', 'prefabs', 'companies']>,
+  tsMapData: MappedDataForKeys<
+    ['nodes', 'roads', 'prefabs', 'prefabDescriptions', 'companies']
+  >,
   lookups: {
     ferriesByUid: ReadonlyMap<bigint, FerryItem>;
     companiesByPrefab: ReadonlyMap<bigint, CompanyItem>;
   },
 ): Road | Prefab | CompanyItem | FerryItem {
-  Preconditions.checkArgument(aNodeUid !== bNodeUid);
-  const { nodes, roads, prefabs, companies } = tsMapData;
+  const { nodes, roads, prefabs, prefabDescriptions, companies } = tsMapData;
   const { ferriesByUid, companiesByPrefab } = lookups;
   const a = assertExists(nodes.get(aNodeUid));
   const b = assertExists(nodes.get(bNodeUid));
@@ -36,6 +38,34 @@ export function getCommonItem(
   const sharedItemUid = aItemUids.find(aUid =>
     bItemUids.some(bUid => aUid === bUid),
   );
+
+  // special case: if `aNodeUid` and `bNodeUid`, then we must be dealing with
+  // a prefab with a U-turn.
+  if (aNodeUid === bNodeUid) {
+    const sharedItemUid = aItemUids.find(aUid =>
+      bItemUids.some(bUid => aUid === bUid && prefabs.has(bUid)),
+    );
+    assertExists(
+      sharedItemUid,
+      'A and B nodes can only be equal if common item is a prefab',
+    );
+    const prefab = assertExists(
+      prefabs.get(sharedItemUid!),
+      'unknown prefab uid',
+    );
+    const prefabDesc = assertExists(
+      prefabDescriptions.get(prefab.token),
+      'unknown prefab token',
+    );
+    const targetNodeUids = rotateRight(prefab.nodeUids, prefab.originNodeIndex);
+    const startNodeIndex = targetNodeUids.findIndex(id => id === aNodeUid);
+    const connections = calculateNodeConnections(prefabDesc);
+    assert(
+      connections.get(startNodeIndex)?.includes(startNodeIndex) === true,
+      'U-turn prefab must contain a U-turn',
+    );
+    return prefab;
+  }
 
   if (!sharedItemUid) {
     if (bItemUids.find(uid => ferriesByUid.has(uid))) {

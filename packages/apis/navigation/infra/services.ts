@@ -31,7 +31,7 @@ export interface Services {
 }
 
 export function initServices(dataDir: string): Services {
-  const lookups = loadLookupData(dataDir);
+  const lookups = loadLookupData(dataDir, 'usa');
   const kv = createCacheableKv();
   const rateLimit = createRateLimitService(kv);
   const metrics = createMetricsService();

@@ -1,5 +1,6 @@
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { UnreachableError } from '@truckermudgeon/base/precon';
+import { formatOrdinal } from '@truckermudgeon/base/text';
 import { BranchType } from '@truckermudgeon/navigation/constants';
 import type {
   SearchResult,
@@ -225,11 +226,16 @@ export function toStepText(maneuver: StepManeuver): string {
       case BranchType.ROUND_B:
         // TODO
         if (!strings.length) {
-          strings.push('at the traffic circle, ');
+          strings.push('at the roundabout, ');
         } else {
-          strings.push('enter the traffic circle, then');
+          strings.push('enter the roundabout, then');
         }
-        strings.push('take the Nth exit');
+        strings.push(
+          `take the ${formatOrdinal(maneuver.roundaboutExitNumber)} exit`,
+        );
+        break;
+      case BranchType.ROUND_EXIT:
+        strings.push('exit the roundabout');
         break;
       case BranchType.MERGE:
         strings.push('merge');
@@ -246,7 +252,7 @@ export function toStepText(maneuver: StepManeuver): string {
         strings.push(`take the ferry to ${assertExists(maneuver.banner).text}`);
         break;
       default:
-        throw new UnreachableError(maneuver.direction);
+        throw new UnreachableError(maneuver);
     }
   }
 
