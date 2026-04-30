@@ -5,7 +5,11 @@ import {
   type Position,
   toSplinePoints,
 } from '@truckermudgeon/base/geom';
-import { readGraphData, readMapData } from '@truckermudgeon/io';
+import {
+  readGraphData,
+  readMapData,
+  readRoundaboutsData,
+} from '@truckermudgeon/io';
 import { PointRBush } from '@truckermudgeon/map/point-rbush';
 import {
   toMapPosition,
@@ -21,6 +25,7 @@ import type {
   Poi,
   Prefab,
   Road,
+  RoundaboutData,
   Sign,
 } from '@truckermudgeon/map/types';
 import * as turf from '@turf/helpers';
@@ -44,6 +49,17 @@ export function readGraphAndMapData(
   });
   const toLngLat = map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
   const graphData = readGraphData(dataDir, map);
+  let roundaboutData: RoundaboutData;
+  try {
+    roundaboutData = readRoundaboutsData(dataDir, map);
+  } catch {
+    console.warn(`could not find ${map} roundabout data`);
+    roundaboutData = {
+      descs: [],
+      descsIndex: new Map(),
+      prefabTokens: new Set(),
+    };
+  }
 
   const graphCompaniesByNodeUid = new Map<bigint, CompanyItem>(
     tsMapData.companies
@@ -470,6 +486,7 @@ export function readGraphAndMapData(
 
   return {
     tsMapData,
+    roundaboutData,
     graphData,
     graphCompaniesByNodeUid,
     graphNodeRTree,

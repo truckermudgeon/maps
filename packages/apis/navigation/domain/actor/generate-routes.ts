@@ -27,6 +27,7 @@ import type {
   Prefab,
   PrefabDescription,
   Road,
+  RoundaboutData,
 } from '@truckermudgeon/map/types';
 import { lineString } from '@turf/helpers';
 import { BranchType } from '../../constants';
@@ -82,6 +83,7 @@ export async function generateRouteFromKeys(
       graphData: { graph },
       tsMapData,
       signRTree,
+      roundaboutData,
     },
     routing,
   } = context;
@@ -141,7 +143,9 @@ export async function generateRouteFromKeys(
 
   const routes = routesWithoutLookup
     .filter(route => route != null)
-    .map(route => toRouteWithLookup(route, tsMapData, signRTree, graphData));
+    .map(route =>
+      toRouteWithLookup(route, tsMapData, signRTree, graphData, roundaboutData),
+    );
   return combineRoutes(routes);
 }
 
@@ -328,7 +332,8 @@ export async function generateRoutes(
 ): Promise<RouteWithLookup[]> {
   Preconditions.checkArgument(modes.length > 0, 'modes cannot be empty');
   const { graphAndMapData, routing, truck, domainEventSink } = context;
-  const { roadRTree, signRTree, graphData, tsMapData } = graphAndMapData;
+  const { roadRTree, signRTree, graphData, tsMapData, roundaboutData } =
+    graphAndMapData;
   const truckPos: [number, number] = [truck.position.X, truck.position.Z];
 
   const location = calculateLocation(
@@ -472,7 +477,13 @@ export async function generateRoutes(
               ),
             );
             if (route.success) {
-              return toRouteWithLookup(route, tsMapData, signRTree, graphData);
+              return toRouteWithLookup(
+                route,
+                tsMapData,
+                signRTree,
+                graphData,
+                roundaboutData,
+              );
             } else {
               console.log('retry failed');
             }
@@ -482,7 +493,13 @@ export async function generateRoutes(
         }
         // TODO add depart step, depending on distance from truck to route starting points?
         console.log('find route duration', Date.now() - start, 'ms');
-        return toRouteWithLookup(route, tsMapData, signRTree, graphData);
+        return toRouteWithLookup(
+          route,
+          tsMapData,
+          signRTree,
+          graphData,
+          roundaboutData,
+        );
       }),
     )
   ).filter(route => route != null);
@@ -505,8 +522,14 @@ function toRouteWithLookup(
   tsMapData: RouteMappedData,
   signRTree: GraphAndMapData['signRTree'],
   graphData: GraphAndMapData['graphData'],
+  roundaboutData: RoundaboutData,
 ): RouteWithLookup {
-  const steps = calculateSteps(route.route, tsMapData, signRTree);
+  const steps = calculateSteps(
+    route.route,
+    tsMapData,
+    signRTree,
+    roundaboutData,
+  );
   const lastNodeUid = route.route.at(-1)!.nodeUid;
   const { x, y } = assertExists(tsMapData.nodes.get(lastNodeUid));
   const lonLat =
