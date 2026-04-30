@@ -10,7 +10,6 @@ import {
   toRadians,
 } from '@truckermudgeon/base/geom';
 import { UnreachableError } from '@truckermudgeon/base/precon';
-import { formatOrdinal } from '@truckermudgeon/base/text';
 import type { MappedDataForKeys } from '@truckermudgeon/io';
 import { ItemType } from '@truckermudgeon/map/constants';
 import { getCommonItem } from '@truckermudgeon/map/get-common-item';
@@ -315,16 +314,9 @@ export class RouteStepBuilder {
     if (exit != null) {
       const direction = toRoundaboutBranchType(exit.angle);
       const roundaboutExitNumber = exit.exitIndex + 1;
-      const bannerText = `Take the ${formatOrdinal(roundaboutExitNumber)} exit`;
-      const existingToward =
-        step.maneuver.banner?.text?.match(/ to (.+)$/)?.[1];
       step.maneuver = {
         lonLat: step.maneuver.lonLat,
-        banner: {
-          text: existingToward
-            ? `${bannerText} to ${existingToward}`
-            : bannerText,
-        },
+        banner: step.maneuver.banner,
         direction,
         roundaboutExitNumber,
       };
@@ -717,17 +709,6 @@ function calculatePrefabManeuver(
       roundaboutExitNumber,
       'roundaboutExit must be calculated',
     );
-    // TODO looks like sometimes, Google Maps just says "turn left onto..."
-    //  instead of "take the 2nd exit to..."
-    const bannerText = `Take the ${formatOrdinal(roundaboutExitNumber)} exit`;
-    if (baseManeuver.banner?.text != null) {
-      baseManeuver.banner.text = `${bannerText} to ${baseManeuver.banner.text}`;
-    } else {
-      baseManeuver.banner ??= {
-        text: bannerText,
-      };
-    }
-
     return {
       ...baseManeuver,
       direction,

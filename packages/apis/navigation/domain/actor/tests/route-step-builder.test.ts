@@ -25,6 +25,42 @@ describe('RouteStepBuilder', () => {
   const getNode = (nid: bigint) =>
     assertExists(graphAndMapData.tsMapData.nodes.get(nid));
 
+  const buildStepsForRoute = (nids: bigint[]) => {
+    for (let i = 0; i < nids.length - 1; i++) {
+      builder.add(getNode(nids[i]), getNode(nids[i + 1]), dummyCost);
+    }
+    return builder.build();
+  };
+
+  it('builds steps for route', () => {
+    const steps = buildStepsForRoute([
+      0x528d48bc6750126n, // exiting off ramp
+      0x528d48b81750127n, // entering roundabout
+      0x528d48bc47500f5n,
+      0x528d48b831500e9n,
+      0x528d48b867500fbn,
+      0x528d48b5c450123n,
+      0x528d48b717500f6n,
+      0x528d48bd65500f1n, // exiting roundabout
+    ]);
+    expect(steps).toMatchObject([
+      {
+        maneuver: {
+          direction: BranchType.THROUGH,
+        },
+      },
+      {
+        maneuver: {
+          direction: BranchType.ROUND_T,
+          roundaboutExitNumber: 2,
+        },
+        // the arrow we show should be the entire path within the roundabout
+        geometry: Array(31).fill(expect.anything()),
+        arrowPoints: 31,
+      },
+    ]);
+  });
+
   it.each([
     {
       label: 'west > west (full loop)',
