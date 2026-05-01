@@ -301,6 +301,8 @@ export class AppControllerImpl implements AppController {
         unsubscribeOnMove: () => void;
       }
     | undefined;
+  private deviceSubscription: { unsubscribe: () => void } | undefined;
+  private renderIntervalId: ReturnType<typeof setInterval> | undefined;
   private wakeLock?: WakeLockSentinel = undefined;
   private padding = {
     left: 0,
@@ -502,6 +504,16 @@ export class AppControllerImpl implements AppController {
   }
 
   startListening(store: AppStore, client: AppClient) {
+    if (this.deviceSubscription || this.renderIntervalId != null) {
+      console.log('tearing down previous device subscription');
+      this.deviceSubscription?.unsubscribe();
+      this.deviceSubscription = undefined;
+      if (this.renderIntervalId != null) {
+        clearInterval(this.renderIntervalId);
+        this.renderIntervalId = undefined;
+      }
+    }
+
     let prevPosition: Position = [0, 0];
     let currPosition: Position = [0, 0];
     const markerPosition: Position = [0, 0];
@@ -516,7 +528,10 @@ export class AppControllerImpl implements AppController {
       emaAlpha: 0.5,
     });
 
-    client.subscribeToDevice.subscribe(void 0, {
+    this.deviceSubscription = client.subscribeToDevice.subscribe(void 0, {
+      onError: err => {
+        console.error('subscribeToDevice error', err);
+      },
       onData: event => {
         switch (event.type) {
           case 'positionUpdate':
@@ -638,7 +653,7 @@ export class AppControllerImpl implements AppController {
       }
     };
 
-    setInterval(action(render), duration);
+    this.renderIntervalId = setInterval(action(render), duration);
   }
 
   synthesizeSearchResult(

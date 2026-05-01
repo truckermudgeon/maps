@@ -419,7 +419,7 @@ export const navigatorRouter = router({
       unpauseRouteEvents();
     }),
   subscribeToDevice: navigatorSessionProcedure
-    .use(subscriptionLimitMiddleware(1))
+    .use(subscriptionLimitMiddleware(2))
     .subscription(async function* ({
       path,
       ctx,
@@ -476,7 +476,7 @@ export const navigatorRouter = router({
         per: 'minute',
       }),
     )
-    .use(subscriptionLimitMiddleware(2))
+    .use(subscriptionLimitMiddleware(3))
     .subscription(({ ctx }) =>
       observable<GameState>(emit => {
         const { telemetryEventEmitter } = ctx.sessionActor;
