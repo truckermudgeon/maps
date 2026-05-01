@@ -101,7 +101,7 @@ function ferryLineString(
     );
     const conn = assertExists(
       startFerry.connections.find(conn => conn.token === endFerry.token),
-      `no ferry connection between from ${startFerry.token} to ${endFerry.token} `,
+      `no ferry connection from ${startFerry.token} to ${endFerry.token}`,
     );
 
     if (conn.intermediatePoints.length === 0) {
