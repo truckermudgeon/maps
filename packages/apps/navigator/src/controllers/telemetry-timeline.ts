@@ -14,8 +14,8 @@ export interface TimelineOptions {
 
 //
 
-export class TelemetryTimeline {
-  private samples: TelemetrySample[] = [];
+export class TelemetryTimeline<T extends TelemetrySample = TelemetrySample> {
+  private samples: T[] = [];
   private opts: Required<TimelineOptions>;
 
   // sim-time cursor (what the viewer wants to see)
@@ -24,7 +24,7 @@ export class TelemetryTimeline {
   // wall-time bookkeeping
   private lastWallMs: number | undefined = undefined;
 
-  private smoothed?: TelemetrySample;
+  private smoothed?: T;
 
   constructor(opts: TimelineOptions = {}) {
     this.opts = {
@@ -34,7 +34,7 @@ export class TelemetryTimeline {
     };
   }
 
-  push(sample: TelemetrySample): void {
+  push(sample: T): void {
     const last = this.samples.at(-1);
     if (last && sample.t < last.t) {
       throw new Error('Simulation time must be monotonic');
@@ -55,7 +55,7 @@ export class TelemetryTimeline {
   }
 
   /** Sample for rendering at wall-clock time */
-  sample(wallMs: number): TelemetrySample | undefined {
+  sample(wallMs: number): T | undefined {
     if (this.samples.length === 0) {
       return undefined;
     }
@@ -98,7 +98,7 @@ export class TelemetryTimeline {
     }
   }
 
-  private sampleAtSimTime(simT: number): TelemetrySample | undefined {
+  private sampleAtSimTime(simT: number): T | undefined {
     const n = this.samples.length;
     if (n === 0) {
       return undefined;
@@ -139,13 +139,10 @@ export class TelemetryTimeline {
 
 //
 
-function interpolate(
-  a: TelemetrySample,
-  b: TelemetrySample,
-  u: number,
-): TelemetrySample {
+function interpolate<T extends TelemetrySample>(a: T, b: T, u: number): T {
   console.log('interpolate', u);
   return {
+    ...b,
     t: lerp(a.t, b.t, u),
     paused: false,
     position: lerpVec(a.position, b.position, u),
@@ -157,7 +154,7 @@ function interpolate(
   };
 }
 
-function extrapolate(s: TelemetrySample, dtMs: number): TelemetrySample {
+function extrapolate<T extends TelemetrySample>(s: T, dtMs: number): T {
   if (s.paused) {
     return s;
   }
@@ -166,6 +163,7 @@ function extrapolate(s: TelemetrySample, dtMs: number): TelemetrySample {
   console.log('extrapolate', dtMs);
 
   return {
+    ...s,
     t: s.t + dtMs,
     paused: false,
     position: {
@@ -174,10 +172,6 @@ function extrapolate(s: TelemetrySample, dtMs: number): TelemetrySample {
       z: s.position.z,
     },
     heading: s.heading + s.angularVelocity.z * dt,
-    speed: s.speed,
-    linearAccel: s.linearAccel,
-    angularVelocity: s.angularVelocity,
-    angularAccel: s.angularAccel,
   };
 }
 
@@ -222,11 +216,11 @@ export function lerpAngle(a: number, b: number, u: number): number {
 
 //
 
-function emaSample(
-  prev: TelemetrySample,
-  next: TelemetrySample,
+function emaSample<T extends TelemetrySample>(
+  prev: T,
+  next: T,
   alpha: number,
-): TelemetrySample {
+): T {
   return {
     ...next,
     position: lerpVec(prev.position, next.position, alpha),

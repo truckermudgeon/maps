@@ -5,6 +5,7 @@ import { center, getExtent } from '@truckermudgeon/base/geom';
 import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
 import { toPosAndBearing } from '@truckermudgeon/navigation/helpers';
 import type {
+  GameState,
   Route,
   RouteIndex,
   RouteStep,
@@ -509,7 +510,7 @@ export class AppControllerImpl implements AppController {
     let markerBearing = 0;
     console.log('subscribing');
 
-    const timeline = new TelemetryTimeline({
+    const timeline = new TelemetryTimeline<GameState>({
       lookbackMs: 250,
       maxExtrapolationMs: 500,
       emaAlpha: 0.5,
@@ -567,7 +568,7 @@ export class AppControllerImpl implements AppController {
         return;
       }
 
-      const { speed, position, heading } = gameState;
+      const { speed, position, heading, game } = gameState;
       const { position: center, bearing } = toPosAndBearing(
         {
           position: {
@@ -579,7 +580,7 @@ export class AppControllerImpl implements AppController {
             heading,
           },
         },
-        store.map,
+        game === 'ats' ? 'usa' : 'europe',
       );
       const speedMph = Math.round(speed * 2.236936);
 
