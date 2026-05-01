@@ -10,11 +10,12 @@ import type {
 
 export class ControlsStoreImpl implements ControlsStore {
   bearing = 0;
-  units = 'metric' as const;
+  units: 'imperial' | 'metric';
   limit = 0;
   speed = 0;
 
   constructor(private readonly appStore: AppStore) {
+    this.units = appStore.map === 'usa' ? 'imperial' : 'metric';
     makeAutoObservable(this);
   }
 
