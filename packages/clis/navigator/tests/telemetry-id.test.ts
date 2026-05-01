@@ -1,16 +1,35 @@
 import crypto from 'crypto';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
-  createReconnectRequest,
-  getPublicKey,
-  getTelemetryId,
-  signChallenge,
-  storeTelemetryId,
+  type TelemetryIdManager,
+  makeTelemetryIdManager,
 } from '../telemetry-id';
 
 describe('challenge handshake', () => {
+  // Bind a fresh manager to a per-run temp dir so the test never touches the
+  // real ~/.config/trucksim-navigator. Earlier versions imported the
+  // default-bound functions directly and stomped on the user's actual
+  // telemetry-id.txt and key files.
+  let tempDir: string;
+  let mgr: TelemetryIdManager;
+
+  beforeAll(() => {
+    tempDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'trucksim-navigator-test-'),
+    );
+    mgr = makeTelemetryIdManager(tempDir);
+  });
+
+  afterAll(() => {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
   it('verifies identity on first contact', async () => {
     // client
-    const publicKey = await getPublicKey();
+    const publicKey = await mgr.getPublicKey();
 
     // client -> issueChallenge(publicKey) -> server
 
@@ -37,7 +56,7 @@ describe('challenge handshake', () => {
     // client <- challengeResponse <- server
 
     // client
-    const signature = await signChallenge(challengeFromServer.challenge);
+    const signature = await mgr.signChallenge(challengeFromServer.challenge);
     const challengeResponse = {
       challenge: challengeFromServer.challenge,
       signature,
@@ -64,7 +83,7 @@ describe('challenge handshake', () => {
     // server associates telemetryId with public key.
 
     // client stores telemetryId (sends it as part of future reconnect requests).
-    storeTelemetryId(crypto.randomUUID());
+    mgr.storeTelemetryId(crypto.randomUUID());
 
     // client is PROVISIONAL.
     // client requests pairing code. displays to user.
@@ -76,7 +95,7 @@ describe('challenge handshake', () => {
 
   it('verifies identity on reconnect', async () => {
     // client
-    const reconnectRequest = await createReconnectRequest();
+    const reconnectRequest = await mgr.createReconnectRequest();
     const { telemetryId, timestamp, signature } = reconnectRequest;
 
     // server
@@ -87,12 +106,12 @@ describe('challenge handshake', () => {
     // previously stored
     const clientPublicKey = await crypto.subtle.importKey(
       'jwk',
-      await getPublicKey(),
+      await mgr.getPublicKey(),
       'Ed25519',
       true,
       ['verify'],
     );
-    const clientTelemetryId = getTelemetryId();
+    const clientTelemetryId = mgr.getTelemetryId();
     // server verifies telemetryId is associated with public key
     expect(clientTelemetryId).toEqual(telemetryId);
     // (if fails, then client goes through challenge flow again)
