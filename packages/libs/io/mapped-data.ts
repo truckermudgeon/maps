@@ -36,9 +36,10 @@ import type {
   WithPath,
   WithToken,
 } from '@truckermudgeon/map/types';
-import fs from 'fs';
 import path from 'path';
 import process from 'process';
+import type { FileSource } from './file-source';
+import { fromDir, fromZip } from './file-source';
 import { logger } from './logger';
 
 export type MapDataKeys = (keyof MapData)[];
@@ -126,18 +127,29 @@ interface Options<K extends keyof MapData> {
   dataOverridesJsonPath?: string;
 }
 
+export function readMapDataFromZip<
+  T extends 'usa' | 'europe',
+  K extends keyof MapData,
+>(
+  zipPath: string,
+  map: T,
+  options: Options<K>,
+): Pick<MappedData<T>, 'map' | K> {
+  return readMapData(fromZip(zipPath), map, options);
+}
+
 export function readMapData<
   T extends 'usa' | 'europe',
   K extends keyof MapData,
 >(
-  inputDir: string,
+  input: string | FileSource,
   map: T,
   options: Options<K>,
 ): Pick<MappedData<T>, 'map' | K> {
   Preconditions.checkArgument(options.mapDataKeys.length > 0);
-  checkJsonFilesPresent(inputDir, map, new Set(options.mapDataKeys));
-  const toJsonFilePath = (key: string) =>
-    path.join(inputDir, map + '-' + key + '.json');
+  const source = typeof input === 'string' ? fromDir(input) : input;
+  checkJsonFilesPresent(source, map, new Set(options.mapDataKeys));
+  const toJsonFilePath = (key: string) => `${map}-${key}.json`;
   const {
     includeHiddenRoadsAndPrefabs = false,
     focus: focusOptions,
@@ -147,7 +159,10 @@ export function readMapData<
   let overrides: MappedDataOverride[] = [];
   const forceSecretUids = new Set<bigint>();
   if (dataOverridesJsonPath != null) {
-    overrides = readArrayFile<MappedDataOverride>(dataOverridesJsonPath);
+    overrides = readArrayFile<MappedDataOverride>(
+      fromDir(path.dirname(dataOverridesJsonPath)),
+      path.basename(dataOverridesJsonPath),
+    );
     for (const override of overrides) {
       switch (override.type) {
         case 'forceSecret':
@@ -173,7 +188,7 @@ export function readMapData<
     }
   };
 
-  const allCities = readArrayFile<City>(toJsonFilePath('cities'));
+  const allCities = readArrayFile<City>(source, toJsonFilePath('cities'));
   let focusCoords: [number, number] | undefined;
   let focusCity: string | undefined;
   if (focusOptions) {
@@ -200,7 +215,10 @@ export function readMapData<
     }
   }
 
-  const allCompanies = readArrayFile<CompanyItem>(toJsonFilePath('companies'));
+  const allCompanies = readArrayFile<CompanyItem>(
+    source,
+    toJsonFilePath('companies'),
+  );
   const allCompanyPrefabs = new Set(allCompanies.map(c => c.prefabUid));
 
   const toWgs84 = map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
@@ -242,7 +260,7 @@ export function readMapData<
     switch (key) {
       case 'nodes': {
         mapData.nodes = mapify(
-          readArrayFile<Node>(toJsonFilePath(key), {
+          readArrayFile<Node>(source, toJsonFilePath(key), {
             filter: focusXYPlus(1000),
           }),
           n => n.uid,
@@ -251,7 +269,7 @@ export function readMapData<
       }
       case 'roads':
         mapData.roads = mapify(
-          readArrayFile<Road>(toJsonFilePath(key), {
+          readArrayFile<Road>(source, toJsonFilePath(key), {
             transform: maybeForceSecret,
             filter: r =>
               (includeHiddenRoadsAndPrefabs || !r.hidden) && focusXY(r),
@@ -265,7 +283,9 @@ export function readMapData<
         break;
       case 'ferries':
         mapData.ferries = mapify(
-          readArrayFile<Ferry>(toJsonFilePath(key), { filter: focusXY }),
+          readArrayFile<Ferry>(source, toJsonFilePath(key), {
+            filter: focusXY,
+          }),
           f => f.token,
         );
         mapData.ferries.values().forEach(ferry => {
@@ -277,7 +297,7 @@ export function readMapData<
         break;
       case 'prefabs':
         mapData.prefabs = mapify(
-          readArrayFile<Prefab>(toJsonFilePath(key), {
+          readArrayFile<Prefab>(source, toJsonFilePath(key), {
             transform: maybeForceSecret,
             filter: p => {
               const isCompanyPrefab = allCompanyPrefabs.has(p.uid);
@@ -300,7 +320,7 @@ export function readMapData<
         break;
       case 'signs':
         mapData.signs = mapify(
-          readArrayFile<Sign>(toJsonFilePath(key), { filter: focusXY }),
+          readArrayFile<Sign>(source, toJsonFilePath(key), { filter: focusXY }),
           t => t.uid,
         );
         mapData.signs.values().forEach(sign => {
@@ -315,7 +335,9 @@ export function readMapData<
         break;
       case 'models':
         mapData.models = mapify(
-          readArrayFile<Model>(toJsonFilePath(key), { filter: focusXY }),
+          readArrayFile<Model>(source, toJsonFilePath(key), {
+            filter: focusXY,
+          }),
           m => m.uid,
         );
         mapData.models.values().forEach(model => {
@@ -324,7 +346,7 @@ export function readMapData<
         break;
       case 'mapAreas':
         mapData.mapAreas = mapify(
-          readArrayFile<MapArea>(toJsonFilePath(key), {
+          readArrayFile<MapArea>(source, toJsonFilePath(key), {
             filter: focusXYPlus(200),
           }),
           m => m.uid,
@@ -335,7 +357,7 @@ export function readMapData<
         break;
       case 'dividers':
         mapData.dividers = mapify(
-          readArrayFile<Building | Curve>(toJsonFilePath(key), {
+          readArrayFile<Building | Curve>(source, toJsonFilePath(key), {
             filter: focusXY,
           }),
           d => d.uid,
@@ -350,7 +372,7 @@ export function readMapData<
         break;
       case 'countries':
         mapData.countries = mapify(
-          readArrayFile<Country>(toJsonFilePath(key), {
+          readArrayFile<Country>(source, toJsonFilePath(key), {
             filter: country => countryTokens.has(country.token),
           }),
           c => c.token,
@@ -358,7 +380,7 @@ export function readMapData<
         break;
       case 'companyDefs':
         mapData.companyDefs = mapify(
-          readArrayFile<WithToken<Company>>(toJsonFilePath(key), {
+          readArrayFile<WithToken<Company>>(source, toJsonFilePath(key), {
             filter: company =>
               company.cityTokens.some(token => cityTokens.has(token)),
           }),
@@ -367,13 +389,14 @@ export function readMapData<
         break;
       case 'roadLooks':
         mapData.roadLooks = mapify(
-          readArrayFile<WithToken<RoadLook>>(toJsonFilePath(key)),
+          readArrayFile<WithToken<RoadLook>>(source, toJsonFilePath(key)),
           r => r.token,
         );
         break;
       case 'prefabDescriptions':
         mapData.prefabDescriptions = mapify(
           readArrayFile<WithToken<WithPath<PrefabDescription>>>(
+            source,
             toJsonFilePath(key),
           ),
           p => p.token,
@@ -381,19 +404,25 @@ export function readMapData<
         break;
       case 'modelDescriptions':
         mapData.modelDescriptions = mapify(
-          readArrayFile<WithToken<ModelDescription>>(toJsonFilePath(key)),
+          readArrayFile<WithToken<ModelDescription>>(
+            source,
+            toJsonFilePath(key),
+          ),
           m => m.token,
         );
         break;
       case 'cargoes':
         mapData.cargoes = mapify(
-          readArrayFile<Cargo>(toJsonFilePath(key)),
+          readArrayFile<Cargo>(source, toJsonFilePath(key)),
           m => m.token,
         );
         break;
       case 'signDescriptions':
         mapData.signDescriptions = mapify(
-          readArrayFile<WithToken<SignDescription>>(toJsonFilePath(key)),
+          readArrayFile<WithToken<SignDescription>>(
+            source,
+            toJsonFilePath(key),
+          ),
           m => m.token,
         );
         break;
@@ -401,13 +430,13 @@ export function readMapData<
       // of focus options.
       case 'achievements':
         mapData.achievements = mapify(
-          readArrayFile<WithToken<Achievement>>(toJsonFilePath(key)),
+          readArrayFile<WithToken<Achievement>>(source, toJsonFilePath(key)),
           a => a.token,
         );
         break;
       case 'trajectories':
         mapData.trajectories = mapify(
-          readArrayFile<TrajectoryItem>(toJsonFilePath(key)),
+          readArrayFile<TrajectoryItem>(source, toJsonFilePath(key)),
           t => t.uid,
         );
         mapData.trajectories.values().forEach(trajectory => {
@@ -416,7 +445,7 @@ export function readMapData<
         break;
       case 'triggers':
         mapData.triggers = mapify(
-          readArrayFile<Trigger>(toJsonFilePath(key)),
+          readArrayFile<Trigger>(source, toJsonFilePath(key)),
           t => t.uid,
         );
         mapData.triggers.values().forEach(trigger => {
@@ -425,7 +454,7 @@ export function readMapData<
         break;
       case 'cutscenes':
         mapData.cutscenes = mapify(
-          readArrayFile<Cutscene>(toJsonFilePath(key)),
+          readArrayFile<Cutscene>(source, toJsonFilePath(key)),
           c => c.uid,
         );
         mapData.cutscenes.values().forEach(cutscene => {
@@ -434,13 +463,13 @@ export function readMapData<
         break;
       case 'routes':
         mapData.routes = mapify(
-          readArrayFile<WithToken<Route>>(toJsonFilePath(key)),
+          readArrayFile<WithToken<Route>>(source, toJsonFilePath(key)),
           r => r.token,
         );
         break;
       case 'mileageTargets':
         mapData.mileageTargets = mapify(
-          readArrayFile<WithToken<MileageTarget>>(toJsonFilePath(key)),
+          readArrayFile<WithToken<MileageTarget>>(source, toJsonFilePath(key)),
           t => t.token,
         );
         mapData.mileageTargets.values().forEach(target => {
@@ -451,7 +480,7 @@ export function readMapData<
         break;
       // N.B.: the following data is always in array form.
       case 'pois':
-        mapData.pois = readArrayFile<Poi>(toJsonFilePath(key), {
+        mapData.pois = readArrayFile<Poi>(source, toJsonFilePath(key), {
           filter: focusXY,
         });
         mapData.pois.forEach(poi => {
@@ -488,6 +517,7 @@ export function readMapData<
         break;
       case 'elevation':
         mapData.elevation = readArrayFile<[number, number, number]>(
+          source,
           toJsonFilePath(key),
           { filter: focusXYArray },
         );
@@ -554,17 +584,17 @@ function mapify<T, U>(arr: T[], k: (t: T) => U): Map<U, T> {
 }
 
 function checkJsonFilesPresent(
-  inputDir: string,
+  source: FileSource,
   map: string,
   keys: Set<string>,
 ) {
   const missingJsonFiles = [...keys].filter(
-    fn => !fs.existsSync(path.join(inputDir, map + '-' + fn + '.json')),
+    fn => !source.has(`${map}-${fn}.json`),
   );
   if (missingJsonFiles.length) {
     logger.error(
-      'missing JSON files in directory',
-      inputDir,
+      'missing JSON files in',
+      source.describe(),
       '\n\n  ',
       missingJsonFiles.map(f => `${map}-${f}.json`).join(', '),
       '\n\nre-export JSON files using parser and try again.',
@@ -579,10 +609,11 @@ function checkJsonFilesPresent(
  * - string array properties with key name ending in `Uids` into bigint arrays
  */
 function readArrayFile<T>(
-  filepath: string,
+  source: FileSource,
+  filename: string,
   options: { transform?: (t: T) => T; filter?: (t: T) => boolean } = {},
 ): T[] {
-  const basename = path.basename(filepath, '.json');
+  const basename = path.basename(filename, '.json');
   const start = Date.now();
   const reviver =
     basename.endsWith('elevation') ||
@@ -590,10 +621,7 @@ function readArrayFile<T>(
     basename.endsWith('nodes')
       ? undefined
       : bigintReviver;
-  const results: unknown = JSON.parse(
-    fs.readFileSync(filepath, 'utf-8'),
-    reviver,
-  );
+  const results: unknown = JSON.parse(source.readUtf8(filename), reviver);
   if (!Array.isArray(results)) {
     throw new Error();
   }
