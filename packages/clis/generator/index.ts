@@ -5,6 +5,7 @@ import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import * as achievements from './commands/achievements';
 import * as contours from './commands/contours';
+import * as dataSubset from './commands/data-subset';
 import * as ets2Villages from './commands/ets2-villages';
 import * as extraLabels from './commands/extra-labels';
 import * as footprints from './commands/footprints';
@@ -18,6 +19,7 @@ async function main() {
   await yargs(hideBin(process.argv))
     .wrap(yargs().terminalWidth()) // Use full width of wide terminals.
     .command(map)
+    .command(dataSubset)
     .command(prefabCurves)
     .command(ets2Villages)
     .command(extraLabels)

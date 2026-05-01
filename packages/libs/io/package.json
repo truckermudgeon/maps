@@ -9,12 +9,14 @@
     ".": "./index.ts"
   },
   "devDependencies": {
+    "@types/adm-zip": "^0.5.8",
     "@types/node": "^22.7.4",
     "typescript": "^5.9.2"
   },
   "dependencies": {
     "@truckermudgeon/base": "0.0.0",
     "@truckermudgeon/map": "0.0.0",
+    "adm-zip": "^0.5.17",
     "consola": "^3.4.2"
   }
 }
