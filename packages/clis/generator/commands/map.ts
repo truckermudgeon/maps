@@ -1,4 +1,3 @@
-import type { FocusOptions } from '@truckermudgeon/io';
 import { readMapData, writeGeojsonFile } from '@truckermudgeon/io';
 import { execSync } from 'child_process';
 import fs from 'fs';
@@ -7,6 +6,7 @@ import path from 'path';
 import type { Argv, BuilderArguments } from 'yargs';
 import { convertToMapGeoJson, geoJsonMapDataKeys } from '../geo-json/map';
 import { logger } from '../logger';
+import { parseFocusOptions } from './focus-options';
 import { maybeEnsureOutputDir, untildify } from './path-helpers';
 
 export const command = 'map';
@@ -115,24 +115,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
     // TODO verify tippecanoe is installed
   }
 
-  let focusOptions: FocusOptions | undefined;
-  if (args.focusCity) {
-    focusOptions = {
-      type: 'city',
-      city: args.focusCity,
-      radiusMeters: args.focusRadius,
-    };
-  } else if (args.focusGameCoords) {
-    const coords = args.focusGameCoords.split(',').map(c => parseFloat(c));
-    if (coords.length !== 2 || coords.some(c => isNaN(c))) {
-      throw new Error('invalid game coords');
-    }
-    focusOptions = {
-      type: 'coords',
-      coords: coords as [number, number],
-      radiusMeters: args.focusRadius,
-    };
-  }
+  const focusOptions = parseFocusOptions(args);
 
   const tsMapData = readMapData(args.inputDir, args.map, {
     includeHiddenRoadsAndPrefabs: args.includeHidden,
