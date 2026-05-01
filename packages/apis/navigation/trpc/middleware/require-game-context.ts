@@ -22,7 +22,7 @@ export const requireGameContext = middleware(async ({ ctx, next }) => {
     });
   }
 
-  if (sessionActor.gameContext == null) {
+  if (!hasGameContext(sessionActor)) {
     throw new TRPCError({
       code: 'PRECONDITION_FAILED',
       message: 'Game context not present',
@@ -32,7 +32,11 @@ export const requireGameContext = middleware(async ({ ctx, next }) => {
   return next({
     ctx: {
       ...ctx,
-      sessionActor: sessionActor as SessionActorWithGameContext,
+      sessionActor,
     },
   });
 });
+
+function hasGameContext(s: SessionActor): s is SessionActorWithGameContext {
+  return s.gameContext != null;
+}
