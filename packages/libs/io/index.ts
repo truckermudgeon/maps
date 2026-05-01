@@ -1,6 +1,6 @@
 export { fromDir, fromZip } from './file-source';
 export type { FileSource } from './file-source';
-export { readGraphData } from './graph-data';
+export { readGraphData, readGraphDataFromZip } from './graph-data';
 export { readMapData, readMapDataFromZip } from './mapped-data';
 export type {
   FocusOptions,
@@ -8,7 +8,10 @@ export type {
   MappedData,
   MappedDataForKeys,
 } from './mapped-data';
-export { readRoundaboutsData } from './roundabouts-data';
+export {
+  readRoundaboutsData,
+  readRoundaboutsDataFromZip,
+} from './roundabouts-data';
 export {
   writeArrayFile,
   writeGeojsonFile,
