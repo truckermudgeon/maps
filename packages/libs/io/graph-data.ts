@@ -4,18 +4,23 @@ import type {
   Neighbors,
   ServiceArea,
 } from '@truckermudgeon/map/types';
-import fs from 'fs';
-import path from 'path';
+import type { FileSource } from './file-source';
+import { fromDir, fromZip } from './file-source';
+
+export function readGraphDataFromZip<T extends 'usa' | 'europe'>(
+  zipPath: string,
+  map: T,
+): GraphData {
+  return readGraphData(fromZip(zipPath), map);
+}
 
 export function readGraphData<T extends 'usa' | 'europe'>(
-  inputDir: string,
+  input: string | FileSource,
   map: T,
 ): GraphData {
   console.log('reading', map, 'graph data...');
-  const json = fs.readFileSync(
-    path.join(inputDir, `${map}-graph.json`),
-    'utf-8',
-  );
+  const source = typeof input === 'string' ? fromDir(input) : input;
+  const json = source.readUtf8(`${map}-graph.json`);
   const graphData = JSON.parse(json, graphReviver) as unknown as GraphData;
   console.log(graphData.graph.size, 'graph nodes');
   console.log(graphData.serviceAreas.size, 'service areas');

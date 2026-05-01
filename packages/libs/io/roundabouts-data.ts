@@ -1,17 +1,22 @@
 import { assert } from '@truckermudgeon/base/assert';
 import type { RoundaboutData, RoundaboutExit } from '@truckermudgeon/map/types';
-import fs from 'fs';
-import path from 'path';
+import type { FileSource } from './file-source';
+import { fromDir, fromZip } from './file-source';
+
+export function readRoundaboutsDataFromZip<T extends 'usa' | 'europe'>(
+  zipPath: string,
+  map: T,
+): RoundaboutData {
+  return readRoundaboutsData(fromZip(zipPath), map);
+}
 
 export function readRoundaboutsData<T extends 'usa' | 'europe'>(
-  inputDir: string,
+  input: string | FileSource,
   map: T,
 ): RoundaboutData {
   console.log('reading', map, 'roundabouts data...');
-  const json = fs.readFileSync(
-    path.join(inputDir, `${map}-roundabouts.json`),
-    'utf-8',
-  );
+  const source = typeof input === 'string' ? fromDir(input) : input;
+  const json = source.readUtf8(`${map}-roundabouts.json`);
   const roundaboutData = JSON.parse(
     json,
     roundaboutsReviver,
