@@ -9,10 +9,11 @@ ETS2_DIR := "~/Library/Application Support/Steam/steamapps/common/Euro Truck Sim
 ##### `parser`-generated files ###############################################
 
 # note: values come from properties of `DefData`...
-PARSER_JSON_NAMES = countries companyDefs roadLooks prefabDescriptions modelDescriptions cargoes achievements routes
+PARSER_JSON_NAMES = countries companyDefs roadLooks prefabDescriptions modelDescriptions signDescriptions cargoes \
+		achievements routes mileageTargets
 # ...and `MapData` types.
 PARSER_JSON_NAMES += nodes elevation roads ferries prefabs companies models mapAreas pois dividers trajectories \
-		triggers cutscenes cities
+		triggers signs cutscenes cities
 
 ATS_PARSER_JSON_FILES := $(patsubst %,$(PARSER_OUT_DIR)/usa-%.json,$(PARSER_JSON_NAMES))
 ETS2_PARSER_JSON_FILES := $(patsubst %,$(PARSER_OUT_DIR)/europe-%.json,$(PARSER_JSON_NAMES))
