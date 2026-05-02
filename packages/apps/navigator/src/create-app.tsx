@@ -23,7 +23,11 @@ import { RouteStack } from './components/RouteStack';
 import { SegmentCompleteToast } from './components/SegmentCompleteToast';
 import { SlippyMap } from './components/SlippyMap';
 import { SpriteProvider } from './components/SpriteProvider';
-import { toLengthAndUnit } from './components/text';
+import {
+  defaultImperialOptions,
+  defaultMetricOptions,
+  toLengthAndUnit,
+} from './components/text';
 import { TrailerOrWaypointMarkers } from './components/TrailerOrWaypointMarkers';
 import { WaitingForTelemetry } from './components/WaitingForTelemetry';
 import {
@@ -43,12 +47,15 @@ import type { AppClient, AppStore, NavSheetStore } from './controllers/types';
 import { UiEnvironmentStoreImpl } from './controllers/ui-environment';
 import { createControls } from './create-controls';
 import { createNavSheet } from './create-nav-sheet';
+import { setupDevtools } from './dev-tools';
 
 export function createApp({
+  map,
   appClient,
   joyTheme,
   transitionDurationMs,
 }: {
+  map: 'usa' | 'europe';
   appClient: AppClient;
   joyTheme: Theme;
   transitionDurationMs: number;
@@ -56,8 +63,9 @@ export function createApp({
   App: () => ReactElement;
   store: Pick<AppStore, 'readyToLoad'>;
 } {
-  const store = new AppStoreImpl();
+  const store = new AppStoreImpl(map);
   const controller = new AppControllerImpl();
+  setupDevtools({ appStore: store });
 
   const {
     NavSheet,
@@ -75,6 +83,12 @@ export function createApp({
     // HACK but reset destinations list right away, because we want to hide
     // markers right away.
     navSheetStore.destinations = [];
+    // HACK the reaction that's set up to draw step-arrows doesn't handle the
+    // case where there's no active route, buta preview-step arrow has been
+    // drawn. Handle it here.
+    if (!store.activeRoute) {
+      controller.drawStepArrow(undefined);
+    }
   });
   const _NavSheet = () => (
     <NavSheet
@@ -337,19 +351,27 @@ export function createApp({
       />
     );
   });
-  const _SlippyMap = observer(() => (
-    <SlippyMap
-      mode={store.themeMode}
-      onLoad={onMapLoad}
-      onDragStart={action(() => controller.setFree(store))}
-      Destinations={_Destinations}
-      TrailerOrWaypointMarkers={_TrailerOrWaypointMarkers}
-      PlayerMarker={PlayerMarker}
-    />
-  ));
+  const _SlippyMap = observer(() => {
+    const _map = store.isReceivingTelemetry ? store.map : map;
+    return (
+      <SlippyMap
+        key={_map}
+        map={_map}
+        mode={store.themeMode}
+        onLoad={onMapLoad}
+        onDragStart={action(() => controller.setFree(store))}
+        Destinations={_Destinations}
+        TrailerOrWaypointMarkers={_TrailerOrWaypointMarkers}
+        PlayerMarker={PlayerMarker}
+      />
+    );
+  });
 
   const lengthAndUnitToNextManeuver = computed(() =>
-    toLengthAndUnit(store.distanceToNextManeuver),
+    toLengthAndUnit(
+      store.distanceToNextManeuver,
+      store.map === 'usa' ? defaultImperialOptions : defaultMetricOptions,
+    ),
   );
   const _Directions = observer(() => {
     // TODO move all this to a separate component file.
@@ -444,6 +466,7 @@ export function createApp({
       minutes: store.activeRouteToFirstWayPointSummary?.minutes ?? 0,
       distance: toLengthAndUnit(
         store.activeRouteToFirstWayPointSummary?.distanceMeters ?? 0,
+        store.map === 'usa' ? defaultImperialOptions : defaultMetricOptions,
       ),
     }),
     { equals: comparer.structural },

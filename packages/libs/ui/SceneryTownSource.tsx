@@ -1,5 +1,8 @@
 import type { Ets2SelectableDlc } from '@truckermudgeon/map/constants';
-import { toEts2DlcGuards } from '@truckermudgeon/map/constants';
+import {
+  Ets2SelectableDlcs,
+  toEts2DlcGuards,
+} from '@truckermudgeon/map/constants';
 import type { ExpressionSpecification } from 'maplibre-gl';
 import { Layer, Source } from 'react-map-gl/maplibre';
 import { baseTextLayout, textVariableAnchor } from './GameMapStyle';
@@ -62,7 +65,7 @@ type SceneryTownSourceProps = (
     }
   | {
       game: 'ets2';
-      dlcs: ReadonlySet<Ets2SelectableDlc>;
+      dlcs?: ReadonlySet<Ets2SelectableDlc>; // defaults to full set
     }
 ) & {
   enableAutoHide?: boolean; // defaults to true
@@ -83,7 +86,7 @@ export const SceneryTownSource = (props: SceneryTownSourceProps) => {
             ['literal', [...(props.enabledStates ?? allStates)]],
           ],
         ]
-      : createDlcGuardFilter(props.dlcs);
+      : createDlcGuardFilter(props.dlcs ?? Ets2SelectableDlcs);
   const colors = modeColors[mode];
   return (
     <Source id={`${game}-scenery-towns`} type={'geojson'} data={dataUrl}>

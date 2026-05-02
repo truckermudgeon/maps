@@ -1,18 +1,11 @@
 import { assertExists } from '@truckermudgeon/base/assert';
 import type { Position } from '@truckermudgeon/base/geom';
-import {
-  AtsSelectableDlcs,
-  ItemType,
-  toAtsDlcGuards,
-} from '@truckermudgeon/map/constants';
+import { ItemType } from '@truckermudgeon/map/constants';
 import { fromAtsCoordsToWgs84 } from '@truckermudgeon/map/projections';
 import { createRouteKey } from '@truckermudgeon/map/routing';
 import type { Road } from '@truckermudgeon/map/types';
-import path from 'node:path';
-import url from 'node:url';
 import { beforeAll, vi } from 'vitest';
 import { BranchType } from '../../../constants';
-import { readGraphAndMapData } from '../../../infra/lookups/graph-and-map';
 import { ConsoleWorkerMetrics } from '../../../infra/metrics/worker';
 import { createRoutingService } from '../../../infra/routing/service';
 import type { DomainEventSink } from '../../events';
@@ -27,6 +20,7 @@ import {
   aTelemetryWith,
   aTruckWith,
 } from './builders';
+import { testLookupService } from './test-lookup-service';
 
 const { createUpdateListener, arrayIndexToRouteIndex } = forTesting;
 
@@ -207,16 +201,10 @@ describe.skip('detectRouteEvents bugs', () => {
   let graphAndMapData: GraphAndMapData<GraphMappedData>;
   let routingService: RoutingService;
   beforeAll(() => {
-    const __filename = url.fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    const outDir = path.join(__dirname, '../../../../../../out');
-    graphAndMapData = readGraphAndMapData(outDir, 'usa');
+    const atsLookupService = testLookupService('usa');
+    graphAndMapData = atsLookupService.getData().graphAndMapData;
     routingService = createRoutingService(
-      {
-        nodeLUT: graphAndMapData.tsMapData.nodes,
-        graph: graphAndMapData.graphData.graph,
-        enabledDlcGuards: toAtsDlcGuards(AtsSelectableDlcs),
-      },
+      atsLookupService,
       new ConsoleWorkerMetrics(),
     );
     // routing service's thread pool ends up making copies of the routing context,
@@ -254,6 +242,7 @@ describe.skip('detectRouteEvents bugs', () => {
       graphAndMapData.tsMapData.nodes,
       graphAndMapData.tsMapData.roadLooks,
       graphAndMapData.roadAndPrefabRTree,
+      graphAndMapData.tsMapData.map,
     );
     expect(location?.type).toBe(ItemType.Road);
     const road = location! as Road;
@@ -272,6 +261,7 @@ describe.skip('detectRouteEvents bugs', () => {
       graphAndMapData.tsMapData.nodes,
       graphAndMapData.tsMapData.roadLooks,
       graphAndMapData.roadAndPrefabRTree,
+      graphAndMapData.tsMapData.map,
     );
     expect(location?.type).toBe(ItemType.Road);
     const road = location! as Road;
@@ -290,6 +280,7 @@ describe.skip('detectRouteEvents bugs', () => {
       graphAndMapData.tsMapData.nodes,
       graphAndMapData.tsMapData.roadLooks,
       graphAndMapData.roadAndPrefabRTree,
+      graphAndMapData.tsMapData.map,
     );
     expect(location?.type).toBe(ItemType.Road);
     const road = location! as Road;
@@ -306,8 +297,8 @@ describe.skip('detectRouteEvents bugs', () => {
     const endNode = assertExists(nodes.get(0x47d43d1c908b0001n));
     const testRoute = await generateRouteFromKeys(
       [
-        createRouteKey(startNode.uid, endNode.uid, 'forward', 'fastest'),
-        createRouteKey(endNode.uid, startNode.uid, 'forward', 'fastest'),
+        createRouteKey(startNode.uid, endNode.uid, 'forward', 'fastest', 'usa'),
+        createRouteKey(endNode.uid, startNode.uid, 'forward', 'fastest', 'usa'),
       ],
       { graphAndMapData, routing: routingService },
     );
@@ -467,7 +458,7 @@ describe.skip('detectRouteEvents bugs', () => {
     const startNode = assertExists(nodes.get(0x4e7602203bdf0000n));
     const endNode = assertExists(nodes.get(0x4eeffb7b499f0003n));
     let testRoute = await generateRouteFromKeys(
-      [createRouteKey(startNode.uid, endNode.uid, 'forward', 'fastest')],
+      [createRouteKey(startNode.uid, endNode.uid, 'forward', 'fastest', 'usa')],
       { graphAndMapData, routing: routingService },
     );
     const testTelemetry = aTelemetryWith({

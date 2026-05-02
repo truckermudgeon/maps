@@ -14,14 +14,28 @@ import type {
 import type { ReactElement } from 'react';
 import { toCompassPoint } from '../base/to-compass-point';
 import { SpriteImage } from './SpriteImage';
-import { toLengthAndUnit, toLocationString } from './text';
+import {
+  toLengthAndUnit as _toLengthAndUnit,
+  defaultImperialOptions,
+  defaultMetricOptions,
+  toLocationString,
+} from './text';
 
 export const DestinationItem = (props: {
+  units: 'imperial' | 'metric';
   destination: SearchResultWithRelativeTruckInfo;
   index: number | undefined;
   onDestinationHighlight: () => void;
   CollapsibleButtonBar: () => ReactElement;
 }) => {
+  const toLengthAndUnit = (meters: number) =>
+    _toLengthAndUnit(
+      meters,
+      props.units === 'imperial'
+        ? defaultImperialOptions
+        : defaultMetricOptions,
+    );
+
   return (
     <>
       <ListItem>

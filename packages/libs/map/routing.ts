@@ -12,7 +12,7 @@ export const routingModes = new Set<Mode>([
   'smallRoads',
 ]);
 export type Route = {
-  key: string;
+  key: RouteKey;
   mode: Mode;
 } & (
   | {
@@ -34,23 +34,62 @@ export interface Context {
   nodeLUT: ReadonlyMap<bigint, PartialNode>;
   graph: ReadonlyMap<bigint, Neighbors>;
   enabledDlcGuards: ReadonlySet<number>;
+  map: 'usa' | 'europe';
 }
 
-export type RouteKey = `${string}-${string}-${Direction}-${Mode}`;
+export type RouteKey =
+  `${string}-${string}-${Direction}-${Mode}-${'usa' | 'europe'}`;
+
+export function isRouteKey(key: string): boolean {
+  const [startNodeUid, endNodeUid, direction, mode, map] = key.split('-');
+  if ([startNodeUid, endNodeUid, direction, mode, map].some(s => s == null)) {
+    return false;
+  }
+
+  if ([startNodeUid, endNodeUid].some(s => !/^[0-9a-f]{1,16}$/i.test(s))) {
+    return false;
+  }
+  if (direction !== 'forward' && direction !== 'backward') {
+    return false;
+  }
+  if (map !== 'usa' && map !== 'europe') {
+    return false;
+  }
+
+  return true;
+}
 
 export function assertRouteKey(key: string): RouteKey {
-  const [startNodeUid, endNodeUid, direction, mode] = key.split('-');
-  Preconditions.checkExists(startNodeUid);
-  Preconditions.checkExists(endNodeUid);
-  Preconditions.checkExists(direction);
-  Preconditions.checkExists(mode);
+  const [startNodeUid, endNodeUid, direction, mode, map] = key.split('-');
+  Preconditions.checkExists(
+    startNodeUid,
+    `${key} has no start node uid component`,
+  );
+  Preconditions.checkExists(endNodeUid, `${key} has no end node uid component`);
+  Preconditions.checkExists(direction, `${key} has no direction component`);
+  Preconditions.checkExists(mode, `${key} has no mode component`);
+  Preconditions.checkExists(map, `${key} has no map component`);
 
-  Preconditions.checkArgument(/^[0-9a-f]{1,16}$/i.test(startNodeUid));
-  Preconditions.checkArgument(/^[0-9a-f]{1,16}$/i.test(endNodeUid));
+  Preconditions.checkArgument(
+    /^[0-9a-f]{1,16}$/i.test(startNodeUid),
+    `${startNodeUid} is not a valid uid`,
+  );
+  Preconditions.checkArgument(
+    /^[0-9a-f]{1,16}$/i.test(endNodeUid),
+    `${endNodeUid} is not a valid uid`,
+  );
   Preconditions.checkArgument(
     direction === 'forward' || direction === 'backward',
+    `${direction} is not a valid direction`,
   );
-  Preconditions.checkArgument(routingModes.has(mode as Mode));
+  Preconditions.checkArgument(
+    routingModes.has(mode as Mode),
+    `${mode} is not a valid mode`,
+  );
+  Preconditions.checkArgument(
+    map === 'usa' || map === 'europe',
+    `${map} is not a valid map`,
+  );
   return key as RouteKey;
 }
 
@@ -59,8 +98,9 @@ export function createRouteKey(
   endNodeUid: bigint,
   direction: Direction,
   mode: Mode,
+  map: 'usa' | 'europe',
 ): RouteKey {
-  return `${startNodeUid.toString(16)}-${endNodeUid.toString(16)}-${direction}-${mode}`;
+  return `${startNodeUid.toString(16)}-${endNodeUid.toString(16)}-${direction}-${mode}-${map}`;
 }
 
 export function findRouteFromKey(key: RouteKey, context: Context): Route {
@@ -97,7 +137,13 @@ export function findRoute(
     context.graph.has(endNodeUid),
     `cannot find route to unknown node ${endNodeUid.toString(16)}`,
   );
-  const key = createRouteKey(startNodeUid, endNodeUid, direction, mode);
+  const key = createRouteKey(
+    startNodeUid,
+    endNodeUid,
+    direction,
+    mode,
+    context.map,
+  );
   // console.log('finding route', startNodeUid, 'direction', endNodeUid);
   const { nodeLUT, graph } = context;
 

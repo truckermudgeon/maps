@@ -54,7 +54,7 @@ export const TruckSimTelemetrySchema = z.object({
   }),
   game: z.object({
     game: z.object({
-      name: z.string().max(4),
+      name: z.enum(['ats', 'ets2']),
     }),
     paused: z.boolean(),
     timestamp: z.object({

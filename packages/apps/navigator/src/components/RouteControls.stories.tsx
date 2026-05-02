@@ -2,7 +2,11 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
 
 import { RouteControls } from './RouteControls';
-import { toLengthAndUnit } from './text';
+import {
+  defaultImperialOptions,
+  defaultMetricOptions,
+  toLengthAndUnit,
+} from './text';
 
 const meta = {
   title: 'Route/RouteControls',
@@ -21,13 +25,21 @@ const requiredEventHandlers = {
   onRouteEndClick: fn(),
 };
 
-const { length, unit } = toLengthAndUnit(4000);
-
 export const Default: Story = {
   args: {
     summary: {
       minutes: 123,
-      distance: { length, unit },
+      distance: toLengthAndUnit(4000, defaultImperialOptions),
+    },
+    ...requiredEventHandlers,
+  },
+};
+
+export const Metric: Story = {
+  args: {
+    summary: {
+      minutes: 123,
+      distance: toLengthAndUnit(4000, defaultMetricOptions),
     },
     ...requiredEventHandlers,
   },

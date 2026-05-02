@@ -1,10 +1,7 @@
 import type { MappedDataForKeys } from '@truckermudgeon/io';
 import { readMapData } from '@truckermudgeon/io';
-import {
-  AtsSelectableDlcs,
-  toAtsDlcGuards,
-} from '@truckermudgeon/map/constants';
 import { fromAtsCoordsToWgs84 } from '@truckermudgeon/map/projections';
+import type { RouteKey } from '@truckermudgeon/map/routing';
 import { createRouteKey } from '@truckermudgeon/map/routing';
 import type { Node, Prefab } from '@truckermudgeon/map/types';
 import { toStepText } from '@truckermudgeon/navigator-app/src/components/text';
@@ -12,7 +9,6 @@ import { EventEmitter } from 'events';
 import * as path from 'node:path';
 import * as url from 'node:url';
 import { beforeAll } from 'vitest';
-import { readGraphAndMapData } from '../../../infra/lookups/graph-and-map';
 import { ConsoleWorkerMetrics } from '../../../infra/metrics/worker';
 import { createRoutingService } from '../../../infra/routing/service';
 import type { DomainEventSink } from '../../events';
@@ -40,6 +36,7 @@ import {
   lookupForNodeUids,
 } from './builders';
 import { nodes, prefabDesc_2o0cb } from './fixtures';
+import { testLookupService } from './test-lookup-service';
 
 const { combineRoutes, getDirectionOnRoad } = forTesting;
 const dummyEventSink: DomainEventSink = {
@@ -211,12 +208,12 @@ describe('getDirectionOnRoad', () => {
     });
 
     // before the road
-    expect(getDirectionOnRoad(truckFacingNorth, southToNorthRoad, nodes)).toBe(
-      'forward',
-    );
-    expect(getDirectionOnRoad(truckFacingSouth, southToNorthRoad, nodes)).toBe(
-      'backward',
-    );
+    expect(
+      getDirectionOnRoad(truckFacingNorth, southToNorthRoad, nodes, 'usa'),
+    ).toBe('forward');
+    expect(
+      getDirectionOnRoad(truckFacingSouth, southToNorthRoad, nodes, 'usa'),
+    ).toBe('backward');
   });
 });
 
@@ -263,9 +260,15 @@ describe.skip('getDirectionOnPrefab', () => {
       const truck = toTruck(data);
       const prefab = tsMapData.prefabs.get(BigInt('0x' + data.prefabUid))!;
       const prefabDesc = tsMapData.prefabDescriptions.get(data.prefabToken)!;
-      console.log(toPosAndBearing(truck));
+      console.log(toPosAndBearing(truck, tsMapData.map));
       expect(
-        getDirectionOnPrefab(truck, prefab, prefabDesc, tsMapData.nodes),
+        getDirectionOnPrefab(
+          truck,
+          prefab,
+          prefabDesc,
+          tsMapData.nodes,
+          tsMapData.map,
+        ),
       ).toEqual({
         direction: 'forward',
         fromNodeUid: 0x52d133f0f285f9e7n,
@@ -283,9 +286,15 @@ describe.skip('getDirectionOnPrefab', () => {
       const truck = toTruck(data);
       const prefab = tsMapData.prefabs.get(BigInt('0x' + data.prefabUid))!;
       const prefabDesc = tsMapData.prefabDescriptions.get(data.prefabToken)!;
-      console.log(toPosAndBearing(truck));
+      console.log(toPosAndBearing(truck, tsMapData.map));
       expect(
-        getDirectionOnPrefab(truck, prefab, prefabDesc, tsMapData.nodes),
+        getDirectionOnPrefab(
+          truck,
+          prefab,
+          prefabDesc,
+          tsMapData.nodes,
+          tsMapData.map,
+        ),
       ).toEqual({
         direction: 'forward',
         fromNodeUid: 0x572ca546838b0002n,
@@ -317,7 +326,7 @@ describe.skip('getDirectionOnPrefab', () => {
     };
 
     expect(
-      getDirectionOnPrefab(truck, prefab, prefabDesc_2o0cb, nodes),
+      getDirectionOnPrefab(truck, prefab, prefabDesc_2o0cb, nodes, 'usa'),
     ).toEqual({
       fromNodeUid: 0x441462706bcb0000n,
       direction: 'backward',
@@ -331,16 +340,10 @@ describe.skip('generateRoutes bugs', () => {
   let graphAndMapData: GraphAndMapData<GraphMappedData>;
   let routingService: RoutingService;
   beforeAll(() => {
-    const __filename = url.fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    const outDir = path.join(__dirname, '../../../../../../out');
-    graphAndMapData = readGraphAndMapData(outDir, 'usa');
+    const atsLookupService = testLookupService('usa');
+    graphAndMapData = atsLookupService.getData().graphAndMapData;
     routingService = createRoutingService(
-      {
-        nodeLUT: graphAndMapData.tsMapData.nodes,
-        graph: graphAndMapData.graphData.graph,
-        enabledDlcGuards: toAtsDlcGuards(AtsSelectableDlcs),
-      },
+      atsLookupService,
       new ConsoleWorkerMetrics(),
     );
     // routing service's thread pool ends up making copies of the routing context,
@@ -354,11 +357,12 @@ describe.skip('generateRoutes bugs', () => {
       'code',
       dummyEventSink,
       telemetryEventEmitter,
-      graphAndMapData,
+      () => graphAndMapData,
       routingService,
       100,
     );
-    const key = '57457ae23e11a7f4-5f76e2647d050b31-forward-fastest';
+    const key: RouteKey =
+      '57457ae23e11a7f4-5f76e2647d050b31-forward-fastest-usa';
     const route = await generateRouteFromKeys([key], {
       graphAndMapData,
       routing: routingService,
@@ -399,6 +403,7 @@ describe.skip('generateRoutes bugs', () => {
           0x5f76e26192852154n,
           'forward',
           'shortest',
+          'usa',
         ),
       ],
       {
@@ -417,6 +422,7 @@ describe.skip('generateRoutes bugs', () => {
           0x42da4f504e9b0426n,
           'forward',
           'shortest',
+          'usa',
         ),
       ],
       {
@@ -436,6 +442,7 @@ describe.skip('generateRoutes bugs', () => {
           0x27f9f4d86445076an,
           'backward',
           'shortest',
+          'usa',
         ),
       ],
       {

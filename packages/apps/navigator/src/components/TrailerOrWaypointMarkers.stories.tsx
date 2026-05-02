@@ -38,7 +38,7 @@ export const NoStops: Story = {
       id: '',
       segments: [
         {
-          key: '0-0-forward-fastest',
+          key: '0-0-forward-fastest-usa',
           steps: [
             aStepWith({
               geometry: [
@@ -66,7 +66,7 @@ export const WithStops: Story = {
       id: 'id',
       segments: [
         {
-          key: '0-0-forward-fastest',
+          key: '0-0-forward-fastest-usa',
           steps: [
             aStepWith({
               geometry: [
@@ -81,7 +81,7 @@ export const WithStops: Story = {
           score: 0,
         },
         {
-          key: '0-0-forward-fastest',
+          key: '0-0-forward-fastest-usa',
           steps: [
             aStepWith({
               geometry: [
@@ -96,7 +96,7 @@ export const WithStops: Story = {
           score: 0,
         },
         {
-          key: '0-0-forward-fastest',
+          key: '0-0-forward-fastest-usa',
           steps: [
             aStepWith({
               geometry: [

@@ -3,15 +3,18 @@ import type { Route, RouteWithSummary } from '@truckermudgeon/navigation/types';
 import { RouteItem } from './RouteItem';
 
 export const RoutesList = (props: {
+  units: 'imperial' | 'metric';
   routes: RouteWithSummary[];
   onRouteHighlight: (route: Route) => void;
   onRouteDetailsClick: (route: Route) => void;
   onRouteGoClick: (route: Route) => void;
 }) => {
   console.log('render route list');
-  const { onRouteHighlight, onRouteDetailsClick, onRouteGoClick } = props;
+  const { onRouteHighlight, onRouteDetailsClick, onRouteGoClick, units } =
+    props;
   const _RouteItem = (props: { route: RouteWithSummary }) => (
     <RouteItem
+      units={units}
       route={props.route}
       onRouteHighlight={() => onRouteHighlight(props.route)}
       onRouteDetailsClick={() => onRouteDetailsClick(props.route)}

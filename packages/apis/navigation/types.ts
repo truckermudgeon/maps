@@ -1,4 +1,4 @@
-import type { Mode } from '@truckermudgeon/map/routing';
+import type { Mode, RouteKey } from '@truckermudgeon/map/routing';
 import type { SearchProperties } from '@truckermudgeon/map/types';
 import type { z } from 'zod';
 import type {
@@ -114,7 +114,7 @@ export interface RouteStep {
 }
 
 export interface RouteSegment {
-  key: string;
+  key: RouteKey;
   steps: RouteStep[]; // must have length > 0
   strategy: Mode;
   /** Sum of steps' distances */
@@ -163,6 +163,10 @@ export type ActorEvent =
   | {
       type: 'positionUpdate';
       data: GameState;
+    }
+  | {
+      type: 'mapUpdate';
+      data: 'usa' | 'europe';
     }
   | {
       type: 'routeUpdate';
@@ -218,7 +222,8 @@ export interface TelemetrySample {
 
 export interface GameState extends TelemetrySample {
   // world stuff
-  speedLimit: number;
+  game: 'ats' | 'ets2';
+  speedLimit: { mph: number; kph: number };
   scale: number;
 }
 

@@ -216,7 +216,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
 
 function createSpatialIndices(
   tsMapData: MappedDataForKeys<['cities', 'countries', 'nodes']>,
-  sceneryTowns: ExtraLabelsGeoJSON,
+  sceneryTowns: ExtraLabelsGeoJSON, // coordinates are in game coords
 ): {
   cityRTree: RBush<
     BBox & {
@@ -230,7 +230,7 @@ function createSpatialIndices(
     cityName: string;
     stateCode: string;
   }>;
-  nodePointRTree: PointRBush<{
+  countryPointRTree: PointRBush<{
     x: number;
     y: number;
     node: Node;
@@ -296,8 +296,12 @@ function createSpatialIndices(
         }),
       ),
   );
-  const nodePointRTree = new PointRBush<{ x: number; y: number; node: Node }>();
-  nodePointRTree.load(
+  const countryPointRTree = new PointRBush<{
+    x: number;
+    y: number;
+    node: Node;
+  }>();
+  countryPointRTree.load(
     [...tsMapData.nodes.values()]
       .filter(
         n =>
@@ -314,7 +318,7 @@ function createSpatialIndices(
   return {
     cityRTree,
     cityPointRTree,
-    nodePointRTree,
+    countryPointRTree,
   };
 }
 
@@ -384,15 +388,15 @@ function poiToSearchFeature(
       cityName: string;
       stateCode: string;
     }>;
-    nodePointRTree: PointRBush<{ x: number; y: number; node: Node }>;
+    countryPointRTree: PointRBush<{ x: number; y: number; node: Node }>;
   },
 ): SearchFeature<SearchPoiProperties>[] {
-  const { dlcGuardSpatialIndex, nodePointRTree, cityPointRTree, cityRTree } =
+  const { dlcGuardSpatialIndex, countryPointRTree, cityPointRTree, cityRTree } =
     context;
   const getDlcGuard = (p: { x: number; y: number }): number =>
     dlcGuardSpatialIndex.findClosest(p.x, p.y).dlcGuard;
 
-  const closestNode = nodePointRTree.findClosest(poi.x, poi.y).node;
+  const closestNode = countryPointRTree.findClosest(poi.x, poi.y).node;
   const countriesById = new Map<number, Country>(
     context.countries.values().map(c => [c.id, c]),
   );

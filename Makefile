@@ -9,10 +9,11 @@ ETS2_DIR := "~/Library/Application Support/Steam/steamapps/common/Euro Truck Sim
 ##### `parser`-generated files ###############################################
 
 # note: values come from properties of `DefData`...
-PARSER_JSON_NAMES = countries companyDefs roadLooks prefabDescriptions modelDescriptions cargoes achievements routes
+PARSER_JSON_NAMES = countries companyDefs roadLooks prefabDescriptions modelDescriptions signDescriptions cargoes \
+		achievements routes mileageTargets
 # ...and `MapData` types.
 PARSER_JSON_NAMES += nodes elevation roads ferries prefabs companies models mapAreas pois dividers trajectories \
-		triggers cutscenes cities
+		triggers signs cutscenes cities
 
 ATS_PARSER_JSON_FILES := $(patsubst %,$(PARSER_OUT_DIR)/usa-%.json,$(PARSER_JSON_NAMES))
 ETS2_PARSER_JSON_FILES := $(patsubst %,$(PARSER_OUT_DIR)/europe-%.json,$(PARSER_JSON_NAMES))
@@ -30,8 +31,10 @@ RESOURCES_DIR := packages/clis/generator/resources
 DEMO_FILES :=
 # files required by the navigator webapp
 NAVIGATOR_FILES :=
-# files required by the navigation server
-NAVIGATION_FILES := $(ATS_PARSER_JSON_FILES)
+# files bundled into usa-navigation.zip / europe-navigation.zip for the
+# navigation server. NAVIGATION_FILES (the zip pair) is defined further down.
+ATS_NAVIGATION_FILES := $(ATS_PARSER_JSON_FILES)
+ETS2_NAVIGATION_FILES := $(ETS2_PARSER_JSON_FILES)
 
 #### pmtiles files
 
@@ -100,7 +103,8 @@ $(GENERATOR_OUT_DIR)/extra-labels.geojson: $(ATS_PARSER_JSON_FILES) $(RESOURCES_
 
 DEMO_FILES += $(GENERATOR_OUT_DIR)/extra-labels.geojson
 NAVIGATOR_FILES += $(GENERATOR_OUT_DIR)/extra-labels.geojson
-NAVIGATION_FILES += $(GENERATOR_OUT_DIR)/extra-labels.geojson
+ATS_NAVIGATION_FILES += $(GENERATOR_OUT_DIR)/extra-labels.geojson
+ETS2_NAVIGATION_FILES += $(GENERATOR_OUT_DIR)/extra-labels.geojson
 
 
 # Create ETS2 villages.geojson file
@@ -118,7 +122,8 @@ $(GENERATOR_OUT_DIR)/ets2-search.geojson: $(ETS2_PARSER_JSON_FILES) $(RESOURCES_
 
 DEMO_FILES += $(GENERATOR_OUT_DIR)/ats-search.geojson
 DEMO_FILES += $(GENERATOR_OUT_DIR)/ets2-search.geojson
-NAVIGATION_FILES += $(GENERATOR_OUT_DIR)/ats-search.geojson
+ATS_NAVIGATION_FILES += $(GENERATOR_OUT_DIR)/ats-search.geojson
+ETS2_NAVIGATION_FILES += $(GENERATOR_OUT_DIR)/ets2-search.geojson
 
 
 #### other map resources
@@ -140,11 +145,15 @@ $(GENERATOR_OUT_DIR)/usa-graph-demo.json: $(ATS_PARSER_JSON_FILES)
 DEMO_FILES += $(GENERATOR_OUT_DIR)/usa-graph-demo.json
 
 
-# Create ATS graph json
+# Create ATS and ETS2 graph json
 $(GENERATOR_OUT_DIR)/usa-graph.json: $(ATS_PARSER_JSON_FILES)
 	npx generator graph -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR) -c
+$(GENERATOR_OUT_DIR)/europe-graph.json: $(ETS2_PARSER_JSON_FILES)
+	npx generator graph -m europe -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR) -c
 
-NAVIGATION_FILES += $(GENERATOR_OUT_DIR)/usa-graph.json
+ATS_NAVIGATION_FILES += $(GENERATOR_OUT_DIR)/usa-graph.json
+ETS2_NAVIGATION_FILES += $(GENERATOR_OUT_DIR)/europe-graph.json
+# TODO: add {usa,europe}-roundabouts.json once a `roundabouts` generator command exists.
 
 
 # Create spritesheet files
@@ -211,7 +220,21 @@ navigator: navigator-data navigator-app ## builds navigator data and web assets 
 
 ##############################################################################
 
-navigation-data: $(NAVIGATION_FILES) ## generates additional data needed by the navigation backend
+# Bundle per-map navigation inputs into a single zip each. `zip -j` flattens
+# paths so entries are keyed by basename, which matches FileSource.fromZip's
+# basename lookup in the navigation server.
+$(GENERATOR_OUT_DIR)/usa-navigation.zip: $(ATS_NAVIGATION_FILES)
+	@rm -f $@
+	zip -j $@ $^
+$(GENERATOR_OUT_DIR)/europe-navigation.zip: $(ETS2_NAVIGATION_FILES)
+	@rm -f $@
+	zip -j $@ $^
+
+NAVIGATION_FILES := \
+	$(GENERATOR_OUT_DIR)/usa-navigation.zip \
+	$(GENERATOR_OUT_DIR)/europe-navigation.zip
+
+navigation-data: $(NAVIGATION_FILES) ## generates per-map navigation zip bundles for the navigation backend
 
 ##############################################################################
 
@@ -221,7 +244,7 @@ clean: ## deletes all parser and generator outputs
 	@rm -rf $(PARSER_OUT_DIR)/icons
 	@rm -f $(DEMO_FILES)
 	@rm -f $(NAVIGATOR_FILES)
-	@rm -f $(NAVIGATION_FILES)
+	@rm -f $(ATS_NAVIGATION_FILES) $(ETS2_NAVIGATION_FILES) $(NAVIGATION_FILES)
 	@rm -f $(RESOURCES_DIR)/usa-labels-meta.json
 
 # generated `help` target

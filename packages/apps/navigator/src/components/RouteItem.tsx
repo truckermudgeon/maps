@@ -15,6 +15,7 @@ import type { ReactElement } from 'react';
 import { toDuration, toLengthAndUnit } from './text';
 
 export const RouteItem = (props: {
+  units: 'imperial' | 'metric';
   route: RouteWithSummary;
   onRouteHighlight: () => void;
   onRouteDetailsClick: () => void;
@@ -25,8 +26,8 @@ export const RouteItem = (props: {
   const durationNum = props.route.detour?.duration ?? props.route.duration;
 
   let distance = toLengthAndUnit(distanceMetersNum, {
+    units: props.units,
     abbreviateUnits: false,
-    units: 'imperial',
     forceSingular: props.route.detour != null,
   }).string;
   let duration = toDuration(durationNum, {
@@ -54,7 +55,7 @@ export const RouteItem = (props: {
                 {toModeString(props.route.segments[0].strategy)}
               </Typography>
             </Box>
-            <RouteSummary summary={props.route.summary} />
+            <RouteSummary units={props.units} summary={props.route.summary} />
           </Stack>
           <Button
             size={'lg'}
@@ -86,13 +87,15 @@ export const RouteItem = (props: {
 };
 
 const RouteSummary = ({
+  units,
   summary,
 }: {
+  units: 'imperial' | 'metric';
   summary: RouteWithSummary['summary'];
 }) => {
   const children: ReactElement[] = [];
   for (const grade of summary.grades) {
-    children.push(<Grade grade={grade} />);
+    children.push(<Grade grade={grade} units={units} />);
   }
   for (const road of summary.roads) {
     children.push(
@@ -132,13 +135,15 @@ const RouteSummary = ({
 };
 
 const Grade = ({
+  units,
   grade,
 }: {
+  units: 'imperial' | 'metric';
   grade: RouteWithSummary['summary']['grades'][0];
 }) => {
   const { string: distance } = toLengthAndUnit(grade.distance, {
+    units,
     abbreviateUnits: false,
-    units: 'imperial',
     forceSingular: false,
   });
   return (

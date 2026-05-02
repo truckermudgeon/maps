@@ -18,6 +18,7 @@ import { LaneIcon } from './LaneIcon';
 import { toLengthAndUnit, toStepText } from './text';
 
 export const RouteStepsList = (props: {
+  units: 'imperial' | 'metric';
   route: Route;
   onStepClick?: (step: RouteStep) => void;
 }) => {
@@ -31,6 +32,7 @@ export const RouteStepsList = (props: {
 
   const _RouteStep = ({ step }: { step: RouteStep }) => (
     <RouteStep
+      units={props.units}
       step={step}
       onStepClick={props.onStepClick}
       StepIcon={_StepIcon}
@@ -64,6 +66,7 @@ const RouteSegment = (props: {
 };
 
 const RouteStep = (props: {
+  units: 'imperial' | 'metric';
   step: RouteStep;
   onStepClick?: (step: RouteStep) => void;
   StepIcon: (props: { direction: BranchType }) => ReactElement;
@@ -75,8 +78,8 @@ const RouteStep = (props: {
     StepIcon,
   } = props;
   const distance = toLengthAndUnit(step.distanceMeters, {
+    units: props.units,
     abbreviateUnits: false,
-    units: 'imperial',
     forceSingular: false,
   }).string;
   const Wrapper = ({ children }: { children: ReactNode }) =>

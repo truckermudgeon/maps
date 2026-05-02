@@ -1,17 +1,15 @@
 import { UnreachableError } from '@truckermudgeon/base/precon';
-import {
-  AtsSelectableDlcs,
-  toAtsDlcGuards,
-} from '@truckermudgeon/map/constants';
 import type { RoutingService } from '../domain/actor/generate-routes';
 import type { SearchService } from '../domain/actor/search';
 import type { DomainEventSink } from '../domain/events';
-import type { LookupData } from '../domain/lookup-data';
+import type { GameContext } from '../domain/game-context';
+import type { LookupService } from '../domain/lookup-data';
 import { SessionActorRegistry } from './actors/registry';
 import type { KvStore } from './kv/store';
 import { createCacheableKv } from './kv/store';
 import { logger } from './logging/logger';
 import { loadLookupData } from './lookups/loader';
+import { LookupServiceImpl } from './lookups/service';
 import type { MetricsService } from './metrics/service';
 import { createMetricsService } from './metrics/service';
 import type { RateLimitService } from './rate-limit/service';
@@ -20,7 +18,7 @@ import { createRoutingService } from './routing/service';
 import { createSearchService } from './search/service';
 
 export interface Services {
-  lookups: LookupData;
+  lookups: LookupService;
   domainEventSink: DomainEventSink;
   kv: KvStore;
   sessionActors: SessionActorRegistry;
@@ -31,23 +29,16 @@ export interface Services {
 }
 
 export function initServices(dataDir: string): Services {
-  const lookups = loadLookupData(dataDir, 'usa');
+  const lookups = new LookupServiceImpl(
+    loadLookupData(dataDir, 'usa'),
+    loadLookupData(dataDir, 'europe'),
+  );
+
   const kv = createCacheableKv();
   const rateLimit = createRateLimitService(kv);
   const metrics = createMetricsService();
-  const search = createSearchService(
-    lookups.searchData,
-    lookups.graphAndMapData.graphNodeRTree,
-    metrics.worker,
-  );
-  const routing = createRoutingService(
-    {
-      graph: lookups.graphAndMapData.graphData.graph,
-      nodeLUT: lookups.graphAndMapData.tsMapData.nodes,
-      enabledDlcGuards: toAtsDlcGuards(AtsSelectableDlcs),
-    },
-    metrics.worker,
-  );
+  const search = createSearchService(lookups, metrics.worker);
+  const routing = createRoutingService(lookups, metrics.worker);
   const domainEventSink: DomainEventSink = {
     publish(event) {
       let logMethod;
@@ -72,7 +63,8 @@ export function initServices(dataDir: string): Services {
     domainEventSink,
     maxClientsPerActor: 5,
     idleTtlMs: 10 * 60_000, // 10 minutes
-    graphAndMapData: lookups.graphAndMapData,
+    getGraphAndMapData: (gameContext: GameContext) =>
+      lookups.getData(gameContext).graphAndMapData,
     routing,
     kv,
     // TODO wire up create + delete metrics

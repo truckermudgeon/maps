@@ -10,10 +10,12 @@ import type {
 
 export class ControlsStoreImpl implements ControlsStore {
   bearing = 0;
-  limitMph = 0;
-  speedMph = 0;
+  units: 'imperial' | 'metric';
+  limit = 0;
+  speed = 0;
 
   constructor(private readonly appStore: AppStore) {
+    this.units = appStore.map === 'usa' ? 'imperial' : 'metric';
     makeAutoObservable(this);
   }
 
@@ -31,16 +33,32 @@ export class ControlsStoreImpl implements ControlsStore {
 }
 
 export class ControlsControllerImpl implements ControlsController {
+  private positionSubscription: { unsubscribe: () => void } | undefined;
+  private mapMoveSubscription: { unsubscribe: () => void } | undefined;
+
   startListening(store: ControlsStore, appClient: AppClient, map: MapRef) {
-    appClient.onPositionUpdate.subscribe(undefined, {
-      onData: action(gameState => {
-        const { speed } = gameState;
-        const speedMph = Math.abs(Math.round(speed * 2.236936));
-        store.limitMph = gameState.speedLimit;
-        store.speedMph = speedMph;
-      }),
-    });
-    map.on(
+    this.positionSubscription?.unsubscribe();
+    this.mapMoveSubscription?.unsubscribe();
+
+    this.positionSubscription = appClient.onPositionUpdate.subscribe(
+      undefined,
+      {
+        onData: action(gameState => {
+          const { game, speed } = gameState;
+          // TODO should use imperial if truck is in UK?
+          store.units = game === 'ats' ? 'imperial' : 'metric';
+
+          if (store.units === 'imperial') {
+            store.limit = gameState.speedLimit.mph;
+            store.speed = Math.abs(Math.round(speed * 2.236936));
+          } else {
+            store.limit = gameState.speedLimit.kph;
+            store.speed = Math.abs(Math.round(gameState.speed * 3.6));
+          }
+        }),
+      },
+    );
+    this.mapMoveSubscription = map.on(
       'move',
       action(() => (store.bearing = map.getBearing())),
     );

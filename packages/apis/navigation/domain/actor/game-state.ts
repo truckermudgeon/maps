@@ -4,7 +4,9 @@ import { contains, toRadians } from '@truckermudgeon/base/geom';
 import type { PointRBush } from '@truckermudgeon/map/point-rbush';
 import {
   fromAtsCoordsToWgs84,
+  fromEts2CoordsToWgs84,
   fromWgs84ToAtsCoords,
+  fromWgs84ToEts2Coords,
 } from '@truckermudgeon/map/projections';
 import type { Country, Node } from '@truckermudgeon/map/types';
 import bearing from '@turf/bearing';
@@ -32,7 +34,11 @@ export function toGameState(telemetry: TruckSimTelemetry): GameState {
     angularVelocity: toXYZ(acceleration.angularVelocity),
     angularAccel: toXYZ(acceleration.angularAcceleration),
     // world stuff
-    speedLimit: telemetry.navigation.speedLimit.mph,
+    game: telemetry.game.game.name,
+    speedLimit: {
+      mph: telemetry.navigation.speedLimit.mph,
+      kph: telemetry.navigation.speedLimit.kph,
+    },
     scale: telemetry.game.scale,
   };
 }
@@ -47,6 +53,11 @@ export function toThemeMode(
     node: Node;
   }>,
 ): 'light' | 'dark' {
+  const toLngLat =
+    telemetry.game.game.name === 'ats'
+      ? fromAtsCoordsToWgs84
+      : fromEts2CoordsToWgs84;
+
   const totalMinutes = telemetry.game.time.value;
   const minutesInAnHour = 60;
   const minutesInADay = minutesInAnHour * 24;
@@ -55,7 +66,7 @@ export function toThemeMode(
   const minute = Math.floor((totalMinutes % minutesInADay) % minutesInAnHour);
 
   const { X: x, Z: y } = telemetry.truck.position;
-  const [lng, lat] = fromAtsCoordsToWgs84([x, y]);
+  const [lng, lat] = toLngLat([x, y]);
   const closestGraphNode = assertExists(
     graphNodeRTree.findClosest(x, y, {
       radius: 1_000, // need to specify something to prevent crazy-long queries
@@ -113,13 +124,15 @@ export function toThemeMode(
  */
 export function toPosAndBearing(
   truck: Pick<TruckSimTelemetry['truck'], 'position' | 'orientation'>,
+  map: 'usa' | 'europe',
 ) {
-  const position = fromAtsCoordsToWgs84([truck.position.X, truck.position.Z]);
+  const toLngLat = map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
+  const position = toLngLat([truck.position.X, truck.position.Z]);
   const theta =
     // do `0.5 - ...` here so that `lookAt` calculation works as expected; need
     // to provide a point in the y-flipped coordinate space.
     (0.5 - truck.orientation.heading) * Math.PI * 2 + Math.PI / 2;
-  const lookAt = fromAtsCoordsToWgs84([
+  const lookAt = toLngLat([
     truck.position.X + 1000 * Math.cos(theta),
     truck.position.Z + 1000 * Math.sin(theta),
   ]);
@@ -134,14 +147,17 @@ export function toPosAndBearing(
 export function fromPosAndBearing(
   lngLat: Position,
   headingDegrees: number, // [0(north), 360) CW
+  map: 'usa' | 'europe',
 ): Pick<TruckSimTelemetry['truck'], 'position' | 'orientation'> {
+  const toGameCoords =
+    map === 'usa' ? fromWgs84ToAtsCoords : fromWgs84ToEts2Coords;
   const headingRad = toRadians(-headingDegrees + 90);
   const lookAt: Position = [
     lngLat[0] + Math.cos(headingRad),
     lngLat[1] + Math.sin(headingRad),
   ];
-  const a = fromWgs84ToAtsCoords(lngLat);
-  const b = fromWgs84ToAtsCoords(lookAt);
+  const a = toGameCoords(lngLat);
+  const b = toGameCoords(lookAt);
   const twoPi = 2 * Math.PI;
   const theta = Math.atan2(
     // flip signs because game coord system

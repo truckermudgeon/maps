@@ -4,6 +4,7 @@ import { ConsoleMetrics } from './helpers';
 export interface RpcMeta {
   path: string;
   type: string;
+  game: 'ats' | 'ets2' | 'unknown';
 }
 
 export interface RpcMetrics {
@@ -41,7 +42,7 @@ export class ConsoleRpcMetrics extends ConsoleMetrics implements RpcMetrics {
 }
 
 export class PrometheusRpcMetrics implements RpcMetrics {
-  private static readonly labelNames = ['path', 'type'];
+  private static readonly labelNames = ['path', 'type', 'game'];
 
   private calls = new Prometheus.Counter({
     name: 'procedure_calls_total',
@@ -90,5 +91,6 @@ function rpcMetaToLabels(meta: RpcMeta) {
   return {
     path: meta.path,
     type: meta.type,
+    game: meta.game,
   };
 }

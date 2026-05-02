@@ -2,6 +2,7 @@
 
 import type { Position } from '@truckermudgeon/base/geom';
 import type { MapDataKeys, MappedDataForKeys } from '@truckermudgeon/io';
+import type { AtsDlcGuard, Ets2DlcGuard } from '@truckermudgeon/map/constants';
 import type { PointRBush } from '@truckermudgeon/map/point-rbush';
 import type {
   CompanyItem,
@@ -20,6 +21,7 @@ import type { SearchResult } from '../types';
 import { detectRouteMapDataKeys } from './actor/detect-route-events';
 import { generateRoutesMapDataKeys } from './actor/generate-routes';
 import { searchMapDateKeys } from './actor/search';
+import type { GameContext } from './game-context';
 
 export interface GraphAndMapData<T = unknown> {
   tsMapData: T;
@@ -78,11 +80,6 @@ export const graphMapDataKeys = [
 export type GraphMappedData = MappedDataForKeys<typeof graphMapDataKeys>;
 
 export interface SearchIndices {
-  nodePointRTree: PointRBush<{
-    x: number;
-    y: number;
-    node: Node;
-  }>;
   cityRTree: RBush<
     BBox & {
       cityName: string;
@@ -95,6 +92,11 @@ export interface SearchIndices {
     cityName: string;
     stateCode: string;
   }>;
+  countryPointRTree: PointRBush<{
+    x: number;
+    y: number;
+    node: Node;
+  }>;
   countriesById: ReadonlyMap<number, Country>;
   searchDataLngLatRTreeJSON: unknown; // JSON exported from a PointRBush<{x: number; y: number; searchResult: SearchResult}>
 }
@@ -106,4 +108,9 @@ export type ProcessedSearchData = {
 export interface LookupData {
   graphAndMapData: GraphAndMapData<GraphMappedData>;
   searchData: ProcessedSearchData;
+  allDlcGuards: ReadonlySet<AtsDlcGuard> | ReadonlySet<Ets2DlcGuard>;
+}
+
+export interface LookupService {
+  getData(context: GameContext): LookupData;
 }

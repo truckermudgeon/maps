@@ -1,24 +1,12 @@
-import {
-  AtsSelectableDlcs,
-  toAtsDlcGuards,
-} from '@truckermudgeon/map/constants';
 import { EventEmitter } from 'events';
-import path from 'node:path';
-import url from 'node:url';
 import { beforeAll } from 'vitest';
 import { PoiType, ScopeType } from '../../../constants';
-import { readGraphAndMapData } from '../../../infra/lookups/graph-and-map';
-import { readAndProcessSearchData } from '../../../infra/lookups/search';
 import { ConsoleWorkerMetrics } from '../../../infra/metrics/worker';
 import { createRoutingService } from '../../../infra/routing/service';
 import { createSearchService } from '../../../infra/search/service';
 import type { SearchResult, TruckSimTelemetry } from '../../../types';
 import type { DomainEventSink } from '../../events';
-import type {
-  GraphAndMapData,
-  GraphMappedData,
-  ProcessedSearchData,
-} from '../../lookup-data';
+import type { GraphAndMapData, GraphMappedData } from '../../lookup-data';
 import type { TelemetryEventEmitter } from '../../session-actor';
 import { SessionActorImpl } from '../../session-actor';
 import { generateRoutes, type RoutingService } from '../generate-routes';
@@ -27,6 +15,8 @@ import {
   createWithRelativeTruckInfoMapper,
 } from '../search';
 import { aTelemetryWith, aTruckWith } from './builders';
+import type { TestLookupService } from './test-lookup-service';
+import { testLookupService } from './test-lookup-service';
 
 const dummyEventSink: DomainEventSink = {
   publish: () => void 0,
@@ -36,20 +26,13 @@ const dummyEventSink: DomainEventSink = {
 //  an entire dump of parser-generated JSON files.
 describe.skip('searchPoi', () => {
   let graphAndMapData: GraphAndMapData<GraphMappedData>;
-  let searchData: ProcessedSearchData;
   let routingService: RoutingService;
+  let atsLookupService: TestLookupService;
   beforeAll(() => {
-    const __filename = url.fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    const outDir = path.join(__dirname, '../../../../../../out');
-    graphAndMapData = readGraphAndMapData(outDir, 'usa');
-    searchData = readAndProcessSearchData(outDir, graphAndMapData);
+    atsLookupService = testLookupService('usa');
+    graphAndMapData = atsLookupService.getData().graphAndMapData;
     routingService = createRoutingService(
-      {
-        nodeLUT: graphAndMapData.tsMapData.nodes,
-        graph: graphAndMapData.graphData.graph,
-        enabledDlcGuards: toAtsDlcGuards(AtsSelectableDlcs),
-      },
+      atsLookupService,
       new ConsoleWorkerMetrics(),
     );
   }, 20_000);
@@ -60,7 +43,7 @@ describe.skip('searchPoi', () => {
       'code',
       dummyEventSink,
       telemetryEventEmitter,
-      graphAndMapData,
+      () => graphAndMapData,
       routingService,
       100,
     );
@@ -92,15 +75,14 @@ describe.skip('searchPoi', () => {
     const numIters = 1000;
     const start = Date.now();
     const searchService = createSearchService(
-      searchData,
-      graphAndMapData.graphNodeRTree,
+      atsLookupService,
       new ConsoleWorkerMetrics(),
     );
     let searchResults: SearchResult[] = [];
     for (let i = 0; i < numIters; i++) {
-      searchResults = (await searchService.searchPoi(searchRequest)).map(
-        addRelativeTruckInfo,
-      );
+      searchResults = (
+        await searchService.searchPoi(searchRequest, { map: 'usa' })
+      ).map(addRelativeTruckInfo);
     }
     // 1.95 seconds for 1000 iters
     // -> 0.227 after using r-tree
@@ -120,7 +102,7 @@ describe.skip('searchPoi', () => {
       'code',
       dummyEventSink,
       telemetryEventEmitter,
-      graphAndMapData,
+      () => graphAndMapData,
       routingService,
       100,
     );
@@ -163,14 +145,13 @@ describe.skip('searchPoi', () => {
     const numIters = 5;
     const start = Date.now();
     const searchService = createSearchService(
-      searchData,
-      graphAndMapData.graphNodeRTree,
+      atsLookupService,
       new ConsoleWorkerMetrics(),
     );
     const results: SearchResult[][] = (
       await Promise.all(
         Array.from({ length: numIters }, () =>
-          searchService.searchPoi(searchRequest),
+          searchService.searchPoi(searchRequest, { map: 'usa' }),
         ),
       )
     ).map(rs => rs.map(addRelativeTruckInfo));

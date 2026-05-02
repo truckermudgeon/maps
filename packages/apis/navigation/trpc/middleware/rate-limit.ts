@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { UnreachableError } from '@truckermudgeon/base/precon';
 import { rateLimitKeys } from '../../infra/kv/store';
 import { middleware } from '../init';
+import { inferGame } from './infer-game';
 
 type Interval = 'second' | 'minute' | 'hour' | 'day';
 
@@ -23,6 +24,7 @@ export const rateLimitMiddleware = (options: RateLimitOptions) => {
       ctx.services.metrics.rpc.procedureRateLimited.inc({
         path,
         type,
+        game: await inferGame(ctx, path),
       });
       throw new TRPCError({ code: 'TOO_MANY_REQUESTS' });
     }

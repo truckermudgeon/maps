@@ -15,11 +15,12 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
+    units: 'imperial',
     route: {
       id: 'route-id',
       segments: [
         {
-          key: '0-0-forward-fastest',
+          key: '0-0-forward-fastest-usa',
           steps: [
             {
               distanceMeters: 0,

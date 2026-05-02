@@ -8,6 +8,8 @@ import type {
 } from '../types';
 import type { JobEventEmitter } from './actor/detect-job-events';
 import { detectJobEvents } from './actor/detect-job-events';
+import type { MapEventEmitter } from './actor/detect-map-events';
+import { detectMapEvents } from './actor/detect-map-events';
 import type { RouteEventEmitter } from './actor/detect-route-events';
 import { detectRouteEvents } from './actor/detect-route-events';
 import type { ThemeModeEventEmitter } from './actor/detect-theme-mode-events';
@@ -16,6 +18,7 @@ import type { TrailerEventEmitter } from './actor/detect-trailer-events';
 import { detectTrailerEvents } from './actor/detect-trailer-events';
 import type { RouteWithLookup, RoutingService } from './actor/generate-routes';
 import type { DomainEventSink } from './events';
+import type { GameContext } from './game-context';
 import type { GraphAndMapData, GraphMappedData } from './lookup-data';
 import Omit = util.Omit;
 
@@ -27,9 +30,11 @@ export type SessionActor = {
   readTelemetry: () => TruckSimTelemetry | undefined;
   telemetryEventEmitter: TelemetryEventEmitter;
 } & ReturnType<typeof detectJobEvents> &
+  ReturnType<typeof detectMapEvents> &
   ReturnType<typeof detectRouteEvents> &
   ReturnType<typeof detectTrailerEvents> &
   ReturnType<typeof detectThemeModeEvents> & {
+    readonly gameContext: GameContext | undefined;
     readonly code: string;
     readonly attachedClientIds: ReadonlySet<string>;
     getLatestTelemetry(): LatestValue<TruckSimTelemetry | undefined>;
@@ -45,6 +50,10 @@ export type ReadonlySessionActor = Pick<SessionActor, 'attachedClientIds'>;
 // global functions.
 // TODO improve the interface.
 export class SessionActorImpl implements SessionActor {
+  private readonly _gameContext = {
+    game: undefined,
+  };
+
   private clients = new Set<string>(); // client IDs
   private latestTelemetry = new LatestValue<TruckSimTelemetry | undefined>();
   private readonly onTelemetryHandler: (
@@ -52,12 +61,14 @@ export class SessionActorImpl implements SessionActor {
   ) => void;
 
   readonly jobEventEmitter: JobEventEmitter;
+  readonly mapEventEmitter: MapEventEmitter;
   readonly routeEventEmitter: RouteEventEmitter;
   readonly trailerEventEmitter: Omit<TrailerEventEmitter, 'emit'>;
   readonly themeModeEventEmitter: Omit<ThemeModeEventEmitter, 'emit'>;
 
   readonly readActiveRoute: () => RouteWithLookup | undefined;
   readonly readJobState: () => JobState | undefined;
+  readonly readMapState: () => 'usa' | 'europe';
   readonly readRouteIndex: () => RouteIndex | undefined;
   readonly readTelemetry: () => TruckSimTelemetry | undefined;
   readonly readTrailerState: () => TrailerState | undefined;
@@ -70,7 +81,9 @@ export class SessionActorImpl implements SessionActor {
     readonly code: string,
     private readonly events: DomainEventSink,
     readonly telemetryEventEmitter: TelemetryEventEmitter,
-    graphAndMapData: GraphAndMapData<GraphMappedData>,
+    getGraphAndMapData: (
+      gameContext: GameContext,
+    ) => GraphAndMapData<GraphMappedData>,
     routing: RoutingService,
     private readonly maxClients: number,
   ) {
@@ -92,11 +105,15 @@ export class SessionActorImpl implements SessionActor {
 
     const jobRes = detectJobEvents({
       telemetryEventEmitter,
-      jobMappedData: graphAndMapData.tsMapData,
+      getJobMappedData: gameContext =>
+        getGraphAndMapData(gameContext).tsMapData,
+    });
+    const mapRes = detectMapEvents({
+      telemetryEventEmitter,
     });
     const routeRes = detectRouteEvents({
       telemetryEventEmitter,
-      graphAndMapData,
+      getGraphAndMapData,
       routing,
       domainEventSink: this.events,
     });
@@ -105,16 +122,18 @@ export class SessionActorImpl implements SessionActor {
     });
     const themeModeRes = detectThemeModeEvents({
       telemetryEventEmitter,
-      graphAndMapData,
+      getGraphAndMapData,
     });
 
     this.jobEventEmitter = jobRes.jobEventEmitter;
+    this.mapEventEmitter = mapRes.mapEventEmitter;
     this.routeEventEmitter = routeRes.routeEventEmitter;
     this.trailerEventEmitter = trailerRes.trailerEventEmitter;
     this.themeModeEventEmitter = themeModeRes.themeModeEventEmitter;
 
     this.readActiveRoute = routeRes.readActiveRoute;
     this.readJobState = jobRes.readJobState;
+    this.readMapState = mapRes.readMapState;
     this.readRouteIndex = routeRes.readRouteIndex;
     this.readTelemetry = () => this.latestTelemetry.get();
     this.readTrailerState = trailerRes.readTrailerState;
@@ -122,10 +141,25 @@ export class SessionActorImpl implements SessionActor {
 
     this.setActiveRoute = routeRes.setActiveRoute;
     this.unpauseRouteEvents = routeRes.unpauseRouteEvents;
+
+    this.mapEventEmitter.on('update', () => {
+      this.setActiveRoute(undefined);
+      this.unpauseRouteEvents();
+    });
   }
 
   getLatestTelemetry() {
     return this.latestTelemetry;
+  }
+
+  get gameContext(): GameContext | undefined {
+    const latest = this.latestTelemetry.get();
+    if (latest == null) {
+      return undefined;
+    }
+    return {
+      map: latest.game.game.name === 'ats' ? 'usa' : 'europe',
+    };
   }
 
   get attachedClientIds(): ReadonlySet<string> {

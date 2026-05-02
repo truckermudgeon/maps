@@ -1,5 +1,8 @@
 import type { Position } from '@truckermudgeon/base/geom';
-import { fromAtsCoordsToWgs84 } from '@truckermudgeon/map/projections';
+import {
+  fromAtsCoordsToWgs84,
+  fromEts2CoordsToWgs84,
+} from '@truckermudgeon/map/projections';
 import { EventEmitter } from 'events';
 import type { TrailerState } from '../../types';
 import type { TelemetryEventEmitter } from '../session-actor';
@@ -51,10 +54,15 @@ export function detectTrailerEvents(opts: {
         return;
       }
 
+      const toLngLat =
+        telemetry.game.game.name === 'ats'
+          ? fromAtsCoordsToWgs84
+          : fromEts2CoordsToWgs84;
+
       unattachedState = !newTrailer.attached
         ? {
             attached: false,
-            position: fromAtsCoordsToWgs84(newTrailerPos),
+            position: toLngLat(newTrailerPos),
             positionGameCoords: newTrailerPos,
           }
         : undefined;

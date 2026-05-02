@@ -21,6 +21,7 @@ export type AppClient = ReturnType<
 
 export interface AppStore {
   themeMode: 'light' | 'dark';
+  map: 'usa' | 'europe';
   cameraMode: CameraMode;
   bearingMode: BearingMode;
   truckPoint: readonly [lon: number, lat: number];
@@ -69,8 +70,9 @@ export type CompassPoint = 'N' | 'S' | 'E' | 'W' | 'NE' | 'NW' | 'SE' | 'SW';
 export interface ControlsStore {
   // (-180, 180] CW, 0 is north.
   bearing: number;
-  limitMph: number;
-  speedMph: number;
+  units: 'imperial' | 'metric';
+  limit: number;
+  speed: number;
   showRecenterFab: boolean;
   showRouteFab: boolean;
   showSearchFab: boolean;

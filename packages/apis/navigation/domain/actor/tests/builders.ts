@@ -55,7 +55,7 @@ export function aSegmentWith(
     Pick<RouteSegment, 'steps'>,
 ): RouteSegment {
   return {
-    key: '0-0-forward-fastest',
+    key: '0-0-forward-fastest-usa',
     strategy: 'shortest',
     score: 0,
     ...segment,

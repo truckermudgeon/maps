@@ -304,13 +304,7 @@ export const telemetryRouter = router({
       } = ctx;
       const { data } = input;
 
-      if (data.game.game.name !== 'ats') {
-        throw new TRPCError({
-          code: 'UNPROCESSABLE_CONTENT',
-          message: `telemetry from game ${data.game.game.name} is unsupported.`,
-        });
-      }
-      // TODO look for other sketchy data.
+      // TODO look for sketchy data.
 
       // TODO restore "wait for viewers" flow
 

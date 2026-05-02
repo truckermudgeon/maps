@@ -60,6 +60,7 @@ const appClient = createTRPCProxyClient<AppRouter>({
 }).app;
 
 const { App, store } = createApp({
+  map: ensureMap(localStorage.getItem('map')),
   appClient,
   joyTheme: extendTheme(),
   transitionDurationMs: materialTheme.transitions.duration.standard,
@@ -81,3 +82,7 @@ root.render(
     </MaterialCssVarsProvider>
   </React.StrictMode>,
 );
+
+function ensureMap(s: string | null): 'usa' | 'europe' {
+  return s === 'europe' ? 'europe' : 'usa';
+}

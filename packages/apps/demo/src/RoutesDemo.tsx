@@ -412,6 +412,7 @@ function toContext(data: DemoRoutesData): Omit<Context, 'enabledDlcGuards'> {
   }
 
   return {
+    map: 'usa',
     graph,
     nodeLUT,
   };

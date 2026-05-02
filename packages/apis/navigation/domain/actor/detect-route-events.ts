@@ -4,7 +4,6 @@ import { Preconditions } from '@truckermudgeon/base/precon';
 import type { MapDataKeys, MappedDataForKeys } from '@truckermudgeon/io';
 import { ItemType } from '@truckermudgeon/map/constants';
 import { getCommonItem } from '@truckermudgeon/map/get-common-item';
-import { fromAtsCoordsToWgs84 } from '@truckermudgeon/map/projections';
 import type {
   CompanyItem,
   FerryItem,
@@ -18,6 +17,7 @@ import { EventEmitter } from 'events';
 import { BranchType } from '../../constants';
 import type { Route, RouteIndex, TruckSimTelemetry } from '../../types';
 import type { DomainEventSink } from '../events';
+import type { GameContext } from '../game-context';
 import type { GraphAndMapData } from '../lookup-data';
 import type { TelemetryEventEmitter } from '../session-actor';
 import type { RouteWithLookup, RoutingService } from './generate-routes';
@@ -66,7 +66,9 @@ const dummyItemSymbol = Symbol('dummy item');
 
 export function detectRouteEvents(opts: {
   telemetryEventEmitter: TelemetryEventEmitter;
-  graphAndMapData: GraphAndMapData<DetectRouteMappedData>;
+  getGraphAndMapData: (
+    gameContext: GameContext,
+  ) => GraphAndMapData<DetectRouteMappedData>;
   routing: RoutingService;
   domainEventSink: DomainEventSink;
 }): {
@@ -76,8 +78,12 @@ export function detectRouteEvents(opts: {
   routeEventEmitter: RouteEventEmitter;
   unpauseRouteEvents: () => void;
 } {
-  const { telemetryEventEmitter, graphAndMapData, routing, domainEventSink } =
-    opts;
+  const {
+    telemetryEventEmitter,
+    getGraphAndMapData,
+    routing,
+    domainEventSink,
+  } = opts;
   const routeEventEmitter: RouteEventEmitter = new EventEmitter();
 
   const readRouteIndex = () => routeIndex;
@@ -110,6 +116,12 @@ export function detectRouteEvents(opts: {
     }
 
     if (activeRoute) {
+      const map = activeRoute.segments[0].key.split('-').at(-1);
+      if (map !== 'usa' && map !== 'europe') {
+        throw new Error('unexpected map value for activeRoute: ' + map);
+      }
+      const graphAndMapData = getGraphAndMapData({ map: map });
+
       detectRouteEvents = createUpdateListener(
         activeRoute,
         setActiveRoute,
@@ -171,6 +183,7 @@ function isTruckOnRoute(
     nodes,
     context.tsMapData.roadLooks,
     roadAndPrefabRTree,
+    context.tsMapData.map,
   );
   if (!location) {
     // benefit of the doubt: we're near a node that isn't part of the route,
@@ -233,7 +246,6 @@ function isTruckOnRoute(
     'got',
     toString(location),
     'at',
-    fromAtsCoordsToWgs84([truck.position.X, truck.position.Z]),
     [truck.position.X, truck.position.Z],
   );
   return false;
@@ -472,6 +484,7 @@ export function calculateLocation(
   nodes: ReadonlyMap<bigint, Node>,
   roadLooks: ReadonlyMap<string, RoadLook>,
   rtree: GraphAndMapData['roadAndPrefabRTree'],
+  map: 'usa' | 'europe',
 ): Road | Prefab | undefined {
   const truckPos = {
     x: truck.position.X,
@@ -509,10 +522,10 @@ export function calculateLocation(
               // have two linestring entries.
               assert(entry.lines.length === 1);
               if (roadLook.lanesLeft.length && roadLook.lanesRight.length) {
-                return Math.abs(scoreLine(ls, truck));
+                return Math.abs(scoreLine(ls, truck, map));
               }
             }
-            return scoreLine(ls, truck);
+            return scoreLine(ls, truck, map);
           }),
       ),
       item: entry.item,

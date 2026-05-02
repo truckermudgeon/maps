@@ -1,5 +1,8 @@
 import { Box, Divider, Stack, Typography } from '@mui/joy';
-import type { BranchType } from '@truckermudgeon/navigation/constants';
+import {
+  BranchType,
+  isRoundaboutBranchType,
+} from '@truckermudgeon/navigation/constants';
 import type { StepManeuver } from '@truckermudgeon/navigation/types';
 import Color from 'color';
 import type { ForwardedRef, Ref } from 'react';
@@ -11,7 +14,11 @@ const bgColor = Color('hsl(151,82%,35%)');
 type DirectionsProps = Pick<
   StepManeuver,
   'direction' | 'banner' | 'laneHint' | 'thenHint'
-> & { length: number; unit: string; ref?: Ref<HTMLDivElement> };
+> & {
+  length: number;
+  unit: string;
+  ref?: Ref<HTMLDivElement>;
+};
 
 export const Directions = memo(
   forwardRef((props: DirectionsProps, ref: ForwardedRef<HTMLDivElement>) => {
@@ -36,7 +43,18 @@ export const Directions = memo(
                 <LaneIcon
                   // TODO take into account 'depart' and 'arrive'
                   branches={[props.direction as unknown as BranchType]}
-                  dimColor={'#fff'}
+                  highlightColor={
+                    isRoundaboutBranchType(props.direction) ||
+                    props.direction === BranchType.ROUND_EXIT
+                      ? '#fff'
+                      : undefined
+                  }
+                  dimColor={
+                    isRoundaboutBranchType(props.direction) ||
+                    props.direction === BranchType.ROUND_EXIT
+                      ? '#ccca'
+                      : '#fff'
+                  }
                 />
               </Box>
               <Typography

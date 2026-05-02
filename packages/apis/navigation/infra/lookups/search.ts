@@ -1,16 +1,15 @@
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import type { Position } from '@truckermudgeon/base/geom';
-import { distance } from '@truckermudgeon/base/geom';
 import { UnreachableError } from '@truckermudgeon/base/precon';
-import type { MappedDataForKeys } from '@truckermudgeon/io';
+import type { FileSource, MappedDataForKeys } from '@truckermudgeon/io';
 import { PointRBush } from '@truckermudgeon/map/point-rbush';
 import {
   fromAtsCoordsToWgs84,
+  fromEts2CoordsToWgs84,
   fromWgs84ToAtsCoords,
   fromWgs84ToEts2Coords,
 } from '@truckermudgeon/map/projections';
 import type {
-  CompanyItem,
   Country,
   FacilityIcon,
   Node,
@@ -19,8 +18,6 @@ import type {
   ServiceArea,
 } from '@truckermudgeon/map/types';
 import type { GeoJSON } from 'geojson';
-import fs from 'node:fs';
-import path from 'node:path';
 import RBush, { type BBox } from 'rbush';
 import { toBaseProperties } from '../../domain/actor/search';
 import type {
@@ -34,17 +31,13 @@ import type { SearchResult } from '../../types';
 type SearchGeoJson = GeoJSON.FeatureCollection<GeoJSON.Point, SearchProperties>;
 
 export function readAndProcessSearchData(
-  inputDir: string,
+  source: FileSource,
   context: GraphAndMapData<GraphMappedData>,
 ): ProcessedSearchData {
   console.log('reading', context.tsMapData.map, 'search data...');
   const geojson = JSON.parse(
-    fs.readFileSync(
-      path.join(
-        inputDir,
-        `${context.tsMapData.map === 'usa' ? 'ats' : 'ets2'}-search.geojson`,
-      ),
-      'utf-8',
+    source.readUtf8(
+      `${context.tsMapData.map === 'usa' ? 'ats' : 'ets2'}-search.geojson`,
     ),
   ) as unknown as SearchGeoJson;
 
@@ -52,9 +45,11 @@ export function readAndProcessSearchData(
     context.tsMapData.map === 'usa'
       ? fromWgs84ToAtsCoords
       : fromWgs84ToEts2Coords;
+  const toLngLat =
+    context.tsMapData.map === 'usa'
+      ? fromAtsCoordsToWgs84
+      : fromEts2CoordsToWgs84;
 
-  let correctCompanyNodes = 0;
-  let incorrectCompanyNodes = 0;
   let id = 0;
   const searchResults = geojson.features
     // Dealers will be handled by ServiceAreas
@@ -79,43 +74,19 @@ export function readAndProcessSearchData(
       const facilityUrls: string[] = [];
       switch (f.properties.type) {
         case 'company': {
-          let company: CompanyItem;
-          if (context.graphCompaniesByNodeUid.has(closestNode.uid)) {
-            // do nothing; node is correct
-            correctCompanyNodes++;
-            company = assertExists(
-              context.tsMapData.companies
-                .values()
-                .find(c => c.nodeUid === closestNode.uid),
-            );
-          } else {
-            const companyNode = context.graphNodeRTree.findClosest(
-              ...gameCoords,
-              {
-                predicate: item =>
-                  context.graphCompaniesByNodeUid.has(item.node.uid),
-              },
-            ).node;
-            assert(
-              companyNode.uid ===
-                context.graphCompaniesByNodeUid.get(companyNode.uid)?.nodeUid,
-            );
-            company = assertExists(
-              context.tsMapData.companies
-                .values()
-                .find(c => c.nodeUid === companyNode.uid),
-            );
-            console.log(
-              'bad company node',
-              poiProperties.sprite,
-              poiProperties.city.name,
-              poiProperties.stateCode,
-
-              distance(closestNode, gameCoords),
-              distance(closestNode, companyNode),
-            );
-            incorrectCompanyNodes++;
-          }
+          assert(
+            context.graphCompaniesByNodeUid.has(closestNode.uid),
+            'closest node to company POI should be a company node.',
+          );
+          const company = assertExists(
+            context.tsMapData.companies
+              .values()
+              .find(c => c.nodeUid === closestNode.uid),
+          );
+          assert(
+            company.token === f.properties.sprite,
+            `${company.token}.${company.cityToken} !== ${f.properties.sprite}`,
+          );
 
           const prefab = context.tsMapData.prefabs.get(company.prefabUid);
           if (
@@ -157,7 +128,7 @@ export function readAndProcessSearchData(
 
   // adding location info to facilities
   const sceneryTowns = JSON.parse(
-    fs.readFileSync(path.join(inputDir, 'extra-labels.geojson'), 'utf-8'),
+    source.readUtf8('extra-labels.geojson'),
   ) as unknown as ExtraLabelsGeoJSON;
   sceneryTowns.features = sceneryTowns.features
     .filter(
@@ -168,7 +139,7 @@ export function readAndProcessSearchData(
           text !== 'Golden Gate Bridge'),
     )
     .map(f => {
-      f.geometry.coordinates = fromWgs84ToAtsCoords(
+      f.geometry.coordinates = toGameCoords(
         f.geometry.coordinates as [number, number],
       );
       return f;
@@ -186,7 +157,7 @@ export function readAndProcessSearchData(
       .map(([nodeUid, serviceArea]) => {
         const node = assertExists(context.tsMapData.nodes.get(nodeUid));
         const nodePos: Position = [node.x, node.y];
-        const lonLat = fromAtsCoordsToWgs84(nodePos);
+        const lonLat = toLngLat(nodePos);
 
         const res: SearchResult & { description?: string } = {
           id: id++,
@@ -210,7 +181,6 @@ export function readAndProcessSearchData(
       })
       .toArray();
 
-  console.log({ correctCompanyNodes, incorrectCompanyNodes });
   const searchData = searchResults.concat(facilityResults);
 
   const searchDataLngLatRTree = new PointRBush<{
@@ -269,8 +239,8 @@ type ExtraLabelsGeoJSON = GeoJSON.FeatureCollection<
 // TODO dry up from commands/search.ts
 function createSpatialIndices(
   tsMapData: MappedDataForKeys<['cities', 'countries', 'nodes']>,
-  sceneryTowns: ExtraLabelsGeoJSON,
-): Pick<SearchIndices, 'cityRTree' | 'cityPointRTree' | 'nodePointRTree'> {
+  sceneryTowns: ExtraLabelsGeoJSON, // coordinates are in game coords
+): Pick<SearchIndices, 'cityRTree' | 'cityPointRTree' | 'countryPointRTree'> {
   const cityRTree = new RBush<
     BBox & {
       cityName: string;
@@ -331,8 +301,12 @@ function createSpatialIndices(
         }),
       ),
   );
-  const nodePointRTree = new PointRBush<{ x: number; y: number; node: Node }>();
-  nodePointRTree.load(
+  const countryPointRTree = new PointRBush<{
+    x: number;
+    y: number;
+    node: Node;
+  }>();
+  countryPointRTree.load(
     [...tsMapData.nodes.values()]
       .filter(
         n =>
@@ -349,7 +323,7 @@ function createSpatialIndices(
   return {
     cityRTree,
     cityPointRTree,
-    nodePointRTree,
+    countryPointRTree,
   };
 }
 
@@ -399,6 +373,7 @@ function toServiceAreaSprite(serviceArea: ServiceArea): string {
             : serviceArea.description.toLowerCase().slice(0, 3);
         return `${prefix}_oil_gst`;
       }
+      // ATS truck dealers
       case 'Western Star':
         return 'ws_trk_dlr';
       case 'Kenworth':
@@ -410,6 +385,16 @@ function toServiceAreaSprite(serviceArea: ServiceArea): string {
       case 'Freightliner':
       case 'International':
       case 'Mack':
+        return 'blank';
+      // ETS2 truck dealers:
+      case 'Scania':
+        return 'scania_dlr';
+      case 'DAF':
+        return 'daf';
+      case 'Iveco':
+      case 'MAN':
+      case 'Mercedes-Benz':
+      case 'Renault':
         return 'blank';
       default:
         throw new Error(

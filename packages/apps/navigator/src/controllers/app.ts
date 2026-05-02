@@ -5,7 +5,7 @@ import { center, getExtent } from '@truckermudgeon/base/geom';
 import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
 import { toPosAndBearing } from '@truckermudgeon/navigation/helpers';
 import type {
-  JobState,
+  GameState,
   Route,
   RouteIndex,
   RouteStep,
@@ -28,6 +28,7 @@ import type { AppClient, AppController, AppStore } from './types';
 
 export class AppStoreImpl implements AppStore {
   themeMode: 'light' | 'dark' = 'light';
+  map: 'usa' | 'europe';
   cameraMode: CameraMode = CameraMode.FOLLOW;
   bearingMode: BearingMode = BearingMode.MATCH_MAP;
   activeRoute: Route | undefined = undefined;
@@ -38,19 +39,17 @@ export class AppStoreImpl implements AppStore {
   readyToLoad = false;
   mapLoaded = false;
 
-  currentJob: JobState | undefined;
-
   segmentComplete: SegmentInfo | undefined = undefined;
 
-  constructor() {
+  constructor(map: 'usa' | 'europe') {
     makeAutoObservable(this, {
       activeRoute: observable.ref,
       activeRouteIndex: observable.struct,
       truckPoint: observable.ref,
       trailerPoint: observable.ref,
-      currentJob: observable.ref,
       segmentComplete: observable.ref,
     });
+    this.map = map;
   }
 
   get isReceivingTelemetry(): boolean {
@@ -302,6 +301,8 @@ export class AppControllerImpl implements AppController {
         unsubscribeOnMove: () => void;
       }
     | undefined;
+  private deviceSubscription: { unsubscribe: () => void } | undefined;
+  private renderIntervalId: ReturnType<typeof setInterval> | undefined;
   private wakeLock?: WakeLockSentinel = undefined;
   private padding = {
     left: 0,
@@ -444,8 +445,6 @@ export class AppControllerImpl implements AppController {
   }
 
   onMapLoad(map: MapRef, player: Marker) {
-    Preconditions.checkState(this.map == null);
-    Preconditions.checkState(this.playerMarker == null);
     this.map = map;
     this.playerMarker = player;
   }
@@ -505,6 +504,16 @@ export class AppControllerImpl implements AppController {
   }
 
   startListening(store: AppStore, client: AppClient) {
+    if (this.deviceSubscription || this.renderIntervalId != null) {
+      console.log('tearing down previous device subscription');
+      this.deviceSubscription?.unsubscribe();
+      this.deviceSubscription = undefined;
+      if (this.renderIntervalId != null) {
+        clearInterval(this.renderIntervalId);
+        this.renderIntervalId = undefined;
+      }
+    }
+
     let prevPosition: Position = [0, 0];
     let currPosition: Position = [0, 0];
     const markerPosition: Position = [0, 0];
@@ -513,13 +522,16 @@ export class AppControllerImpl implements AppController {
     let markerBearing = 0;
     console.log('subscribing');
 
-    const timeline = new TelemetryTimeline({
+    const timeline = new TelemetryTimeline<GameState>({
       lookbackMs: 250,
       maxExtrapolationMs: 500,
       emaAlpha: 0.5,
     });
 
-    client.subscribeToDevice.subscribe(void 0, {
+    this.deviceSubscription = client.subscribeToDevice.subscribe(void 0, {
+      onError: err => {
+        console.error('subscribeToDevice error', err);
+      },
       onData: event => {
         switch (event.type) {
           case 'positionUpdate':
@@ -551,6 +563,11 @@ export class AppControllerImpl implements AppController {
           case 'trailerUpdate':
             runInAction(() => (store.trailerPoint = event.data?.position));
             break;
+          case 'mapUpdate':
+            runInAction(() => (store.map = event.data));
+            localStorage.setItem('map', event.data);
+            timeline.reset();
+            break;
           case 'jobUpdate':
             break;
           default:
@@ -566,17 +583,20 @@ export class AppControllerImpl implements AppController {
         return;
       }
 
-      const { speed, position, heading } = gameState;
-      const { position: center, bearing } = toPosAndBearing({
-        position: {
-          X: position.x,
-          Y: position.z,
-          Z: position.y,
+      const { speed, position, heading, game } = gameState;
+      const { position: center, bearing } = toPosAndBearing(
+        {
+          position: {
+            X: position.x,
+            Y: position.z,
+            Z: position.y,
+          },
+          orientation: {
+            heading,
+          },
         },
-        orientation: {
-          heading,
-        },
-      });
+        game === 'ats' ? 'usa' : 'europe',
+      );
       const speedMph = Math.round(speed * 2.236936);
 
       store.truckPoint = center;
@@ -633,7 +653,7 @@ export class AppControllerImpl implements AppController {
       }
     };
 
-    setInterval(action(render), duration);
+    this.renderIntervalId = setInterval(action(render), duration);
   }
 
   synthesizeSearchResult(

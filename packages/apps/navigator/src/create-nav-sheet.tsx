@@ -214,6 +214,7 @@ function createCurrentNavPage(opts: {
     );
     return (
       <_DestinationList
+        units={appStore.map === 'usa' ? 'imperial' : 'metric'}
         isLoading={store.isLoading}
         destinations={store.destinations}
         CollapsibleButtonBar={_CollapsibleButtonBar}
@@ -226,6 +227,7 @@ function createCurrentNavPage(opts: {
   const _RoutesList = withLoading(RoutesList);
   const RoutesPage = observer((props: { onRouteGoClick: () => void }) => (
     <_RoutesList
+      units={appStore.map === 'usa' ? 'imperial' : 'metric'}
       isLoading={store.isLoading}
       routes={store.routes}
       onRouteHighlight={action(route =>
@@ -324,13 +326,17 @@ function createCurrentNavPage(opts: {
           case NavPageKey.DIRECTIONS_FROM_ROUTES_LIST:
             return (
               <RouteStepsList
+                units={appStore.map === 'usa' ? 'imperial' : 'metric'}
                 route={assertExists(store.selectedRoute)}
                 onStepClick={props.onRouteStepClick}
               />
             );
           case NavPageKey.DIRECTIONS_FROM_ROUTE_CONTROLS:
             return (
-              <RouteStepsList route={assertExists(appStore.activeRoute)} />
+              <RouteStepsList
+                units={appStore.map === 'usa' ? 'imperial' : 'metric'}
+                route={assertExists(appStore.activeRoute)}
+              />
             );
           case NavPageKey.MANAGE_STOPS:
             return (

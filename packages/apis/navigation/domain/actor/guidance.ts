@@ -40,6 +40,7 @@ export function calculateSteps(
   console.log('first node', curNode);
   console.log('last node', neighbors.at(-1)!.nodeUid);
 
+  // TODO make builder long-lived
   const builder = new RouteStepBuilder(context, signRTree, roundaboutData);
 
   for (let i = 1; i < neighbors.length; i++) {
@@ -60,6 +61,7 @@ export function calculateSteps(
   // be that of the nearest road node or prefab node?
 
   const routeSteps = builder.build();
+
   const encoded = routeSteps.map(step => {
     return {
       ...step,

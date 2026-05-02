@@ -38,13 +38,14 @@ import type {
   TruckSimTelemetry,
 } from '../../types';
 import type { DomainEventSink } from '../events';
+import type { GameContext } from '../game-context';
 import type { GraphAndMapData, GraphMappedData } from '../lookup-data';
 import { calculateLocation } from './detect-route-events';
 import { calculateSteps } from './guidance';
 import { scoreLine } from './score-line';
 
 export interface RoutingService {
-  findRouteFromKey(key: RouteKey): Promise<RawRoute>;
+  findRouteFromKey(key: RouteKey, gameContext: GameContext): Promise<RawRoute>;
 }
 
 export type RouteWithLookup = Route & {
@@ -71,12 +72,23 @@ type RouteMappedData = MappedDataForKeys<typeof generateRoutesMapDataKeys>;
 // TODO add current truck pos as an argument, so that route generated is
 //  complete?
 export async function generateRouteFromKeys(
-  segmentKeys: string[],
+  segmentKeys: RouteKey[],
   context: {
     graphAndMapData: GraphAndMapData<RouteMappedData>;
     routing: RoutingService;
   },
 ): Promise<RouteWithLookup> {
+  Preconditions.checkArgument(segmentKeys.every(k => assertRouteKey(k)));
+  const maps = segmentKeys.map(k => k.split('-').at(-1)!);
+  Preconditions.checkArgument(
+    maps.every(map => map === context.graphAndMapData.tsMapData.map),
+    `all segment key maps must match context map '${context.graphAndMapData.tsMapData.map}'`,
+  );
+  Preconditions.checkArgument(
+    maps[0] === context.graphAndMapData.tsMapData.map,
+    'segment keys must be for same map as context',
+  );
+
   const {
     graphAndMapData: {
       graphData,
@@ -87,17 +99,30 @@ export async function generateRouteFromKeys(
     },
     routing,
   } = context;
+  const gameContext: GameContext = {
+    map: tsMapData.map,
+  };
   const routesWithoutLookup = await Promise.all(
     segmentKeys.map(async key => {
       // TODO how is navigator producing node uids that aren't in the graph?
       // the need for massaging node uids is questionable.
       let routeKey = assertRouteKey(key);
-      const [startNodeUidString, endNodeUidString, direction, mode] =
-        routeKey.split('-') as [string, string, Direction, Mode];
+      const [startNodeUidString, endNodeUidString, direction, mode, map] =
+        routeKey.split('-') as [
+          string,
+          string,
+          Direction,
+          Mode,
+          'usa' | 'europe',
+        ];
+
       let startNodeUid = BigInt(`0x${startNodeUidString}`);
       let endNodeUid = BigInt(`0x${endNodeUidString}`);
       if (!graph.has(startNodeUid)) {
-        const startNode = assertExists(tsMapData.nodes.get(startNodeUid));
+        const startNode = assertExists(
+          tsMapData.nodes.get(startNodeUid),
+          `generateRouteFromKeys: unknown start node ${endNodeUid.toString(16)}`,
+        );
         const closestStart = context.graphAndMapData.graphNodeRTree.findClosest(
           startNode.x,
           startNode.y,
@@ -110,7 +135,10 @@ export async function generateRouteFromKeys(
         );
       }
       if (!graph.has(startNodeUid)) {
-        const startNode = assertExists(tsMapData.nodes.get(startNodeUid));
+        const startNode = assertExists(
+          tsMapData.nodes.get(startNodeUid),
+          `generateRouteFromKeys: unknown start node (attempt 2) ${endNodeUid.toString(16)}`,
+        );
         const closestStart = context.graphAndMapData.graphNodeRTree.findClosest(
           startNode.x,
           startNode.y,
@@ -118,7 +146,10 @@ export async function generateRouteFromKeys(
         startNodeUid = closestStart.uid;
       }
       if (!graph.has(endNodeUid)) {
-        const endNode = assertExists(tsMapData.nodes.get(endNodeUid));
+        const endNode = assertExists(
+          tsMapData.nodes.get(endNodeUid),
+          `generateRouteFromKeys: unknown end node ${endNodeUid.toString(16)}`,
+        );
         const closestEnd = context.graphAndMapData.graphNodeRTree.findClosest(
           endNode.x,
           endNode.y,
@@ -130,9 +161,9 @@ export async function generateRouteFromKeys(
           endNodeUid.toString(16),
         );
       }
-      routeKey = createRouteKey(startNodeUid, endNodeUid, direction, mode);
+      routeKey = createRouteKey(startNodeUid, endNodeUid, direction, mode, map);
 
-      const route = await routing.findRouteFromKey(routeKey);
+      const route = await routing.findRouteFromKey(routeKey, gameContext);
       if (!route.success) {
         console.warn(`could not find route for key "${key}"; ignoring.`);
         return;
@@ -213,7 +244,15 @@ export async function addWaypoint(
     }
 
     const first = await generateRouteFromKeys(
-      [createRouteKey(start, toNodeUid, firstDirection, strategy)],
+      [
+        createRouteKey(
+          start,
+          toNodeUid,
+          firstDirection,
+          strategy,
+          context.graphAndMapData.tsMapData.map,
+        ),
+      ],
       context,
     );
 
@@ -235,7 +274,15 @@ export async function addWaypoint(
     }
 
     const second = await generateRouteFromKeys(
-      [createRouteKey(toNodeUid, end, firstPenultimateDirection, strategy)],
+      [
+        createRouteKey(
+          toNodeUid,
+          end,
+          firstPenultimateDirection,
+          strategy,
+          context.graphAndMapData.tsMapData.map,
+        ),
+      ],
       context,
     );
 
@@ -259,7 +306,10 @@ export async function addWaypoint(
   const waypointNode = assertExists(
     context.graphAndMapData.tsMapData.nodes.get(toNodeUid),
   );
-  const waypointLngLat = fromAtsCoordsToWgs84([waypointNode.x, waypointNode.y]);
+  const waypointLngLat =
+    context.graphAndMapData.tsMapData.map === 'usa'
+      ? fromAtsCoordsToWgs84([waypointNode.x, waypointNode.y])
+      : fromEts2CoordsToWgs84([waypointNode.x, waypointNode.y]);
 
   const withWaypoint = combineRoutes(bestSegments);
   withWaypoint.detour = {
@@ -334,6 +384,7 @@ export async function generateRoutes(
   const { graphAndMapData, routing, truck, domainEventSink } = context;
   const { roadRTree, signRTree, graphData, tsMapData, roundaboutData } =
     graphAndMapData;
+  const gameContext: GameContext = { map: tsMapData.map };
   const truckPos: [number, number] = [truck.position.X, truck.position.Z];
 
   const location = calculateLocation(
@@ -341,6 +392,7 @@ export async function generateRoutes(
     tsMapData.nodes,
     tsMapData.roadLooks,
     graphAndMapData.roadAndPrefabRTree,
+    tsMapData.map,
   );
 
   // TODO what if truck is in a ferry prefab? fromNodeUid should be ferry
@@ -369,7 +421,12 @@ export async function generateRoutes(
           // fallback to nearest road.
           // TODO should fallback to closest road OR prefab?
           roadRTree.findClosest(truck.position.X, truck.position.Z).road;
-    direction = getDirectionOnRoad(truck, nearestRoad, tsMapData.nodes);
+    direction = getDirectionOnRoad(
+      truck,
+      nearestRoad,
+      tsMapData.nodes,
+      tsMapData.map,
+    );
     fromNodeUid = [nearestRoad.startNodeUid, nearestRoad.endNodeUid]
       .map(uid => assertExists(tsMapData.nodes.get(uid)))
       .sort((a, b) => distance(truckPos, a) - distance(truckPos, b))[0].uid;
@@ -382,6 +439,7 @@ export async function generateRoutes(
       location,
       assertExists(tsMapData.prefabDescriptions.get(location.token)),
       tsMapData.nodes,
+      tsMapData.map,
       domainEventSink,
     ));
     console.log({
@@ -411,6 +469,7 @@ export async function generateRoutes(
         tsMapData.nodes,
         tsMapData.roadLooks,
         graphAndMapData.roadAndPrefabRTree,
+        tsMapData.map,
       );
       if (!location) {
         if (fromNodeUid !== lastPrefabUidReported) {
@@ -431,13 +490,19 @@ export async function generateRoutes(
         }
         direction = 'forward';
       } else if (location.type === ItemType.Road) {
-        direction = getDirectionOnRoad(fakeTruck, location, tsMapData.nodes);
+        direction = getDirectionOnRoad(
+          fakeTruck,
+          location,
+          tsMapData.nodes,
+          tsMapData.map,
+        );
       } else {
         direction = getDirectionOnPrefab(
           fakeTruck,
           location,
           assertExists(tsMapData.prefabDescriptions.get(location.token)),
           tsMapData.nodes,
+          tsMapData.map,
           domainEventSink,
         ).direction;
       }
@@ -451,7 +516,14 @@ export async function generateRoutes(
       modes.map(async mode => {
         const start = Date.now();
         let route = await routing.findRouteFromKey(
-          createRouteKey(fromNodeUid, toNodeUid, direction, mode),
+          createRouteKey(
+            fromNodeUid,
+            toNodeUid,
+            direction,
+            mode,
+            context.graphAndMapData.tsMapData.map,
+          ),
+          gameContext,
         );
         if (!route.success) {
           // TODO probably should try other direction, in certain cases
@@ -474,7 +546,9 @@ export async function generateRoutes(
                 toNodeUid,
                 direction === 'forward' ? 'backward' : 'forward',
                 mode,
+                context.graphAndMapData.tsMapData.map,
               ),
+              gameContext,
             );
             if (route.success) {
               return toRouteWithLookup(
@@ -607,20 +681,20 @@ function getDirectionOnRoad(
   //     arg with nodes, roads and prefabs)
   road: Road,
   nodes: ReadonlyMap<bigint, Node>,
+  map: 'usa' | 'europe',
 ): 'forward' | 'backward' {
+  const toLngLat = map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
   const roadStartNode = assertExists(nodes.get(road.startNodeUid));
   const roadEndNode = assertExists(nodes.get(road.endNodeUid));
 
   // TODO generate a proper line string.
-  const roadStartPoint = fromAtsCoordsToWgs84([
-    roadStartNode.x,
-    roadStartNode.y,
-  ]);
-  const roadEndPoint = fromAtsCoordsToWgs84([roadEndNode.x, roadEndNode.y]);
+  const roadStartPoint = toLngLat([roadStartNode.x, roadStartNode.y]);
+  const roadEndPoint = toLngLat([roadEndNode.x, roadEndNode.y]);
 
   const score = scoreLine(
     lineString([roadStartPoint, roadEndPoint]).geometry,
     truck,
+    map,
   );
   return score >= 0 ? 'forward' : 'backward';
 }
@@ -632,12 +706,14 @@ export function getDirectionOnPrefab(
   prefab: Prefab,
   prefabDesc: PrefabDescription,
   nodes: ReadonlyMap<bigint, Node>,
+  map: 'usa' | 'europe',
   domainEventSink?: DomainEventSink,
 ): { fromNodeUid: bigint; direction: Direction } {
   if (prefab.ferryLinkUid != null) {
     return getDirectionOnFerryPrefab(truck, prefab, nodes);
   }
 
+  const toLngLat = map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
   const targetNodeUids = rotateRight(prefab.nodeUids, prefab.originNodeIndex);
   const laneInfo = calculateLaneInfo(prefabDesc);
   const potentialInputIndices: {
@@ -651,12 +727,10 @@ export function getDirectionOnPrefab(
         const branchCurvePoints = branch.curvePoints.map(cp =>
           toMapPosition(cp, prefab, prefabDesc, nodes),
         );
-        const branchLineString = lineString(
-          branchCurvePoints.map(fromAtsCoordsToWgs84),
-        );
+        const branchLineString = lineString(branchCurvePoints.map(toLngLat));
         potentialInputIndices.push({
           targetIndex,
-          score: scoreLine(branchLineString.geometry, truck),
+          score: scoreLine(branchLineString.geometry, truck, map),
         });
       }
     }
@@ -795,6 +869,19 @@ function combineRoutes(routes: RouteWithLookup[]): RouteWithLookup {
 }
 
 function hasConsistentSegments(route: RouteWithLookup): boolean {
+  const firstSegmentMap = route.segments[0].key.split('-').at(-1);
+  if (
+    !route.segments.every(
+      segment => firstSegmentMap === segment.key.split('-').at(-1),
+    )
+  ) {
+    console.warn(
+      'inconsistent segments: not all segments',
+      firstSegmentMap,
+      route.segments.map(s => s.key),
+    );
+    return false;
+  }
   return route.lookup.nodeUids.every((nodeUids, index) => {
     assert(nodeUids.length > 0, 'empty route lookup nodeUids array');
     if (index === 0) {

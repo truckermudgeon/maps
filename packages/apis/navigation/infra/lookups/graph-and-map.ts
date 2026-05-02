@@ -5,6 +5,7 @@ import {
   type Position,
   toSplinePoints,
 } from '@truckermudgeon/base/geom';
+import type { FileSource } from '@truckermudgeon/io';
 import {
   readGraphData,
   readMapData,
@@ -30,7 +31,6 @@ import type {
 } from '@truckermudgeon/map/types';
 import * as turf from '@turf/helpers';
 import lineOffset from '@turf/line-offset';
-import path from 'node:path';
 import type { BBox } from 'rbush';
 import RBush from 'rbush';
 import type {
@@ -40,18 +40,18 @@ import type {
 import { graphMapDataKeys } from '../../domain/lookup-data';
 
 export function readGraphAndMapData(
-  dataDir: string,
+  source: FileSource,
   map: 'usa' | 'europe',
 ): GraphAndMapData<GraphMappedData> {
-  const tsMapData = readMapData(path.join(dataDir, 'parser'), map, {
+  const tsMapData = readMapData(source, map, {
     includeHiddenRoadsAndPrefabs: false,
     mapDataKeys: graphMapDataKeys,
   });
   const toLngLat = map === 'usa' ? fromAtsCoordsToWgs84 : fromEts2CoordsToWgs84;
-  const graphData = readGraphData(dataDir, map);
+  const graphData = readGraphData(source, map);
   let roundaboutData: RoundaboutData;
   try {
-    roundaboutData = readRoundaboutsData(dataDir, map);
+    roundaboutData = readRoundaboutsData(source, map);
   } catch {
     console.warn(`could not find ${map} roundabout data`);
     roundaboutData = {
@@ -64,6 +64,8 @@ export function readGraphAndMapData(
   const graphCompaniesByNodeUid = new Map<bigint, CompanyItem>(
     tsMapData.companies
       .values()
+      // this is expected to filter out companies that, e.g., are part of
+      // DLCs that have not yet been released (e.g. .pk_medved_ru.volkhov).
       .filter(company => graphData.graph.has(company.nodeUid))
       .map(company => [company.nodeUid, company]),
   );
@@ -274,6 +276,7 @@ export function readGraphAndMapData(
       .values()
       .filter(
         v =>
+          map === 'usa' &&
           v.modelDesc.startsWith('/model/sign/navigation') &&
           ((v.name.includes('exit') && !v.name.includes('exit mph')) ||
             v.name.includes('side board green')),
@@ -285,6 +288,7 @@ export function readGraphAndMapData(
       .values()
       .filter(
         v =>
+          map === 'usa' &&
           v.modelDesc.startsWith('/model/sign/navigation') &&
           !v.name.includes('ovh board') &&
           !v.name.includes('ovh brd') &&
@@ -469,6 +473,7 @@ export function readGraphAndMapData(
     lngLat: [number, number];
     poi: Poi & { type: 'road' };
   }>();
+  // TODO add ETS2 pois, like border crossings
   const nonRoadNumbers = new Set(['agri_check', 'toll_ico']);
   poiRTree.load(
     tsMapData.pois
