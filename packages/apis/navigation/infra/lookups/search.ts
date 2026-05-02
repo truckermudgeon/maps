@@ -1,7 +1,7 @@
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import type { Position } from '@truckermudgeon/base/geom';
 import { UnreachableError } from '@truckermudgeon/base/precon';
-import type { MappedDataForKeys } from '@truckermudgeon/io';
+import type { FileSource, MappedDataForKeys } from '@truckermudgeon/io';
 import { PointRBush } from '@truckermudgeon/map/point-rbush';
 import {
   fromAtsCoordsToWgs84,
@@ -18,8 +18,6 @@ import type {
   ServiceArea,
 } from '@truckermudgeon/map/types';
 import type { GeoJSON } from 'geojson';
-import fs from 'node:fs';
-import path from 'node:path';
 import RBush, { type BBox } from 'rbush';
 import { toBaseProperties } from '../../domain/actor/search';
 import type {
@@ -33,17 +31,13 @@ import type { SearchResult } from '../../types';
 type SearchGeoJson = GeoJSON.FeatureCollection<GeoJSON.Point, SearchProperties>;
 
 export function readAndProcessSearchData(
-  inputDir: string,
+  source: FileSource,
   context: GraphAndMapData<GraphMappedData>,
 ): ProcessedSearchData {
   console.log('reading', context.tsMapData.map, 'search data...');
   const geojson = JSON.parse(
-    fs.readFileSync(
-      path.join(
-        inputDir,
-        `${context.tsMapData.map === 'usa' ? 'ats' : 'ets2'}-search.geojson`,
-      ),
-      'utf-8',
+    source.readUtf8(
+      `${context.tsMapData.map === 'usa' ? 'ats' : 'ets2'}-search.geojson`,
     ),
   ) as unknown as SearchGeoJson;
 
@@ -134,7 +128,7 @@ export function readAndProcessSearchData(
 
   // adding location info to facilities
   const sceneryTowns = JSON.parse(
-    fs.readFileSync(path.join(inputDir, 'extra-labels.geojson'), 'utf-8'),
+    source.readUtf8('extra-labels.geojson'),
   ) as unknown as ExtraLabelsGeoJSON;
   sceneryTowns.features = sceneryTowns.features
     .filter(
