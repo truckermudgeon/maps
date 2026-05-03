@@ -9,7 +9,7 @@ export class UiEnvironmentStoreImpl implements UIEnvironmentStore {
 
   constructor(breakpoints: Breakpoints) {
     this.breakpoints = breakpoints;
-    makeAutoObservable(this);
+    makeAutoObservable(this, { handleResize: false });
     window.addEventListener('resize', this.handleResize);
   }
 

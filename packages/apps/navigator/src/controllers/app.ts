@@ -43,6 +43,7 @@ export class AppStoreImpl implements AppStore {
   segmentComplete: SegmentInfo | undefined = undefined;
 
   constructor(map: 'usa' | 'europe') {
+    this.map = map;
     makeAutoObservable(this, {
       activeRoute: observable.ref,
       activeRouteIndex: observable.struct,
@@ -50,7 +51,6 @@ export class AppStoreImpl implements AppStore {
       trailerPoint: observable.ref,
       segmentComplete: observable.ref,
     });
-    this.map = map;
   }
 
   get isReceivingTelemetry(): boolean {
