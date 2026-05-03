@@ -164,7 +164,7 @@ export function createApp({
     <AnimatedDirections
       direction={store.activeRouteDirection}
       distanceToNextManeuver={store.distanceToNextManeuver}
-      map={store.map}
+      units={store.map === 'usa' ? 'imperial' : 'metric'}
     />
   ));
   const _SegmentCompleteToast = observer(() =>

@@ -11,13 +11,13 @@ import {
 interface AnimatedDirectionsProps {
   direction: StepManeuver | undefined;
   distanceToNextManeuver: number;
-  map: 'usa' | 'europe';
+  units: 'imperial' | 'metric';
 }
 
 const ANIMATION_DURATION_MS = 200;
 
 export const AnimatedDirections = (props: AnimatedDirectionsProps) => {
-  const { direction, distanceToNextManeuver, map } = props;
+  const { direction, distanceToNextManeuver, units } = props;
   const [outgoing, setOutgoing] = useState<StepManeuver | undefined>();
   const [exitActive, setExitActive] = useState(false);
   const prevDirectionRef = useRef(direction);
@@ -64,7 +64,7 @@ export const AnimatedDirections = (props: AnimatedDirectionsProps) => {
   const animate = outgoing != null;
   const { length, unit } = toLengthAndUnit(
     distanceToNextManeuver,
-    map === 'usa' ? defaultImperialOptions : defaultMetricOptions,
+    units === 'imperial' ? defaultImperialOptions : defaultMetricOptions,
   );
 
   const buildProps = (step: StepManeuver) => {
