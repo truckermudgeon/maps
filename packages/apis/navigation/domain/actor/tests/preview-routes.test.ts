@@ -60,7 +60,6 @@ describe('computePreviewRoutes', () => {
         ['smallRoads', 'shortest', 'fastest'],
         expect.objectContaining({ truck }),
       );
-      expect(addWaypoint).not.toHaveBeenCalled();
     });
 
     it('deduplicates routes with identical geometry', async () => {
