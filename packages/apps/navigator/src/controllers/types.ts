@@ -70,12 +70,12 @@ export type CompassPoint = 'N' | 'S' | 'E' | 'W' | 'NE' | 'NW' | 'SE' | 'SW';
 export interface ControlsStore {
   // (-180, 180] CW, 0 is north.
   bearing: number;
-  units: 'imperial' | 'metric';
   limit: number;
   speed: number;
-  showRecenterFab: boolean;
-  showRouteFab: boolean;
-  showSearchFab: boolean;
+  readonly units: 'imperial' | 'metric';
+  readonly showRecenterFab: boolean;
+  readonly showRouteFab: boolean;
+  readonly showSearchFab: boolean;
 }
 
 export interface ControlsController {
