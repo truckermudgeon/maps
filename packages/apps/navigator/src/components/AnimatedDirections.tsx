@@ -30,7 +30,10 @@ export const AnimatedDirections = (props: AnimatedDirectionsProps) => {
   const currentRef = useRef<HTMLDivElement>(null);
   const outgoingRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  // useLayoutEffect (not useEffect) so the snapshot + extra render happen
+  // before the browser paints. Otherwise there is a single-frame flash where
+  // the new direction sits at the natural position with no animation classes.
+  useLayoutEffect(() => {
     const prev = prevPropsRef.current;
 
     if (!prev.direction || !direction || prev.direction === direction) {
