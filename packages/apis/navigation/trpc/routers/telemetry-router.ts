@@ -5,6 +5,10 @@ import { z } from 'zod';
 import { pairingCodeTtlMs } from '../../constants';
 import { AuthState } from '../../domain/auth/auth-state';
 import { transition } from '../../domain/auth/transition';
+import {
+  ReconnectRejectionReason,
+  verifyReconnectSignature,
+} from '../../domain/auth/verify-reconnect';
 import { generatePairingCode } from '../../domain/pairing-code';
 import { TruckSimTelemetrySchema } from '../../domain/schemas';
 import { navigatorKeys } from '../../infra/kv/store';
@@ -248,39 +252,25 @@ export const telemetryRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const {
-        services: { kv },
-      } = ctx;
-      const { telemetryId, timestamp, signature } = input;
-      const publicKey = await kv.get(navigatorKeys.publicKey(telemetryId));
-      if (!publicKey) {
-        return false;
+      const result = await verifyReconnectSignature(input, ctx.services.kv);
+      if (!result.ok) {
+        switch (result.reason) {
+          case ReconnectRejectionReason.UNKNOWN_KEY:
+            return false;
+          case ReconnectRejectionReason.INVALID_TIMESTAMP:
+            throw new TRPCError({
+              code: 'UNAUTHORIZED',
+              message: `invalid timestamp: actual(${input.timestamp}) now(${Date.now()})`,
+            });
+          case ReconnectRejectionReason.INVALID_SIGNATURE:
+            throw new TRPCError({
+              code: 'UNAUTHORIZED',
+              message: 'invalid signature',
+            });
+        }
       }
 
-      const now = Date.now();
-      const isTimestampValid =
-        now - 300_000 < timestamp && timestamp <= now + 300_000;
-      if (!isTimestampValid) {
-        throw new TRPCError({
-          code: 'UNAUTHORIZED',
-          message: `invalid timestamp: min(${now - 300_000}) max(${now + 300_000}) actual(${timestamp})}`,
-        });
-      }
-
-      const isSignatureValid = await crypto.subtle.verify(
-        'Ed25519',
-        publicKey,
-        Buffer.from(signature, 'base64url'),
-        Buffer.from(JSON.stringify({ telemetryId, timestamp }), 'base64url'),
-      );
-      if (!isSignatureValid) {
-        throw new TRPCError({
-          code: 'UNAUTHORIZED',
-          message: 'invalid signature',
-        });
-      }
-
-      restoreAuthenticatedState(ctx.auth, telemetryId);
+      restoreAuthenticatedState(ctx.auth, input.telemetryId);
       return true;
     }),
   // after ready signal is given, telemetry client pushes data
