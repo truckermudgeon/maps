@@ -7,11 +7,8 @@ import type {
   MapPaddingStore,
   NavSheetStore,
 } from './controllers/types';
-import {
-  routeCornerPair,
-  routesCornerPairs,
-  sortedRoutePreviewIndices,
-} from './route-bounds';
+import { routeCornerPair, routesCornerPairs } from './route-bounds';
+import { sortedRoutePreviewIndices } from './route-display';
 
 export interface ReactionDeps {
   store: AppStore;

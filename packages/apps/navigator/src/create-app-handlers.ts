@@ -11,7 +11,8 @@ import type {
   NavSheetController,
   NavSheetStore,
 } from './controllers/types';
-import { bearingAfterStepManeuver, routeCornerPair } from './route-bounds';
+import { routeCornerPair } from './route-bounds';
+import { bearingAfterStepManeuver } from './route-features';
 
 export interface HandlerDeps {
   store: AppStore;

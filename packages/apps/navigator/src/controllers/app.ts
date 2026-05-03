@@ -22,7 +22,7 @@ import { Marker } from 'maplibre-gl';
 import { action, makeAutoObservable, observable, runInAction } from 'mobx';
 import type { MapRef } from 'react-map-gl/maplibre';
 import { lineGradientExpression } from '../components/RoutesStyle';
-import { toRouteFeatures } from '../route-bounds';
+import { toRouteFeatures } from '../route-features';
 import { BearingMode, CameraMode } from './constants';
 import { TelemetryTimeline } from './telemetry-timeline';
 import type { AppClient, AppController, AppStore } from './types';
