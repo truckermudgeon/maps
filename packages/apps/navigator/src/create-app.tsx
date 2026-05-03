@@ -18,7 +18,6 @@ import { SpriteProvider } from './components/SpriteProvider';
 import {
   defaultImperialOptions,
   defaultMetricOptions,
-  toLengthAndUnit,
 } from './components/text';
 import { TrailerOrWaypointMarkers } from './components/TrailerOrWaypointMarkers';
 import { WaitingForTelemetry } from './components/WaitingForTelemetry';
@@ -41,6 +40,7 @@ import { wireAppReactions } from './create-app-reactions';
 import { createControls } from './create-controls';
 import { createNavSheet } from './create-nav-sheet';
 import { setupDevtools } from './dev-tools';
+import { toRouteSummary } from './route-display';
 
 export function createApp({
   map,
@@ -188,13 +188,11 @@ export function createApp({
   );
 
   const routeSummary = computed(
-    () => ({
-      minutes: store.activeRouteToFirstWayPointSummary?.minutes ?? 0,
-      distance: toLengthAndUnit(
-        store.activeRouteToFirstWayPointSummary?.distanceMeters ?? 0,
+    () =>
+      toRouteSummary(
+        store.activeRouteToFirstWayPointSummary,
         store.map === 'usa' ? defaultImperialOptions : defaultMetricOptions,
       ),
-    }),
     { equals: comparer.structural },
   );
 
