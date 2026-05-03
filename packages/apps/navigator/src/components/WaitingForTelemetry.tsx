@@ -25,35 +25,32 @@ export const WaitingForTelemetry = (props: {
         size={'lg'}
         sx={{ boxShadow: 'lg', overflow: 'hidden', maxWidth: '40ch' }}
       >
-        {bindingStale ? (
-          <BindingStalePrompt onRePair={onRePair} />
-        ) : (
-          <>
-            <Typography
-              fontSize={'lg'}
-              display={'flex'}
-              justifyContent={'center'}
-              alignItems={'center'}
-              gap={1}
-            >
-              <CircularProgress
-                variant="solid"
-                size={'sm'}
-                color={'neutral'}
-                sx={{ mr: 1 }}
-              />
-              Waiting for game telemetry...
-            </Typography>
-            <Divider />
-            <Typography fontSize={'sm'} color={'neutral'}>
-              Please make sure:
-              <ul style={{ paddingLeft: '1.5em', margin: '1ex 0 0 0' }}>
-                <li>ATS and the Navigator client are running</li>
-                <li>your truck is on the road</li>
-              </ul>
-            </Typography>
-          </>
-        )}
+        <Typography
+          fontSize={'lg'}
+          display={'flex'}
+          justifyContent={'center'}
+          alignItems={'center'}
+          gap={1}
+        >
+          <CircularProgress
+            variant="solid"
+            size={'sm'}
+            color={'neutral'}
+            sx={{ mr: 1 }}
+          />
+          {bindingStale
+            ? 'Still waiting for game telemetry...'
+            : 'Waiting for game telemetry...'}
+        </Typography>
+        <Divider />
+        <Typography component={'div'} fontSize={'sm'} color={'neutral'}>
+          Please make sure:
+          <ul style={{ paddingLeft: '1.5em', margin: '1ex 0 0 0' }}>
+            <li>ATS and the Navigator client are running</li>
+            <li>your truck is on the road</li>
+          </ul>
+        </Typography>
+        {bindingStale && <BindingStalePrompt onRePair={onRePair} />}
       </Card>
     </Stack>
   );
