@@ -98,10 +98,12 @@ export const ButtonControlled: Story = {
           display: 'flex',
           flexDirection: 'column',
           gap: '1rem',
-          alignItems: 'flex-start',
         }}
       >
-        <button onClick={() => setIndex(i => (i + 1) % steps.length)}>
+        <button
+          style={{ alignSelf: 'flex-start' }}
+          onClick={() => setIndex(i => (i + 1) % steps.length)}
+        >
           Next direction
         </button>
         <AnimatedDirections
