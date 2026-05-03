@@ -15,6 +15,7 @@ import { RouteStack } from './components/RouteStack';
 import { SegmentCompleteToast } from './components/SegmentCompleteToast';
 import { SlippyMap } from './components/SlippyMap';
 import { SpriteProvider } from './components/SpriteProvider';
+import { TelemetryLostToast } from './components/TelemetryLostToast';
 import {
   defaultImperialOptions,
   defaultMetricOptions,
@@ -236,9 +237,9 @@ export function createApp({
     }
     // TODO show "Loading map..." UI if map hasn't loaded yet, instead of
     //  showing "Waiting for telemetry..." UI.
-    // Mid-session staleness (bindingStale flips after the first sample) is
-    // handled by other UI (toast); this overlay is only for the
-    // pre-first-sample case.
+    // Mid-session staleness (bindingStale after first sample) is surfaced
+    // by TelemetryLostToast; this overlay is only for the pre-first-sample
+    // case.
     return !store.hasReceivedFirstTelemetry ? (
       <WaitingForTelemetry
         bindingStale={store.bindingStale}
@@ -248,6 +249,13 @@ export function createApp({
       <></>
     );
   });
+
+  const _TelemetryLostToast = observer(() => (
+    <TelemetryLostToast
+      open={store.hasReceivedFirstTelemetry && store.bindingStale}
+      onRePair={() => controller.forceRePair()}
+    />
+  ));
 
   return {
     App: () => (
@@ -260,6 +268,7 @@ export function createApp({
         RouteStack={_RouteStack}
         Controls={_Controls}
         WaitingForTelemetry={_WaitingForTelemetry}
+        TelemetryLostToast={_TelemetryLostToast}
       />
     ),
     store,
@@ -276,6 +285,7 @@ const App = observer(
     RouteStack: () => ReactElement;
     Controls: () => ReactElement;
     WaitingForTelemetry: () => ReactElement;
+    TelemetryLostToast: () => ReactElement;
   }) => {
     console.log('render app');
     const {
@@ -286,6 +296,7 @@ const App = observer(
       RouteStack,
       Controls,
       WaitingForTelemetry,
+      TelemetryLostToast,
     } = props;
     const theme = useTheme();
     const isLargePortrait = useMediaQuery(
@@ -400,6 +411,7 @@ const App = observer(
           </Grid>
         </Grid>
         <WaitingForTelemetry />
+        <TelemetryLostToast />
       </SpriteProvider>
     );
   },
