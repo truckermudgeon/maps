@@ -8,16 +8,10 @@ vi.mock('../generate-routes', async importOriginal => {
 
 import type { DomainEventSink } from '../../events';
 import type { GraphAndMapData, GraphMappedData } from '../../lookup-data';
-import type { RouteWithLookup, RoutingService } from '../generate-routes';
+import type { RoutingService } from '../generate-routes';
 import { addWaypoint, generateRoutes } from '../generate-routes';
 import { computePreviewRoutes } from '../preview-routes';
-import {
-  aRouteWithLookup,
-  aSegmentWithSteps,
-  aStepWith,
-  aTruckWith,
-  lookupForNodeUids,
-} from './builders';
+import { aRouteWithIdAndGeometry, aTruckWith } from './builders';
 
 const dummyEventSink: DomainEventSink = { publish: () => void 0 };
 const dummyDeps = {
@@ -25,16 +19,6 @@ const dummyDeps = {
   routing: {} as RoutingService,
   domainEventSink: dummyEventSink,
 };
-
-function makeRoute(id: string, geometry: [number, number][]): RouteWithLookup {
-  return {
-    ...aRouteWithLookup({
-      lookup: lookupForNodeUids([[1n, 2n]]),
-      segments: [aSegmentWithSteps([aStepWith({ geometry })])],
-    }),
-    id,
-  };
-}
 
 describe('computePreviewRoutes', () => {
   const toNodeUid = 0xdeadbeefn;
@@ -68,8 +52,8 @@ describe('computePreviewRoutes', () => {
         [1, 1],
       ];
       vi.mocked(generateRoutes).mockResolvedValue([
-        makeRoute('a', geo),
-        makeRoute('b', geo),
+        aRouteWithIdAndGeometry('a', geo),
+        aRouteWithIdAndGeometry('b', geo),
       ]);
 
       const results = await computePreviewRoutes(
@@ -83,11 +67,11 @@ describe('computePreviewRoutes', () => {
 
     it('preserves routes with distinct geometry', async () => {
       vi.mocked(generateRoutes).mockResolvedValue([
-        makeRoute('a', [
+        aRouteWithIdAndGeometry('a', [
           [0, 0],
           [1, 1],
         ]),
-        makeRoute('b', [
+        aRouteWithIdAndGeometry('b', [
           [0, 0],
           [2, 2],
         ]),
@@ -104,11 +88,11 @@ describe('computePreviewRoutes', () => {
 
     it('returns results in reversed order', async () => {
       vi.mocked(generateRoutes).mockResolvedValue([
-        makeRoute('first', [
+        aRouteWithIdAndGeometry('first', [
           [0, 0],
           [1, 1],
         ]),
-        makeRoute('second', [
+        aRouteWithIdAndGeometry('second', [
           [0, 0],
           [2, 2],
         ]),
@@ -127,13 +111,13 @@ describe('computePreviewRoutes', () => {
 
   describe('with active route', () => {
     it('calls addWaypoint with auto strategy', async () => {
-      const activeRoute = makeRoute('active', [
+      const activeRoute = aRouteWithIdAndGeometry('active', [
         [0, 0],
         [1, 1],
       ]);
       const routeIndex = { segmentIndex: 0, stepIndex: 0, nodeIndex: 0 };
       vi.mocked(addWaypoint).mockResolvedValue(
-        makeRoute('waypointed', [
+        aRouteWithIdAndGeometry('waypointed', [
           [0, 0],
           [3, 3],
         ]),
