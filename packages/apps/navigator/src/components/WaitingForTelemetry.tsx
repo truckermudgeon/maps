@@ -35,9 +35,9 @@ export const WaitingForTelemetry = (props: {
           <>
             <Typography fontSize={'lg'}>Still no game telemetry.</Typography>
             <Typography fontSize={'sm'} color={'neutral'}>
-              The connection may have stalled while the game or Navigator client
-              was starting. Try reconnecting first; if that doesn't help,
-              re-pair the device.
+              This will clear automatically if telemetry comes back. Use Try
+              again to force a reconnect, or Re-pair device if you've paired
+              with a different client.
             </Typography>
             <Divider />
             <Stack direction={'row'} spacing={1} justifyContent={'flex-end'}>
