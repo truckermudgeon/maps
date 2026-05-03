@@ -73,20 +73,20 @@ export class MockRateLimitService implements RateLimitService {
   }
 }
 
-type SessionActorRegistryMethods = Pick<
-  SessionActorRegistry,
-  'get' | 'getOrCreate'
->;
-
-export class MockSessionActorRegistry implements SessionActorRegistryMethods {
+export class MockSessionActorRegistry implements SessionActorRegistry {
   get: SessionActorRegistry['get'];
   getOrCreate: SessionActorRegistry['getOrCreate'];
+  getByClientId: SessionActorRegistry['getByClientId'];
 
-  constructor(overrides: Partial<SessionActorRegistryMethods> = {}) {
+  constructor(overrides: Partial<SessionActorRegistry> = {}) {
     this.get = (overrides.get ??
       vi.fn().mockReturnValue(undefined)) as SessionActorRegistry['get'];
     this.getOrCreate = (overrides.getOrCreate ??
       vi.fn()) as SessionActorRegistry['getOrCreate'];
+    this.getByClientId = (overrides.getByClientId ??
+      vi
+        .fn()
+        .mockReturnValue(undefined)) as SessionActorRegistry['getByClientId'];
   }
 }
 
@@ -95,8 +95,7 @@ export function mockServices(overrides: Partial<Services> = {}): Services {
     kv: new MockKvStore(),
     metrics: new MockMetricsService(),
     rateLimit: new MockRateLimitService(),
-    sessionActors:
-      new MockSessionActorRegistry() as unknown as SessionActorRegistry,
+    sessionActors: new MockSessionActorRegistry(),
     lookups: {} as Services['lookups'],
     domainEventSink: { publish: vi.fn() },
     search: {} as Services['search'],

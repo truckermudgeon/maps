@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AuthState } from '../../../domain/auth/auth-state';
-import type { SessionActorRegistry } from '../../../infra/actors/registry';
 import { createCallerFactory } from '../../init';
 import { navigatorRouter } from '../navigator-router';
 import {
@@ -38,7 +37,7 @@ describe('navigator redeemCode', () => {
           }),
           sessionActors: new MockSessionActorRegistry({
             getOrCreate: vi.fn().mockReturnValue(mockActor),
-          }) as unknown as SessionActorRegistry,
+          }),
         },
       }),
     );
@@ -67,7 +66,7 @@ describe('navigator redeemCode', () => {
           }),
           sessionActors: new MockSessionActorRegistry({
             getOrCreate: vi.fn().mockReturnValue(mockActor),
-          }) as unknown as SessionActorRegistry,
+          }),
         },
       }),
     );
@@ -125,7 +124,7 @@ describe('navigator reconnect', () => {
           }),
           sessionActors: new MockSessionActorRegistry({
             getOrCreate: vi.fn().mockReturnValue(mockActor),
-          }) as unknown as SessionActorRegistry,
+          }),
         },
       }),
     );

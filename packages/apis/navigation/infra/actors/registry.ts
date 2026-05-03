@@ -26,7 +26,13 @@ export interface ReadonlySessionActorRegistry {
   get(telemetryId: string): ReadonlySessionActor | undefined;
 }
 
-export class SessionActorRegistry implements ReadonlySessionActorRegistry {
+export interface SessionActorRegistry extends ReadonlySessionActorRegistry {
+  get(telemetryId: string): SessionActor | undefined;
+  getOrCreate(telemetryId: string): SessionActor;
+  getByClientId(clientId: string): SessionActor | undefined;
+}
+
+export class SessionActorRegistryImpl implements SessionActorRegistry {
   // map of telemetry ids to Entries.
   private actors = new Map<string, Entry>();
 
