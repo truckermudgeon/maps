@@ -72,7 +72,7 @@ export const TimerCycling: Story = {
     useEffect(() => {
       const id = setInterval(
         () => setIndex(i => (i + 1) % steps.length),
-        2_500,
+        1_000,
       );
       return () => clearInterval(id);
     }, []);
