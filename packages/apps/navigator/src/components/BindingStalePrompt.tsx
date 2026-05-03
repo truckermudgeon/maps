@@ -5,9 +5,8 @@ export const BindingStalePrompt = (props: { onRePair: () => void }) => {
   return (
     <>
       <Typography fontSize={'sm'} color={'neutral'}>
-        This will clear automatically if telemetry comes back. Use Try again to
-        force a reconnect, or Re-pair device if you've paired with a different
-        client.
+        Use <b>Try again</b> to force a reconnect, or <b>Enter pairing code</b>{' '}
+        to start over.
       </Typography>
       <Stack
         direction={'row'}
@@ -23,7 +22,7 @@ export const BindingStalePrompt = (props: { onRePair: () => void }) => {
           Try again
         </Button>
         <Button variant={'solid'} color={'primary'} onClick={onRePair}>
-          Re-pair device
+          Enter pairing code
         </Button>
       </Stack>
     </>
