@@ -19,7 +19,7 @@ describe('navigator redeemCode', () => {
     });
   });
 
-  it('throws CONFLICT when too many clients are already connected', async () => {
+  it('throws CONFLICT when the actor for the redeemed code is at capacity', async () => {
     const mockActor = { attachClient: vi.fn().mockReturnValue(false) };
     const caller = createCaller(
       mockNavigatorContext({
@@ -108,7 +108,7 @@ describe('navigator reconnect', () => {
     expect(result).toBe(false);
   });
 
-  it('throws CONFLICT when too many clients are already connected', async () => {
+  it('throws CONFLICT when the actor for the viewerId is at capacity', async () => {
     const mockActor = { attachClient: vi.fn().mockReturnValue(false) };
     const caller = createCaller(
       mockNavigatorContext({
