@@ -1,10 +1,11 @@
 import { TRPCError } from '@trpc/server';
 import type { TRPCRequestInfo } from '@trpc/server/http';
 import { Preconditions } from '@truckermudgeon/base/precon';
-import crypto from 'crypto';
+import type crypto from 'crypto';
 import type http from 'http';
 import type { WebSocket } from 'ws';
 import { AuthState } from '../domain/auth/auth-state';
+import { verifyReconnectSignature } from '../domain/auth/verify-reconnect';
 import type { SessionActor } from '../domain/session-actor';
 import type { ReadonlySessionActorRegistry } from '../infra/actors/registry';
 import { navigatorKeys } from '../infra/kv/store';
@@ -96,40 +97,18 @@ export async function createContext(opts: {
         return unauthenticatedContext;
       }
 
-      // TODO de-dupe some of this code and `telemetryRouter.reconnect`
       const {
         telemetryId,
         signature,
         timestamp: _timestamp,
       } = info.connectionParams;
       const timestamp = Number(_timestamp);
-      const { kv } = services;
-      const publicKey = await kv.get(navigatorKeys.publicKey(telemetryId));
-      if (!publicKey) {
-        logger.warn('(reconnect): unknown public key', {
-          clientId,
-          telemetryId,
-        });
-        return unauthenticatedContext;
-      }
-      const now = Date.now();
-      const isTimestampValid =
-        now - 300_000 < timestamp && timestamp <= now + 300_000;
-      if (!isTimestampValid) {
-        logger.warn('(reconnect): invalid timestamp', {
-          clientId,
-          telemetryId,
-        });
-        return unauthenticatedContext;
-      }
-      const isSignatureValid = await crypto.subtle.verify(
-        'Ed25519',
-        publicKey,
-        Buffer.from(signature, 'base64url'),
-        Buffer.from(JSON.stringify({ telemetryId, timestamp }), 'base64url'),
+      const result = await verifyReconnectSignature(
+        { telemetryId, timestamp, signature },
+        services.kv,
       );
-      if (!isSignatureValid) {
-        logger.warn('(reconnect): invalid signature', {
+      if (!result.ok) {
+        logger.warn(`(reconnect): ${result.reason}`, {
           clientId,
           telemetryId,
         });

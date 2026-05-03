@@ -4,7 +4,10 @@ import type { SearchService } from '../domain/actor/search';
 import type { DomainEventSink } from '../domain/events';
 import type { GameContext } from '../domain/game-context';
 import type { LookupService } from '../domain/lookup-data';
-import { SessionActorRegistry } from './actors/registry';
+import {
+  SessionActorRegistryImpl,
+  type SessionActorRegistry,
+} from './actors/registry';
 import type { KvStore } from './kv/store';
 import { createCacheableKv } from './kv/store';
 import { logger } from './logging/logger';
@@ -59,7 +62,7 @@ export function initServices(dataDir: string): Services {
       logMethod('domain event', { event });
     },
   };
-  const sessionActors = new SessionActorRegistry({
+  const sessionActors = new SessionActorRegistryImpl({
     domainEventSink,
     maxClientsPerActor: 5,
     idleTtlMs: 10 * 60_000, // 10 minutes

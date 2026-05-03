@@ -73,6 +73,19 @@ export function aSegmentWithSteps(steps: RouteStep[]): RouteSegment {
   return aSegmentWith({ steps });
 }
 
+export function aRouteWithIdAndGeometry(
+  id: string,
+  geometry: Position[],
+): RouteWithLookup {
+  return {
+    ...aRouteWithLookup({
+      lookup: lookupForNodeUids([[1n, 2n]]),
+      segments: [aSegmentWithSteps([aStepWith({ geometry })])],
+    }),
+    id,
+  };
+}
+
 export function aStepWith(
   step: Partial<Omit<RouteStep, 'geometry'>> & { geometry: Position[] },
 ): RouteStep {

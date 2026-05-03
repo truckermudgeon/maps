@@ -913,6 +913,42 @@ function lookupFor(nodeUids: bigint[][]): RouteWithLookup['lookup'] {
   };
 }
 
+export async function buildRouteFromNodeUids(
+  nodeUids: readonly bigint[],
+  strategy: Mode,
+  truck: TruckSimTelemetry['truck'],
+  context: {
+    graphAndMapData: GraphAndMapData<GraphMappedData>;
+    routing: RoutingService;
+    domainEventSink: DomainEventSink;
+  },
+): Promise<RouteWithLookup> {
+  Preconditions.checkArgument(
+    nodeUids.length >= 1,
+    'nodeUids must not be empty',
+  );
+  const waypoints = nodeUids.slice(0, -1);
+  const destinationNodeUid = nodeUids.at(-1)!;
+
+  const routeToEnd = (
+    await generateRoutes(destinationNodeUid, [strategy], { ...context, truck })
+  )[0];
+  if (!routeToEnd) {
+    throw new Error('no route to endpoint ' + destinationNodeUid.toString(16));
+  }
+
+  let finalRoute = routeToEnd;
+  for (const waypoint of waypoints) {
+    finalRoute = await addWaypoint(waypoint, finalRoute, 'last', {
+      ...context,
+      truck,
+      routeIndex: { segmentIndex: 0, stepIndex: 0, nodeIndex: 0 },
+    });
+  }
+
+  return finalRoute;
+}
+
 export const forTesting = {
   combineRoutes,
   sliceAndSpreadRoute,
