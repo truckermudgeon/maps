@@ -3,6 +3,7 @@ import { BranchType } from '@truckermudgeon/navigation/constants';
 import type { StepManeuver } from '@truckermudgeon/navigation/types';
 import { useEffect, useState } from 'react';
 import { AnimatedDirections } from './AnimatedDirections';
+import { exampleLaneHint } from './Directions.fixtures';
 
 const meta = {
   title: 'Route/AnimatedDirections',
@@ -35,17 +36,7 @@ const steps: Step[] = [
     step: {
       lonLat: [0, 0],
       direction: BranchType.RIGHT,
-      laneHint: {
-        lanes: [
-          { branches: [BranchType.LEFT] },
-          { branches: [BranchType.THROUGH] },
-          {
-            branches: [BranchType.THROUGH, BranchType.RIGHT],
-            activeBranch: BranchType.RIGHT,
-          },
-          { branches: [BranchType.RIGHT], activeBranch: BranchType.RIGHT },
-        ],
-      },
+      laneHint: exampleLaneHint,
     },
     distanceToNextManeuver: 1500,
   },

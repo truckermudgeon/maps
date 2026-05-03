@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { BranchType } from '@truckermudgeon/navigation/constants';
 import { Directions } from './Directions';
+import { exampleLaneHint } from './Directions.fixtures';
 import { defaultImperialOptions, toLengthAndUnit } from './text';
 
 const meta = {
@@ -38,24 +39,7 @@ export const WithLaneHint: Story = {
     ...Default.args,
     length,
     unit,
-    laneHint: {
-      lanes: [
-        {
-          branches: [BranchType.LEFT],
-        },
-        {
-          branches: [BranchType.THROUGH],
-        },
-        {
-          branches: [BranchType.THROUGH, BranchType.RIGHT],
-          activeBranch: BranchType.RIGHT,
-        },
-        {
-          branches: [BranchType.RIGHT],
-          activeBranch: BranchType.RIGHT,
-        },
-      ],
-    },
+    laneHint: exampleLaneHint,
   },
 };
 
