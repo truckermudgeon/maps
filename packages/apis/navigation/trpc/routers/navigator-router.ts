@@ -420,6 +420,13 @@ export const navigatorRouter = router({
       let lastPositionAt = subscribedAt;
       let stale = false;
       let hasSeenFirstPosition = false;
+      // Keep at most one in-flight generator.next() across loop iterations.
+      // If a timeout wins the race, the pending promise must survive into
+      // the next iteration — otherwise calling generator.next() again here
+      // would queue a second request on the async generator, and the next
+      // yield would satisfy the abandoned promise (FIFO) instead of the one
+      // we're now awaiting.
+      let pending: ReturnType<typeof generator.next> | undefined;
       try {
         while (true) {
           // touch actor to keep it alive and prevent it from being swept.
@@ -433,9 +440,10 @@ export const navigatorRouter = router({
             timeoutId = setTimeout(() => resolve('timeout'), remaining);
           });
 
+          pending ??= generator.next();
           let res: 'timeout' | Awaited<ReturnType<typeof generator.next>>;
           try {
-            res = await Promise.race([generator.next(), timedOut]);
+            res = await Promise.race([pending, timedOut]);
           } finally {
             if (timeoutId !== undefined) clearTimeout(timeoutId);
           }
@@ -457,10 +465,13 @@ export const navigatorRouter = router({
             }
             // Re-arm so we don't busy-loop while waiting for telemetry
             // to resume. The actor stays warm via the touch above.
+            // `pending` is intentionally preserved across iterations.
             lastPositionAt = Date.now();
             continue;
           }
 
+          // The pending generator.next() resolved; consume it.
+          pending = undefined;
           if (res.done) {
             break;
           }
