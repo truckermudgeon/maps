@@ -14,17 +14,11 @@ export interface AnimatedDirectionsProps {
   units: 'imperial' | 'metric';
 }
 
-interface OutgoingSnapshot {
-  step: StepManeuver;
-  distanceToNextManeuver: number;
-  units: 'imperial' | 'metric';
-}
-
 const ANIMATION_DURATION_MS = 200;
 
 export const AnimatedDirections = (props: AnimatedDirectionsProps) => {
   const { direction, distanceToNextManeuver, units } = props;
-  const [outgoing, setOutgoing] = useState<OutgoingSnapshot | undefined>();
+  const [outgoing, setOutgoing] = useState<AnimatedDirectionsProps>();
   const [exitActive, setExitActive] = useState(false);
   const prevPropsRef = useRef(props);
   const currentRef = useRef<HTMLDivElement>(null);
@@ -40,11 +34,7 @@ export const AnimatedDirections = (props: AnimatedDirectionsProps) => {
       return;
     }
 
-    setOutgoing({
-      step: prev.direction,
-      distanceToNextManeuver: prev.distanceToNextManeuver,
-      units: prev.units,
-    });
+    setOutgoing(prev);
     setExitActive(false);
 
     const rafId = requestAnimationFrame(() => setExitActive(true));
@@ -112,12 +102,12 @@ export const AnimatedDirections = (props: AnimatedDirectionsProps) => {
           {...buildProps(direction, distanceToNextManeuver, units)}
         />
       )}
-      {outgoing && (
+      {outgoing?.direction && (
         <Directions
           ref={outgoingRef}
           className={exitActive ? 'directions exit' : 'directions'}
           {...buildProps(
-            outgoing.step,
+            outgoing.direction,
             outgoing.distanceToNextManeuver,
             outgoing.units,
           )}
