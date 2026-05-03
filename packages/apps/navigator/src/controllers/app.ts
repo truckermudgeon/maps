@@ -29,7 +29,6 @@ import type { AppClient, AppController, AppStore } from './types';
 
 export class AppStoreImpl implements AppStore {
   themeMode: 'light' | 'dark' = 'light';
-  map: 'usa' | 'europe';
   cameraMode: CameraMode = CameraMode.FOLLOW;
   bearingMode: BearingMode = BearingMode.MATCH_MAP;
   activeRoute: Route | undefined = undefined;
@@ -42,7 +41,7 @@ export class AppStoreImpl implements AppStore {
 
   segmentComplete: SegmentInfo | undefined = undefined;
 
-  constructor(map: 'usa' | 'europe') {
+  constructor(public map: 'usa' | 'europe') {
     makeAutoObservable(this, {
       activeRoute: observable.ref,
       activeRouteIndex: observable.struct,
@@ -50,7 +49,6 @@ export class AppStoreImpl implements AppStore {
       trailerPoint: observable.ref,
       segmentComplete: observable.ref,
     });
-    this.map = map;
   }
 
   get isReceivingTelemetry(): boolean {

@@ -9,8 +9,8 @@ export class UiEnvironmentStoreImpl implements UIEnvironmentStore {
 
   constructor(breakpoints: Breakpoints) {
     this.breakpoints = breakpoints;
-    makeAutoObservable(this);
     window.addEventListener('resize', this.handleResize);
+    makeAutoObservable(this);
   }
 
   get width(): number {
@@ -29,7 +29,7 @@ export class UiEnvironmentStoreImpl implements UIEnvironmentStore {
     return this.width > this.height ? 'landscape' : 'portrait';
   }
 
-  handleResize = action(
+  private handleResize = action(
     throttle(() => {
       this._width = window.innerWidth;
       this._height = window.innerHeight;

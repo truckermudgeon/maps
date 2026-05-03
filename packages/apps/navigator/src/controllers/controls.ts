@@ -10,13 +10,15 @@ import type {
 
 export class ControlsStoreImpl implements ControlsStore {
   bearing = 0;
-  units: 'imperial' | 'metric';
   limit = 0;
   speed = 0;
 
   constructor(private readonly appStore: AppStore) {
-    this.units = appStore.map === 'usa' ? 'imperial' : 'metric';
     makeAutoObservable(this);
+  }
+
+  get units(): 'imperial' | 'metric' {
+    return this.appStore.map === 'usa' ? 'imperial' : 'metric';
   }
 
   get showRecenterFab(): boolean {
@@ -44,10 +46,7 @@ export class ControlsControllerImpl implements ControlsController {
       undefined,
       {
         onData: action(gameState => {
-          const { game, speed } = gameState;
-          // TODO should use imperial if truck is in UK?
-          store.units = game === 'ats' ? 'imperial' : 'metric';
-
+          const { speed } = gameState;
           if (store.units === 'imperial') {
             store.limit = gameState.speedLimit.mph;
             store.speed = Math.abs(Math.round(speed * 2.236936));

@@ -27,21 +27,23 @@ export interface AppStore {
   truckPoint: readonly [lon: number, lat: number];
   trailerPoint: readonly [lon: number, lat: number] | undefined;
   showNavSheet: boolean;
-  isReceivingTelemetry: boolean;
   readyToLoad: boolean;
 
   // TODO naming.
   activeRoute: Route | undefined;
   activeRouteIndex: RouteIndex | undefined;
-  // total route
-  activeRouteSummary: { distanceMeters: number; minutes: number } | undefined;
-  // to first waypoint
-  activeRouteToFirstWayPointSummary:
-    | { distanceMeters: number; minutes: number }
-    | undefined;
 
   segmentComplete: SegmentInfo | undefined;
 
+  readonly isReceivingTelemetry: boolean;
+  // total route
+  readonly activeRouteSummary:
+    | { distanceMeters: number; minutes: number }
+    | undefined;
+  // to first waypoint
+  readonly activeRouteToFirstWayPointSummary:
+    | { distanceMeters: number; minutes: number }
+    | undefined;
   readonly distanceToNextManeuver: number;
   readonly activeRouteDirection: StepManeuver | undefined;
   readonly activeStepLine:
@@ -70,12 +72,12 @@ export type CompassPoint = 'N' | 'S' | 'E' | 'W' | 'NE' | 'NW' | 'SE' | 'SW';
 export interface ControlsStore {
   // (-180, 180] CW, 0 is north.
   bearing: number;
-  units: 'imperial' | 'metric';
   limit: number;
   speed: number;
-  showRecenterFab: boolean;
-  showRouteFab: boolean;
-  showSearchFab: boolean;
+  readonly units: 'imperial' | 'metric';
+  readonly showRecenterFab: boolean;
+  readonly showRouteFab: boolean;
+  readonly showSearchFab: boolean;
 }
 
 export interface ControlsController {
