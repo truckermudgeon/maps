@@ -145,7 +145,7 @@ export function createApp({
     );
   });
   const _SlippyMap = observer(() => {
-    const _map = store.isReceivingTelemetry ? store.map : map;
+    const _map = store.hasReceivedFirstTelemetry ? store.map : map;
     return (
       <SlippyMap
         key={_map}
@@ -236,7 +236,17 @@ export function createApp({
     }
     // TODO show "Loading map..." UI if map hasn't loaded yet, instead of
     //  showing "Waiting for telemetry..." UI.
-    return !store.isReceivingTelemetry ? <WaitingForTelemetry /> : <></>;
+    // Mid-session staleness (bindingStale flips after the first sample) is
+    // handled by other UI (toast); this overlay is only for the
+    // pre-first-sample case.
+    return !store.hasReceivedFirstTelemetry ? (
+      <WaitingForTelemetry
+        bindingStale={store.bindingStale}
+        onRePair={() => controller.forceRePair()}
+      />
+    ) : (
+      <></>
+    );
   });
 
   return {

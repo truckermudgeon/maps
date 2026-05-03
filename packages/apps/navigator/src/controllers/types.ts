@@ -27,7 +27,15 @@ export interface AppStore {
   truckPoint: readonly [lon: number, lat: number];
   trailerPoint: readonly [lon: number, lat: number] | undefined;
   showNavSheet: boolean;
+  // true once the webapp has received its first positionUpdate from the
+  // server; never flipped back. Used to gate the initial "Waiting for
+  // telemetry" overlay. For mid-session loss-of-telemetry, see bindingStale.
+  hasReceivedFirstTelemetry: boolean;
   readyToLoad: boolean;
+  // true once the server has signaled that no telemetry has arrived within
+  // its grace window. The UI uses this to surface a "try again / re-pair"
+  // prompt instead of leaving the user staring at the spinner.
+  bindingStale: boolean;
 
   // TODO naming.
   activeRoute: Route | undefined;
@@ -35,7 +43,6 @@ export interface AppStore {
 
   segmentComplete: SegmentInfo | undefined;
 
-  readonly isReceivingTelemetry: boolean;
   // total route
   readonly activeRouteSummary:
     | { distanceMeters: number; minutes: number }

@@ -192,6 +192,12 @@ export type ActorEvent =
   | {
       type: 'segmentComplete';
       data: SegmentInfo;
+    }
+  // signals to the webapp that its viewer<->telemetry binding is dead and it
+  // should clear local credentials and re-pair. Emitted by subscribeToDevice
+  // when no positionUpdate arrives within a timeout.
+  | {
+      type: 'staleBinding';
     };
 
 export interface TrailerState {

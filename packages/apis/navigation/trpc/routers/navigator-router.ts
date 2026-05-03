@@ -155,6 +155,28 @@ export const navigatorRouter = router({
         return false;
       }
 
+      // Liveness probe: if the bound telemetryId has no live signal, the
+      // binding is stale (e.g. the desktop client was re-paired and minted
+      // a new telemetryId, leaving this viewerId pointing at a dead actor).
+      // - publicKey: 12 h TTL, set at pairing. Indicates the device is
+      //   recently authenticated.
+      // - telemetry: 2 s TTL, refreshed on every push. Indicates the
+      //   device is currently online and producing telemetry.
+      // If neither exists, drop the stale viewerId mapping and force the
+      // webapp back to the pairing form.
+      const [hasPublicKey, hasRecentTelemetry] = await Promise.all([
+        kv.has(navigatorKeys.publicKey(telemetryId)),
+        kv.has(navigatorKeys.telemetry(telemetryId)),
+      ]);
+      if (!hasPublicKey && !hasRecentTelemetry) {
+        logger.warn('stale viewer<->telemetry binding; clearing', {
+          trpc: { path, type: 'mutation' },
+          request: { type: ctx.type, clientId: ctx.clientId },
+        });
+        await kv.delete(navigatorKeys.viewerId(viewerId));
+        return false;
+      }
+
       transition(ctx.auth, AuthState.VIEWER_AUTHENTICATED);
       //assert(ctx.auth.state === AuthState.VIEWER_AUTHENTICATED);
       (ctx.auth as unknown as { viewerId: string }).viewerId = viewerId;
@@ -378,15 +400,49 @@ export const navigatorRouter = router({
         signal,
         ctx.services.lookups,
       );
+      // If no positionUpdate has arrived within this window — at subscribe
+      // time or during an active session — emit a staleBinding event so the
+      // webapp can prompt the user to re-pair. Catches the scenario where
+      // the desktop client was re-paired and minted a new telemetryId while
+      // the webapp's viewerId still pointed at the old (dead) actor.
+      // The webapp surfaces this as a passive UI prompt (try again /
+      // re-pair) rather than auto-clearing credentials, so it's safe to
+      // fire fairly eagerly: a user who's still booting the game knows to
+      // ignore the prompt and wait it out.
+      const stalePositionTimeoutMs = 10_000;
+      let lastPositionAt = Date.now();
       try {
         while (true) {
           // touch actor to keep it alive and prevent it from being swept.
           ctx.services.sessionActors.get(telemetryId);
 
-          const res = await generator.next();
-          if (!res.done) {
-            yield res.value;
+          const elapsed = Date.now() - lastPositionAt;
+          const remaining = Math.max(0, stalePositionTimeoutMs - elapsed);
+
+          let timeoutId: ReturnType<typeof setTimeout> | undefined;
+          const timedOut = new Promise<'timeout'>(resolve => {
+            timeoutId = setTimeout(() => resolve('timeout'), remaining);
+          });
+
+          let res: 'timeout' | Awaited<ReturnType<typeof generator.next>>;
+          try {
+            res = await Promise.race([generator.next(), timedOut]);
+          } finally {
+            if (timeoutId !== undefined) clearTimeout(timeoutId);
           }
+
+          if (res === 'timeout') {
+            yield { type: 'staleBinding' };
+            return;
+          }
+
+          if (res.done) {
+            break;
+          }
+          if (res.value.type === 'positionUpdate') {
+            lastPositionAt = Date.now();
+          }
+          yield res.value;
         }
       } catch (err) {
         logger.error('actor subscription error', {

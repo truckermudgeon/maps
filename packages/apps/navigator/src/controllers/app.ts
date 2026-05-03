@@ -38,6 +38,8 @@ export class AppStoreImpl implements AppStore {
   showNavSheet = false;
   readyToLoad = false;
   mapLoaded = false;
+  hasReceivedFirstTelemetry = false;
+  bindingStale = false;
 
   segmentComplete: SegmentInfo | undefined = undefined;
 
@@ -49,10 +51,6 @@ export class AppStoreImpl implements AppStore {
       trailerPoint: observable.ref,
       segmentComplete: observable.ref,
     });
-  }
-
-  get isReceivingTelemetry(): boolean {
-    return this.truckPoint[0] !== 0 && this.truckPoint[1] !== 0;
   }
 
   private get activeStep(): RouteStep | undefined {
@@ -333,6 +331,22 @@ export class AppControllerImpl implements AppController {
     }
   }
 
+  forceRePair() {
+    console.log('forceRePair: clearing viewer credentials and reloading');
+    this.deviceSubscription?.unsubscribe();
+    this.deviceSubscription = undefined;
+    if (this.renderIntervalId != null) {
+      clearInterval(this.renderIntervalId);
+      this.renderIntervalId = undefined;
+    }
+    localStorage.removeItem('viewerId');
+    localStorage.removeItem('telemetryId');
+    // SessionGate decides what to render based on local useState that's
+    // initialized from localStorage at mount; reload to restart that flow
+    // at the pairing form.
+    window.location.reload();
+  }
+
   requestWakeLock() {
     if (this.wakeLock != null && !this.wakeLock.released) {
       console.log('already have a wakelock');
@@ -535,6 +549,11 @@ export class AppControllerImpl implements AppController {
         switch (event.type) {
           case 'positionUpdate':
             timeline.push(event.data);
+            if (!store.hasReceivedFirstTelemetry) {
+              runInAction(() => {
+                store.hasReceivedFirstTelemetry = true;
+              });
+            }
             break;
           case 'routeUpdate':
             runInAction(() => {
@@ -568,6 +587,15 @@ export class AppControllerImpl implements AppController {
             timeline.reset();
             break;
           case 'jobUpdate':
+            break;
+          case 'staleBinding':
+            // Server has gone past its no-telemetry grace window. Surface a
+            // prompt via the WaitingForTelemetry UI; the user picks the
+            // recovery action (try again vs. re-pair) instead of us
+            // clearing credentials behind their back.
+            runInAction(() => {
+              store.bindingStale = true;
+            });
             break;
           default:
             throw new UnreachableError(event);
