@@ -94,8 +94,13 @@ export function subscribeSession(
     resolve = null;
   };
 
-  // hot state (latest only)
-  let stateDirty = true;
+  // hot state (latest only). Starts clean: we deliberately do NOT yield the
+  // actor's cached telemetry at subscribe time. The cache may be from a
+  // previous session (actor outlives any single client), so yielding it can
+  // either render a position from an unrelated trip or — worse — mask a dead
+  // device by flipping the webapp's hasReceivedFirstTelemetry before any
+  // real telemetry arrives, defeating the staleBinding timer in the router.
+  let stateDirty = false;
   const offLatest = actor.getLatestTelemetry().subscribe(() => {
     stateDirty = true;
     resolve?.();
