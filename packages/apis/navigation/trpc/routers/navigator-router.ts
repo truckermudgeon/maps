@@ -131,13 +131,14 @@ export const navigatorRouter = router({
     )
     .input(z.object({ viewerId: z.string().length(36) }))
     .mutation(async ({ path, ctx, input }) => {
+      const {
+        services: { kv, sessionActors, metrics },
+      } = ctx;
       if (ctx.auth.state === AuthState.VIEWER_AUTHENTICATED) {
+        metrics.session.reconnectOutcome.inc({ outcome: 'live' });
         return true;
       }
 
-      const {
-        services: { kv, sessionActors },
-      } = ctx;
       const { viewerId } = input;
 
       const telemetryId = await kv.get(navigatorKeys.viewerId(viewerId));
@@ -152,6 +153,7 @@ export const navigatorRouter = router({
             clientId: ctx.clientId,
           },
         });
+        metrics.session.reconnectOutcome.inc({ outcome: 'viewer_unknown' });
         return false;
       }
 
@@ -174,6 +176,7 @@ export const navigatorRouter = router({
           request: { type: ctx.type, clientId: ctx.clientId },
         });
         await kv.delete(navigatorKeys.viewerId(viewerId));
+        metrics.session.reconnectOutcome.inc({ outcome: 'stale_cleared' });
         return false;
       }
 
@@ -189,6 +192,7 @@ export const navigatorRouter = router({
         });
       }
 
+      metrics.session.reconnectOutcome.inc({ outcome: 'live' });
       return true;
     }),
 
@@ -400,6 +404,7 @@ export const navigatorRouter = router({
         signal,
         ctx.services.lookups,
       );
+      const metrics = ctx.services.metrics.session;
       // If no positionUpdate has arrived within this window — at subscribe
       // time or during an active session — emit a staleBinding event so the
       // webapp can prompt the user to re-pair. Catches the scenario where
@@ -412,8 +417,10 @@ export const navigatorRouter = router({
       // staleBinding, the next positionUpdate clears the stale flag and
       // the webapp dismisses the prompt; a subsequent loss re-arms.
       const stalePositionTimeoutMs = 10_000;
-      let lastPositionAt = Date.now();
+      const subscribedAt = Date.now();
+      let lastPositionAt = subscribedAt;
       let stale = false;
+      let hasSeenFirstPosition = false;
       try {
         while (true) {
           // touch actor to keep it alive and prevent it from being swept.
@@ -436,6 +443,16 @@ export const navigatorRouter = router({
 
           if (res === 'timeout') {
             if (!stale) {
+              const phase = hasSeenFirstPosition
+                ? 'mid_session'
+                : 'at_subscribe';
+              metrics.staleBindingEvents.inc({ phase });
+              logger.info('staleBinding fired', {
+                trpc: { path, type: 'subscription' },
+                request: { type: ctx.type, clientId: ctx.clientId },
+                telemetryId,
+                phase,
+              });
               yield { type: 'staleBinding' };
               stale = true;
             }
@@ -450,7 +467,21 @@ export const navigatorRouter = router({
           }
           if (res.value.type === 'positionUpdate') {
             lastPositionAt = Date.now();
-            stale = false;
+            if (!hasSeenFirstPosition) {
+              hasSeenFirstPosition = true;
+              metrics.timeToFirstPositionUpdate.observe(
+                lastPositionAt - subscribedAt,
+              );
+            }
+            if (stale) {
+              metrics.staleBindingResumed.inc();
+              logger.info('staleBinding resumed', {
+                trpc: { path, type: 'subscription' },
+                request: { type: ctx.type, clientId: ctx.clientId },
+                telemetryId,
+              });
+              stale = false;
+            }
           }
           yield res.value;
         }
