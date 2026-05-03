@@ -549,11 +549,11 @@ export class AppControllerImpl implements AppController {
         switch (event.type) {
           case 'positionUpdate':
             timeline.push(event.data);
-            if (!store.hasReceivedFirstTelemetry) {
-              runInAction(() => {
+            runInAction(() => {
+              if (!store.hasReceivedFirstTelemetry) {
                 store.hasReceivedFirstTelemetry = true;
-              });
-            }
+              }
+            });
             break;
           case 'routeUpdate':
             runInAction(() => {
