@@ -1,5 +1,4 @@
 import { TRPCError } from '@trpc/server';
-import { observable } from '@trpc/server/observable';
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { Preconditions } from '@truckermudgeon/base/precon';
 import {
@@ -13,7 +12,6 @@ import { isRouteKey } from '@truckermudgeon/map/routing';
 import crypto from 'node:crypto';
 import { z } from 'zod';
 import { PoiType, ScopeType } from '../../constants';
-import { toGameState } from '../../domain/actor/game-state';
 import {
   buildRouteFromNodeUids,
   generateRouteFromKeys,
@@ -31,12 +29,10 @@ import { navigatorKeys } from '../../infra/kv/store';
 import { logger } from '../../infra/logging/logger';
 import type {
   ActorEvent,
-  GameState,
   Route,
   RouteWithSummary,
   SearchResult,
   SearchResultWithRelativeTruckInfo,
-  TruckSimTelemetry,
 } from '../../types';
 import { publicProcedure, router } from '../init';
 import { loggingMiddleware } from '../middleware/logging';
@@ -382,7 +378,10 @@ export const navigatorRouter = router({
       unpauseRouteEvents();
     }),
   subscribeToDevice: navigatorSessionProcedure
-    .use(subscriptionLimitMiddleware(2))
+    // Limit = expected concurrent webapp subscriptions (currently 2: one
+    // from AppControllerImpl, one from ControlsControllerImpl) + 1 race
+    // buffer for the brief overlap during map-switch resubscribes.
+    .use(subscriptionLimitMiddleware(3))
     .subscription(async function* ({
       path,
       ctx,
@@ -502,22 +501,4 @@ export const navigatorRouter = router({
         unsubscribe();
       }
     }),
-  /** @deprecated use `subscribeToDevice` instead */
-  onPositionUpdate: navigatorSessionProcedure
-    .use(
-      rateLimitMiddleware({
-        maxCalls: 5,
-        per: 'minute',
-      }),
-    )
-    .use(subscriptionLimitMiddleware(3))
-    .subscription(({ ctx }) =>
-      observable<GameState>(emit => {
-        const { telemetryEventEmitter } = ctx.sessionActor;
-        const onPositionUpdate = (telemetry: TruckSimTelemetry) =>
-          emit.next(toGameState(telemetry));
-        telemetryEventEmitter.on('telemetry', onPositionUpdate);
-        return () => telemetryEventEmitter.off('telemetry', onPositionUpdate);
-      }),
-    ),
 });

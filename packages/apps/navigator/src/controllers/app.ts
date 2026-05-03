@@ -637,7 +637,7 @@ export class AppControllerImpl implements AppController {
 
       const { map, playerMarker } = this;
       if (!map || !playerMarker) {
-        console.log('early return onPositionUpdate');
+        console.log('early return: positionUpdate before map/marker ready');
         return;
       }
 
