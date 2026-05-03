@@ -8,7 +8,7 @@ import {
   toLengthAndUnit,
 } from './text';
 
-interface AnimatedDirectionsProps {
+export interface AnimatedDirectionsProps {
   direction: StepManeuver | undefined;
   distanceToNextManeuver: number;
   units: 'imperial' | 'metric';
