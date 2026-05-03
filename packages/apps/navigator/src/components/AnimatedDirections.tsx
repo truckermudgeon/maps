@@ -16,6 +16,26 @@ export interface AnimatedDirectionsProps {
 
 const ANIMATION_DURATION_MS = 200;
 
+const toDirectionsProps = (
+  step: StepManeuver,
+  distance: number,
+  units: 'imperial' | 'metric',
+) => {
+  const { length, unit } = toLengthAndUnit(
+    distance,
+    units === 'imperial' ? defaultImperialOptions : defaultMetricOptions,
+  );
+  const showLaneHint = distance <= 5_000;
+  return {
+    direction: step.direction,
+    length,
+    unit,
+    banner: step.banner,
+    laneHint: showLaneHint ? step.laneHint : undefined,
+    thenHint: showLaneHint && step.laneHint ? undefined : step.thenHint,
+  };
+};
+
 export const AnimatedDirections = (props: AnimatedDirectionsProps) => {
   const { direction, distanceToNextManeuver, units } = props;
   const [outgoing, setOutgoing] = useState<AnimatedDirectionsProps>();
@@ -71,26 +91,6 @@ export const AnimatedDirections = (props: AnimatedDirectionsProps) => {
     return <></>;
   }
 
-  const buildProps = (
-    step: StepManeuver,
-    distance: number,
-    propsUnits: 'imperial' | 'metric',
-  ) => {
-    const { length, unit } = toLengthAndUnit(
-      distance,
-      propsUnits === 'imperial' ? defaultImperialOptions : defaultMetricOptions,
-    );
-    const showLaneHint = distance <= 5_000;
-    return {
-      direction: step.direction,
-      length,
-      unit,
-      banner: step.banner,
-      laneHint: showLaneHint ? step.laneHint : undefined,
-      thenHint: showLaneHint && step.laneHint ? undefined : step.thenHint,
-    };
-  };
-
   const animate = outgoing != null;
 
   return (
@@ -99,14 +99,14 @@ export const AnimatedDirections = (props: AnimatedDirectionsProps) => {
         <Directions
           ref={currentRef}
           className={animate ? 'directions enter' : undefined}
-          {...buildProps(direction, distanceToNextManeuver, units)}
+          {...toDirectionsProps(direction, distanceToNextManeuver, units)}
         />
       )}
       {outgoing?.direction && (
         <Directions
           ref={outgoingRef}
           className={exitActive ? 'directions exit' : 'directions'}
-          {...buildProps(
+          {...toDirectionsProps(
             outgoing.direction,
             outgoing.distanceToNextManeuver,
             outgoing.units,
