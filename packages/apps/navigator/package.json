@@ -8,6 +8,7 @@
     "start": "vite",
     "build": "tsc && vite build",
     "serve": "vite preview",
+    "test": "vitest",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },

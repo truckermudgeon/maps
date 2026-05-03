@@ -22,6 +22,7 @@ import { Marker } from 'maplibre-gl';
 import { action, makeAutoObservable, observable, runInAction } from 'mobx';
 import type { MapRef } from 'react-map-gl/maplibre';
 import { lineGradientExpression } from '../components/RoutesStyle';
+import { toRouteFeatures } from '../route-features';
 import { BearingMode, CameraMode } from './constants';
 import { TelemetryTimeline } from './telemetry-timeline';
 import type { AppClient, AppController, AppStore } from './types';
@@ -930,43 +931,6 @@ const emptyFeatureCollection: GeoJSON.FeatureCollection = {
   type: 'FeatureCollection',
   features: [],
 } as const;
-
-export function toRouteFeatures(
-  route: Route,
-): GeoJSON.FeatureCollection<GeoJSON.Point | GeoJSON.LineString> {
-  // TODO define a type for these Point properties
-  const iconFeatures: GeoJSON.Feature<GeoJSON.Point>[] = route.segments.flatMap(
-    segment =>
-      segment.steps.flatMap(step =>
-        step.trafficIcons.flatMap(icon =>
-          point(icon.lonLat, {
-            type: 'traffic',
-            sprite: icon.type === 'stop' ? 'stopsign' : 'trafficlight',
-          }),
-        ),
-      ),
-  );
-  if (route.segments.length && route.segments[0].steps.length) {
-    const firstStep = route.segments[0].steps[0];
-    const coords = polyline.decode(firstStep.geometry);
-    iconFeatures.push(point(coords[0], { type: 'startOrEnd' }));
-
-    const lastStep = route.segments.at(-1)!.steps.at(-1);
-    if (lastStep) {
-      const coords = polyline.decode(lastStep.geometry);
-      iconFeatures.push(point(coords.at(-1)!, { type: 'startOrEnd' }));
-    }
-  }
-
-  return featureCollection<GeoJSON.Point | GeoJSON.LineString>([
-    lineString(
-      route.segments.flatMap(segment =>
-        segment.steps.flatMap(step => polyline.decode(step.geometry)),
-      ),
-    ),
-    ...iconFeatures,
-  ]);
-}
 
 function calculateDelta(currBearing: number, nextBearing: number): number {
   const normalizedCurr = currBearing % 360;
