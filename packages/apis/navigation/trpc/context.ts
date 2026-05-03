@@ -5,10 +5,7 @@ import type crypto from 'crypto';
 import type http from 'http';
 import type { WebSocket } from 'ws';
 import { AuthState } from '../domain/auth/auth-state';
-import {
-  ReconnectRejectionReason,
-  verifyReconnectSignature,
-} from '../domain/auth/verify-reconnect';
+import { verifyReconnectSignature } from '../domain/auth/verify-reconnect';
 import type { SessionActor } from '../domain/session-actor';
 import type { ReadonlySessionActorRegistry } from '../infra/actors/registry';
 import { navigatorKeys } from '../infra/kv/store';
@@ -111,7 +108,7 @@ export async function createContext(opts: {
         services.kv,
       );
       if (!result.ok) {
-        logger.warn(`(reconnect): ${ReconnectRejectionReason[result.reason]}`, {
+        logger.warn(`(reconnect): ${result.reason}`, {
           clientId,
           telemetryId,
         });

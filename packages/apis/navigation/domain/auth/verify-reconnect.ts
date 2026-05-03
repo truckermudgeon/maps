@@ -2,9 +2,9 @@ import type { KvStore } from '../../infra/kv/store';
 import { navigatorKeys } from '../../infra/kv/store';
 
 export enum ReconnectRejectionReason {
-  UNKNOWN_KEY,
-  INVALID_TIMESTAMP,
-  INVALID_SIGNATURE,
+  UNKNOWN_KEY = 'UNKNOWN_KEY',
+  INVALID_TIMESTAMP = 'INVALID_TIMESTAMP',
+  INVALID_SIGNATURE = 'INVALID_SIGNATURE',
 }
 
 export type ReconnectVerification =
