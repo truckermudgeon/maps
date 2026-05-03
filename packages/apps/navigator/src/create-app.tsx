@@ -160,7 +160,13 @@ export function createApp({
     );
   });
 
-  const _Directions = () => <AnimatedDirections store={store} />;
+  const _Directions = observer(() => (
+    <AnimatedDirections
+      direction={store.activeRouteDirection}
+      distanceToNextManeuver={store.distanceToNextManeuver}
+      map={store.map}
+    />
+  ));
   const _SegmentCompleteToast = observer(() =>
     store.segmentComplete != null ? (
       <SegmentCompleteToast

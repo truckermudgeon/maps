@@ -1,7 +1,5 @@
-import { reaction } from 'mobx';
-import { observer } from 'mobx-react-lite';
-import { useEffect, useRef } from 'react';
-import type { AppStore } from '../controllers/types';
+import type { StepManeuver } from '@truckermudgeon/navigation/types';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Directions } from './Directions';
 import './Directions.css';
 import {
@@ -10,77 +8,93 @@ import {
   toLengthAndUnit,
 } from './text';
 
-export const AnimatedDirections = observer((props: { store: AppStore }) => {
-  const { store } = props;
-  const containerRef = useRef<HTMLDivElement>(null);
-  const directionsRef = useRef<HTMLDivElement>(null);
+interface AnimatedDirectionsProps {
+  direction: StepManeuver | undefined;
+  distanceToNextManeuver: number;
+  map: 'usa' | 'europe';
+}
+
+const ANIMATION_DURATION_MS = 200;
+
+export const AnimatedDirections = (props: AnimatedDirectionsProps) => {
+  const { direction, distanceToNextManeuver, map } = props;
+  const [outgoing, setOutgoing] = useState<StepManeuver | undefined>();
+  const [exitActive, setExitActive] = useState(false);
+  const prevDirectionRef = useRef(direction);
+  const currentRef = useRef<HTMLDivElement>(null);
+  const outgoingRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    return reaction(
-      () => store.activeRouteDirection,
-      maybeDirection => {
-        if (!maybeDirection) {
-          return;
-        }
+    const prev = prevDirectionRef.current;
+    prevDirectionRef.current = direction;
 
-        const container = containerRef.current;
-        const current = directionsRef.current;
-        if (!container || !current) {
-          return;
-        }
+    if (!prev || !direction || prev === direction) {
+      return;
+    }
 
-        const outgoingClone = current.cloneNode(true) as HTMLDivElement;
-        current.classList.add('enter', 'directions');
+    setOutgoing(prev);
+    setExitActive(false);
 
-        container.appendChild(outgoingClone);
-        container.classList.add('animate');
-        outgoingClone.style.top = -current.clientHeight + 'px';
+    const rafId = requestAnimationFrame(() => setExitActive(true));
+    const timeoutId = setTimeout(() => {
+      setOutgoing(undefined);
+      setExitActive(false);
+    }, ANIMATION_DURATION_MS);
 
-        requestAnimationFrame(() => {
-          outgoingClone.classList.add('exit', 'directions');
-          outgoingClone.style.top = -current.clientHeight + 'px';
-        });
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(timeoutId);
+    };
+  }, [direction]);
 
-        const cleanup = () => {
-          container.classList.remove('animate');
-          current.classList.remove('enter', 'directions');
-          outgoingClone.remove();
-        };
+  // Pull the outgoing element up onto the current one — they share the
+  // container and would otherwise stack vertically.
+  useLayoutEffect(() => {
+    const current = currentRef.current;
+    const outgoingEl = outgoingRef.current;
+    if (current && outgoingEl) {
+      outgoingEl.style.top = `${-current.clientHeight}px`;
+    }
+  }, [outgoing]);
 
-        setTimeout(cleanup, 200);
-      },
-    );
-  }, [store]);
-
-  if (!store.activeRouteDirection) {
+  if (!direction && !outgoing) {
     return <></>;
   }
 
+  const animate = outgoing != null;
   const { length, unit } = toLengthAndUnit(
-    store.distanceToNextManeuver,
-    store.map === 'usa' ? defaultImperialOptions : defaultMetricOptions,
+    distanceToNextManeuver,
+    map === 'usa' ? defaultImperialOptions : defaultMetricOptions,
   );
 
+  const buildProps = (step: StepManeuver) => {
+    const showLaneHint = distanceToNextManeuver <= 5_000;
+    return {
+      direction: step.direction,
+      length,
+      unit,
+      banner: step.banner,
+      laneHint: showLaneHint ? step.laneHint : undefined,
+      thenHint: showLaneHint && step.laneHint ? undefined : step.thenHint,
+    };
+  };
+
   return (
-    <div ref={containerRef} className={'container'}>
-      <Directions
-        ref={directionsRef}
-        direction={store.activeRouteDirection.direction}
-        length={length}
-        unit={unit}
-        laneHint={
-          store.distanceToNextManeuver <= 5_000
-            ? store.activeRouteDirection.laneHint
-            : undefined
-        }
-        thenHint={
-          !store.activeRouteDirection.laneHint ||
-          store.distanceToNextManeuver > 5_000
-            ? store.activeRouteDirection.thenHint
-            : undefined
-        }
-        banner={store.activeRouteDirection.banner}
-      />
+    <div className={animate ? 'container animate' : 'container'}>
+      {direction && (
+        <Directions
+          ref={currentRef}
+          className={animate ? 'directions enter' : undefined}
+          {...buildProps(direction)}
+        />
+      )}
+      {outgoing && (
+        <Directions
+          ref={outgoingRef}
+          className={exitActive ? 'directions exit' : 'directions'}
+          {...buildProps(outgoing)}
+        />
+      )}
     </div>
   );
-});
+};

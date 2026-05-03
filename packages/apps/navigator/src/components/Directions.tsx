@@ -17,6 +17,7 @@ type DirectionsProps = Pick<
 > & {
   length: number;
   unit: string;
+  className?: string;
   ref?: Ref<HTMLDivElement>;
 };
 
@@ -26,7 +27,7 @@ export const Directions = memo(
     const hasHint = !!props.laneHint || !!props.thenHint;
     const { length, unit } = props;
     return (
-      <Stack fontSize={'0.75rem'} ref={ref}>
+      <Stack className={props.className} fontSize={'0.75rem'} ref={ref}>
         <Stack
           direction={'row'}
           alignItems={'center'}
