@@ -408,9 +408,12 @@ export const navigatorRouter = router({
       // The webapp surfaces this as a passive UI prompt (try again /
       // re-pair) rather than auto-clearing credentials, so it's safe to
       // fire fairly eagerly: a user who's still booting the game knows to
-      // ignore the prompt and wait it out.
+      // ignore the prompt and wait it out. If telemetry resumes after
+      // staleBinding, the next positionUpdate clears the stale flag and
+      // the webapp dismisses the prompt; a subsequent loss re-arms.
       const stalePositionTimeoutMs = 10_000;
       let lastPositionAt = Date.now();
+      let stale = false;
       try {
         while (true) {
           // touch actor to keep it alive and prevent it from being swept.
@@ -432,8 +435,14 @@ export const navigatorRouter = router({
           }
 
           if (res === 'timeout') {
-            yield { type: 'staleBinding' };
-            return;
+            if (!stale) {
+              yield { type: 'staleBinding' };
+              stale = true;
+            }
+            // Re-arm so we don't busy-loop while waiting for telemetry
+            // to resume. The actor stays warm via the touch above.
+            lastPositionAt = Date.now();
+            continue;
           }
 
           if (res.done) {
@@ -441,6 +450,7 @@ export const navigatorRouter = router({
           }
           if (res.value.type === 'positionUpdate') {
             lastPositionAt = Date.now();
+            stale = false;
           }
           yield res.value;
         }

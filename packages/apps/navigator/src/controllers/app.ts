@@ -553,6 +553,12 @@ export class AppControllerImpl implements AppController {
               if (!store.hasReceivedFirstTelemetry) {
                 store.hasReceivedFirstTelemetry = true;
               }
+              if (store.bindingStale) {
+                // Telemetry resumed after a staleBinding event; the
+                // server has re-armed and will fire staleBinding again
+                // on any future loss.
+                store.bindingStale = false;
+              }
             });
             break;
           case 'routeUpdate':
@@ -594,6 +600,7 @@ export class AppControllerImpl implements AppController {
             // recovery action (try again vs. re-pair) instead of us
             // clearing credentials behind their back.
             runInAction(() => {
+              console.log('stale binding message recieved');
               store.bindingStale = true;
             });
             break;
