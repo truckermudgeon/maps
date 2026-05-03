@@ -1,5 +1,5 @@
 import { throttle } from '@truckermudgeon/base/throttle';
-import { action, makeAutoObservable } from 'mobx';
+import { makeAutoObservable } from 'mobx';
 import type { Breakpoints, UIEnvironmentStore } from './types';
 
 export class UiEnvironmentStoreImpl implements UIEnvironmentStore {
@@ -9,8 +9,8 @@ export class UiEnvironmentStoreImpl implements UIEnvironmentStore {
 
   constructor(breakpoints: Breakpoints) {
     this.breakpoints = breakpoints;
-    makeAutoObservable(this, { handleResize: false });
     window.addEventListener('resize', this.handleResize);
+    makeAutoObservable(this);
   }
 
   get width(): number {
@@ -29,10 +29,8 @@ export class UiEnvironmentStoreImpl implements UIEnvironmentStore {
     return this.width > this.height ? 'landscape' : 'portrait';
   }
 
-  handleResize = action(
-    throttle(() => {
-      this._width = window.innerWidth;
-      this._height = window.innerHeight;
-    }, 100),
-  );
+  handleResize = throttle(() => {
+    this._width = window.innerWidth;
+    this._height = window.innerHeight;
+  }, 100);
 }
