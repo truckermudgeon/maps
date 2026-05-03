@@ -29,7 +29,6 @@ import type { AppClient, AppController, AppStore } from './types';
 
 export class AppStoreImpl implements AppStore {
   themeMode: 'light' | 'dark' = 'light';
-  map: 'usa' | 'europe';
   cameraMode: CameraMode = CameraMode.FOLLOW;
   bearingMode: BearingMode = BearingMode.MATCH_MAP;
   activeRoute: Route | undefined = undefined;
@@ -42,8 +41,7 @@ export class AppStoreImpl implements AppStore {
 
   segmentComplete: SegmentInfo | undefined = undefined;
 
-  constructor(map: 'usa' | 'europe') {
-    this.map = map;
+  constructor(public map: 'usa' | 'europe') {
     makeAutoObservable(this, {
       activeRoute: observable.ref,
       activeRouteIndex: observable.struct,
