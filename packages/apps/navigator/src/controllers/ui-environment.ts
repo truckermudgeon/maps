@@ -1,5 +1,5 @@
 import { throttle } from '@truckermudgeon/base/throttle';
-import { makeAutoObservable } from 'mobx';
+import { action, makeAutoObservable } from 'mobx';
 import type { Breakpoints, UIEnvironmentStore } from './types';
 
 export class UiEnvironmentStoreImpl implements UIEnvironmentStore {
@@ -29,8 +29,10 @@ export class UiEnvironmentStoreImpl implements UIEnvironmentStore {
     return this.width > this.height ? 'landscape' : 'portrait';
   }
 
-  handleResize = throttle(() => {
-    this._width = window.innerWidth;
-    this._height = window.innerHeight;
-  }, 100);
+  private handleResize = action(
+    throttle(() => {
+      this._width = window.innerWidth;
+      this._height = window.innerHeight;
+    }, 100),
+  );
 }
