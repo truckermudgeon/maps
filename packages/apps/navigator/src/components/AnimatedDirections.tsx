@@ -14,25 +14,34 @@ export interface AnimatedDirectionsProps {
   units: 'imperial' | 'metric';
 }
 
+interface OutgoingSnapshot {
+  step: StepManeuver;
+  distanceToNextManeuver: number;
+  units: 'imperial' | 'metric';
+}
+
 const ANIMATION_DURATION_MS = 200;
 
 export const AnimatedDirections = (props: AnimatedDirectionsProps) => {
   const { direction, distanceToNextManeuver, units } = props;
-  const [outgoing, setOutgoing] = useState<StepManeuver | undefined>();
+  const [outgoing, setOutgoing] = useState<OutgoingSnapshot | undefined>();
   const [exitActive, setExitActive] = useState(false);
-  const prevDirectionRef = useRef(direction);
+  const prevPropsRef = useRef(props);
   const currentRef = useRef<HTMLDivElement>(null);
   const outgoingRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const prev = prevDirectionRef.current;
-    prevDirectionRef.current = direction;
+    const prev = prevPropsRef.current;
 
-    if (!prev || !direction || prev === direction) {
+    if (!prev.direction || !direction || prev.direction === direction) {
       return;
     }
 
-    setOutgoing(prev);
+    setOutgoing({
+      step: prev.direction,
+      distanceToNextManeuver: prev.distanceToNextManeuver,
+      units: prev.units,
+    });
     setExitActive(false);
 
     const rafId = requestAnimationFrame(() => setExitActive(true));
@@ -46,6 +55,14 @@ export const AnimatedDirections = (props: AnimatedDirectionsProps) => {
       clearTimeout(timeoutId);
     };
   }, [direction]);
+
+  // Capture each render's props so the next direction change has access to
+  // the previous render's values for the outgoing snapshot. Declared after
+  // the direction effect so the direction effect always reads stale (pre-
+  // change) values from the ref.
+  useEffect(() => {
+    prevPropsRef.current = props;
+  });
 
   // Pull the outgoing element up onto the current one — they share the
   // container and would otherwise stack vertically.
@@ -61,14 +78,16 @@ export const AnimatedDirections = (props: AnimatedDirectionsProps) => {
     return <></>;
   }
 
-  const animate = outgoing != null;
-  const { length, unit } = toLengthAndUnit(
-    distanceToNextManeuver,
-    units === 'imperial' ? defaultImperialOptions : defaultMetricOptions,
-  );
-
-  const buildProps = (step: StepManeuver) => {
-    const showLaneHint = distanceToNextManeuver <= 5_000;
+  const buildProps = (
+    step: StepManeuver,
+    distance: number,
+    propsUnits: 'imperial' | 'metric',
+  ) => {
+    const { length, unit } = toLengthAndUnit(
+      distance,
+      propsUnits === 'imperial' ? defaultImperialOptions : defaultMetricOptions,
+    );
+    const showLaneHint = distance <= 5_000;
     return {
       direction: step.direction,
       length,
@@ -79,20 +98,26 @@ export const AnimatedDirections = (props: AnimatedDirectionsProps) => {
     };
   };
 
+  const animate = outgoing != null;
+
   return (
     <div className={animate ? 'container animate' : 'container'}>
       {direction && (
         <Directions
           ref={currentRef}
           className={animate ? 'directions enter' : undefined}
-          {...buildProps(direction)}
+          {...buildProps(direction, distanceToNextManeuver, units)}
         />
       )}
       {outgoing && (
         <Directions
           ref={outgoingRef}
           className={exitActive ? 'directions exit' : 'directions'}
-          {...buildProps(outgoing)}
+          {...buildProps(
+            outgoing.step,
+            outgoing.distanceToNextManeuver,
+            outgoing.units,
+          )}
         />
       )}
     </div>
