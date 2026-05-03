@@ -185,7 +185,6 @@ export const navigatorRouter = router({
       }),
     )
     .query<SearchResultWithRelativeTruckInfo[]>(async ({ input, ctx }) => {
-      logger.debug('search request', { input });
       const { readTelemetry, readActiveRoute, gameContext } = ctx.sessionActor;
       const { type: poiType, scope } = input;
       const addRelativeTruckInfo = createWithRelativeTruckInfoMapper(
@@ -331,21 +330,18 @@ export const navigatorRouter = router({
     .input(z.optional(z.array(z.string().refine(isRouteKey)).max(50)))
     .mutation(async ({ input, ctx }) => {
       const { lookups, routing } = ctx.services;
-      const { setActiveRoute, readActiveRoute, gameContext } = ctx.sessionActor;
+      const { setActiveRoute, gameContext } = ctx.sessionActor;
       const graphAndMapData = lookups.getData(gameContext).graphAndMapData;
 
       if (input == null) {
-        logger.debug('clearing active route');
         setActiveRoute(undefined);
       } else {
-        logger.debug('generating and setting active route');
         setActiveRoute(
           await generateRouteFromKeys(input as RouteKey[], {
             graphAndMapData,
             routing,
           }),
         );
-        logger.debug('active route set', { id: readActiveRoute()?.id });
       }
     }),
   unpauseRouteEvents: navigatorSessionProcedure
