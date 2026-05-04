@@ -100,6 +100,10 @@ export function subscribeSession(
   // either render a position from an unrelated trip or — worse — mask a dead
   // device by flipping the webapp's hasReceivedFirstTelemetry before any
   // real telemetry arrives, defeating the staleBinding timer in the router.
+  //
+  // Cost: a healthy live-session resubscribe waits up to ~500ms (one tick at
+  // the desktop client's 2Hz forwarding rate) before the first positionUpdate
+  // yields. The webapp's WaitingForTelemetry overlay covers that window.
   let stateDirty = false;
   const offLatest = actor.getLatestTelemetry().subscribe(() => {
     stateDirty = true;

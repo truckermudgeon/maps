@@ -63,10 +63,14 @@ export class PrometheusSessionMetrics implements SessionMetrics {
   // Latency from subscribe to first positionUpdate. Only observed when a
   // subscription successfully receives its first telemetry frame; orphaned
   // subscriptions are tracked via stale_binding_events_total{phase=at_subscribe}.
+  // Buckets span 10ms (anomaly floor, consistent with telemetry_latency_ms)
+  // through ~40s — past the 10s staleBinding window so right-at-the-edge
+  // resolutions land in their own bucket instead of +Inf. The healthy modal
+  // sits around 250–500ms (one tick at the desktop client's 2Hz forwarding rate).
   private firstPosition = new Prometheus.Histogram({
     name: 'time_to_first_position_update_ms',
     help: 'Latency from subscribe to first positionUpdate (resolved only)',
-    buckets: Prometheus.exponentialBuckets(10, 2, 10),
+    buckets: Prometheus.exponentialBuckets(10, 2, 13),
   });
 
   reconnectOutcome = {
