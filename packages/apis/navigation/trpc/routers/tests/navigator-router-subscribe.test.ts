@@ -19,7 +19,7 @@ import {
 
 const createCaller = createCallerFactory(navigatorRouter);
 
-const SPARSE_PREAMBLE_COUNT = 4; // themeMode, jobUpdate, trailerUpdate, routeUpdate
+const STALE_TIMEOUT_MS = 10_000;
 
 const FAKE_TELEMETRY = {
   game: {
@@ -129,13 +129,22 @@ describe('navigatorRouter > subscribeToDevice', () => {
     const sub = await caller.subscribeToDevice();
     const iter = sub[Symbol.asyncIterator]() as AsyncIterator<ActorEvent>;
 
-    const drained: ActorEvent[] = [];
-    for (let i = 0; i < SPARSE_PREAMBLE_COUNT; i++) {
-      const r = await iter.next();
+    // With no live telemetry, the only event that ever yields after
+    // subscribeSession's preamble is staleBinding. Drain until we see it,
+    // then assert the seeded cache never surfaced as a positionUpdate
+    // along the way.
+    const seen: ActorEvent[] = [];
+    while (true) {
+      const next = iter.next();
+      await vi.advanceTimersByTimeAsync(STALE_TIMEOUT_MS);
+      const r = await next;
       if (r.done) break;
-      drained.push(r.value);
+      seen.push(r.value);
+      if (r.value.type === 'staleBinding') break;
     }
-    expect(drained.map(e => e.type)).not.toContain('positionUpdate');
+
+    expect(seen.map(e => e.type)).not.toContain('positionUpdate');
+    expect(seen.at(-1)?.type).toBe('staleBinding');
 
     await iter.return?.();
   });
