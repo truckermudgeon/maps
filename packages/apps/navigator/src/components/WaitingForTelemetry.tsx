@@ -54,14 +54,20 @@ export const WaitingForTelemetry = (props: {
           {titleFor(state)}
         </Typography>
         <Divider />
-        <Typography component={'div'} fontSize={'sm'} color={'neutral'}>
-          Please make sure:
-          <ul style={{ paddingLeft: '1.5em', margin: '1ex 0 0 0' }}>
-            <li>ATS or ETS2 is running</li>
-            <li>the Navigator client is running</li>
-            <li>your truck is on the road</li>
-          </ul>
-        </Typography>
+        {state === 'lost' ? (
+          <Typography fontSize={'sm'} color={'neutral'}>
+            The game or Navigator client stopped sending updates.
+          </Typography>
+        ) : (
+          <Typography component={'div'} fontSize={'sm'} color={'neutral'}>
+            Please make sure:
+            <ul style={{ paddingLeft: '1.5em', margin: '1ex 0 0 0' }}>
+              <li>ATS or ETS2 is running</li>
+              <li>the Navigator client is running</li>
+              <li>your truck is on the road</li>
+            </ul>
+          </Typography>
+        )}
         {state !== 'awaiting' && (
           <Stack>
             <Typography fontSize={'sm'} color={'neutral'}>
