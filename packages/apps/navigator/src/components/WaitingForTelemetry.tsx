@@ -56,7 +56,8 @@ export const WaitingForTelemetry = (props: {
         <Divider />
         {state === 'lost' ? (
           <Typography fontSize={'sm'} color={'neutral'}>
-            The game or Navigator client stopped sending updates.
+            Updates from the game or Navigator client have stopped. This will
+            clear when they resume.
           </Typography>
         ) : (
           <Typography component={'div'} fontSize={'sm'} color={'neutral'}>
@@ -71,8 +72,17 @@ export const WaitingForTelemetry = (props: {
         {state !== 'awaiting' && (
           <Stack>
             <Typography fontSize={'sm'} color={'neutral'}>
-              Use <b>Try again</b> to force a reconnect, or{' '}
-              <b>Enter pairing code</b> to start over.
+              {state === 'lost' ? (
+                <>
+                  Otherwise, use <b>Try again</b> to reload, or{' '}
+                  <b>Enter pairing code</b> to switch clients.
+                </>
+              ) : (
+                <>
+                  Use <b>Try again</b> to force a reconnect, or{' '}
+                  <b>Enter pairing code</b> to start over.
+                </>
+              )}
             </Typography>
             <Stack
               direction={'row'}
