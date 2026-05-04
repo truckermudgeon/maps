@@ -11,7 +11,7 @@ import type { RouteKey } from '@truckermudgeon/map/routing';
 import { isRouteKey } from '@truckermudgeon/map/routing';
 import crypto from 'node:crypto';
 import { z } from 'zod';
-import { PoiType, ScopeType } from '../../constants';
+import { PoiType, ScopeType, staleBindingTimeoutMs } from '../../constants';
 import {
   buildRouteFromNodeUids,
   generateRouteFromKeys,
@@ -419,7 +419,7 @@ export const navigatorRouter = router({
         // the threshold can fire fairly eagerly: a user who's still
         // booting the game knows to wait it out.
         const guarded = withStaleDetection(generator, {
-          timeoutMs: 10_000,
+          timeoutMs: staleBindingTimeoutMs,
           // Keep the actor alive while a webapp is still watching for
           // resume — otherwise the registry would sweep it.
           onTick: () => ctx.services.sessionActors.get(telemetryId),

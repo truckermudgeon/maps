@@ -76,3 +76,7 @@ export type NonTerminalBranchType = Exclude<
 >;
 
 export const pairingCodeTtlMs = 10 * 60_000;
+
+// Window after the last positionUpdate before subscribeToDevice declares
+// the binding stale and yields a staleBinding event.
+export const staleBindingTimeoutMs = 10_000;

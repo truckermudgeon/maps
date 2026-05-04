@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { staleBindingTimeoutMs } from '../../../constants';
 import { aTelemetryWith } from '../../../domain/actor/tests/builders';
 import { AuthState } from '../../../domain/auth/auth-state';
 import type { SessionActor } from '../../../domain/session-actor';
@@ -19,8 +20,6 @@ import {
 // last-known telemetry on subscribe (regression for 9c3bb3d1).
 
 const createCaller = createCallerFactory(navigatorRouter);
-
-const STALE_TIMEOUT_MS = 10_000;
 
 function makeFakeActor() {
   const subs = new Set<() => void>();
@@ -115,7 +114,7 @@ describe('navigatorRouter > subscribeToDevice', () => {
     const seen: ActorEvent[] = [];
     while (true) {
       const next = iter.next();
-      await vi.advanceTimersByTimeAsync(STALE_TIMEOUT_MS);
+      await vi.advanceTimersByTimeAsync(staleBindingTimeoutMs);
       const r = await next;
       if (r.done) break;
       seen.push(r.value);
