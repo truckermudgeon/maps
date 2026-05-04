@@ -600,7 +600,6 @@ export class AppControllerImpl implements AppController {
             // recovery action (try again vs. re-pair) instead of us
             // clearing credentials behind their back.
             runInAction(() => {
-              console.log('stale binding message received');
               store.bindingStale = true;
             });
             break;
