@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { aTelemetryWith } from '../../../domain/actor/tests/builders';
 import { AuthState } from '../../../domain/auth/auth-state';
 import type { SessionActor } from '../../../domain/session-actor';
 import type { ActorEvent, TruckSimTelemetry } from '../../../types';
@@ -20,28 +21,6 @@ import {
 const createCaller = createCallerFactory(navigatorRouter);
 
 const STALE_TIMEOUT_MS = 10_000;
-
-const FAKE_TELEMETRY = {
-  game: {
-    paused: false,
-    timestamp: { value: 0 },
-    scale: 1,
-    game: { name: 'ats' as const },
-  },
-  truck: {
-    position: { X: 0, Y: 0, Z: 0 },
-    orientation: { heading: 0 },
-    speed: { value: 0 },
-    acceleration: {
-      linearAcceleration: { X: 0, Y: 0, Z: 0 },
-      angularVelocity: { X: 0, Y: 0, Z: 0 },
-      angularAcceleration: { X: 0, Y: 0, Z: 0 },
-    },
-  },
-  navigation: {
-    speedLimit: { mph: 0, kph: 0 },
-  },
-} as unknown as TruckSimTelemetry;
 
 function makeFakeActor() {
   const subs = new Set<() => void>();
@@ -82,7 +61,7 @@ function makeFakeActor() {
 
   return {
     actor,
-    seedCache: () => latestTelemetry.update(FAKE_TELEMETRY),
+    seedCache: () => latestTelemetry.update(aTelemetryWith({})),
   };
 }
 
