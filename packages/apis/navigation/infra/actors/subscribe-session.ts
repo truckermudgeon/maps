@@ -94,16 +94,9 @@ export function subscribeSession(
     resolve = null;
   };
 
-  // hot state (latest only). Starts clean: we deliberately do NOT yield the
-  // actor's cached telemetry at subscribe time. The cache may be from a
-  // previous session (actor outlives any single client), so yielding it can
-  // either render a position from an unrelated trip or — worse — mask a dead
-  // device by flipping the webapp's hasReceivedFirstTelemetry before any
-  // real telemetry arrives, defeating the staleBinding timer in the router.
-  //
-  // Cost: a healthy live-session resubscribe waits up to ~500ms (one tick at
-  // the desktop client's 2Hz forwarding rate) before the first positionUpdate
-  // yields. The webapp's WaitingForTelemetry overlay covers that window.
+  // Starts clean: yielding the actor's cached telemetry on subscribe would
+  // mask a dead device by satisfying the staleBinding timer with stale data
+  // from a prior session.
   let stateDirty = false;
   const offLatest = actor.getLatestTelemetry().subscribe(() => {
     stateDirty = true;

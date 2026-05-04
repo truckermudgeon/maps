@@ -542,12 +542,9 @@ export class AppControllerImpl implements AppController {
     });
 
     this.deviceSubscription = client.subscribeToDevice.subscribe(void 0, {
-      // TODO: a long enough WS disconnect can outlive the server's
-      // publicKey TTL (12h). When tRPC's wsLink reconnects and tries to
-      // re-establish this subscription, auth will fail and we'll log the
-      // error here — but the user sees nothing change. Surface this
-      // failure (e.g. force-rePair, or treat as bindingStale) instead of
-      // failing silently.
+      // TODO: a WS gap longer than the publicKey TTL (12h) makes the
+      // resubscribe fail auth — we log it here but the user sees nothing.
+      // Surface it (force re-pair or flip bindingStale) instead.
       onError: err => {
         console.error('subscribeToDevice error', err);
       },
@@ -560,9 +557,6 @@ export class AppControllerImpl implements AppController {
                 store.hasReceivedFirstTelemetry = true;
               }
               if (store.bindingStale) {
-                // Telemetry resumed after a staleBinding event; the
-                // server has re-armed and will fire staleBinding again
-                // on any future loss.
                 store.bindingStale = false;
               }
             });
@@ -601,10 +595,6 @@ export class AppControllerImpl implements AppController {
           case 'jobUpdate':
             break;
           case 'staleBinding':
-            // Server has gone past its no-telemetry grace window. Surface a
-            // prompt via the WaitingForTelemetry UI; the user picks the
-            // recovery action (try again vs. re-pair) instead of us
-            // clearing credentials behind their back.
             runInAction(() => {
               store.bindingStale = true;
             });

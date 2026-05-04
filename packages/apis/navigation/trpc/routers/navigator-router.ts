@@ -379,9 +379,8 @@ export const navigatorRouter = router({
       unpauseRouteEvents();
     }),
   subscribeToDevice: navigatorSessionProcedure
-    // Limit = expected concurrent webapp subscriptions (currently 2: one
-    // from AppControllerImpl, one from ControlsControllerImpl) + 1 race
-    // buffer for the brief overlap during map-switch resubscribes.
+    // 2 concurrent webapp subscriptions per WS + 1 race buffer for
+    // map-switch resubscribes.
     .use(subscriptionLimitMiddleware(3))
     .subscription(async function* ({
       path,
@@ -411,13 +410,8 @@ export const navigatorRouter = router({
         telemetryId,
       };
       try {
-        // Detect staleBinding both at subscribe time (catches viewerIds
-        // bound to actors with no live telemetry signal — typical after
-        // the desktop client was re-paired and minted a new telemetryId)
-        // and mid-session (telemetry stops). The webapp surfaces this as
-        // a passive UI prompt rather than auto-clearing credentials, so
-        // the threshold can fire fairly eagerly: a user who's still
-        // booting the game knows to wait it out.
+        // Threshold can be eager: the webapp surfaces staleBinding as a
+        // passive prompt, never as an auto-clear of credentials.
         const guarded = withStaleDetection(generator, {
           timeoutMs: staleBindingTimeoutMs,
           // Keep the actor alive while a webapp is still watching for

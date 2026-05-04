@@ -3,22 +3,13 @@ import type { ActorEvent } from '../../types';
 export type StaleBindingPhase = 'at_subscribe' | 'mid_session';
 
 export interface WithStaleDetectionOpts {
-  /**
-   * The window after the last positionUpdate (or subscribe time) before the
-   * binding is considered stale. On expiration, a single staleBinding event
-   * is yielded; subsequent expirations within the same stale period are
-   * suppressed until telemetry resumes.
-   */
+  /** Window after the last source event before staleBinding is yielded. */
   timeoutMs: number;
 
   /** Defaults to Date.now; override for deterministic tests. */
   now?: () => number;
 
-  /**
-   * Fires at the top of every internal iteration. Use for keep-alive side
-   * effects (e.g. touching the SessionActor so the registry doesn't sweep
-   * it while a webapp is still watching for resume).
-   */
+  /** Periodic hook for keep-alive side effects while the wrapper runs. */
   onTick?: () => void;
 
   /** Fires when the staleBinding flag flips false → true. */
@@ -32,21 +23,13 @@ export interface WithStaleDetectionOpts {
 }
 
 /**
- * Wraps an ActorEvent producer with staleBinding detection.
+ * Wraps a source AsyncGenerator with a stale-detection timer: yields a
+ * `staleBinding` event if `timeoutMs` elapses without a source event.
+ * Suppressed within a single stale period; re-arms after the next event.
  *
- * - Races each source.next() against a timer; on expiration without a yield
- *   from the source, emits one `{ type: 'staleBinding' }` event downstream.
- * - Suppresses repeat staleBinding emissions within a single stale period;
- *   re-arms the next staleBinding only after telemetry resumes.
- * - Reports lifecycle moments (stale, resume, first position) via callbacks
- *   so the caller can attach metrics/logging without participating in the
- *   state machine.
- *
- * Holds a single in-flight source.next() across iterations: if a timeout
- * wins the race, the pending promise must survive into the next iteration.
- * Calling source.next() again would queue a second request on the async
- * generator, and the next yield would satisfy the abandoned promise (FIFO)
- * instead of the one currently awaited.
+ * Lifecycle callbacks (`onStale`, `onResume`, `onFirstPosition`, `onTick`)
+ * let callers attach metrics or keep-alive side effects without sharing
+ * the state machine.
  */
 export async function* withStaleDetection(
   source: AsyncGenerator<ActorEvent, void, void>,
@@ -57,6 +40,9 @@ export async function* withStaleDetection(
   let lastPositionAt = subscribedAt;
   let stale = false;
   let hasSeenFirstPosition = false;
+  // Single in-flight source.next() across iterations: async generators
+  // satisfy queued .next() calls FIFO, so calling next() again after a
+  // timeout would orphan the next yielded event onto an abandoned promise.
   let pending: ReturnType<typeof source.next> | undefined;
 
   while (true) {
@@ -86,7 +72,6 @@ export async function* withStaleDetection(
         stale = true;
       }
       // Re-arm so we don't busy-loop while waiting for telemetry to resume.
-      // `pending` is intentionally preserved across iterations.
       lastPositionAt = now();
       continue;
     }
