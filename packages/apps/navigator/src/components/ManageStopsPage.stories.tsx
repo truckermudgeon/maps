@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { ManageStopsPage } from './ManageStopsPage';
 
 const meta = {
+  title: 'Route/ManageStopsPage',
   component: ManageStopsPage,
 } satisfies Meta<typeof ManageStopsPage>;
 
