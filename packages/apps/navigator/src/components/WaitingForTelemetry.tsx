@@ -1,6 +1,12 @@
 import SyncProblemIcon from '@mui/icons-material/SyncProblem';
-import { Card, CircularProgress, Divider, Stack, Typography } from '@mui/joy';
-import { BindingStalePrompt } from './BindingStalePrompt';
+import {
+  Button,
+  Card,
+  CircularProgress,
+  Divider,
+  Stack,
+  Typography,
+} from '@mui/joy';
 
 export type WaitingForTelemetryState = 'awaiting' | 'orphaned' | 'lost';
 
@@ -56,7 +62,31 @@ export const WaitingForTelemetry = (props: {
             <li>your truck is on the road</li>
           </ul>
         </Typography>
-        {state !== 'awaiting' && <BindingStalePrompt onRePair={onRePair} />}
+        {state !== 'awaiting' && (
+          <Stack>
+            <Typography fontSize={'sm'} color={'neutral'}>
+              Use <b>Try again</b> to force a reconnect, or{' '}
+              <b>Enter pairing code</b> to start over.
+            </Typography>
+            <Stack
+              direction={'row'}
+              spacing={1}
+              justifyContent={'flex-end'}
+              sx={{ mt: 2 }}
+            >
+              <Button
+                variant={'outlined'}
+                color={'neutral'}
+                onClick={() => window.location.reload()}
+              >
+                Try again
+              </Button>
+              <Button variant={'solid'} color={'primary'} onClick={onRePair}>
+                Enter pairing code
+              </Button>
+            </Stack>
+          </Stack>
+        )}
       </Card>
     </Stack>
   );
