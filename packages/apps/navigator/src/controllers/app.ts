@@ -542,6 +542,12 @@ export class AppControllerImpl implements AppController {
     });
 
     this.deviceSubscription = client.subscribeToDevice.subscribe(void 0, {
+      // TODO: a long enough WS disconnect can outlive the server's
+      // publicKey TTL (12h). When tRPC's wsLink reconnects and tries to
+      // re-establish this subscription, auth will fail and we'll log the
+      // error here — but the user sees nothing change. Surface this
+      // failure (e.g. force-rePair, or treat as bindingStale) instead of
+      // failing silently.
       onError: err => {
         console.error('subscribeToDevice error', err);
       },
