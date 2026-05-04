@@ -25,6 +25,7 @@ import {
 import { AuthState } from '../../domain/auth/auth-state';
 import { transition } from '../../domain/auth/transition';
 import { subscribeSession } from '../../infra/actors/subscribe-session';
+import { withStaleDetection } from '../../infra/actors/with-stale-detection';
 import { navigatorKeys } from '../../infra/kv/store';
 import { logger } from '../../infra/logging/logger';
 import type {
@@ -404,107 +405,39 @@ export const navigatorRouter = router({
         ctx.services.lookups,
       );
       const metrics = ctx.services.metrics.session;
-      // If no positionUpdate has arrived within this window — at subscribe
-      // time or during an active session — emit a staleBinding event so the
-      // webapp can prompt the user to re-pair. Catches the scenario where
-      // the desktop client was re-paired and minted a new telemetryId while
-      // the webapp's viewerId still pointed at the old (dead) actor.
-      // The webapp surfaces this as a passive UI prompt (try again /
-      // re-pair) rather than auto-clearing credentials, so it's safe to
-      // fire fairly eagerly: a user who's still booting the game knows to
-      // ignore the prompt and wait it out. If telemetry resumes after
-      // staleBinding, the next positionUpdate clears the stale flag and
-      // the webapp dismisses the prompt; a subsequent loss re-arms.
-      const stalePositionTimeoutMs = 10_000;
-      const subscribedAt = Date.now();
-      let lastPositionAt = subscribedAt;
-      let stale = false;
-      let hasSeenFirstPosition = false;
-      // Keep at most one in-flight generator.next() across loop iterations.
-      // If a timeout wins the race, the pending promise must survive into
-      // the next iteration — otherwise calling generator.next() again here
-      // would queue a second request on the async generator, and the next
-      // yield would satisfy the abandoned promise (FIFO) instead of the one
-      // we're now awaiting.
-      let pending: ReturnType<typeof generator.next> | undefined;
+      const logCtx = {
+        trpc: { path, type: 'subscription' as const },
+        request: { type: ctx.type, clientId: ctx.clientId },
+        telemetryId,
+      };
       try {
-        while (true) {
-          // touch actor to keep it alive and prevent it from being swept.
-          ctx.services.sessionActors.get(telemetryId);
-
-          const elapsed = Date.now() - lastPositionAt;
-          const remaining = Math.max(0, stalePositionTimeoutMs - elapsed);
-
-          let timeoutId: ReturnType<typeof setTimeout> | undefined;
-          const timedOut = new Promise<'timeout'>(resolve => {
-            timeoutId = setTimeout(() => resolve('timeout'), remaining);
-          });
-
-          pending ??= generator.next();
-          let res: 'timeout' | Awaited<ReturnType<typeof generator.next>>;
-          try {
-            res = await Promise.race([pending, timedOut]);
-          } finally {
-            if (timeoutId !== undefined) clearTimeout(timeoutId);
-          }
-
-          if (res === 'timeout') {
-            if (!stale) {
-              const phase = hasSeenFirstPosition
-                ? 'mid_session'
-                : 'at_subscribe';
-              metrics.staleBindingEvents.inc({ phase });
-              logger.info('staleBinding fired', {
-                trpc: { path, type: 'subscription' },
-                request: { type: ctx.type, clientId: ctx.clientId },
-                telemetryId,
-                phase,
-              });
-              yield { type: 'staleBinding' };
-              stale = true;
-            }
-            // Re-arm so we don't busy-loop while waiting for telemetry
-            // to resume. The actor stays warm via the touch above.
-            // `pending` is intentionally preserved across iterations.
-            lastPositionAt = Date.now();
-            continue;
-          }
-
-          // The pending generator.next() resolved; consume it.
-          pending = undefined;
-          if (res.done) {
-            break;
-          }
-          if (res.value.type === 'positionUpdate') {
-            lastPositionAt = Date.now();
-            if (!hasSeenFirstPosition) {
-              hasSeenFirstPosition = true;
-              metrics.timeToFirstPositionUpdate.observe(
-                lastPositionAt - subscribedAt,
-              );
-            }
-            if (stale) {
-              metrics.staleBindingResumed.inc();
-              logger.info('staleBinding resumed', {
-                trpc: { path, type: 'subscription' },
-                request: { type: ctx.type, clientId: ctx.clientId },
-                telemetryId,
-              });
-              stale = false;
-            }
-          }
-          yield res.value;
-        }
+        // Detect staleBinding both at subscribe time (catches viewerIds
+        // bound to actors with no live telemetry signal — typical after
+        // the desktop client was re-paired and minted a new telemetryId)
+        // and mid-session (telemetry stops). The webapp surfaces this as
+        // a passive UI prompt rather than auto-clearing credentials, so
+        // the threshold can fire fairly eagerly: a user who's still
+        // booting the game knows to wait it out.
+        const guarded = withStaleDetection(generator, {
+          timeoutMs: 10_000,
+          // Keep the actor alive while a webapp is still watching for
+          // resume — otherwise the registry would sweep it.
+          onTick: () => ctx.services.sessionActors.get(telemetryId),
+          onStale: phase => {
+            metrics.staleBindingEvents.inc({ phase });
+            logger.info('staleBinding fired', { ...logCtx, phase });
+          },
+          onFirstPosition: latencyMs =>
+            metrics.timeToFirstPositionUpdate.observe(latencyMs),
+          onResume: () => {
+            metrics.staleBindingResumed.inc();
+            logger.info('staleBinding resumed', logCtx);
+          },
+        });
+        for await (const event of guarded) yield event;
       } catch (err) {
         logger.error('actor subscription error', {
-          trpc: {
-            path,
-            type: 'subscription',
-          },
-          request: {
-            type: ctx.type,
-            clientId: ctx.clientId,
-          },
+          ...logCtx,
           error:
             err instanceof Error ? `${err.name}: ${err.message}` : String(err),
         });
