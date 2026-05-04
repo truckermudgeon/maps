@@ -15,16 +15,23 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Spinner: Story = {
+export const Awaiting: Story = {
   args: {
-    bindingStale: false,
+    state: 'awaiting',
     onRePair: fn(),
   },
 };
 
-export const StalePrompt: Story = {
+export const Orphaned: Story = {
   args: {
-    bindingStale: true,
+    state: 'orphaned',
+    onRePair: fn(),
+  },
+};
+
+export const Lost: Story = {
+  args: {
+    state: 'lost',
     onRePair: fn(),
   },
 };

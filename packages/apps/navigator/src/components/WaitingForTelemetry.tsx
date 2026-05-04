@@ -1,11 +1,14 @@
+import SyncProblemIcon from '@mui/icons-material/SyncProblem';
 import { Card, CircularProgress, Divider, Stack, Typography } from '@mui/joy';
 import { BindingStalePrompt } from './BindingStalePrompt';
 
+export type WaitingForTelemetryState = 'awaiting' | 'orphaned' | 'lost';
+
 export const WaitingForTelemetry = (props: {
-  bindingStale: boolean;
+  state: WaitingForTelemetryState;
   onRePair: () => void;
 }) => {
-  const { bindingStale, onRePair } = props;
+  const { state, onRePair } = props;
 
   return (
     <Stack
@@ -32,26 +35,40 @@ export const WaitingForTelemetry = (props: {
           alignItems={'center'}
           gap={1}
         >
-          <CircularProgress
-            variant="solid"
-            size={'sm'}
-            color={'neutral'}
-            sx={{ mr: 1 }}
-          />
-          {bindingStale
-            ? 'Still waiting for game telemetry...'
-            : 'Waiting for game telemetry...'}
+          {state === 'lost' ? (
+            <SyncProblemIcon color={'warning'} sx={{ mr: 1 }} />
+          ) : (
+            <CircularProgress
+              variant="solid"
+              size={'sm'}
+              color={'neutral'}
+              sx={{ mr: 1 }}
+            />
+          )}
+          {titleFor(state)}
         </Typography>
         <Divider />
         <Typography component={'div'} fontSize={'sm'} color={'neutral'}>
           Please make sure:
           <ul style={{ paddingLeft: '1.5em', margin: '1ex 0 0 0' }}>
-            <li>ATS and the Navigator client are running</li>
+            <li>ATS or ETS2 is running</li>
+            <li>the Navigator client is running</li>
             <li>your truck is on the road</li>
           </ul>
         </Typography>
-        {bindingStale && <BindingStalePrompt onRePair={onRePair} />}
+        {state !== 'awaiting' && <BindingStalePrompt onRePair={onRePair} />}
       </Card>
     </Stack>
   );
 };
+
+function titleFor(state: WaitingForTelemetryState): string {
+  switch (state) {
+    case 'awaiting':
+      return 'Waiting for game telemetry...';
+    case 'orphaned':
+      return 'Still waiting for game telemetry...';
+    case 'lost':
+      return 'Game telemetry lost';
+  }
+}

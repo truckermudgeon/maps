@@ -15,13 +15,15 @@ import { RouteStack } from './components/RouteStack';
 import { SegmentCompleteToast } from './components/SegmentCompleteToast';
 import { SlippyMap } from './components/SlippyMap';
 import { SpriteProvider } from './components/SpriteProvider';
-import { TelemetryLostToast } from './components/TelemetryLostToast';
 import {
   defaultImperialOptions,
   defaultMetricOptions,
 } from './components/text';
 import { TrailerOrWaypointMarkers } from './components/TrailerOrWaypointMarkers';
-import { WaitingForTelemetry } from './components/WaitingForTelemetry';
+import {
+  WaitingForTelemetry,
+  type WaitingForTelemetryState,
+} from './components/WaitingForTelemetry';
 import { AppControllerImpl, AppStoreImpl } from './controllers/app';
 import {
   maxPortraitSheetCssHeight,
@@ -237,25 +239,21 @@ export function createApp({
     }
     // TODO show "Loading map..." UI if map hasn't loaded yet, instead of
     //  showing "Waiting for telemetry..." UI.
-    // Mid-session staleness (bindingStale after first sample) is surfaced
-    // by TelemetryLostToast; this overlay is only for the pre-first-sample
-    // case.
-    return !store.hasReceivedFirstTelemetry ? (
+    if (store.hasReceivedFirstTelemetry && !store.bindingStale) {
+      return <></>;
+    }
+    const state: WaitingForTelemetryState = !store.hasReceivedFirstTelemetry
+      ? store.bindingStale
+        ? 'orphaned'
+        : 'awaiting'
+      : 'lost';
+    return (
       <WaitingForTelemetry
-        bindingStale={store.bindingStale}
+        state={state}
         onRePair={() => controller.forceRePair()}
       />
-    ) : (
-      <></>
     );
   });
-
-  const _TelemetryLostToast = observer(() => (
-    <TelemetryLostToast
-      open={store.hasReceivedFirstTelemetry && store.bindingStale}
-      onRePair={() => controller.forceRePair()}
-    />
-  ));
 
   return {
     App: () => (
@@ -268,7 +266,6 @@ export function createApp({
         RouteStack={_RouteStack}
         Controls={_Controls}
         WaitingForTelemetry={_WaitingForTelemetry}
-        TelemetryLostToast={_TelemetryLostToast}
       />
     ),
     store,
@@ -285,7 +282,6 @@ const App = observer(
     RouteStack: () => ReactElement;
     Controls: () => ReactElement;
     WaitingForTelemetry: () => ReactElement;
-    TelemetryLostToast: () => ReactElement;
   }) => {
     console.log('render app');
     const {
@@ -296,7 +292,6 @@ const App = observer(
       RouteStack,
       Controls,
       WaitingForTelemetry,
-      TelemetryLostToast,
     } = props;
     const theme = useTheme();
     const isLargePortrait = useMediaQuery(
@@ -411,7 +406,6 @@ const App = observer(
           </Grid>
         </Grid>
         <WaitingForTelemetry />
-        <TelemetryLostToast />
       </SpriteProvider>
     );
   },
