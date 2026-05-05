@@ -131,6 +131,10 @@ export class SessionActorRegistryImpl implements SessionActorRegistry {
     this.opts.onDelete?.(entry.actor, reason);
   }
 
+  // TODO: no test covers the integration of subscription teardown →
+  // sweepIdle deleting the actor. A regression where some other code path
+  // keeps the actor warm forever (stray sessionActors.get outside the
+  // wrapper's lifetime) would slip through today.
   /** Periodic cleanup */
   sweepIdle(now = Date.now()) {
     for (const [telemetryId, entry] of this.actors) {

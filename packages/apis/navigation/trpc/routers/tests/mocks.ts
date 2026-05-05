@@ -41,6 +41,7 @@ export class MockMetricsService implements MetricsService {
   rpc: MetricsService['rpc'];
   ws: MetricsService['ws'];
   actor: MetricsService['actor'];
+  session: MetricsService['session'];
   worker: MetricsService['worker'];
   render: MetricsService['render'];
 
@@ -53,6 +54,12 @@ export class MockMetricsService implements MetricsService {
     };
     this.ws = overrides.ws ?? ({} as MetricsService['ws']);
     this.actor = overrides.actor ?? ({} as MetricsService['actor']);
+    this.session = overrides.session ?? {
+      reconnectOutcome: { inc: vi.fn() },
+      staleBindingEvents: { inc: vi.fn() },
+      staleBindingResumed: { inc: vi.fn() },
+      timeToFirstPositionUpdate: { observe: vi.fn() },
+    };
     this.worker = overrides.worker ?? ({} as MetricsService['worker']);
     this.render = overrides.render ?? (() => Promise.resolve(''));
   }

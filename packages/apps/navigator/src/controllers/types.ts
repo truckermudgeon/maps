@@ -27,7 +27,13 @@ export interface AppStore {
   truckPoint: readonly [lon: number, lat: number];
   trailerPoint: readonly [lon: number, lat: number] | undefined;
   showNavSheet: boolean;
+  // true once the webapp has received its first positionUpdate from the
+  // server; never flipped back.
+  hasReceivedFirstTelemetry: boolean;
   readyToLoad: boolean;
+  // true when the server has signaled that no telemetry has arrived within
+  // its grace window, false when telemetry is flowing normally.
+  bindingStale: boolean;
 
   // TODO naming.
   activeRoute: Route | undefined;
@@ -35,7 +41,6 @@ export interface AppStore {
 
   segmentComplete: SegmentInfo | undefined;
 
-  readonly isReceivingTelemetry: boolean;
   // total route
   readonly activeRouteSummary:
     | { distanceMeters: number; minutes: number }

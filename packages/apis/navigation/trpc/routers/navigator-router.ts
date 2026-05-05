@@ -1,5 +1,4 @@
 import { TRPCError } from '@trpc/server';
-import { observable } from '@trpc/server/observable';
 import { assert, assertExists } from '@truckermudgeon/base/assert';
 import { Preconditions } from '@truckermudgeon/base/precon';
 import {
@@ -12,8 +11,7 @@ import type { RouteKey } from '@truckermudgeon/map/routing';
 import { isRouteKey } from '@truckermudgeon/map/routing';
 import crypto from 'node:crypto';
 import { z } from 'zod';
-import { PoiType, ScopeType } from '../../constants';
-import { toGameState } from '../../domain/actor/game-state';
+import { PoiType, ScopeType, staleBindingTimeoutMs } from '../../constants';
 import {
   buildRouteFromNodeUids,
   generateRouteFromKeys,
@@ -27,16 +25,15 @@ import {
 import { AuthState } from '../../domain/auth/auth-state';
 import { transition } from '../../domain/auth/transition';
 import { subscribeSession } from '../../infra/actors/subscribe-session';
+import { withStaleDetection } from '../../infra/actors/with-stale-detection';
 import { navigatorKeys } from '../../infra/kv/store';
 import { logger } from '../../infra/logging/logger';
 import type {
   ActorEvent,
-  GameState,
   Route,
   RouteWithSummary,
   SearchResult,
   SearchResultWithRelativeTruckInfo,
-  TruckSimTelemetry,
 } from '../../types';
 import { publicProcedure, router } from '../init';
 import { loggingMiddleware } from '../middleware/logging';
@@ -131,13 +128,14 @@ export const navigatorRouter = router({
     )
     .input(z.object({ viewerId: z.string().length(36) }))
     .mutation(async ({ path, ctx, input }) => {
+      const {
+        services: { kv, sessionActors, metrics },
+      } = ctx;
       if (ctx.auth.state === AuthState.VIEWER_AUTHENTICATED) {
+        metrics.session.reconnectOutcome.inc({ outcome: 'live' });
         return true;
       }
 
-      const {
-        services: { kv, sessionActors },
-      } = ctx;
       const { viewerId } = input;
 
       const telemetryId = await kv.get(navigatorKeys.viewerId(viewerId));
@@ -152,6 +150,30 @@ export const navigatorRouter = router({
             clientId: ctx.clientId,
           },
         });
+        metrics.session.reconnectOutcome.inc({ outcome: 'viewer_unknown' });
+        return false;
+      }
+
+      // Liveness probe: if the bound telemetryId has no live signal, the
+      // binding is stale (e.g. the desktop client was re-paired and minted
+      // a new telemetryId, leaving this viewerId pointing at a dead actor).
+      // - publicKey: 12 h TTL, set at pairing. Indicates the device is
+      //   recently authenticated.
+      // - telemetry: 2 s TTL, refreshed on every push. Indicates the
+      //   device is currently online and producing telemetry.
+      // If neither exists, drop the stale viewerId mapping and force the
+      // webapp back to the pairing form.
+      const [hasPublicKey, hasRecentTelemetry] = await Promise.all([
+        kv.has(navigatorKeys.publicKey(telemetryId)),
+        kv.has(navigatorKeys.telemetry(telemetryId)),
+      ]);
+      if (!hasPublicKey && !hasRecentTelemetry) {
+        logger.warn('stale viewer<->telemetry binding; clearing', {
+          trpc: { path, type: 'mutation' },
+          request: { type: ctx.type, clientId: ctx.clientId },
+        });
+        await kv.delete(navigatorKeys.viewerId(viewerId));
+        metrics.session.reconnectOutcome.inc({ outcome: 'stale_cleared' });
         return false;
       }
 
@@ -167,6 +189,7 @@ export const navigatorRouter = router({
         });
       }
 
+      metrics.session.reconnectOutcome.inc({ outcome: 'live' });
       return true;
     }),
 
@@ -356,7 +379,9 @@ export const navigatorRouter = router({
       unpauseRouteEvents();
     }),
   subscribeToDevice: navigatorSessionProcedure
-    .use(subscriptionLimitMiddleware(2))
+    // 2 concurrent webapp subscriptions per WS + 1 race buffer for
+    // map-switch resubscribes.
+    .use(subscriptionLimitMiddleware(3))
     .subscription(async function* ({
       path,
       ctx,
@@ -378,26 +403,35 @@ export const navigatorRouter = router({
         signal,
         ctx.services.lookups,
       );
+      const metrics = ctx.services.metrics.session;
+      const logCtx = {
+        trpc: { path, type: 'subscription' as const },
+        request: { type: ctx.type, clientId: ctx.clientId },
+        telemetryId,
+      };
       try {
-        while (true) {
-          // touch actor to keep it alive and prevent it from being swept.
-          ctx.services.sessionActors.get(telemetryId);
-
-          const res = await generator.next();
-          if (!res.done) {
-            yield res.value;
-          }
-        }
+        // Threshold can be eager: the webapp surfaces staleBinding as a
+        // passive prompt, never as an auto-clear of credentials.
+        const guarded = withStaleDetection(generator, {
+          timeoutMs: staleBindingTimeoutMs,
+          // Keep the actor alive while a webapp is still watching for
+          // resume — otherwise the registry would sweep it.
+          onTick: () => ctx.services.sessionActors.get(telemetryId),
+          onStale: phase => {
+            metrics.staleBindingEvents.inc({ phase });
+            logger.info('staleBinding fired', { ...logCtx, phase });
+          },
+          onFirstPosition: latencyMs =>
+            metrics.timeToFirstPositionUpdate.observe(latencyMs),
+          onResume: () => {
+            metrics.staleBindingResumed.inc();
+            logger.info('staleBinding resumed', logCtx);
+          },
+        });
+        for await (const event of guarded) yield event;
       } catch (err) {
         logger.error('actor subscription error', {
-          trpc: {
-            path,
-            type: 'subscription',
-          },
-          request: {
-            type: ctx.type,
-            clientId: ctx.clientId,
-          },
+          ...logCtx,
           error:
             err instanceof Error ? `${err.name}: ${err.message}` : String(err),
         });
@@ -405,22 +439,4 @@ export const navigatorRouter = router({
         unsubscribe();
       }
     }),
-  /** @deprecated use `subscribeToDevice` instead */
-  onPositionUpdate: navigatorSessionProcedure
-    .use(
-      rateLimitMiddleware({
-        maxCalls: 5,
-        per: 'minute',
-      }),
-    )
-    .use(subscriptionLimitMiddleware(3))
-    .subscription(({ ctx }) =>
-      observable<GameState>(emit => {
-        const { telemetryEventEmitter } = ctx.sessionActor;
-        const onPositionUpdate = (telemetry: TruckSimTelemetry) =>
-          emit.next(toGameState(telemetry));
-        telemetryEventEmitter.on('telemetry', onPositionUpdate);
-        return () => telemetryEventEmitter.off('telemetry', onPositionUpdate);
-      }),
-    ),
 });

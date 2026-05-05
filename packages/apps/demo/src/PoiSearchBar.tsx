@@ -143,6 +143,7 @@ export const PoiSearchBar = (props: SearchBarProps) => {
             threshold: 0.2,
             findAllMatches: true,
             ignoreLocation: true, // so that 'san francisco' can be searched for without quotes
+            ignoreDiacritics: true,
             sortFn: sortSearchResults,
             keys: [
               { name: 'properties.label', weight: 3 },
