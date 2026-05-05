@@ -6,6 +6,7 @@ import type { AppClient } from '../controllers/types';
 import { SessionGate } from './SessionGate';
 
 const meta = {
+  title: 'Session/SessionGate',
   component: SessionGate,
   parameters: {
     layout: 'fullscreen',

@@ -42,10 +42,14 @@ export class ControlsControllerImpl implements ControlsController {
     this.positionSubscription?.unsubscribe();
     this.mapMoveSubscription?.unsubscribe();
 
-    this.positionSubscription = appClient.onPositionUpdate.subscribe(
+    this.positionSubscription = appClient.subscribeToDevice.subscribe(
       undefined,
       {
-        onData: action(gameState => {
+        onData: action(event => {
+          if (event.type !== 'positionUpdate') {
+            return;
+          }
+          const gameState = event.data;
           const { speed } = gameState;
           if (store.units === 'imperial') {
             store.limit = gameState.speedLimit.mph;

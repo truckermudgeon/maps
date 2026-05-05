@@ -94,8 +94,10 @@ export function subscribeSession(
     resolve = null;
   };
 
-  // hot state (latest only)
-  let stateDirty = true;
+  // Starts clean: yielding the actor's cached telemetry on subscribe would
+  // mask a dead device by satisfying the staleBinding timer with stale data
+  // from a prior session.
+  let stateDirty = false;
   const offLatest = actor.getLatestTelemetry().subscribe(() => {
     stateDirty = true;
     resolve?.();

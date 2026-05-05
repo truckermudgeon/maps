@@ -38,6 +38,8 @@ export class AppStoreImpl implements AppStore {
   showNavSheet = false;
   readyToLoad = false;
   mapLoaded = false;
+  hasReceivedFirstTelemetry = false;
+  bindingStale = false;
 
   segmentComplete: SegmentInfo | undefined = undefined;
 
@@ -49,10 +51,6 @@ export class AppStoreImpl implements AppStore {
       trailerPoint: observable.ref,
       segmentComplete: observable.ref,
     });
-  }
-
-  get isReceivingTelemetry(): boolean {
-    return this.truckPoint[0] !== 0 && this.truckPoint[1] !== 0;
   }
 
   private get activeStep(): RouteStep | undefined {
@@ -333,6 +331,22 @@ export class AppControllerImpl implements AppController {
     }
   }
 
+  forceRePair() {
+    console.log('forceRePair: clearing viewer credentials and reloading');
+    this.deviceSubscription?.unsubscribe();
+    this.deviceSubscription = undefined;
+    if (this.renderIntervalId != null) {
+      clearInterval(this.renderIntervalId);
+      this.renderIntervalId = undefined;
+    }
+    localStorage.removeItem('viewerId');
+    localStorage.removeItem('telemetryId');
+    // SessionGate decides what to render based on local useState that's
+    // initialized from localStorage at mount; reload to restart that flow
+    // at the pairing form.
+    window.location.reload();
+  }
+
   requestWakeLock() {
     if (this.wakeLock != null && !this.wakeLock.released) {
       console.log('already have a wakelock');
@@ -528,6 +542,9 @@ export class AppControllerImpl implements AppController {
     });
 
     this.deviceSubscription = client.subscribeToDevice.subscribe(void 0, {
+      // TODO: a WS gap longer than the publicKey TTL (12h) makes the
+      // resubscribe fail auth — we log it here but the user sees nothing.
+      // Surface it (force re-pair or flip bindingStale) instead.
       onError: err => {
         console.error('subscribeToDevice error', err);
       },
@@ -535,6 +552,14 @@ export class AppControllerImpl implements AppController {
         switch (event.type) {
           case 'positionUpdate':
             timeline.push(event.data);
+            runInAction(() => {
+              if (!store.hasReceivedFirstTelemetry) {
+                store.hasReceivedFirstTelemetry = true;
+              }
+              if (store.bindingStale) {
+                store.bindingStale = false;
+              }
+            });
             break;
           case 'routeUpdate':
             runInAction(() => {
@@ -569,6 +594,11 @@ export class AppControllerImpl implements AppController {
             break;
           case 'jobUpdate':
             break;
+          case 'staleBinding':
+            runInAction(() => {
+              store.bindingStale = true;
+            });
+            break;
           default:
             throw new UnreachableError(event);
         }
@@ -602,7 +632,7 @@ export class AppControllerImpl implements AppController {
 
       const { map, playerMarker } = this;
       if (!map || !playerMarker) {
-        console.log('early return onPositionUpdate');
+        console.log('early return: positionUpdate before map/marker ready');
         return;
       }
 

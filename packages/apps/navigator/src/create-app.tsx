@@ -20,7 +20,10 @@ import {
   defaultMetricOptions,
 } from './components/text';
 import { TrailerOrWaypointMarkers } from './components/TrailerOrWaypointMarkers';
-import { WaitingForTelemetry } from './components/WaitingForTelemetry';
+import {
+  WaitingForTelemetry,
+  type WaitingForTelemetryState,
+} from './components/WaitingForTelemetry';
 import { AppControllerImpl, AppStoreImpl } from './controllers/app';
 import {
   maxPortraitSheetCssHeight,
@@ -145,7 +148,7 @@ export function createApp({
     );
   });
   const _SlippyMap = observer(() => {
-    const _map = store.isReceivingTelemetry ? store.map : map;
+    const _map = store.hasReceivedFirstTelemetry ? store.map : map;
     return (
       <SlippyMap
         key={_map}
@@ -236,7 +239,20 @@ export function createApp({
     }
     // TODO show "Loading map..." UI if map hasn't loaded yet, instead of
     //  showing "Waiting for telemetry..." UI.
-    return !store.isReceivingTelemetry ? <WaitingForTelemetry /> : <></>;
+    if (store.hasReceivedFirstTelemetry && !store.bindingStale) {
+      return <></>;
+    }
+    const state: WaitingForTelemetryState = !store.hasReceivedFirstTelemetry
+      ? store.bindingStale
+        ? 'orphaned'
+        : 'awaiting'
+      : 'lost';
+    return (
+      <WaitingForTelemetry
+        state={state}
+        onRePair={() => controller.forceRePair()}
+      />
+    );
   });
 
   return {
