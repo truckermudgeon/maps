@@ -2,7 +2,7 @@ import type { JSONSchemaType } from 'ajv';
 import Ajv from 'ajv';
 import AjvKeywords from 'ajv-keywords';
 
-export const ajv = new Ajv();
+export const ajv = new Ajv({ useDefaults: true });
 AjvKeywords(ajv, 'transform');
 
 // Workaround for bigint support
@@ -77,6 +77,12 @@ const nullable = <T extends object>(t: T) =>
     ...t,
     nullable: true,
   }) as const;
+const nullableWithDefault = <T extends object, D>(t: T, defValue: D) =>
+  ({
+    ...t,
+    nullable: true,
+    default: defValue,
+  }) as unknown as JSONSchemaType<D>;
 const object = <T extends object, U extends keyof T>(
   properties: T,
   // TODO figure out a way to remove the need for this argument. It should be
@@ -357,7 +363,7 @@ export const AchievementsSiiSchema: JSONSchemaType<AchievementsSii> = object(
     achievementTriggerData: nullable(
       patternRecord(/^\.achievement\.[0-9a-z_]{1,12}$/, {
         triggerParam: string,
-        target: integer,
+        target: nullableWithDefault(integer, 1),
         achievementName: string,
       }),
     ),

@@ -6,6 +6,7 @@ export enum AtsDlc {
   Arkansas,
   Colorado,
   Idaho,
+  Illinois,
   Iowa,
   Kansas,
   Louisiana,
@@ -16,12 +17,16 @@ export enum AtsDlc {
   NewMexico,
   Oklahoma,
   Oregon,
+  SouthDakota,
   Texas,
   Utah,
   Washington,
   Wyoming,
 }
-export type AtsSelectableDlc = AtsDlc;
+export type AtsSelectableDlc = Exclude<
+  AtsDlc,
+  AtsDlc.Illinois | AtsDlc.SouthDakota
+>;
 export const AtsSelectableDlcs: ReadonlySet<AtsSelectableDlc> = new Set([
   AtsDlc.Nevada,
   AtsDlc.Arizona,
@@ -42,6 +47,9 @@ export const AtsSelectableDlcs: ReadonlySet<AtsSelectableDlc> = new Set([
   AtsDlc.Iowa,
   AtsDlc.Louisiana,
 ]);
+function isAtsSelectableDlc(dlc: AtsDlc): dlc is AtsSelectableDlc {
+  return AtsSelectableDlcs.has(dlc as AtsSelectableDlc);
+}
 export const AtsDlcInfo: Record<AtsSelectableDlc, string> = {
   [AtsDlc.Nevada]: 'Nevada',
   [AtsDlc.Arizona]: 'Arizona',
@@ -86,7 +94,7 @@ export enum AtsCountryId {
   Lousiana = 22,
 }
 
-export type AtsDlcGuard = Range<0, 50>;
+export type AtsDlcGuard = Range<0, 58>; // [start, end)
 
 // key/vals based on dlc guards dropdown in map editor UI
 export const AtsDlcGuards: Record<AtsDlcGuard, ReadonlySet<AtsDlc>> = {
@@ -140,6 +148,14 @@ export const AtsDlcGuards: Record<AtsDlcGuard, ReadonlySet<AtsDlc>> = {
   47: new Set([AtsDlc.Louisiana]),
   48: new Set([AtsDlc.Louisiana, AtsDlc.Arkansas]),
   49: new Set([AtsDlc.Louisiana, AtsDlc.Texas]),
+  50: new Set([AtsDlc.Illinois]),
+  51: new Set([AtsDlc.Illinois, AtsDlc.Iowa]),
+  52: new Set([AtsDlc.Illinois, AtsDlc.Missouri]),
+  53: new Set([AtsDlc.SouthDakota]),
+  54: new Set([AtsDlc.SouthDakota, AtsDlc.Iowa]),
+  55: new Set([AtsDlc.SouthDakota, AtsDlc.Montana]),
+  56: new Set([AtsDlc.SouthDakota, AtsDlc.Nebraska]),
+  57: new Set([AtsDlc.SouthDakota, AtsDlc.Wyoming]),
 } as const;
 
 // values are based on matching singleton sets in `AtsDlcGuards` map, e.g.:
@@ -204,7 +220,9 @@ export function toAtsDlcGuards(
 ): Set<AtsDlcGuard> {
   const guards = new Set<AtsSelectableDlc>();
   for (const [key, dlcs] of Object.entries(AtsDlcGuards)) {
-    if ([...dlcs].every(dlc => selectedDlcs.has(dlc))) {
+    if (
+      [...dlcs].every(dlc => isAtsSelectableDlc(dlc) && selectedDlcs.has(dlc))
+    ) {
       guards.add(Number(key));
     }
   }
@@ -244,6 +262,9 @@ export const Ets2SelectableDlcs: ReadonlySet<Ets2SelectableDlc> = new Set([
   Ets2Dlc.Krone,
   Ets2Dlc.Feldbinder,
 ]);
+function isEts2SelectableDlc(dlc: Ets2Dlc): dlc is Ets2SelectableDlc {
+  return Ets2SelectableDlcs.has(dlc as Ets2SelectableDlc);
+}
 
 export const Ets2DlcInfo: Record<Ets2SelectableDlc, string> = {
   [Ets2Dlc.GoingEast]: 'Going East!',
@@ -262,7 +283,7 @@ export const Ets2DlcInfo: Record<Ets2SelectableDlc, string> = {
 
 export type Ets2DlcGuard = Range<0, 26>;
 
-export const Ets2DlcGuards: Record<number, ReadonlySet<Ets2SelectableDlc>> = {
+export const Ets2DlcGuards: Record<number, ReadonlySet<Ets2Dlc>> = {
   0: new Set(),
   1: new Set([Ets2Dlc.GoingEast]),
   2: new Set([Ets2Dlc.Scandinavia]),
@@ -276,8 +297,8 @@ export const Ets2DlcGuards: Record<number, ReadonlySet<Ets2SelectableDlc>> = {
   10: new Set([Ets2Dlc.RoadToTheBlackSea, Ets2Dlc.GoingEast]),
   11: new Set([Ets2Dlc.Iberia]),
   12: new Set([Ets2Dlc.Iberia, Ets2Dlc.ViveLaFrance]),
-  //13: new Set([Ets2Dlc.HeartOfRussia]),
-  //14: new Set([Ets2Dlc.HeartOfRussia, Ets2Dlc.BeyondTheBalticSea]),
+  13: new Set([Ets2Dlc.HeartOfRussia]),
+  14: new Set([Ets2Dlc.HeartOfRussia, Ets2Dlc.BeyondTheBalticSea]),
   15: new Set([Ets2Dlc.Krone]),
   16: new Set([Ets2Dlc.WestBalkans]),
   17: new Set([Ets2Dlc.WestBalkans, Ets2Dlc.GoingEast]),
@@ -316,7 +337,9 @@ export function toEts2DlcGuards(
 ): Set<Ets2DlcGuard> {
   const guards = new Set<Ets2SelectableDlc>();
   for (const [key, dlcs] of Object.entries(Ets2DlcGuards)) {
-    if ([...dlcs].every(dlc => selectedDlcs.has(dlc))) {
+    if (
+      [...dlcs].every(dlc => isEts2SelectableDlc(dlc) && selectedDlcs.has(dlc))
+    ) {
       guards.add(Number(key));
     }
   }
