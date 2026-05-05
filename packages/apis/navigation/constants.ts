@@ -77,5 +77,5 @@ export type NonTerminalBranchType = Exclude<
 
 export const pairingCodeTtlMs = 10 * 60_000;
 
-// Inactivity window before subscribeToDevice declares a binding stale.
+// Time without telemetry before staleBinding fires.
 export const staleBindingTimeoutMs = 10_000;
