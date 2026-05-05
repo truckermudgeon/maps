@@ -273,6 +273,7 @@ export class SearchServiceImpl implements SearchService {
         threshold: 0.2,
         findAllMatches: true,
         ignoreLocation: true, // so that 'san francisco' can be searched for without quotes
+        ignoreDiacritics: true,
         sortFn: sortSearchResults,
         keys: [
           { name: 'label', weight: 3 },
@@ -293,6 +294,7 @@ export class SearchServiceImpl implements SearchService {
         threshold: 0.2,
         findAllMatches: true,
         ignoreLocation: true, // so that 'san francisco' can be searched for without quotes
+        ignoreDiacritics: true,
         sortFn: sortSearchResults,
         keys: [
           { name: 'label', weight: 3 },
