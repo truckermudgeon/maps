@@ -13,12 +13,6 @@ import {
   mockNavigatorContext,
 } from './mocks';
 
-// Integration-level coverage for subscribeToDevice. The staleBinding
-// state machine itself is exercised in withStaleDetection's unit tests;
-// what's verified here is the integration with subscribeSession — in
-// particular, that subscribeSession does NOT yield the actor's cached
-// last-known telemetry on subscribe (regression for 9c3bb3d1).
-
 const createCaller = createCallerFactory(navigatorRouter);
 
 function makeFakeActor() {
