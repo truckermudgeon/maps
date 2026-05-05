@@ -28,13 +28,11 @@ export interface AppStore {
   trailerPoint: readonly [lon: number, lat: number] | undefined;
   showNavSheet: boolean;
   // true once the webapp has received its first positionUpdate from the
-  // server; never flipped back. Used to gate the initial "Waiting for
-  // telemetry" overlay. For mid-session loss-of-telemetry, see bindingStale.
+  // server; never flipped back.
   hasReceivedFirstTelemetry: boolean;
   readyToLoad: boolean;
-  // true once the server has signaled that no telemetry has arrived within
-  // its grace window. The UI uses this to surface a "try again / re-pair"
-  // prompt instead of leaving the user staring at the spinner.
+  // true when the server has signaled that no telemetry has arrived within
+  // its grace window, false when telemetry is flowing normally.
   bindingStale: boolean;
 
   // TODO naming.
