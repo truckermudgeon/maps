@@ -109,17 +109,14 @@ describe('withStaleDetection', () => {
     const first = guarded.next();
     await vi.advanceTimersByTimeAsync(TIMEOUT_MS);
     expect((await first).value).toEqual({ type: 'staleBinding' });
+    expect(onStale).toHaveBeenCalledTimes(1);
 
     // Hold a pending next() while advancing past several more timeout
     // windows. onStale should not be called again.
-    const watching = guarded.next();
+    void guarded.next();
     await vi.advanceTimersByTimeAsync(TIMEOUT_MS * 3);
-    await flushMicrotasks();
     expect(onStale).toHaveBeenCalledTimes(1);
 
-    // Push telemetry to satisfy the pending next() and let cleanup unwind.
-    fake.push(POSITION_EVENT);
-    await watching;
     fake.end();
   });
 
@@ -223,9 +220,3 @@ describe('withStaleDetection', () => {
     fake.end();
   });
 });
-
-async function flushMicrotasks() {
-  for (let i = 0; i < 5; i++) {
-    await Promise.resolve();
-  }
-}
