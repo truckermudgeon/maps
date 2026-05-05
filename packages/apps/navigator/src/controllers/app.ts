@@ -37,7 +37,6 @@ export class AppStoreImpl implements AppStore {
   trailerPoint: [lon: number, lat: number] | undefined;
   showNavSheet = false;
   readyToLoad = false;
-  mapLoaded = false;
   hasReceivedFirstTelemetry = false;
   bindingStale = false;
 

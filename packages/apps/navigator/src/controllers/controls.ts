@@ -38,10 +38,8 @@ export class ControlsControllerImpl implements ControlsController {
   private positionSubscription: { unsubscribe: () => void } | undefined;
   private mapMoveSubscription: { unsubscribe: () => void } | undefined;
 
-  startListening(store: ControlsStore, appClient: AppClient, map: MapRef) {
+  startListening(store: ControlsStore, appClient: AppClient) {
     this.positionSubscription?.unsubscribe();
-    this.mapMoveSubscription?.unsubscribe();
-
     this.positionSubscription = appClient.subscribeToDevice.subscribe(
       undefined,
       {
@@ -61,6 +59,10 @@ export class ControlsControllerImpl implements ControlsController {
         }),
       },
     );
+  }
+
+  onMapLoad(store: ControlsStore, map: MapRef) {
+    this.mapMoveSubscription?.unsubscribe();
     this.mapMoveSubscription = map.on(
       'move',
       action(() => (store.bearing = map.getBearing())),

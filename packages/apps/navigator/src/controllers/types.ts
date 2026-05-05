@@ -86,7 +86,8 @@ export interface ControlsStore {
 }
 
 export interface ControlsController {
-  startListening(store: ControlsStore, appClient: AppClient, map: MapRef): void;
+  startListening(store: ControlsStore, appClient: AppClient): void;
+  onMapLoad(store: ControlsStore, map: MapRef): void;
 }
 
 // TODO clean this data up. Some fields can probably be inferred.

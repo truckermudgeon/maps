@@ -109,18 +109,18 @@ export function createApp({
   });
   const _Controls = () => <Controls {...controlsCallbacks} />;
 
+  when(
+    () => store.readyToLoad,
+    () => {
+      console.log('readyToLoad signal received.');
+      controller.startListening(store, appClient);
+      controlsController.startListening(controlsStore, appClient);
+    },
+  );
+
   const onMapLoad = (map: MapRef, marker: MapLibreGLMarker) => {
-    console.log('waiting for readyToLoad signal');
-    when(
-      () => store.readyToLoad,
-      () => {
-        console.log('readyToLoad signal received.');
-        store.mapLoaded = true;
-        controller.onMapLoad(map, marker);
-        controller.startListening(store, appClient);
-        controlsController.startListening(controlsStore, appClient, map);
-      },
-    );
+    controller.onMapLoad(map, marker);
+    controlsController.onMapLoad(controlsStore, map);
   };
   const _Destinations = observer(() => (
     <DestinationMarkers
