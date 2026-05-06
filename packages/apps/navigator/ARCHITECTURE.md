@@ -72,7 +72,7 @@ src/
     types.ts
   services/           ← IO, DOM, lifecycle (TelemetryService, RouteAnimator, RouteRenderer,
                         MapAdapter, ChooseOnMapService)
-  reactions/          ← MobX glue (theme; more to come per step 9)
+  reactions/          ← MobX glue (camera, route, theme)
   controllers/        ← flow-orchestration (AppController, NavSheetController) — shrinking
     app.ts            ← AppStoreImpl facade lives here too, retiring once domain hooks land
     types.ts
@@ -83,8 +83,7 @@ src/
   tests/              ← mirrors src/ structure (stores/, util/, plus integration tests)
   create-app.tsx      ← composition root: builds the stores, services, reactions, returns <App/>
   create-app-handlers.ts  ← handler builders that the App component wires to UI
-  create-app-reactions.ts ← MobX reactions that bridge stores to services (split per
-                            domain in step 9)
+  create-app-reactions.ts ← composes the per-domain reaction modules from reactions/
   create-nav-sheet.tsx
   create-controls.tsx
   index.tsx           ← React root + tRPC client
@@ -122,8 +121,6 @@ See `docs/refactor-controllers.md` for the migration plan. Outstanding:
 - **Step 8** — introduce `RootStoreContext` + per-domain hooks
   (`useRouteStore`, `useCameraStore`, etc.) so components stop receiving
   stores by props.
-- **Step 9** — split `create-app-reactions.ts` into per-domain files
-  under `reactions/`.
 - **Step 10** — drop the `AppStore` facade and the `(store, ...)`
   first-arg pattern on controller methods once domain hooks are in
   place.
