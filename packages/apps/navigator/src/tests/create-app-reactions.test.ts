@@ -113,10 +113,7 @@ describe('wireAppReactions', () => {
         s.navSheetStore.pushPage(NavPageKey.CHOOSE_ON_MAP);
       });
 
-      expect(s.controller.toggleChooseOnMapUi).toHaveBeenCalledWith(
-        s.store,
-        true,
-      );
+      expect(s.controller.toggleChooseOnMapUi).toHaveBeenCalledWith(true);
       expect(s.controller.clearPitchAndBearing).toHaveBeenCalled();
       expect(s.store.cameraMode).toBe(CameraMode.FREE);
       teardown(s);
@@ -136,10 +133,7 @@ describe('wireAppReactions', () => {
         s.navSheetStore.popPage();
       });
 
-      expect(s.controller.toggleChooseOnMapUi).toHaveBeenCalledWith(
-        s.store,
-        false,
-      );
+      expect(s.controller.toggleChooseOnMapUi).toHaveBeenCalledWith(false);
       teardown(s);
     });
   });
@@ -155,7 +149,7 @@ describe('wireAppReactions', () => {
       });
 
       expect(s.controller.setFree).toHaveBeenCalled();
-      expect(s.controller.fitPoints).toHaveBeenCalledWith(s.store, [
+      expect(s.controller.fitPoints).toHaveBeenCalledWith([
         [-100, 40],
         [-90, 35],
       ]);

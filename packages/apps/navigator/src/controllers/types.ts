@@ -27,8 +27,8 @@ export interface AppStore extends SessionStore, CameraStore, RouteStore {
 export interface AppController {
   onMapLoad(map: MapRef, playerMarker: Marker): void;
 
-  setFree(store: AppStore): void;
-  setFollow(store: AppStore): void;
+  setFree(): void;
+  setFollow(): void;
 
   addMapDragEndListener(
     cb: (centerLngLat: [number, number]) => void,

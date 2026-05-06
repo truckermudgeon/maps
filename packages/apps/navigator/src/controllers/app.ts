@@ -164,10 +164,13 @@ export class AppControllerImpl implements AppController {
   private readonly chooseOnMapService = new ChooseOnMapService(this.mapAdapter);
   private readonly routeRenderer = new RouteRenderer(this.mapAdapter);
 
-  // Built lazily on the first startListening() call so the constructor
-  // doesn't need an AppStore reference.
   private telemetryService: TelemetryService | undefined;
   private routeAnimator: RouteAnimator | undefined;
+
+  constructor(
+    private readonly appStore: AppStore,
+    private readonly appClient: AppClient,
+  ) {}
 
   setPadding(padding: {
     left: number;
@@ -198,16 +201,16 @@ export class AppControllerImpl implements AppController {
     return this.mapAdapter.addMapDragEndListener(cb);
   }
 
-  clearPitchAndBearing(_store: AppStore) {
+  clearPitchAndBearing() {
     console.log('clear pitch and bearing');
     this.mapAdapter.clearPitchAndBearing();
   }
 
-  fitPoints(_store: AppStore, lonLats: [number, number][]) {
+  fitPoints(lonLats: [number, number][]) {
     this.mapAdapter.fitPoints(lonLats);
   }
 
-  flyTo(_store: AppStore, lonLat: [number, number], bearing = 0) {
+  flyTo(lonLat: [number, number], bearing = 0) {
     this.mapAdapter.flyTo(lonLat, bearing);
   }
 
@@ -215,100 +218,93 @@ export class AppControllerImpl implements AppController {
     this.mapAdapter.onMapLoad(map, player);
   }
 
-  setFree(store: AppStore) {
-    store.cameraMode = CameraMode.FREE;
+  setFree() {
+    this.appStore.cameraMode = CameraMode.FREE;
   }
 
-  setFollow(store: AppStore) {
-    store.cameraMode = CameraMode.FOLLOW;
+  setFollow() {
+    this.appStore.cameraMode = CameraMode.FOLLOW;
   }
 
-  setNorthUnlock(store: AppStore) {
-    store.bearingMode = BearingMode.MATCH_MAP;
+  setNorthUnlock() {
+    this.appStore.bearingMode = BearingMode.MATCH_MAP;
   }
 
-  setNorthLock(store: AppStore) {
-    store.bearingMode = BearingMode.NORTH_LOCK;
+  setNorthLock() {
+    this.appStore.bearingMode = BearingMode.NORTH_LOCK;
   }
 
-  hideNavSheet(store: AppStore) {
+  hideNavSheet() {
     console.log('hide nav sheet');
-    store.showNavSheet = false;
+    this.appStore.showNavSheet = false;
   }
 
-  setDestinationNodeUid(store: AppStore, toNodeUid: string, client: AppClient) {
-    void routeApi.previewRoutes(client, toNodeUid).then(
+  setDestinationNodeUid(toNodeUid: string) {
+    void routeApi.previewRoutes(this.appClient, toNodeUid).then(
       action(([firstRoute]) => {
         if (!firstRoute) {
           console.warn('could not find route to', toNodeUid);
         }
-        this.setActiveRoute(store, firstRoute, client);
+        this.setActiveRoute(firstRoute);
       }),
     );
   }
 
-  setActiveRoute(store: AppStore, route: Route | undefined, client: AppClient) {
+  setActiveRoute(route: Route | undefined) {
     // optimistically set route and index.
-    store.activeRoute = route;
-    store.activeRouteIndex = { segmentIndex: 0, stepIndex: 0, nodeIndex: 0 };
+    this.appStore.activeRoute = route;
+    this.appStore.activeRouteIndex = {
+      segmentIndex: 0,
+      stepIndex: 0,
+      nodeIndex: 0,
+    };
     this.renderActiveRoute(route);
     void routeApi.setActiveRoute(
-      client,
+      this.appClient,
       route?.segments.map(s => s.key),
     );
   }
 
-  setActiveRouteFromNodeUids(
-    store: AppStore,
-    waypoints: bigint[],
-    client: AppClient,
-  ) {
+  setActiveRouteFromNodeUids(waypoints: bigint[]) {
     void routeApi
       .generateRouteFromNodeUids(
-        client,
+        this.appClient,
         waypoints.map(wp => wp.toString(16)),
       )
       .then(
         action(route => {
-          this.setActiveRoute(store, route, client);
+          this.setActiveRoute(route);
         }),
       );
   }
 
-  startListening(
-    store: AppStore,
-    controlsStore: ControlsStore,
-    client: AppClient,
-  ) {
+  startListening(controlsStore: ControlsStore) {
     this.telemetryService?.stop();
     this.routeAnimator?.stop();
 
     this.telemetryService = new TelemetryService(
-      store,
+      this.appStore,
       controlsStore,
       this.routeRenderer,
     );
-    this.telemetryService.start(client);
+    this.telemetryService.start(this.appClient);
 
     this.routeAnimator = new RouteAnimator(
       this.mapAdapter,
       this.routeRenderer,
       this.telemetryService.timeline,
     );
-    this.routeAnimator.start(store);
+    this.routeAnimator.start(this.appStore);
   }
 
-  synthesizeSearchResult(
-    _store: AppStore,
-    client: AppClient,
-  ): Promise<SearchResult> {
+  synthesizeSearchResult(): Promise<SearchResult> {
     return routeApi.synthesizeSearchResult(
-      client,
+      this.appClient,
       this.chooseOnMapService.getChosenLngLat(),
     );
   }
 
-  toggleChooseOnMapUi(_store: AppStore, enable: boolean) {
+  toggleChooseOnMapUi(enable: boolean) {
     this.chooseOnMapService.toggle(enable);
   }
 
@@ -331,8 +327,8 @@ export class AppControllerImpl implements AppController {
     this.routeRenderer.drawStepArrow(step);
   }
 
-  unpauseRouteEvents(store: AppStore, client: AppClient) {
-    store.segmentComplete = undefined;
-    void routeApi.unpauseRouteEvents(client);
+  unpauseRouteEvents() {
+    this.appStore.segmentComplete = undefined;
+    void routeApi.unpauseRouteEvents(this.appClient);
   }
 }

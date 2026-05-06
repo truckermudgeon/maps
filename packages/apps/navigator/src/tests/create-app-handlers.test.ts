@@ -129,8 +129,8 @@ describe('buildHideNavSheet', () => {
 
     hide();
 
-    expect(controller.hideNavSheet).toHaveBeenCalledWith(store);
-    expect(controller.setFollow).toHaveBeenCalledWith(store);
+    expect(controller.hideNavSheet).toHaveBeenCalledTimes(1);
+    expect(controller.setFollow).toHaveBeenCalledTimes(1);
     expect(navSheetStore.destinations).toEqual([]);
     // Reset has not yet been called — happens after transitionDurationMs.
     expect(navSheetController.reset).not.toHaveBeenCalled();
@@ -236,11 +236,7 @@ describe('buildNavSheetHandlers', () => {
 
     handlers.onDestinationGoClick();
 
-    expect(controller.setDestinationNodeUid).toHaveBeenCalledWith(
-      expect.anything(),
-      'abc',
-      fakeAppClient,
-    );
+    expect(controller.setDestinationNodeUid).toHaveBeenCalledWith('abc');
     expect(hideNavSheet).toHaveBeenCalledTimes(1);
   });
 
@@ -252,11 +248,7 @@ describe('buildNavSheetHandlers', () => {
 
     handlers.onRouteGoClick();
 
-    expect(controller.setActiveRoute).toHaveBeenCalledWith(
-      expect.anything(),
-      selectedRoute,
-      fakeAppClient,
-    );
+    expect(controller.setActiveRoute).toHaveBeenCalledWith(selectedRoute);
     expect(hideNavSheet).toHaveBeenCalledTimes(1);
   });
 
@@ -295,11 +287,7 @@ describe('buildNavSheetHandlers', () => {
 
     handlers.onRouteStepClick(step);
 
-    expect(controller.flyTo).toHaveBeenCalledWith(
-      expect.anything(),
-      [10, 20],
-      expect.any(Number),
-    );
+    expect(controller.flyTo).toHaveBeenCalledWith([10, 20], expect.any(Number));
     expect(controller.drawStepArrow).toHaveBeenCalledWith(step);
   });
 
@@ -310,9 +298,7 @@ describe('buildNavSheetHandlers', () => {
     handlers.onWaypointsChange(waypoints);
 
     expect(controller.setActiveRouteFromNodeUids).toHaveBeenCalledWith(
-      expect.anything(),
       waypoints,
-      fakeAppClient,
     );
   });
 });
@@ -432,10 +418,6 @@ describe('buildRouteControlsHandlers', () => {
   it('onRouteEnd: clears the active route', () => {
     const { handlers, controller } = setup();
     handlers.onRouteEnd();
-    expect(controller.setActiveRoute).toHaveBeenCalledWith(
-      expect.anything(),
-      undefined,
-      fakeAppClient,
-    );
+    expect(controller.setActiveRoute).toHaveBeenCalledWith(undefined);
   });
 });

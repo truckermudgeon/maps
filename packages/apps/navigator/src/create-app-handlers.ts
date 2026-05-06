@@ -67,8 +67,8 @@ export function buildHideNavSheet(deps: HideNavSheetDeps): () => void {
     transitionDurationMs,
   } = deps;
   return action(() => {
-    controller.hideNavSheet(store);
-    controller.setFollow(store);
+    controller.hideNavSheet();
+    controller.setFollow();
     // Wait until nav sheet finishes transitioning away before resetting,
     // otherwise the nav sheet will flash the UI for the reset state.
     void delay(transitionDurationMs).then(
@@ -101,19 +101,17 @@ export function buildNavSheetHandlers(
     onCloseClick: hideNavSheet,
     onDestinationGoClick: () => {
       controller.setDestinationNodeUid(
-        store,
         assertExists(navSheetStore.selectedDestination).nodeUid,
-        appClient,
       );
       hideNavSheet();
     },
     onRouteGoClick: action(() => {
-      controller.setActiveRoute(store, navSheetStore.selectedRoute, appClient);
+      controller.setActiveRoute(navSheetStore.selectedRoute);
       hideNavSheet();
     }),
     onRouteToPointClick: action(() => {
       navSheetStore.isLoading = true;
-      controller.synthesizeSearchResult(store, appClient).then(
+      controller.synthesizeSearchResult().then(
         action(searchResult => {
           navSheetController.onDestinationRoutesClick(
             navSheetStore,
@@ -124,15 +122,11 @@ export function buildNavSheetHandlers(
       );
     }),
     onRouteStepClick: action(step => {
-      controller.flyTo(
-        store,
-        step.maneuver.lonLat,
-        bearingAfterStepManeuver(step),
-      );
+      controller.flyTo(step.maneuver.lonLat, bearingAfterStepManeuver(step));
       controller.drawStepArrow(step);
     }),
     onWaypointsChange: action(waypoints => {
-      controller.setActiveRouteFromNodeUids(store, waypoints, appClient);
+      controller.setActiveRouteFromNodeUids(waypoints);
     }),
   };
 }
@@ -149,10 +143,10 @@ export function buildControlsHandlers(
       controller.requestWakeLock();
       switch (store.bearingMode) {
         case BearingMode.MATCH_MAP:
-          controller.setNorthLock(store);
+          controller.setNorthLock();
           break;
         case BearingMode.NORTH_LOCK:
-          controller.setNorthUnlock(store);
+          controller.setNorthUnlock();
           break;
         default:
           throw new UnreachableError(store.bearingMode);
@@ -160,7 +154,7 @@ export function buildControlsHandlers(
     }),
     onRecenterFabClick: action(() => {
       controller.requestWakeLock();
-      controller.setFollow(store);
+      controller.setFollow();
     }),
     onRouteFabClick: action(() => {
       controller.requestWakeLock();
@@ -195,14 +189,12 @@ export function buildRouteControlsHandlers(
         return;
       }
       store.cameraMode = CameraMode.FREE;
-      controller.fitPoints(store, routeCornerPair(store.activeRoute));
+      controller.fitPoints(routeCornerPair(store.activeRoute));
     }),
     onRouteDirections: action(() => {
       navSheetController.startShowActiveRouteDirectionsFlow(navSheetStore);
       store.showNavSheet = true;
     }),
-    onRouteEnd: action(() =>
-      controller.setActiveRoute(store, undefined, appClient),
-    ),
+    onRouteEnd: action(() => controller.setActiveRoute(undefined)),
   };
 }

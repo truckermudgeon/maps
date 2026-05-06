@@ -63,7 +63,7 @@ export function createApp({
   store: Pick<AppStore, 'readyToLoad'>;
 } {
   const store = new AppStoreImpl(map);
-  const controller = new AppControllerImpl();
+  const controller = new AppControllerImpl(store, appClient);
   applyThemeReaction(store.session);
   setupDevtools({ appStore: store });
 
@@ -120,7 +120,7 @@ export function createApp({
     () => store.readyToLoad,
     () => {
       console.log('readyToLoad signal received.');
-      controller.startListening(store, controlsStore, appClient);
+      controller.startListening(controlsStore);
     },
   );
 
@@ -161,7 +161,7 @@ export function createApp({
         map={_map}
         mode={store.themeMode}
         onLoad={onMapLoad}
-        onDragStart={action(() => controller.setFree(store))}
+        onDragStart={action(() => controller.setFree())}
         Destinations={_Destinations}
         TrailerOrWaypointMarkers={_TrailerOrWaypointMarkers}
         PlayerMarker={PlayerMarker}
@@ -183,12 +183,10 @@ export function createApp({
         place={store.segmentComplete.place}
         placeInfo={store.segmentComplete.placeInfo}
         isFinalSegment={store.segmentComplete.isFinal}
-        onContinueClick={action(() =>
-          controller.unpauseRouteEvents(store, appClient),
-        )}
+        onContinueClick={action(() => controller.unpauseRouteEvents())}
         onEndClick={action(() => {
-          controller.unpauseRouteEvents(store, appClient);
-          controller.setActiveRoute(store, undefined, appClient);
+          controller.unpauseRouteEvents();
+          controller.setActiveRoute(undefined);
         })}
       />
     ) : (

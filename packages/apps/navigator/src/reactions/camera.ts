@@ -40,9 +40,9 @@ export function wireCameraReactions(
         store.showNavSheet &&
         navSheetStore.currentPageKey === NavPageKey.CHOOSE_ON_MAP,
       action(isChoosingOnMap => {
-        controller.toggleChooseOnMapUi(store, isChoosingOnMap);
+        controller.toggleChooseOnMapUi(isChoosingOnMap);
         if (isChoosingOnMap) {
-          controller.clearPitchAndBearing(store);
+          controller.clearPitchAndBearing();
           store.cameraMode = CameraMode.FREE;
         }
       }),
@@ -64,9 +64,9 @@ export function wireCameraReactions(
       },
       action(maybeLonLats => {
         if (maybeLonLats) {
-          controller.setFree(store);
+          controller.setFree();
           if (!navSheetStore.disableFitToBounds) {
-            controller.fitPoints(store, maybeLonLats);
+            controller.fitPoints(maybeLonLats);
           }
         }
       }),
@@ -94,12 +94,12 @@ export function wireCameraReactions(
           const tlbrs = [store.truckPoint, maybeRoutes[0].detour!.lngLat];
           console.log('tlbrs', tlbrs);
           store.cameraMode = CameraMode.FREE;
-          controller.fitPoints(store, tlbrs as [number, number][]);
+          controller.fitPoints(tlbrs as [number, number][]);
         } else {
           const tlbrs = routesCornerPairs(maybeRoutes);
           console.log('tlbrs', tlbrs);
           store.cameraMode = CameraMode.FREE;
-          controller.fitPoints(store, tlbrs);
+          controller.fitPoints(tlbrs);
         }
       },
     ),
@@ -117,7 +117,7 @@ export function wireCameraReactions(
           return;
         }
         store.cameraMode = CameraMode.FREE;
-        controller.fitPoints(store, routeCornerPair(maybeRoute));
+        controller.fitPoints(routeCornerPair(maybeRoute));
       },
     ),
   );
