@@ -29,17 +29,17 @@ get the same picture from the file tree.
 
 ## Where things live
 
-| Question                                      | Answer                                                                                                                                     |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Where does telemetry get processed?           | `services/telemetry.ts`                                                                                                                    |
-| Where does the render loop run?               | `services/route-animator.ts`                                                                                                               |
-| Where do route layers get drawn?              | `services/route-renderer.ts`                                                                                                               |
-| Where does the map adapter live?              | `services/map-adapter.ts` (only file importing maplibre)                                                                                   |
-| Where does camera mode live?                  | `stores/camera.ts`                                                                                                                         |
-| Where does the route + truck position live?   | `stores/route.ts`                                                                                                                          |
-| Where does the page-stack live?               | `stores/nav-sheet.ts` (private array, action-method API)                                                                                   |
-| Where is the theme attribute set on `<html>`? | `reactions/theme.ts`                                                                                                                       |
-| Where do tRPC calls happen?                   | Today: `controllers/app.ts` and `controllers/nav-sheet.ts` (controllers still own tRPC; route-/search-api modules are a planned follow-up) |
+| Question                                      | Answer                                                                                                |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Where does telemetry get processed?           | `services/telemetry.ts`                                                                               |
+| Where does the render loop run?               | `services/route-animator.ts`                                                                          |
+| Where do route layers get drawn?              | `services/route-renderer.ts`                                                                          |
+| Where does the map adapter live?              | `services/map-adapter.ts` (only file importing maplibre)                                              |
+| Where does camera mode live?                  | `stores/camera.ts`                                                                                    |
+| Where does the route + truck position live?   | `stores/route.ts`                                                                                     |
+| Where does the page-stack live?               | `stores/nav-sheet.ts` (private array, action-method API)                                              |
+| Where is the theme attribute set on `<html>`? | `reactions/theme.ts`                                                                                  |
+| Where do tRPC calls happen?                   | `services/route-api.ts` and `services/search-api.ts` (thin wrappers around the typed tRPC procedures) |
 
 ## Rules of thumb
 
@@ -117,11 +117,8 @@ src/
 
 ## Things still in flight
 
-See `docs/refactor-controllers.md` for the migration plan. As of this
-writing, steps 0–6 have landed. Outstanding:
+See `docs/refactor-controllers.md` for the migration plan. Outstanding:
 
-- **Step 7** — extract `route-api.ts` / `search-api.ts` (tRPC IO out of
-  controllers).
 - **Step 8** — introduce `RootStoreContext` + per-domain hooks
   (`useRouteStore`, `useCameraStore`, etc.) so components stop receiving
   stores by props.

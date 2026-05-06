@@ -8,6 +8,8 @@ import type {
 } from '@truckermudgeon/navigation/types';
 import { action, when } from 'mobx';
 import { destinations } from '../components/DestinationTypes';
+import * as routeApi from '../services/route-api';
+import * as searchApi from '../services/search-api';
 import { NavPageKey } from './constants';
 import type {
   AppClient,
@@ -39,7 +41,7 @@ export class NavSheetControllerImpl implements NavSheetController {
     _store: NavSheetStore,
     query: string,
   ): Promise<SearchResultWithRelativeTruckInfo[]> {
-    return this.appClient.getAutocompleteOptions.query(query);
+    return searchApi.getAutocompleteOptions(this.appClient, query);
   }
 
   onSearchSelect(store: NavSheetStore, queryOrResult: string | SearchResult) {
@@ -109,11 +111,8 @@ export class NavSheetControllerImpl implements NavSheetController {
     store.pushPage(NavPageKey.DESTINATIONS);
     store.isLoading = true;
 
-    void this.appClient.search
-      .query({
-        type,
-        scope,
-      })
+    void searchApi
+      .searchPoi(this.appClient, { type, scope })
       .then(
         action(response => {
           store.searchQuery = destinations[type].label;
@@ -126,20 +125,14 @@ export class NavSheetControllerImpl implements NavSheetController {
     if (scope === ScopeType.NEARBY) {
       // TODO how to reattach this listener when pressing Back into NavPageKey.DESTINATIONS?
       const mapDragUnsubscribe = appController.addMapDragEndListener(center => {
-        void this.appClient.search
-          .query({
-            type,
-            scope,
-            center,
-          })
-          .then(
-            action(response => {
-              store.searchQuery = destinations[type].label;
-              store.destinations = response;
-              store.selectedDestination = undefined;
-              store.disableFitToBounds = true;
-            }),
-          );
+        void searchApi.searchPoi(this.appClient, { type, scope, center }).then(
+          action(response => {
+            store.searchQuery = destinations[type].label;
+            store.destinations = response;
+            store.selectedDestination = undefined;
+            store.disableFitToBounds = true;
+          }),
+        );
       });
       when(
         () => store.currentPageKey !== NavPageKey.DESTINATIONS,
@@ -169,18 +162,14 @@ export class NavSheetControllerImpl implements NavSheetController {
     store.pushPage(NavPageKey.ROUTES);
     store.isLoading = true;
 
-    void this.appClient.previewRoutes
-      .query({
-        toNodeUid: dest.nodeUid,
-      })
-      .then(
-        action(routes => {
-          store.isLoading = false;
-          store.routes = routes;
-          // highlight the first one
-          store.selectedRoute = store.routes[0];
-        }),
-      );
+    void routeApi.previewRoutes(this.appClient, dest.nodeUid).then(
+      action(routes => {
+        store.isLoading = false;
+        store.routes = routes;
+        // highlight the first one
+        store.selectedRoute = store.routes[0];
+      }),
+    );
   }
 
   onRouteHighlight(store: NavSheetStore, route: Route): void {

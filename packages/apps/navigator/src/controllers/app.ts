@@ -11,6 +11,7 @@ import type { MapRef } from 'react-map-gl/maplibre';
 import { ChooseOnMapService } from '../services/choose-on-map';
 import { MapAdapter } from '../services/map-adapter';
 import { RouteAnimator } from '../services/route-animator';
+import * as routeApi from '../services/route-api';
 import { RouteRenderer } from '../services/route-renderer';
 import { TelemetryService } from '../services/telemetry';
 import { CameraStoreImpl } from '../stores/camera';
@@ -231,7 +232,7 @@ export class AppControllerImpl implements AppController {
   }
 
   setDestinationNodeUid(store: AppStore, toNodeUid: string, client: AppClient) {
-    void client.previewRoutes.query({ toNodeUid }).then(
+    void routeApi.previewRoutes(client, toNodeUid).then(
       action(([firstRoute]) => {
         if (!firstRoute) {
           console.warn('could not find route to', toNodeUid);
@@ -246,7 +247,10 @@ export class AppControllerImpl implements AppController {
     store.activeRoute = route;
     store.activeRouteIndex = { segmentIndex: 0, stepIndex: 0, nodeIndex: 0 };
     this.renderActiveRoute(route);
-    void client.setActiveRoute.mutate(route?.segments.map(s => s.key));
+    void routeApi.setActiveRoute(
+      client,
+      route?.segments.map(s => s.key),
+    );
   }
 
   setActiveRouteFromNodeUids(
@@ -254,8 +258,11 @@ export class AppControllerImpl implements AppController {
     waypoints: bigint[],
     client: AppClient,
   ) {
-    void client.generateRouteFromNodeUids
-      .query(waypoints.map(wp => wp.toString(16)))
+    void routeApi
+      .generateRouteFromNodeUids(
+        client,
+        waypoints.map(wp => wp.toString(16)),
+      )
       .then(
         action(route => {
           this.setActiveRoute(store, route, client);
@@ -282,7 +289,8 @@ export class AppControllerImpl implements AppController {
     _store: AppStore,
     client: AppClient,
   ): Promise<SearchResult> {
-    return client.synthesizeSearchResult.query(
+    return routeApi.synthesizeSearchResult(
+      client,
       this.chooseOnMapService.getChosenLngLat(),
     );
   }
@@ -312,6 +320,6 @@ export class AppControllerImpl implements AppController {
 
   unpauseRouteEvents(store: AppStore, client: AppClient) {
     store.segmentComplete = undefined;
-    void client.unpauseRouteEvents.mutate();
+    void routeApi.unpauseRouteEvents(client);
   }
 }
