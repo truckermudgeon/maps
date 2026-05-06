@@ -8,12 +8,14 @@ import { BearingMode, CameraMode } from './controllers/constants';
 import type { NavSheetController } from './controllers/types';
 import { routeCornerPair } from './route-bounds';
 import { bearingAfterStepManeuver } from './route-features';
+import type { MapPresenter } from './services/map-presenter';
 import type { CameraStore, NavSheetStore, RouteStore } from './stores/types';
 
 export interface HandlerDeps {
   camera: CameraStore;
   route: RouteStore;
   controller: AppControllerImpl;
+  mapPresenter: MapPresenter;
   navSheetStore: NavSheetStore;
   navSheetController: NavSheetController;
 }
@@ -25,7 +27,12 @@ export interface NavSheetHandlerDeps extends HandlerDeps {
 export interface HideNavSheetDeps
   extends Pick<
     HandlerDeps,
-    'route' | 'controller' | 'navSheetStore' | 'navSheetController'
+    | 'camera'
+    | 'route'
+    | 'controller'
+    | 'mapPresenter'
+    | 'navSheetStore'
+    | 'navSheetController'
   > {
   transitionDurationMs: number;
 }
@@ -55,10 +62,17 @@ export interface RouteControlsCallbacks {
 }
 
 export function buildHideNavSheet(deps: HideNavSheetDeps): () => void {
-  const { route, controller, navSheetStore, transitionDurationMs } = deps;
+  const {
+    camera,
+    route,
+    controller,
+    mapPresenter,
+    navSheetStore,
+    transitionDurationMs,
+  } = deps;
   return action(() => {
     controller.hideNavSheet();
-    controller.setFollow();
+    camera.setFollow();
     // Wait until nav sheet finishes transitioning away before resetting,
     // otherwise the nav sheet will flash the UI for the reset state.
     void delay(transitionDurationMs).then(
@@ -71,7 +85,7 @@ export function buildHideNavSheet(deps: HideNavSheetDeps): () => void {
     // case where there's no active route, but a preview-step arrow has been
     // drawn. Handle it here.
     if (!route.activeRoute) {
-      controller.drawStepArrow(undefined);
+      mapPresenter.drawStepArrow(undefined);
     }
   });
 }
@@ -79,7 +93,13 @@ export function buildHideNavSheet(deps: HideNavSheetDeps): () => void {
 export function buildNavSheetHandlers(
   deps: NavSheetHandlerDeps,
 ): NavSheetCallbacks {
-  const { controller, navSheetStore, navSheetController, hideNavSheet } = deps;
+  const {
+    controller,
+    mapPresenter,
+    navSheetStore,
+    navSheetController,
+    hideNavSheet,
+  } = deps;
   return {
     onCloseClick: hideNavSheet,
     onDestinationGoClick: () => {
@@ -102,8 +122,8 @@ export function buildNavSheetHandlers(
       );
     }),
     onRouteStepClick: action(step => {
-      controller.flyTo(step.maneuver.lonLat, bearingAfterStepManeuver(step));
-      controller.drawStepArrow(step);
+      mapPresenter.flyTo(step.maneuver.lonLat, bearingAfterStepManeuver(step));
+      mapPresenter.drawStepArrow(step);
     }),
     onWaypointsChange: action(waypoints => {
       controller.setActiveRouteFromNodeUids(waypoints);
@@ -117,16 +137,16 @@ export function buildControlsHandlers(
     'camera' | 'controller' | 'navSheetStore' | 'navSheetController'
   >,
 ): ControlsCallbacks {
-  const { camera, controller, navSheetStore, navSheetController } = deps;
+  const { camera, controller, navSheetStore } = deps;
   return {
     onCompassClick: action(() => {
       controller.requestWakeLock();
       switch (camera.bearingMode) {
         case BearingMode.MATCH_MAP:
-          controller.setNorthLock();
+          camera.setNorthLock();
           break;
         case BearingMode.NORTH_LOCK:
-          controller.setNorthUnlock();
+          camera.setNorthUnlock();
           break;
         default:
           throw new UnreachableError(camera.bearingMode);
@@ -134,7 +154,7 @@ export function buildControlsHandlers(
     }),
     onRecenterFabClick: action(() => {
       controller.requestWakeLock();
-      controller.setFollow();
+      camera.setFollow();
     }),
     onRouteFabClick: action(() => {
       controller.requestWakeLock();
@@ -150,7 +170,7 @@ export function buildControlsHandlers(
 export function buildRouteControlsHandlers(
   deps: HandlerDeps,
 ): RouteControlsCallbacks {
-  const { camera, route, controller, navSheetStore } = deps;
+  const { camera, route, controller, mapPresenter, navSheetStore } = deps;
   return {
     onManageStops: action(() => navSheetStore.startManageStopsFlow()),
     onSearchAlongRoute: action(() => navSheetStore.startSearchAlongFlow()),
@@ -160,7 +180,7 @@ export function buildRouteControlsHandlers(
         return;
       }
       camera.cameraMode = CameraMode.FREE;
-      controller.fitPoints(routeCornerPair(route.activeRoute));
+      mapPresenter.fitPoints(routeCornerPair(route.activeRoute));
     }),
     onRouteDirections: action(() =>
       navSheetStore.startShowActiveRouteDirectionsFlow(),

@@ -43,6 +43,7 @@ import { createNavSheet } from './create-nav-sheet';
 import { setupDevtools } from './dev-tools';
 import { applyThemeReaction } from './reactions/theme';
 import { toRouteSummary } from './route-display';
+import { MapPresenter } from './services/map-presenter';
 import { CameraStoreImpl } from './stores/camera';
 import { RootStoreProvider } from './stores/context';
 import { useNavSheetStore } from './stores/hooks/use-nav-sheet';
@@ -72,6 +73,7 @@ export function createApp({
   const camera = new CameraStoreImpl();
   const route = new RouteStoreImpl();
   const navSheetStore = new NavSheetStoreImpl();
+  const mapPresenter = new MapPresenter();
   const {
     Controls,
     bindMap: bindControlsToMap,
@@ -87,6 +89,7 @@ export function createApp({
     camera,
     route,
     navSheetStore,
+    mapPresenter,
     controlsStore,
     appClient,
   );
@@ -96,12 +99,14 @@ export function createApp({
     appClient,
     session,
     route,
-    appController: controller,
+    mapPresenter,
     store: navSheetStore,
   });
   const hideNavSheet = buildHideNavSheet({
+    camera,
     route,
     controller,
+    mapPresenter,
     navSheetStore,
     navSheetController,
     transitionDurationMs,
@@ -110,6 +115,7 @@ export function createApp({
     camera,
     route,
     controller,
+    mapPresenter,
     navSheetStore,
     navSheetController,
     hideNavSheet,
@@ -137,7 +143,7 @@ export function createApp({
   wireAppReactions({
     camera,
     route,
-    controller,
+    mapPresenter,
     navSheetStore,
     mapPaddingStore,
   });
@@ -159,7 +165,7 @@ export function createApp({
   );
 
   const onMapLoad = (map: MapRef, marker: MapLibreGLMarker) => {
-    controller.onMapLoad(map, marker);
+    mapPresenter.onMapLoad(map, marker);
     bindControlsToMap(map);
   };
   const _Destinations = observer(() => (
@@ -195,7 +201,7 @@ export function createApp({
         map={_map}
         mode={session.themeMode}
         onLoad={onMapLoad}
-        onDragStart={action(() => controller.setFree())}
+        onDragStart={action(() => camera.setFree())}
         Destinations={_Destinations}
         TrailerOrWaypointMarkers={_TrailerOrWaypointMarkers}
         PlayerMarker={PlayerMarker}
@@ -241,6 +247,7 @@ export function createApp({
     camera,
     route,
     controller,
+    mapPresenter,
     navSheetStore,
     navSheetController,
   });

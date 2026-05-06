@@ -21,6 +21,7 @@ import {
   buildNavSheetHandlers,
   buildRouteControlsHandlers,
 } from '../create-app-handlers';
+import type { MapPresenter } from '../services/map-presenter';
 
 function makeStore(overrides: Partial<AppStore> = {}): AppStore {
   return {
@@ -28,6 +29,10 @@ function makeStore(overrides: Partial<AppStore> = {}): AppStore {
     map: 'usa',
     cameraMode: CameraMode.FOLLOW,
     bearingMode: BearingMode.MATCH_MAP,
+    setFollow: vi.fn(),
+    setFree: vi.fn(),
+    setNorthLock: vi.fn(),
+    setNorthUnlock: vi.fn(),
     truckPoint: [0, 0],
     trailerPoint: undefined,
     hasReceivedFirstTelemetry: false,
@@ -85,19 +90,20 @@ function makeNavSheetStore(
 function makeController(): AppControllerImpl {
   return {
     hideNavSheet: vi.fn(),
-    setFollow: vi.fn(),
-    setFree: vi.fn(),
-    setNorthLock: vi.fn(),
-    setNorthUnlock: vi.fn(),
     setDestinationNodeUid: vi.fn(),
     setActiveRoute: vi.fn(),
     setActiveRouteFromNodeUids: vi.fn(),
-    flyTo: vi.fn(),
-    drawStepArrow: vi.fn(),
-    fitPoints: vi.fn(),
     requestWakeLock: vi.fn(),
     synthesizeSearchResult: vi.fn(),
   } as unknown as AppControllerImpl;
+}
+
+function makeMapPresenter(): MapPresenter {
+  return {
+    flyTo: vi.fn(),
+    drawStepArrow: vi.fn(),
+    fitPoints: vi.fn(),
+  } as unknown as MapPresenter;
 }
 
 function makeNavSheetController(): NavSheetController {
@@ -128,11 +134,14 @@ describe('buildHideNavSheet', () => {
       destinations: [{} as never, {} as never],
     });
     const controller = makeController();
+    const mapPresenter = makeMapPresenter();
     const navSheetController = makeNavSheetController();
 
     const hide = buildHideNavSheet({
+      camera: store,
       route: store,
       controller,
+      mapPresenter,
       navSheetStore,
       navSheetController,
       transitionDurationMs: 300,
@@ -141,7 +150,7 @@ describe('buildHideNavSheet', () => {
     hide();
 
     expect(controller.hideNavSheet).toHaveBeenCalledTimes(1);
-    expect(controller.setFollow).toHaveBeenCalledTimes(1);
+    expect(store.setFollow).toHaveBeenCalledTimes(1);
     expect(navSheetStore.destinations).toEqual([]);
     // Reset has not yet been called — happens after transitionDurationMs.
     expect(navSheetStore.reset).not.toHaveBeenCalled();
@@ -151,11 +160,14 @@ describe('buildHideNavSheet', () => {
     const store = makeStore();
     const navSheetStore = makeNavSheetStore();
     const controller = makeController();
+    const mapPresenter = makeMapPresenter();
     const navSheetController = makeNavSheetController();
 
     const hide = buildHideNavSheet({
+      camera: store,
       route: store,
       controller,
+      mapPresenter,
       navSheetStore,
       navSheetController,
       transitionDurationMs: 300,
@@ -171,10 +183,13 @@ describe('buildHideNavSheet', () => {
   it('clears step arrow when there is no active route', () => {
     const store = makeStore({ activeRoute: undefined });
     const controller = makeController();
+    const mapPresenter = makeMapPresenter();
 
     const hide = buildHideNavSheet({
+      camera: store,
       route: store,
       controller,
+      mapPresenter,
       navSheetStore: makeNavSheetStore(),
       navSheetController: makeNavSheetController(),
       transitionDurationMs: 0,
@@ -182,16 +197,19 @@ describe('buildHideNavSheet', () => {
 
     hide();
 
-    expect(controller.drawStepArrow).toHaveBeenCalledWith(undefined);
+    expect(mapPresenter.drawStepArrow).toHaveBeenCalledWith(undefined);
   });
 
   it('does not clear step arrow when there is an active route', () => {
     const store = makeStore({ activeRoute: {} as Route });
     const controller = makeController();
+    const mapPresenter = makeMapPresenter();
 
     const hide = buildHideNavSheet({
+      camera: store,
       route: store,
       controller,
+      mapPresenter,
       navSheetStore: makeNavSheetStore(),
       navSheetController: makeNavSheetController(),
       transitionDurationMs: 0,
@@ -199,7 +217,7 @@ describe('buildHideNavSheet', () => {
 
     hide();
 
-    expect(controller.drawStepArrow).not.toHaveBeenCalled();
+    expect(mapPresenter.drawStepArrow).not.toHaveBeenCalled();
   });
 });
 
@@ -213,12 +231,14 @@ describe('buildNavSheetHandlers', () => {
     const store = makeStore(overrides.store);
     const navSheetStore = makeNavSheetStore(overrides.navSheetStore);
     const controller = makeController();
+    const mapPresenter = makeMapPresenter();
     const navSheetController = makeNavSheetController();
     const hideNavSheet = vi.fn();
     const handlers = buildNavSheetHandlers({
       camera: store,
       route: store,
       controller,
+      mapPresenter,
       navSheetStore,
       navSheetController,
       hideNavSheet,
@@ -227,6 +247,7 @@ describe('buildNavSheetHandlers', () => {
       store,
       navSheetStore,
       controller,
+      mapPresenter,
       navSheetController,
       hideNavSheet,
       handlers,
@@ -293,12 +314,15 @@ describe('buildNavSheetHandlers', () => {
       arrowPoints: 2,
       trafficIcons: [],
     };
-    const { handlers, controller } = setup();
+    const { handlers, mapPresenter } = setup();
 
     handlers.onRouteStepClick(step);
 
-    expect(controller.flyTo).toHaveBeenCalledWith([10, 20], expect.any(Number));
-    expect(controller.drawStepArrow).toHaveBeenCalledWith(step);
+    expect(mapPresenter.flyTo).toHaveBeenCalledWith(
+      [10, 20],
+      expect.any(Number),
+    );
+    expect(mapPresenter.drawStepArrow).toHaveBeenCalledWith(step);
   });
 
   it('onWaypointsChange forwards to setActiveRouteFromNodeUids', () => {
@@ -340,17 +364,17 @@ describe('buildControlsHandlers', () => {
       expectedMethod: 'setNorthUnlock' as const,
     },
   ])('onCompassClick: $name', ({ mode, expectedMethod }) => {
-    const { handlers, controller } = setup({ bearingMode: mode });
+    const { handlers, controller, store } = setup({ bearingMode: mode });
     handlers.onCompassClick();
-    expect(controller[expectedMethod]).toHaveBeenCalledTimes(1);
+    expect(store[expectedMethod]).toHaveBeenCalledTimes(1);
     expect(controller.requestWakeLock).toHaveBeenCalledTimes(1);
   });
 
   it('onRecenterFabClick: requests wake lock and follows', () => {
-    const { handlers, controller } = setup();
+    const { handlers, controller, store } = setup();
     handlers.onRecenterFabClick();
     expect(controller.requestWakeLock).toHaveBeenCalledTimes(1);
-    expect(controller.setFollow).toHaveBeenCalledTimes(1);
+    expect(store.setFollow).toHaveBeenCalledTimes(1);
   });
 
   it('onRouteFabClick: starts choose destination flow', () => {
@@ -371,15 +395,24 @@ describe('buildRouteControlsHandlers', () => {
     const store = makeStore(storeOverrides);
     const navSheetStore = makeNavSheetStore();
     const controller = makeController();
+    const mapPresenter = makeMapPresenter();
     const navSheetController = makeNavSheetController();
     const handlers = buildRouteControlsHandlers({
       camera: store,
       route: store,
       controller,
+      mapPresenter,
       navSheetStore,
       navSheetController,
     });
-    return { store, navSheetStore, controller, navSheetController, handlers };
+    return {
+      store,
+      navSheetStore,
+      controller,
+      mapPresenter,
+      navSheetController,
+      handlers,
+    };
   }
 
   it('onManageStops: starts manage-stops flow', () => {
@@ -390,10 +423,10 @@ describe('buildRouteControlsHandlers', () => {
 
   it('onRoutePreview: warns and noops when no active route', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const { handlers, controller } = setup({ activeRoute: undefined });
+    const { handlers, mapPresenter } = setup({ activeRoute: undefined });
     handlers.onRoutePreview();
     expect(warn).toHaveBeenCalled();
-    expect(controller.fitPoints).not.toHaveBeenCalled();
+    expect(mapPresenter.fitPoints).not.toHaveBeenCalled();
     warn.mockRestore();
   });
 
@@ -414,10 +447,10 @@ describe('buildRouteControlsHandlers', () => {
         },
       ],
     } as unknown as Route;
-    const { handlers, store, controller } = setup({ activeRoute });
+    const { handlers, store, mapPresenter } = setup({ activeRoute });
     handlers.onRoutePreview();
     expect(store.cameraMode).toBe(CameraMode.FREE);
-    expect(controller.fitPoints).toHaveBeenCalledTimes(1);
+    expect(mapPresenter.fitPoints).toHaveBeenCalledTimes(1);
   });
 
   it('onRouteEnd: clears the active route', () => {

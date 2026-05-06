@@ -7,10 +7,10 @@ import type {
 import type { IReactionDisposer } from 'mobx';
 import { observable, runInAction } from 'mobx';
 import { vi } from 'vitest';
-import type { AppControllerImpl } from '../controllers/app';
 import { CameraMode, NavPageKey } from '../controllers/constants';
 import type { AppStore, MapPaddingStore } from '../controllers/types';
 import { wireAppReactions } from '../create-app-reactions';
+import type { MapPresenter } from '../services/map-presenter';
 import { NavSheetStoreImpl } from '../stores/nav-sheet';
 
 function makeObservableStore(overrides: Partial<AppStore> = {}): AppStore {
@@ -20,6 +20,10 @@ function makeObservableStore(overrides: Partial<AppStore> = {}): AppStore {
       map: 'usa',
       cameraMode: CameraMode.FOLLOW,
       bearingMode: 0 as never,
+      setFollow: vi.fn(),
+      setFree: vi.fn(),
+      setNorthLock: vi.fn(),
+      setNorthUnlock: vi.fn(),
       truckPoint: [0, 0],
       trailerPoint: undefined,
       hasReceivedFirstTelemetry: false,
@@ -49,23 +53,22 @@ function makeMapPaddingStore(): MapPaddingStore {
   };
 }
 
-function makeController(): AppControllerImpl {
+function makeMapPresenter(): MapPresenter {
   return {
     setOffset: vi.fn(),
     setPadding: vi.fn(),
     toggleChooseOnMapUi: vi.fn(),
     clearPitchAndBearing: vi.fn(),
-    setFree: vi.fn(),
     fitPoints: vi.fn(),
     renderRoutePreview: vi.fn(),
     renderActiveRoute: vi.fn(),
     drawStepArrow: vi.fn(),
-  } as unknown as AppControllerImpl;
+  } as unknown as MapPresenter;
 }
 
 interface Setup {
   store: AppStore;
-  controller: AppControllerImpl;
+  mapPresenter: MapPresenter;
   navSheetStore: NavSheetStoreImpl;
   mapPaddingStore: MapPaddingStore;
   disposers: IReactionDisposer[];
@@ -73,17 +76,17 @@ interface Setup {
 
 function setup(storeOverrides: Partial<AppStore> = {}): Setup {
   const store = makeObservableStore(storeOverrides);
-  const controller = makeController();
+  const mapPresenter = makeMapPresenter();
   const navSheetStore = new NavSheetStoreImpl();
   const mapPaddingStore = makeMapPaddingStore();
   const disposers = wireAppReactions({
     camera: store,
     route: store,
-    controller,
+    mapPresenter,
     navSheetStore,
     mapPaddingStore,
   });
-  return { store, controller, navSheetStore, mapPaddingStore, disposers };
+  return { store, mapPresenter, navSheetStore, mapPaddingStore, disposers };
 }
 
 function teardown(s: Setup) {
@@ -94,8 +97,8 @@ describe('wireAppReactions', () => {
   describe('autorun for map padding/offset', () => {
     it('calls setOffset and setPadding immediately on wire-up', () => {
       const s = setup();
-      expect(s.controller.setOffset).toHaveBeenCalledWith([0, 0]);
-      expect(s.controller.setPadding).toHaveBeenCalledWith({
+      expect(s.mapPresenter.setOffset).toHaveBeenCalledWith([0, 0]);
+      expect(s.mapPresenter.setPadding).toHaveBeenCalledWith({
         left: 0,
         right: 0,
         top: 0,
@@ -113,8 +116,8 @@ describe('wireAppReactions', () => {
         s.navSheetStore.pushPage(NavPageKey.CHOOSE_ON_MAP);
       });
 
-      expect(s.controller.toggleChooseOnMapUi).toHaveBeenCalledWith(true);
-      expect(s.controller.clearPitchAndBearing).toHaveBeenCalled();
+      expect(s.mapPresenter.toggleChooseOnMapUi).toHaveBeenCalledWith(true);
+      expect(s.mapPresenter.clearPitchAndBearing).toHaveBeenCalled();
       expect(s.store.cameraMode).toBe(CameraMode.FREE);
       teardown(s);
     });
@@ -126,14 +129,14 @@ describe('wireAppReactions', () => {
         s.navSheetStore.pushPage(NavPageKey.CHOOSE_ON_MAP);
       });
       (
-        s.controller.toggleChooseOnMapUi as ReturnType<typeof vi.fn>
+        s.mapPresenter.toggleChooseOnMapUi as ReturnType<typeof vi.fn>
       ).mockClear();
 
       runInAction(() => {
         s.navSheetStore.popPage();
       });
 
-      expect(s.controller.toggleChooseOnMapUi).toHaveBeenCalledWith(false);
+      expect(s.mapPresenter.toggleChooseOnMapUi).toHaveBeenCalledWith(false);
       teardown(s);
     });
   });
@@ -148,8 +151,8 @@ describe('wireAppReactions', () => {
         s.navSheetStore.destinations = [dest1, dest2];
       });
 
-      expect(s.controller.setFree).toHaveBeenCalled();
-      expect(s.controller.fitPoints).toHaveBeenCalledWith([
+      expect(s.store.setFree).toHaveBeenCalled();
+      expect(s.mapPresenter.fitPoints).toHaveBeenCalledWith([
         [-100, 40],
         [-90, 35],
       ]);
@@ -166,7 +169,7 @@ describe('wireAppReactions', () => {
         ];
       });
 
-      expect(s.controller.fitPoints).not.toHaveBeenCalled();
+      expect(s.mapPresenter.fitPoints).not.toHaveBeenCalled();
       teardown(s);
     });
   });
@@ -183,7 +186,7 @@ describe('wireAppReactions', () => {
       });
 
       const calls = (
-        s.controller.renderRoutePreview as ReturnType<typeof vi.fn>
+        s.mapPresenter.renderRoutePreview as ReturnType<typeof vi.fn>
       ).mock.calls;
       // Last 3 calls are the most recent reaction firing.
       const recent = calls.slice(-3);
@@ -202,14 +205,18 @@ describe('wireAppReactions', () => {
       runInAction(() => {
         s.navSheetStore.routes = [{ id: 'r0' } as RouteWithSummary];
       });
-      (s.controller.renderActiveRoute as ReturnType<typeof vi.fn>).mockClear();
+      (
+        s.mapPresenter.renderActiveRoute as ReturnType<typeof vi.fn>
+      ).mockClear();
 
       runInAction(() => {
         s.navSheetStore.routes = [];
         s.navSheetStore.selectedRoute = undefined;
       });
 
-      expect(s.controller.renderActiveRoute).toHaveBeenCalledWith(activeRoute);
+      expect(s.mapPresenter.renderActiveRoute).toHaveBeenCalledWith(
+        activeRoute,
+      );
       teardown(s);
     });
   });

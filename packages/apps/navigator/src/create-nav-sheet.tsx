@@ -21,10 +21,10 @@ import { NavPageKey } from './controllers/constants';
 import { NavSheetControllerImpl } from './controllers/nav-sheet';
 import type {
   AppClient,
-  AppController,
   NavSheetController,
   NavSheetStore,
 } from './controllers/types';
+import type { MapPresenter } from './services/map-presenter';
 import { NavSheetStoreImpl } from './stores/nav-sheet';
 import type { RouteStore, SessionStore } from './stores/types';
 
@@ -41,13 +41,13 @@ export function createNavSheet({
   appClient,
   session,
   route,
-  appController,
+  mapPresenter,
   store,
 }: {
   appClient: AppClient;
   session: SessionStore;
   route: RouteStore;
-  appController: AppController;
+  mapPresenter: MapPresenter;
   store: NavSheetStoreImpl;
 }): {
   NavSheet: (props: NavSheetProps) => React.ReactElement;
@@ -59,7 +59,7 @@ export function createNavSheet({
     controller,
     session,
     route,
-    appController,
+    mapPresenter,
   });
 
   const _TitleControls = observer((props: { onCloseClick: () => void }) => (
@@ -97,9 +97,9 @@ function createCurrentNavPage(opts: {
   controller: NavSheetController;
   session: SessionStore;
   route: RouteStore;
-  appController: AppController;
+  mapPresenter: MapPresenter;
 }) {
-  const { store, controller, session, route: routeStore, appController } = opts;
+  const { store, controller, session, route: routeStore, mapPresenter } = opts;
   const _ChooseDestinationPage = () => {
     const [options, setOptions] = useState<SearchResult[]>([]);
     const [loading, setLoading] = useState(false);
@@ -134,7 +134,7 @@ function createCurrentNavPage(opts: {
         )}
         onInputChange={debouncedOnInput}
         onDestinationTypeClick={action((type, label) =>
-          controller.onDestinationTypeClick(type, label, appController),
+          controller.onDestinationTypeClick(type, label, mapPresenter),
         )}
         onChooseOnMapClick={action(() => store.openChooseOnMap())}
         options={options}
@@ -175,7 +175,7 @@ function createCurrentNavPage(opts: {
         )}
         onInputChange={debouncedOnInput}
         onDestinationTypeClick={action((type, label) =>
-          controller.onDestinationTypeClick(type, label, appController),
+          controller.onDestinationTypeClick(type, label, mapPresenter),
         )}
         onChooseOnMapClick={action(() => store.openChooseOnMap())}
         options={options}

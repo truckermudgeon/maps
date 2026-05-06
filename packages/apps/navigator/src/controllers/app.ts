@@ -1,30 +1,17 @@
-import type {
-  Route,
-  RouteStep,
-  SearchResult,
-} from '@truckermudgeon/navigation/types';
-import type { Marker } from 'maplibre-gl';
+import type { Route, SearchResult } from '@truckermudgeon/navigation/types';
 import { action } from 'mobx';
-import type { MapRef } from 'react-map-gl/maplibre';
-import { ChooseOnMapService } from '../services/choose-on-map';
-import { MapAdapter } from '../services/map-adapter';
+import type { MapPresenter } from '../services/map-presenter';
 import { RouteAnimator } from '../services/route-animator';
 import * as routeApi from '../services/route-api';
-import { RouteRenderer } from '../services/route-renderer';
 import { TelemetryService } from '../services/telemetry';
 import type { CameraStoreImpl } from '../stores/camera';
 import type { RouteStoreImpl } from '../stores/route';
 import type { SessionStoreImpl } from '../stores/session';
 import type { NavSheetStore } from '../stores/types';
 import { clearCredentialsAndReload, requestWakeLock } from '../util/browser';
-import { BearingMode, CameraMode } from './constants';
-import type { AppClient, AppController, ControlsStore } from './types';
+import type { AppClient, ControlsStore } from './types';
 
-export class AppControllerImpl implements AppController {
-  private readonly mapAdapter = new MapAdapter();
-  private readonly chooseOnMapService = new ChooseOnMapService(this.mapAdapter);
-  private readonly routeRenderer = new RouteRenderer(this.mapAdapter);
-
+export class AppControllerImpl {
   private readonly telemetryService: TelemetryService;
   private readonly routeAnimator: RouteAnimator;
 
@@ -33,6 +20,7 @@ export class AppControllerImpl implements AppController {
     private readonly camera: CameraStoreImpl,
     private readonly route: RouteStoreImpl,
     private readonly navSheetStore: NavSheetStore,
+    private readonly mapPresenter: MapPresenter,
     controlsStore: ControlsStore,
     private readonly appClient: AppClient,
   ) {
@@ -40,26 +28,13 @@ export class AppControllerImpl implements AppController {
       session,
       route,
       controlsStore,
-      this.routeRenderer,
+      mapPresenter.routeRenderer,
     );
     this.routeAnimator = new RouteAnimator(
-      this.mapAdapter,
-      this.routeRenderer,
+      mapPresenter.mapAdapter,
+      mapPresenter.routeRenderer,
       this.telemetryService.timeline,
     );
-  }
-
-  setPadding(padding: {
-    left: number;
-    right: number;
-    top: number;
-    bottom: number;
-  }) {
-    this.mapAdapter.setPadding(padding);
-  }
-
-  setOffset(offset: [number, number]) {
-    this.mapAdapter.setOffset(offset);
   }
 
   forceRePair() {
@@ -70,45 +45,6 @@ export class AppControllerImpl implements AppController {
 
   requestWakeLock() {
     requestWakeLock();
-  }
-
-  addMapDragEndListener(
-    cb: (centerLngLat: [number, number]) => void,
-  ): () => void {
-    return this.mapAdapter.addMapDragEndListener(cb);
-  }
-
-  clearPitchAndBearing() {
-    console.log('clear pitch and bearing');
-    this.mapAdapter.clearPitchAndBearing();
-  }
-
-  fitPoints(lonLats: [number, number][]) {
-    this.mapAdapter.fitPoints(lonLats);
-  }
-
-  flyTo(lonLat: [number, number], bearing = 0) {
-    this.mapAdapter.flyTo(lonLat, bearing);
-  }
-
-  onMapLoad(map: MapRef, player: Marker) {
-    this.mapAdapter.onMapLoad(map, player);
-  }
-
-  setFree() {
-    this.camera.cameraMode = CameraMode.FREE;
-  }
-
-  setFollow() {
-    this.camera.cameraMode = CameraMode.FOLLOW;
-  }
-
-  setNorthUnlock() {
-    this.camera.bearingMode = BearingMode.MATCH_MAP;
-  }
-
-  setNorthLock() {
-    this.camera.bearingMode = BearingMode.NORTH_LOCK;
   }
 
   hideNavSheet() {
@@ -135,7 +71,7 @@ export class AppControllerImpl implements AppController {
       stepIndex: 0,
       nodeIndex: 0,
     };
-    this.renderActiveRoute(route);
+    this.mapPresenter.renderActiveRoute(route);
     void routeApi.setActiveRoute(
       this.appClient,
       route?.segments.map(s => s.key),
@@ -163,31 +99,8 @@ export class AppControllerImpl implements AppController {
   synthesizeSearchResult(): Promise<SearchResult> {
     return routeApi.synthesizeSearchResult(
       this.appClient,
-      this.chooseOnMapService.getChosenLngLat(),
+      this.mapPresenter.chooseOnMapService.getChosenLngLat(),
     );
-  }
-
-  toggleChooseOnMapUi(enable: boolean) {
-    this.chooseOnMapService.toggle(enable);
-  }
-
-  renderActiveRoute(maybeRoute: Route | undefined) {
-    this.routeRenderer.renderActiveRoute(maybeRoute);
-  }
-
-  renderRoutePreview(
-    maybeRoute: Route | undefined,
-    options: {
-      highlight: boolean;
-      index: number;
-      animate: boolean;
-    },
-  ) {
-    this.routeRenderer.renderRoutePreview(maybeRoute, options);
-  }
-
-  drawStepArrow(step: RouteStep | undefined) {
-    this.routeRenderer.drawStepArrow(step);
   }
 
   unpauseRouteEvents() {

@@ -25,6 +25,10 @@ export interface SessionStore {
 export interface CameraStore {
   cameraMode: CameraMode;
   bearingMode: BearingMode;
+  setFollow(): void;
+  setFree(): void;
+  setNorthLock(): void;
+  setNorthUnlock(): void;
 }
 
 export interface ActiveStepLine {

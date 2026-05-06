@@ -1,14 +1,14 @@
 import type { IReactionDisposer } from 'mobx';
-import type { AppControllerImpl } from './controllers/app';
 import type { MapPaddingStore } from './controllers/types';
 import { wireCameraReactions } from './reactions/camera';
 import { wireRouteReactions } from './reactions/route';
+import type { MapPresenter } from './services/map-presenter';
 import type { CameraStore, NavSheetStore, RouteStore } from './stores/types';
 
 export interface ReactionDeps {
   camera: CameraStore;
   route: RouteStore;
-  controller: AppControllerImpl;
+  mapPresenter: MapPresenter;
   navSheetStore: NavSheetStore;
   mapPaddingStore: MapPaddingStore;
 }
