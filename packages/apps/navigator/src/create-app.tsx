@@ -72,11 +72,22 @@ export function createApp({
   const camera = new CameraStoreImpl();
   const route = new RouteStoreImpl();
   const navSheetStore = new NavSheetStoreImpl();
+  const {
+    Controls,
+    controller: controlsController,
+    store: controlsStore,
+  } = createControls({
+    session,
+    camera,
+    route,
+    navSheet: navSheetStore,
+  });
   const controller = new AppControllerImpl(
     session,
     camera,
     route,
     navSheetStore,
+    controlsStore,
     appClient,
   );
   applyThemeReaction(session);
@@ -131,16 +142,6 @@ export function createApp({
     mapPaddingStore,
   });
 
-  const {
-    Controls,
-    controller: controlsController,
-    store: controlsStore,
-  } = createControls({
-    session,
-    camera,
-    route,
-    navSheet: navSheetStore,
-  });
   const controlsCallbacks = buildControlsHandlers({
     camera,
     controller,
@@ -153,7 +154,7 @@ export function createApp({
     () => session.readyToLoad,
     () => {
       console.log('readyToLoad signal received.');
-      controller.startListening(controlsStore);
+      controller.startListening();
     },
   );
 

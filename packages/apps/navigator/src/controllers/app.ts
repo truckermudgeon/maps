@@ -25,16 +25,29 @@ export class AppControllerImpl implements AppController {
   private readonly chooseOnMapService = new ChooseOnMapService(this.mapAdapter);
   private readonly routeRenderer = new RouteRenderer(this.mapAdapter);
 
-  private telemetryService: TelemetryService | undefined;
-  private routeAnimator: RouteAnimator | undefined;
+  private readonly telemetryService: TelemetryService;
+  private readonly routeAnimator: RouteAnimator;
 
   constructor(
     private readonly session: SessionStoreImpl,
     private readonly camera: CameraStoreImpl,
     private readonly route: RouteStoreImpl,
     private readonly navSheetStore: NavSheetStore,
+    controlsStore: ControlsStore,
     private readonly appClient: AppClient,
-  ) {}
+  ) {
+    this.telemetryService = new TelemetryService(
+      session,
+      route,
+      controlsStore,
+      this.routeRenderer,
+    );
+    this.routeAnimator = new RouteAnimator(
+      this.mapAdapter,
+      this.routeRenderer,
+      this.telemetryService.timeline,
+    );
+  }
 
   setPadding(padding: {
     left: number;
@@ -50,8 +63,8 @@ export class AppControllerImpl implements AppController {
   }
 
   forceRePair() {
-    this.telemetryService?.stop();
-    this.routeAnimator?.stop();
+    this.telemetryService.stop();
+    this.routeAnimator.stop();
     clearCredentialsAndReload();
   }
 
@@ -142,23 +155,8 @@ export class AppControllerImpl implements AppController {
       );
   }
 
-  startListening(controlsStore: ControlsStore) {
-    this.telemetryService?.stop();
-    this.routeAnimator?.stop();
-
-    this.telemetryService = new TelemetryService(
-      this.session,
-      this.route,
-      controlsStore,
-      this.routeRenderer,
-    );
+  startListening() {
     this.telemetryService.start(this.appClient);
-
-    this.routeAnimator = new RouteAnimator(
-      this.mapAdapter,
-      this.routeRenderer,
-      this.telemetryService.timeline,
-    );
     this.routeAnimator.start(this.camera, this.route);
   }
 
