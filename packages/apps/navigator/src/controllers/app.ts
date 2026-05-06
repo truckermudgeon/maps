@@ -1,9 +1,7 @@
 import type {
   Route,
-  RouteIndex,
   RouteStep,
   SearchResult,
-  SegmentInfo,
 } from '@truckermudgeon/navigation/types';
 import type { Marker } from 'maplibre-gl';
 import { action } from 'mobx';
@@ -14,142 +12,13 @@ import { RouteAnimator } from '../services/route-animator';
 import * as routeApi from '../services/route-api';
 import { RouteRenderer } from '../services/route-renderer';
 import { TelemetryService } from '../services/telemetry';
-import { CameraStoreImpl } from '../stores/camera';
-import { RouteStoreImpl } from '../stores/route';
-import { SessionStoreImpl } from '../stores/session';
+import type { CameraStoreImpl } from '../stores/camera';
+import type { RouteStoreImpl } from '../stores/route';
+import type { SessionStoreImpl } from '../stores/session';
 import type { NavSheetStore } from '../stores/types';
 import { clearCredentialsAndReload, requestWakeLock } from '../util/browser';
 import { BearingMode, CameraMode } from './constants';
-import type {
-  AppClient,
-  AppController,
-  AppStore,
-  ControlsStore,
-} from './types';
-
-/**
- * Facade over the focused stores (Session/Camera/Route). Exists so that
- * callers can keep using a flat `appStore.activeRoute` API during the
- * controllers/ refactor; once domain hooks land, consumers can access
- * the focused stores directly and this facade can be retired.
- */
-export class AppStoreImpl implements AppStore {
-  readonly session: SessionStoreImpl;
-  readonly camera: CameraStoreImpl;
-  readonly route: RouteStoreImpl;
-
-  constructor(map: 'usa' | 'europe') {
-    this.session = new SessionStoreImpl(map);
-    this.camera = new CameraStoreImpl();
-    this.route = new RouteStoreImpl();
-  }
-
-  get themeMode(): 'light' | 'dark' {
-    return this.session.themeMode;
-  }
-  set themeMode(v: 'light' | 'dark') {
-    this.session.themeMode = v;
-  }
-
-  get map(): 'usa' | 'europe' {
-    return this.session.map;
-  }
-  set map(v: 'usa' | 'europe') {
-    this.session.map = v;
-  }
-
-  get hasReceivedFirstTelemetry(): boolean {
-    return this.session.hasReceivedFirstTelemetry;
-  }
-  set hasReceivedFirstTelemetry(v: boolean) {
-    this.session.hasReceivedFirstTelemetry = v;
-  }
-
-  get readyToLoad(): boolean {
-    return this.session.readyToLoad;
-  }
-  set readyToLoad(v: boolean) {
-    this.session.readyToLoad = v;
-  }
-
-  get bindingStale(): boolean {
-    return this.session.bindingStale;
-  }
-  set bindingStale(v: boolean) {
-    this.session.bindingStale = v;
-  }
-
-  get cameraMode(): CameraMode {
-    return this.camera.cameraMode;
-  }
-  set cameraMode(v: CameraMode) {
-    this.camera.cameraMode = v;
-  }
-
-  get bearingMode(): BearingMode {
-    return this.camera.bearingMode;
-  }
-  set bearingMode(v: BearingMode) {
-    this.camera.bearingMode = v;
-  }
-
-  get activeRoute(): Route | undefined {
-    return this.route.activeRoute;
-  }
-  set activeRoute(v: Route | undefined) {
-    this.route.activeRoute = v;
-  }
-
-  get activeRouteIndex(): RouteIndex | undefined {
-    return this.route.activeRouteIndex;
-  }
-  set activeRouteIndex(v: RouteIndex | undefined) {
-    this.route.activeRouteIndex = v;
-  }
-
-  get truckPoint(): readonly [lon: number, lat: number] {
-    return this.route.truckPoint;
-  }
-  set truckPoint(v: [lon: number, lat: number]) {
-    this.route.truckPoint = v;
-  }
-
-  get trailerPoint(): readonly [lon: number, lat: number] | undefined {
-    return this.route.trailerPoint;
-  }
-  set trailerPoint(v: [lon: number, lat: number] | undefined) {
-    this.route.trailerPoint = v;
-  }
-
-  get segmentComplete(): SegmentInfo | undefined {
-    return this.route.segmentComplete;
-  }
-  set segmentComplete(v: SegmentInfo | undefined) {
-    this.route.segmentComplete = v;
-  }
-
-  get activeStepLine() {
-    return this.route.activeStepLine;
-  }
-  get activeRouteSummary() {
-    return this.route.activeRouteSummary;
-  }
-  get activeRouteToFirstWayPointSummary() {
-    return this.route.activeRouteToFirstWayPointSummary;
-  }
-  get distanceToNextManeuver() {
-    return this.route.distanceToNextManeuver;
-  }
-  get activeRouteDirection() {
-    return this.route.activeRouteDirection;
-  }
-  get activeArrowStep() {
-    return this.route.activeArrowStep;
-  }
-  get geoJsonRoute() {
-    return this.route.geoJsonRoute;
-  }
-}
+import type { AppClient, AppController, ControlsStore } from './types';
 
 export class AppControllerImpl implements AppController {
   private readonly mapAdapter = new MapAdapter();

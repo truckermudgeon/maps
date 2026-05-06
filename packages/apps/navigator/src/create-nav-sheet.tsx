@@ -22,11 +22,11 @@ import { NavSheetControllerImpl } from './controllers/nav-sheet';
 import type {
   AppClient,
   AppController,
-  AppStore,
   NavSheetController,
   NavSheetStore,
 } from './controllers/types';
 import { NavSheetStoreImpl } from './stores/nav-sheet';
+import type { RouteStore, SessionStore } from './stores/types';
 
 interface NavSheetProps {
   onCloseClick: () => void;
@@ -39,12 +39,14 @@ interface NavSheetProps {
 
 export function createNavSheet({
   appClient,
-  appStore,
+  session,
+  route,
   appController,
   store,
 }: {
   appClient: AppClient;
-  appStore: AppStore;
+  session: SessionStore;
+  route: RouteStore;
   appController: AppController;
   store: NavSheetStoreImpl;
 }): {
@@ -55,7 +57,8 @@ export function createNavSheet({
   const { CurrentNavPage } = createCurrentNavPage({
     store,
     controller,
-    appStore,
+    session,
+    route,
     appController,
   });
 
@@ -92,10 +95,11 @@ export function createNavSheet({
 function createCurrentNavPage(opts: {
   store: NavSheetStore;
   controller: NavSheetController;
-  appStore: AppStore;
+  session: SessionStore;
+  route: RouteStore;
   appController: AppController;
 }) {
-  const { store, controller, appStore, appController } = opts;
+  const { store, controller, session, route: routeStore, appController } = opts;
   const _ChooseDestinationPage = () => {
     const [options, setOptions] = useState<SearchResult[]>([]);
     const [loading, setLoading] = useState(false);
@@ -211,7 +215,7 @@ function createCurrentNavPage(opts: {
     );
     return (
       <_DestinationList
-        units={appStore.map === 'usa' ? 'imperial' : 'metric'}
+        units={session.map === 'usa' ? 'imperial' : 'metric'}
         isLoading={store.isLoading}
         destinations={store.destinations}
         CollapsibleButtonBar={_CollapsibleButtonBar}
@@ -224,7 +228,7 @@ function createCurrentNavPage(opts: {
   const _RoutesList = withLoading(RoutesList);
   const RoutesPage = observer((props: { onRouteGoClick: () => void }) => (
     <_RoutesList
-      units={appStore.map === 'usa' ? 'imperial' : 'metric'}
+      units={session.map === 'usa' ? 'imperial' : 'metric'}
       isLoading={store.isLoading}
       routes={store.routes}
       onRouteHighlight={action(route => controller.onRouteHighlight(route))}
@@ -242,7 +246,7 @@ function createCurrentNavPage(opts: {
       onDoneClick: () => void;
       onWaypointsChange: (waypoints: bigint[]) => void;
     }) => {
-      const { activeRoute, activeRouteIndex, activeRouteSummary } = appStore;
+      const { activeRoute, activeRouteIndex, activeRouteSummary } = routeStore;
       const [waypoints, setWaypoints] = useState<
         { id: string; description: string; nodeUid: bigint }[]
       >(
@@ -321,7 +325,7 @@ function createCurrentNavPage(opts: {
           case NavPageKey.DIRECTIONS_FROM_ROUTES_LIST:
             return (
               <RouteStepsList
-                units={appStore.map === 'usa' ? 'imperial' : 'metric'}
+                units={session.map === 'usa' ? 'imperial' : 'metric'}
                 route={assertExists(store.selectedRoute)}
                 onStepClick={props.onRouteStepClick}
               />
@@ -329,8 +333,8 @@ function createCurrentNavPage(opts: {
           case NavPageKey.DIRECTIONS_FROM_ROUTE_CONTROLS:
             return (
               <RouteStepsList
-                units={appStore.map === 'usa' ? 'imperial' : 'metric'}
-                route={assertExists(appStore.activeRoute)}
+                units={session.map === 'usa' ? 'imperial' : 'metric'}
+                route={assertExists(routeStore.activeRoute)}
               />
             );
           case NavPageKey.MANAGE_STOPS:

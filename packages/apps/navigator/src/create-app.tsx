@@ -24,13 +24,13 @@ import {
   WaitingForTelemetry,
   type WaitingForTelemetryState,
 } from './components/WaitingForTelemetry';
-import { AppControllerImpl, AppStoreImpl } from './controllers/app';
+import { AppControllerImpl } from './controllers/app';
 import {
   maxPortraitSheetCssHeight,
   NavPageKey,
   navSheetPagesRequiringMapVisibility,
 } from './controllers/constants';
-import type { AppClient, AppStore, NavSheetStore } from './controllers/types';
+import type { AppClient } from './controllers/types';
 import {
   buildControlsHandlers,
   buildHideNavSheet,
@@ -43,11 +43,15 @@ import { createNavSheet } from './create-nav-sheet';
 import { setupDevtools } from './dev-tools';
 import { applyThemeReaction } from './reactions/theme';
 import { toRouteSummary } from './route-display';
+import { CameraStoreImpl } from './stores/camera';
 import { RootStoreProvider } from './stores/context';
 import { useNavSheetStore } from './stores/hooks/use-nav-sheet';
+import { useRouteStore } from './stores/hooks/use-route';
 import { MapPaddingStoreImpl } from './stores/map-padding';
 import { NavSheetStoreImpl } from './stores/nav-sheet';
 import { RootStore } from './stores/root-store';
+import { RouteStoreImpl } from './stores/route';
+import { SessionStoreImpl } from './stores/session';
 import { UiEnvironmentStoreImpl } from './stores/ui-environment';
 
 export function createApp({
@@ -62,36 +66,38 @@ export function createApp({
   transitionDurationMs: number;
 }): {
   App: () => ReactElement;
-  store: Pick<AppStore, 'readyToLoad'>;
+  store: { readyToLoad: boolean };
 } {
-  const store = new AppStoreImpl(map);
+  const session = new SessionStoreImpl(map);
+  const camera = new CameraStoreImpl();
+  const route = new RouteStoreImpl();
   const navSheetStore = new NavSheetStoreImpl();
   const controller = new AppControllerImpl(
-    store.session,
-    store.camera,
-    store.route,
+    session,
+    camera,
+    route,
     navSheetStore,
     appClient,
   );
-  applyThemeReaction(store.session);
-  setupDevtools({ appStore: store });
+  applyThemeReaction(session);
 
   const { NavSheet, controller: navSheetController } = createNavSheet({
     appClient,
-    appStore: store,
+    session,
+    route,
     appController: controller,
     store: navSheetStore,
   });
   const hideNavSheet = buildHideNavSheet({
-    route: store.route,
+    route,
     controller,
     navSheetStore,
     navSheetController,
     transitionDurationMs,
   });
   const navSheetCallbacks = buildNavSheetHandlers({
-    camera: store.camera,
-    route: store.route,
+    camera,
+    route,
     controller,
     navSheetStore,
     navSheetController,
@@ -102,21 +108,24 @@ export function createApp({
   const uiEnv = new UiEnvironmentStoreImpl(joyTheme.breakpoints.values);
   const mapPaddingStore = new MapPaddingStoreImpl(
     uiEnv,
-    store.route,
-    store.camera,
+    route,
+    camera,
     navSheetStore,
   );
   const rootStore = new RootStore({
-    appStore: store,
+    session,
+    camera,
+    route,
     navSheet: navSheetStore,
     uiEnv,
     mapPadding: mapPaddingStore,
   });
+  setupDevtools({ rootStore });
   // TODO these reactions are hacks while figuring out a better way to
   // structure stores and controllers.
   wireAppReactions({
-    camera: store.camera,
-    route: store.route,
+    camera,
+    route,
     controller,
     navSheetStore,
     mapPaddingStore,
@@ -127,13 +136,13 @@ export function createApp({
     controller: controlsController,
     store: controlsStore,
   } = createControls({
-    session: store.session,
-    camera: store.camera,
-    route: store.route,
+    session,
+    camera,
+    route,
     navSheet: navSheetStore,
   });
   const controlsCallbacks = buildControlsHandlers({
-    camera: store.camera,
+    camera,
     controller,
     navSheetStore,
     navSheetController,
@@ -141,7 +150,7 @@ export function createApp({
   const _Controls = () => <Controls {...controlsCallbacks} />;
 
   when(
-    () => store.readyToLoad,
+    () => session.readyToLoad,
     () => {
       console.log('readyToLoad signal received.');
       controller.startListening(controlsStore);
@@ -164,7 +173,7 @@ export function createApp({
   ));
   const tp = computed(
     () =>
-      store.trailerPoint?.map(n => Number(n.toFixed(6))) as
+      route.trailerPoint?.map(n => Number(n.toFixed(6))) as
         | [number, number]
         | undefined,
     { equals: comparer.structural },
@@ -173,17 +182,17 @@ export function createApp({
     return (
       <TrailerOrWaypointMarkers
         trailerPoint={tp.get()}
-        activeRoute={store.activeRoute}
+        activeRoute={route.activeRoute}
       />
     );
   });
   const _SlippyMap = observer(() => {
-    const _map = store.hasReceivedFirstTelemetry ? store.map : map;
+    const _map = session.hasReceivedFirstTelemetry ? session.map : map;
     return (
       <SlippyMap
         key={_map}
         map={_map}
-        mode={store.themeMode}
+        mode={session.themeMode}
         onLoad={onMapLoad}
         onDragStart={action(() => controller.setFree())}
         Destinations={_Destinations}
@@ -195,18 +204,18 @@ export function createApp({
 
   const _Directions = observer(() => (
     <AnimatedDirections
-      direction={store.activeRouteDirection}
-      distanceToNextManeuver={store.distanceToNextManeuver}
-      units={store.map === 'usa' ? 'imperial' : 'metric'}
+      direction={route.activeRouteDirection}
+      distanceToNextManeuver={route.distanceToNextManeuver}
+      units={session.map === 'usa' ? 'imperial' : 'metric'}
     />
   ));
   const _SegmentCompleteToast = observer(() =>
-    store.segmentComplete != null ? (
+    route.segmentComplete != null ? (
       <SegmentCompleteToast
         open={true}
-        place={store.segmentComplete.place}
-        placeInfo={store.segmentComplete.placeInfo}
-        isFinalSegment={store.segmentComplete.isFinal}
+        place={route.segmentComplete.place}
+        placeInfo={route.segmentComplete.placeInfo}
+        isFinalSegment={route.segmentComplete.isFinal}
         onContinueClick={action(() => controller.unpauseRouteEvents())}
         onEndClick={action(() => {
           controller.unpauseRouteEvents();
@@ -221,15 +230,15 @@ export function createApp({
   const routeSummary = computed(
     () =>
       toRouteSummary(
-        store.activeRouteToFirstWayPointSummary,
-        store.map === 'usa' ? defaultImperialOptions : defaultMetricOptions,
+        route.activeRouteToFirstWayPointSummary,
+        session.map === 'usa' ? defaultImperialOptions : defaultMetricOptions,
       ),
     { equals: comparer.structural },
   );
 
   const routeControlsCallbacks = buildRouteControlsHandlers({
-    camera: store.camera,
-    route: store.route,
+    camera,
+    route,
     controller,
     navSheetStore,
     navSheetController,
@@ -240,7 +249,7 @@ export function createApp({
         summary={routeSummary.get()}
         onExpandedToggle={props.onExpandedToggle}
         onManageStopsClick={
-          store.activeRoute != null && store.activeRoute.segments.length > 1
+          route.activeRoute != null && route.activeRoute.segments.length > 1
             ? routeControlsCallbacks.onManageStops
             : undefined
         }
@@ -261,17 +270,17 @@ export function createApp({
   );
 
   const _WaitingForTelemetry = observer(() => {
-    if (!store.readyToLoad) {
+    if (!session.readyToLoad) {
       // assume some other component will show "waiting to load" UI
       return <></>;
     }
     // TODO show "Loading map..." UI if map hasn't loaded yet, instead of
     //  showing "Waiting for telemetry..." UI.
-    if (store.hasReceivedFirstTelemetry && !store.bindingStale) {
+    if (session.hasReceivedFirstTelemetry && !session.bindingStale) {
       return <></>;
     }
-    const state: WaitingForTelemetryState = !store.hasReceivedFirstTelemetry
-      ? store.bindingStale
+    const state: WaitingForTelemetryState = !session.hasReceivedFirstTelemetry
+      ? session.bindingStale
         ? 'orphaned'
         : 'awaiting'
       : 'lost';
@@ -287,8 +296,6 @@ export function createApp({
     App: () => (
       <RootStoreProvider store={rootStore}>
         <App
-          store={store}
-          navSheetStore={navSheetStore}
           transitionDurationMs={transitionDurationMs}
           SlippyMap={_SlippyMap}
           NavSheet={_NavSheet}
@@ -298,14 +305,12 @@ export function createApp({
         />
       </RootStoreProvider>
     ),
-    store,
+    store: session,
   };
 }
 
 const App = observer(
   (props: {
-    store: AppStore;
-    navSheetStore: NavSheetStore;
     transitionDurationMs: number;
     SlippyMap: () => ReactElement;
     NavSheet: () => ReactElement;
@@ -314,15 +319,9 @@ const App = observer(
     WaitingForTelemetry: () => ReactElement;
   }) => {
     console.log('render app');
-    const {
-      store,
-      navSheetStore,
-      SlippyMap,
-      NavSheet,
-      RouteStack,
-      Controls,
-      WaitingForTelemetry,
-    } = props;
+    const { SlippyMap, NavSheet, RouteStack, Controls, WaitingForTelemetry } =
+      props;
+    const navSheetStore = useNavSheetStore();
     const theme = useTheme();
     const isLargePortrait = useMediaQuery(
       theme.breakpoints.up('sm') + ' and (orientation: portrait)',
@@ -351,7 +350,6 @@ const App = observer(
           height={'100dvh'}
         >
           <HudStackGridItem
-            store={props.store}
             isLargePortrait={isLargePortrait}
             transitionDurationMs={props.transitionDurationMs}
           >
@@ -376,7 +374,7 @@ const App = observer(
               zIndex: 999, // so it renders over hud stack
             }}
           >
-            <RouteStackContainer store={props.store}>
+            <RouteStackContainer>
               <RouteStack />
             </RouteStackContainer>
           </Grid>
@@ -443,21 +441,20 @@ const App = observer(
 
 const HudStackGridItem = observer(
   (props: {
-    store: AppStore;
     transitionDurationMs: number;
     isLargePortrait: boolean;
     children: ReactElement;
   }) => {
     const navSheetStore = useNavSheetStore();
+    const routeStore = useRouteStore();
     const showRouteStack = computed(
-      () => !navSheetStore.showNavSheet && props.store.activeRoute != null,
+      () => !navSheetStore.showNavSheet && routeStore.activeRoute != null,
     );
     const portraitPt = computed(() => {
       if (!showRouteStack.get()) {
         return 0;
       }
-      const dirHasLabel =
-        props.store.activeRouteDirection?.banner?.text != null;
+      const dirHasLabel = routeStore.activeRouteDirection?.banner?.text != null;
       return dirHasLabel ? 18 : 14;
     });
     const portraitPb = computed(() => (showRouteStack.get() ? 13 : 0));
@@ -486,19 +483,18 @@ const HudStackGridItem = observer(
   },
 );
 
-const RouteStackContainer = observer(
-  (props: { store: AppStore; children: ReactElement }) => {
-    const navSheetStore = useNavSheetStore();
-    return (
-      <Slide
-        in={!navSheetStore.showNavSheet && props.store.activeRoute != null}
-        direction={'right'}
-      >
-        <Box height={'100%'}>{props.children}</Box>
-      </Slide>
-    );
-  },
-);
+const RouteStackContainer = observer((props: { children: ReactElement }) => {
+  const navSheetStore = useNavSheetStore();
+  const routeStore = useRouteStore();
+  return (
+    <Slide
+      in={!navSheetStore.showNavSheet && routeStore.activeRoute != null}
+      direction={'right'}
+    >
+      <Box height={'100%'}>{props.children}</Box>
+    </Slide>
+  );
+});
 
 const NavSheetContainer = observer((props: { children: ReactElement }) => {
   const navSheetStore = useNavSheetStore();
