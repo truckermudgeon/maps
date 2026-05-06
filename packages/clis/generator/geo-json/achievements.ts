@@ -288,7 +288,9 @@ export function convertToAchievementsGeoJson(tsMapData: AchievementsMapData) {
           continue;
         }
         const r = assertExists(routes.get(c.route));
-        const cs = [r.fromCity, r.toCity].map(t => assertExists(cities.get(t)));
+        const cs = [r.fromCity, r.toCity]
+          .filter(([from, to]) => cities.has(from) && cities.has(to))
+          .map(t => assertExists(cities.get(t)));
         const countryTokens = new Set<string>(cs.map(c => c.countryToken));
         let dlcGuard: number | undefined;
         // TODO add support for ETS2 dlc guards
