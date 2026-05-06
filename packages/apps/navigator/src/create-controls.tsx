@@ -1,15 +1,14 @@
 import { Directions, NavigationOutlined, Search } from '@mui/icons-material';
+import { action } from 'mobx';
 import { observer } from 'mobx-react-lite';
 import type { ReactElement } from 'react';
+import type { MapRef } from 'react-map-gl/maplibre';
 import { Compass } from './components/Compass';
 import { Fab } from './components/Fab';
 import { HudStack } from './components/HudStack';
 import { SpeedLimit } from './components/SpeedLimit';
-import {
-  ControlsControllerImpl,
-  ControlsStoreImpl,
-} from './controllers/controls';
-import type { ControlsController, ControlsStore } from './controllers/types';
+import { ControlsStoreImpl } from './controllers/controls';
+import type { ControlsStore } from './controllers/types';
 import type {
   CameraStore,
   NavSheetStore,
@@ -32,11 +31,16 @@ export function createControls(opts: {
 }): {
   Controls: (props: ControlsProps) => ReactElement;
   store: ControlsStore;
-  controller: ControlsController;
+  bindMap: (map: MapRef) => void;
 } {
   const { session, camera, route, navSheet } = opts;
   const store = new ControlsStoreImpl(session, camera, route, navSheet);
-  const controller = new ControlsControllerImpl();
+  const bindMap = (map: MapRef) => {
+    map.on(
+      'move',
+      action(() => (store.bearing = map.getBearing())),
+    );
+  };
 
   const _Compass = observer((props: { onClick: () => void }) => (
     <Compass
@@ -87,6 +91,6 @@ export function createControls(opts: {
       );
     },
     store,
-    controller,
+    bindMap,
   };
 }

@@ -74,7 +74,7 @@ export function createApp({
   const navSheetStore = new NavSheetStoreImpl();
   const {
     Controls,
-    controller: controlsController,
+    bindMap: bindControlsToMap,
     store: controlsStore,
   } = createControls({
     session,
@@ -160,7 +160,7 @@ export function createApp({
 
   const onMapLoad = (map: MapRef, marker: MapLibreGLMarker) => {
     controller.onMapLoad(map, marker);
-    controlsController.onMapLoad(controlsStore, map);
+    bindControlsToMap(map);
   };
   const _Destinations = observer(() => (
     <DestinationMarkers

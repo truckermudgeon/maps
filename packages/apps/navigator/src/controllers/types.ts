@@ -37,10 +37,6 @@ export interface ControlsStore {
   readonly showSearchFab: boolean;
 }
 
-export interface ControlsController {
-  onMapLoad(store: ControlsStore, map: MapRef): void;
-}
-
 export interface NavSheetController {
   search(query: string): Promise<SearchResult[]>;
   onSearchSelect(queryOrResult: string | SearchResult): void;
