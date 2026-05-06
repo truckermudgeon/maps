@@ -1,12 +1,7 @@
 import { action, makeAutoObservable } from 'mobx';
 import type { MapRef } from 'react-map-gl/maplibre';
 import { CameraMode } from './constants';
-import type {
-  AppClient,
-  AppStore,
-  ControlsController,
-  ControlsStore,
-} from './types';
+import type { AppStore, ControlsController, ControlsStore } from './types';
 
 export class ControlsStoreImpl implements ControlsStore {
   bearing = 0;
@@ -34,32 +29,13 @@ export class ControlsStoreImpl implements ControlsStore {
   }
 }
 
+/**
+ * Tracks the map bearing into ControlsStore on map move. Speed/limit
+ * updates come from TelemetryService now (single subscription point);
+ * this controller only owns the map.on('move') binding.
+ */
 export class ControlsControllerImpl implements ControlsController {
-  private positionSubscription: { unsubscribe: () => void } | undefined;
   private mapMoveSubscription: { unsubscribe: () => void } | undefined;
-
-  startListening(store: ControlsStore, appClient: AppClient) {
-    this.positionSubscription?.unsubscribe();
-    this.positionSubscription = appClient.subscribeToDevice.subscribe(
-      undefined,
-      {
-        onData: action(event => {
-          if (event.type !== 'positionUpdate') {
-            return;
-          }
-          const gameState = event.data;
-          const { speed } = gameState;
-          if (store.units === 'imperial') {
-            store.limit = gameState.speedLimit.mph;
-            store.speed = Math.abs(Math.round(speed * 2.236936));
-          } else {
-            store.limit = gameState.speedLimit.kph;
-            store.speed = Math.abs(Math.round(gameState.speed * 3.6));
-          }
-        }),
-      },
-    );
-  }
 
   onMapLoad(store: ControlsStore, map: MapRef) {
     this.mapMoveSubscription?.unsubscribe();

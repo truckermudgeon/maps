@@ -19,7 +19,12 @@ import { RouteStoreImpl } from '../stores/route';
 import { SessionStoreImpl } from '../stores/session';
 import { clearCredentialsAndReload, requestWakeLock } from '../util/browser';
 import { BearingMode, CameraMode } from './constants';
-import type { AppClient, AppController, AppStore } from './types';
+import type {
+  AppClient,
+  AppController,
+  AppStore,
+  ControlsStore,
+} from './types';
 
 /**
  * Facade over the focused stores (Session/Camera/Route). Exists so that
@@ -270,11 +275,19 @@ export class AppControllerImpl implements AppController {
       );
   }
 
-  startListening(store: AppStore, client: AppClient) {
+  startListening(
+    store: AppStore,
+    controlsStore: ControlsStore,
+    client: AppClient,
+  ) {
     this.telemetryService?.stop();
     this.routeAnimator?.stop();
 
-    this.telemetryService = new TelemetryService(store, this.routeRenderer);
+    this.telemetryService = new TelemetryService(
+      store,
+      controlsStore,
+      this.routeRenderer,
+    );
     this.telemetryService.start(client);
 
     this.routeAnimator = new RouteAnimator(

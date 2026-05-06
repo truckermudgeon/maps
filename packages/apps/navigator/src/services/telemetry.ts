@@ -1,7 +1,7 @@
 import { UnreachableError } from '@truckermudgeon/base/precon';
 import type { GameState } from '@truckermudgeon/navigation/types';
 import { runInAction } from 'mobx';
-import type { AppClient, AppStore } from '../controllers/types';
+import type { AppClient, AppStore, ControlsStore } from '../controllers/types';
 import { TelemetryTimeline } from '../util/telemetry-timeline';
 import type { RouteRenderer } from './route-renderer';
 
@@ -22,6 +22,7 @@ export class TelemetryService {
 
   constructor(
     private readonly store: AppStore,
+    private readonly controls: ControlsStore,
     private readonly routeRenderer: RouteRenderer,
   ) {}
 
@@ -36,8 +37,10 @@ export class TelemetryService {
       onData: event => {
         const { store, routeRenderer, timeline } = this;
         switch (event.type) {
-          case 'positionUpdate':
+          case 'positionUpdate': {
             timeline.push(event.data);
+            const gameState = event.data;
+            const speedAbs = Math.abs(gameState.speed);
             runInAction(() => {
               if (!store.hasReceivedFirstTelemetry) {
                 store.hasReceivedFirstTelemetry = true;
@@ -45,8 +48,16 @@ export class TelemetryService {
               if (store.bindingStale) {
                 store.bindingStale = false;
               }
+              if (store.map === 'usa') {
+                this.controls.limit = gameState.speedLimit.mph;
+                this.controls.speed = Math.round(speedAbs * 2.236936);
+              } else {
+                this.controls.limit = gameState.speedLimit.kph;
+                this.controls.speed = Math.round(speedAbs * 3.6);
+              }
             });
             break;
+          }
           case 'routeUpdate':
             runInAction(() => {
               store.activeRoute = event.data;

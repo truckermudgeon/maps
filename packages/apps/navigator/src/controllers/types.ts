@@ -49,7 +49,6 @@ export interface ControlsStore {
 }
 
 export interface ControlsController {
-  startListening(store: ControlsStore, appClient: AppClient): void;
   onMapLoad(store: ControlsStore, map: MapRef): void;
 }
 

@@ -115,8 +115,7 @@ export function createApp({
     () => store.readyToLoad,
     () => {
       console.log('readyToLoad signal received.');
-      controller.startListening(store, appClient);
-      controlsController.startListening(controlsStore, appClient);
+      controller.startListening(store, controlsStore, appClient);
     },
   );
 
