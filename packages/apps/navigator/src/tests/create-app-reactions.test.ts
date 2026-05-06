@@ -22,7 +22,6 @@ function makeObservableStore(overrides: Partial<AppStore> = {}): AppStore {
       bearingMode: 0 as never,
       truckPoint: [0, 0],
       trailerPoint: undefined,
-      showNavSheet: false,
       hasReceivedFirstTelemetry: false,
       readyToLoad: false,
       bindingStale: false,
@@ -109,7 +108,7 @@ describe('wireAppReactions', () => {
     it('toggles choose-on-map UI on when navsheet shows CHOOSE_ON_MAP page', () => {
       const s = setup();
       runInAction(() => {
-        s.store.showNavSheet = true;
+        s.navSheetStore.showNavSheet = true;
         s.navSheetStore.pushPage(NavPageKey.CHOOSE_ON_MAP);
       });
 
@@ -122,7 +121,7 @@ describe('wireAppReactions', () => {
     it('toggles choose-on-map UI off when leaving the page', () => {
       const s = setup();
       runInAction(() => {
-        s.store.showNavSheet = true;
+        s.navSheetStore.showNavSheet = true;
         s.navSheetStore.pushPage(NavPageKey.CHOOSE_ON_MAP);
       });
       (

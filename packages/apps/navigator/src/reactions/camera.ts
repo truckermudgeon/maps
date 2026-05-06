@@ -37,7 +37,7 @@ export function wireCameraReactions(
   disposers.push(
     reaction(
       () =>
-        store.showNavSheet &&
+        navSheetStore.showNavSheet &&
         navSheetStore.currentPageKey === NavPageKey.CHOOSE_ON_MAP,
       action(isChoosingOnMap => {
         controller.toggleChooseOnMapUi(isChoosingOnMap);
@@ -77,7 +77,7 @@ export function wireCameraReactions(
     reaction(
       () => {
         if (
-          store.showNavSheet &&
+          navSheetStore.showNavSheet &&
           navSheetStore.currentPageKey === NavPageKey.ROUTES &&
           !navSheetStore.isLoading
         ) {
@@ -108,7 +108,7 @@ export function wireCameraReactions(
   disposers.push(
     reaction(
       () =>
-        store.showNavSheet &&
+        navSheetStore.showNavSheet &&
         navSheetStore.currentPageKey === NavPageKey.MANAGE_STOPS
           ? store.activeRoute
           : undefined,

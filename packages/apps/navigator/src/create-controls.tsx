@@ -9,11 +9,13 @@ import {
   ControlsControllerImpl,
   ControlsStoreImpl,
 } from './controllers/controls';
+import type { ControlsController, ControlsStore } from './controllers/types';
 import type {
-  AppStore,
-  ControlsController,
-  ControlsStore,
-} from './controllers/types';
+  CameraStore,
+  NavSheetStore,
+  RouteStore,
+  SessionStore,
+} from './stores/types';
 
 interface ControlsProps {
   onCompassClick: () => void;
@@ -22,18 +24,23 @@ interface ControlsProps {
   onSearchFabClick: () => void;
 }
 
-export function createControls(opts: { appStore: AppStore }): {
+export function createControls(opts: {
+  session: SessionStore;
+  camera: CameraStore;
+  route: RouteStore;
+  navSheet: NavSheetStore;
+}): {
   Controls: (props: ControlsProps) => ReactElement;
   store: ControlsStore;
   controller: ControlsController;
 } {
-  const { appStore } = opts;
-  const store = new ControlsStoreImpl(appStore);
+  const { session, camera, route, navSheet } = opts;
+  const store = new ControlsStoreImpl(session, camera, route, navSheet);
   const controller = new ControlsControllerImpl();
 
   const _Compass = observer((props: { onClick: () => void }) => (
     <Compass
-      mode={appStore.themeMode}
+      mode={session.themeMode}
       bearing={store.bearing}
       onClick={props.onClick}
     />

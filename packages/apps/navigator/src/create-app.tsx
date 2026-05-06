@@ -44,7 +44,9 @@ import { setupDevtools } from './dev-tools';
 import { applyThemeReaction } from './reactions/theme';
 import { toRouteSummary } from './route-display';
 import { RootStoreProvider } from './stores/context';
+import { useNavSheetStore } from './stores/hooks/use-nav-sheet';
 import { MapPaddingStoreImpl } from './stores/map-padding';
+import { NavSheetStoreImpl } from './stores/nav-sheet';
 import { RootStore } from './stores/root-store';
 import { UiEnvironmentStoreImpl } from './stores/ui-environment';
 
@@ -63,15 +65,17 @@ export function createApp({
   store: Pick<AppStore, 'readyToLoad'>;
 } {
   const store = new AppStoreImpl(map);
-  const controller = new AppControllerImpl(store, appClient);
+  const navSheetStore = new NavSheetStoreImpl();
+  const controller = new AppControllerImpl(store, navSheetStore, appClient);
   applyThemeReaction(store.session);
   setupDevtools({ appStore: store });
 
-  const {
-    NavSheet,
-    controller: navSheetController,
+  const { NavSheet, controller: navSheetController } = createNavSheet({
+    appClient,
+    appStore: store,
+    appController: controller,
     store: navSheetStore,
-  } = createNavSheet({ appClient, appStore: store, appController: controller });
+  });
   const hideNavSheet = buildHideNavSheet({
     store,
     controller,
@@ -90,7 +94,12 @@ export function createApp({
   const _NavSheet = () => <NavSheet {...navSheetCallbacks} />;
 
   const uiEnv = new UiEnvironmentStoreImpl(joyTheme.breakpoints.values);
-  const mapPaddingStore = new MapPaddingStoreImpl(uiEnv, store, navSheetStore);
+  const mapPaddingStore = new MapPaddingStoreImpl(
+    uiEnv,
+    store.route,
+    store.camera,
+    navSheetStore,
+  );
   const rootStore = new RootStore({
     appStore: store,
     navSheet: navSheetStore,
@@ -106,7 +115,10 @@ export function createApp({
     controller: controlsController,
     store: controlsStore,
   } = createControls({
-    appStore: store,
+    session: store.session,
+    camera: store.camera,
+    route: store.route,
+    navSheet: navSheetStore,
   });
   const controlsCallbacks = buildControlsHandlers({
     store,
@@ -305,7 +317,7 @@ const App = observer(
     );
     const isMapVisibilityRequired = computed(
       () =>
-        store.showNavSheet &&
+        navSheetStore.showNavSheet &&
         navSheetPagesRequiringMapVisibility.has(navSheetStore.currentPageKey),
     );
 
@@ -406,7 +418,7 @@ const App = observer(
               },
             }}
           >
-            <NavSheetContainer store={props.store}>
+            <NavSheetContainer>
               <NavSheet />
             </NavSheetContainer>
           </Grid>
@@ -424,8 +436,9 @@ const HudStackGridItem = observer(
     isLargePortrait: boolean;
     children: ReactElement;
   }) => {
+    const navSheetStore = useNavSheetStore();
     const showRouteStack = computed(
-      () => !props.store.showNavSheet && props.store.activeRoute != null,
+      () => !navSheetStore.showNavSheet && props.store.activeRoute != null,
     );
     const portraitPt = computed(() => {
       if (!showRouteStack.get()) {
@@ -463,9 +476,10 @@ const HudStackGridItem = observer(
 
 const RouteStackContainer = observer(
   (props: { store: AppStore; children: ReactElement }) => {
+    const navSheetStore = useNavSheetStore();
     return (
       <Slide
-        in={!props.store.showNavSheet && props.store.activeRoute != null}
+        in={!navSheetStore.showNavSheet && props.store.activeRoute != null}
         direction={'right'}
       >
         <Box height={'100%'}>{props.children}</Box>
@@ -474,9 +488,10 @@ const RouteStackContainer = observer(
   },
 );
 
-const NavSheetContainer = observer(
-  (props: { store: AppStore; children: ReactElement }) => (
-    <Slide in={props.store.showNavSheet} direction={'right'}>
+const NavSheetContainer = observer((props: { children: ReactElement }) => {
+  const navSheetStore = useNavSheetStore();
+  return (
+    <Slide in={navSheetStore.showNavSheet} direction={'right'}>
       <Box
         height={'100%'}
         sx={{
@@ -490,5 +505,5 @@ const NavSheetContainer = observer(
         {props.children}
       </Box>
     </Slide>
-  ),
-);
+  );
+});

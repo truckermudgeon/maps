@@ -71,6 +71,7 @@ export interface NavSheetStore {
   replaceTopPage(key: NavPageKey): void;
   resetStack(initial?: NavPageKey): void;
 
+  showNavSheet: boolean;
   isLoading: boolean;
   disableFitToBounds: boolean;
 

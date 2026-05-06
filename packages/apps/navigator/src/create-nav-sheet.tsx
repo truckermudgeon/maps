@@ -41,16 +41,16 @@ export function createNavSheet({
   appClient,
   appStore,
   appController,
+  store,
 }: {
   appClient: AppClient;
   appStore: AppStore;
   appController: AppController;
+  store: NavSheetStoreImpl;
 }): {
   NavSheet: (props: NavSheetProps) => React.ReactElement;
-  store: NavSheetStore;
   controller: NavSheetController;
 } {
-  const store = new NavSheetStoreImpl();
   const controller = new NavSheetControllerImpl(store, appClient);
   const { CurrentNavPage } = createCurrentNavPage({
     store,
@@ -85,7 +85,6 @@ export function createNavSheet({
 
   return {
     NavSheet: _NavSheet,
-    store,
     controller,
   };
 }

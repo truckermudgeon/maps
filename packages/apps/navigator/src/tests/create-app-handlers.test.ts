@@ -30,7 +30,6 @@ function makeStore(overrides: Partial<AppStore> = {}): AppStore {
     bearingMode: BearingMode.MATCH_MAP,
     truckPoint: [0, 0],
     trailerPoint: undefined,
-    showNavSheet: false,
     hasReceivedFirstTelemetry: false,
     readyToLoad: false,
     bindingStale: false,
@@ -60,6 +59,7 @@ function makeNavSheetStore(
     popPage: vi.fn(),
     replaceTopPage: vi.fn(),
     resetStack: vi.fn(),
+    showNavSheet: false,
     isLoading: false,
     disableFitToBounds: false,
     searchQuery: '',
@@ -112,7 +112,7 @@ describe('buildHideNavSheet', () => {
   });
 
   it('hides nav sheet, follows, and clears destinations immediately', () => {
-    const store = makeStore({ showNavSheet: true });
+    const store = makeStore();
     const navSheetStore = makeNavSheetStore({
       destinations: [{} as never, {} as never],
     });
@@ -137,7 +137,7 @@ describe('buildHideNavSheet', () => {
   });
 
   it('resets navsheet only after transitionDurationMs elapses', async () => {
-    const store = makeStore({ showNavSheet: true });
+    const store = makeStore();
     const navSheetStore = makeNavSheetStore();
     const controller = makeController();
     const navSheetController = makeNavSheetController();
@@ -343,19 +343,19 @@ describe('buildControlsHandlers', () => {
   });
 
   it('onRouteFabClick: starts choose destination flow + shows nav sheet', () => {
-    const { handlers, store, navSheetController } = setup();
+    const { handlers, navSheetStore, navSheetController } = setup();
     handlers.onRouteFabClick();
     expect(navSheetController.startChooseDestinationFlow).toHaveBeenCalledTimes(
       1,
     );
-    expect(store.showNavSheet).toBe(true);
+    expect(navSheetStore.showNavSheet).toBe(true);
   });
 
   it('onSearchFabClick: starts search-along flow + shows nav sheet', () => {
-    const { handlers, store, navSheetController } = setup();
+    const { handlers, navSheetStore, navSheetController } = setup();
     handlers.onSearchFabClick();
     expect(navSheetController.startSearchAlongFlow).toHaveBeenCalledTimes(1);
-    expect(store.showNavSheet).toBe(true);
+    expect(navSheetStore.showNavSheet).toBe(true);
   });
 });
 
@@ -376,10 +376,10 @@ describe('buildRouteControlsHandlers', () => {
   }
 
   it('onManageStops: starts manage-stops flow + shows nav sheet', () => {
-    const { handlers, store, navSheetController } = setup();
+    const { handlers, navSheetStore, navSheetController } = setup();
     handlers.onManageStops();
     expect(navSheetController.startManageStopsFlow).toHaveBeenCalledTimes(1);
-    expect(store.showNavSheet).toBe(true);
+    expect(navSheetStore.showNavSheet).toBe(true);
   });
 
   it('onRoutePreview: warns and noops when no active route', () => {

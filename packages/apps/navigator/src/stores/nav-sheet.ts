@@ -16,6 +16,7 @@ export class NavSheetStoreImpl implements NavSheetStore {
   // `pageStack` getter, which returns a readonly view.
   private _pageStack: NavPageKey[] = [NavPageKey.CHOOSE_DESTINATION];
 
+  showNavSheet = false;
   isLoading = false;
   disableFitToBounds = false;
 

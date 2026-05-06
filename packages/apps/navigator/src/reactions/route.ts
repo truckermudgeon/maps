@@ -49,7 +49,7 @@ export function wireRouteReactions(
 
   disposers.push(
     reaction(
-      () => (store.showNavSheet ? undefined : store.activeArrowStep),
+      () => (navSheetStore.showNavSheet ? undefined : store.activeArrowStep),
       step => controller.drawStepArrow(step),
     ),
   );

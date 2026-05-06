@@ -6,7 +6,7 @@ import type {
   SegmentInfo,
 } from '@truckermudgeon/navigation/types';
 import type { Marker } from 'maplibre-gl';
-import { action, makeAutoObservable } from 'mobx';
+import { action } from 'mobx';
 import type { MapRef } from 'react-map-gl/maplibre';
 import { ChooseOnMapService } from '../services/choose-on-map';
 import { MapAdapter } from '../services/map-adapter';
@@ -17,6 +17,7 @@ import { TelemetryService } from '../services/telemetry';
 import { CameraStoreImpl } from '../stores/camera';
 import { RouteStoreImpl } from '../stores/route';
 import { SessionStoreImpl } from '../stores/session';
+import type { NavSheetStore } from '../stores/types';
 import { clearCredentialsAndReload, requestWakeLock } from '../util/browser';
 import { BearingMode, CameraMode } from './constants';
 import type {
@@ -37,19 +38,10 @@ export class AppStoreImpl implements AppStore {
   readonly camera: CameraStoreImpl;
   readonly route: RouteStoreImpl;
 
-  showNavSheet = false;
-
   constructor(map: 'usa' | 'europe') {
     this.session = new SessionStoreImpl(map);
     this.camera = new CameraStoreImpl();
     this.route = new RouteStoreImpl();
-    // Children own their own observability; opt the refs out so MobX
-    // doesn't try to deep-observe them here.
-    makeAutoObservable(this, {
-      session: false,
-      camera: false,
-      route: false,
-    });
   }
 
   get themeMode(): 'light' | 'dark' {
@@ -169,6 +161,7 @@ export class AppControllerImpl implements AppController {
 
   constructor(
     private readonly appStore: AppStore,
+    private readonly navSheetStore: NavSheetStore,
     private readonly appClient: AppClient,
   ) {}
 
@@ -236,7 +229,7 @@ export class AppControllerImpl implements AppController {
 
   hideNavSheet() {
     console.log('hide nav sheet');
-    this.appStore.showNavSheet = false;
+    this.navSheetStore.showNavSheet = false;
   }
 
   setDestinationNodeUid(toNodeUid: string) {

@@ -1,31 +1,42 @@
 import { action, makeAutoObservable } from 'mobx';
 import type { MapRef } from 'react-map-gl/maplibre';
+import type {
+  CameraStore,
+  NavSheetStore,
+  RouteStore,
+  SessionStore,
+} from '../stores/types';
 import { CameraMode } from './constants';
-import type { AppStore, ControlsController, ControlsStore } from './types';
+import type { ControlsController, ControlsStore } from './types';
 
 export class ControlsStoreImpl implements ControlsStore {
   bearing = 0;
   limit = 0;
   speed = 0;
 
-  constructor(private readonly appStore: AppStore) {
+  constructor(
+    private readonly session: SessionStore,
+    private readonly camera: CameraStore,
+    private readonly route: RouteStore,
+    private readonly navSheet: NavSheetStore,
+  ) {
     makeAutoObservable(this);
   }
 
   get units(): 'imperial' | 'metric' {
-    return this.appStore.map === 'usa' ? 'imperial' : 'metric';
+    return this.session.map === 'usa' ? 'imperial' : 'metric';
   }
 
   get showRecenterFab(): boolean {
-    return this.appStore.cameraMode === CameraMode.FREE;
+    return this.camera.cameraMode === CameraMode.FREE;
   }
 
   get showRouteFab(): boolean {
-    return !this.appStore.activeRoute && !this.appStore.showNavSheet;
+    return !this.route.activeRoute && !this.navSheet.showNavSheet;
   }
 
   get showSearchFab(): boolean {
-    return !!this.appStore.activeRoute && !this.appStore.showNavSheet;
+    return !!this.route.activeRoute && !this.navSheet.showNavSheet;
   }
 }
 

@@ -156,12 +156,12 @@ export function buildControlsHandlers(
     onRouteFabClick: action(() => {
       controller.requestWakeLock();
       navSheetController.startChooseDestinationFlow();
-      store.showNavSheet = true;
+      navSheetStore.showNavSheet = true;
     }),
     onSearchFabClick: action(() => {
       controller.requestWakeLock();
       navSheetController.startSearchAlongFlow();
-      store.showNavSheet = true;
+      navSheetStore.showNavSheet = true;
     }),
   };
 }
@@ -169,15 +169,15 @@ export function buildControlsHandlers(
 export function buildRouteControlsHandlers(
   deps: HandlerDeps,
 ): RouteControlsCallbacks {
-  const { store, controller, navSheetController } = deps;
+  const { store, controller, navSheetStore, navSheetController } = deps;
   return {
     onManageStops: action(() => {
       navSheetController.startManageStopsFlow();
-      store.showNavSheet = true;
+      navSheetStore.showNavSheet = true;
     }),
     onSearchAlongRoute: action(() => {
       navSheetController.startSearchAlongFlow();
-      store.showNavSheet = true;
+      navSheetStore.showNavSheet = true;
     }),
     onRoutePreview: action(() => {
       if (!store.activeRoute) {
@@ -189,7 +189,7 @@ export function buildRouteControlsHandlers(
     }),
     onRouteDirections: action(() => {
       navSheetController.startShowActiveRouteDirectionsFlow();
-      store.showNavSheet = true;
+      navSheetStore.showNavSheet = true;
     }),
     onRouteEnd: action(() => controller.setActiveRoute(undefined)),
   };

@@ -15,9 +15,7 @@ export type AppClient = ReturnType<
   typeof createTRPCProxyClient<AppRouter>
 >['app'];
 
-export interface AppStore extends SessionStore, CameraStore, RouteStore {
-  showNavSheet: boolean;
-}
+export interface AppStore extends SessionStore, CameraStore, RouteStore {}
 
 export interface AppController {
   onMapLoad(map: MapRef, playerMarker: Marker): void;

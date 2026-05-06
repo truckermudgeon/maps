@@ -3,12 +3,8 @@ import {
   BearingMode,
   navSheetPagesRequiringMapVisibility,
 } from '../controllers/constants';
-import type {
-  AppStore,
-  MapPaddingStore,
-  NavSheetStore,
-  UIEnvironmentStore,
-} from '../controllers/types';
+import type { MapPaddingStore, UIEnvironmentStore } from '../controllers/types';
+import type { CameraStore, NavSheetStore, RouteStore } from './types';
 
 const directionBannerBottom = 120;
 const routeStackBottom = 90;
@@ -17,7 +13,8 @@ const verticalPadding = 40;
 export class MapPaddingStoreImpl implements MapPaddingStore {
   constructor(
     private readonly uiEnvStore: UIEnvironmentStore,
-    private readonly appStore: AppStore,
+    private readonly route: RouteStore,
+    private readonly camera: CameraStore,
     private readonly navStore: NavSheetStore,
   ) {
     makeAutoObservable(this, {
@@ -33,20 +30,20 @@ export class MapPaddingStoreImpl implements MapPaddingStore {
     readonly bottom: number;
   } {
     const showingPartialHeightNavSheet =
-      this.appStore.showNavSheet &&
+      this.navStore.showNavSheet &&
       navSheetPagesRequiringMapVisibility.has(this.navStore.currentPageKey);
 
     return {
       left:
-        (this.appStore.showNavSheet || this.appStore.activeRoute) &&
+        (this.navStore.showNavSheet || this.route.activeRoute) &&
         this.navSheetWidth !== this.uiEnvStore.width
           ? this.navSheetWidth
           : 0,
       right: 0,
-      top: this.appStore.activeRoute ? directionBannerBottom : 0,
+      top: this.route.activeRoute ? directionBannerBottom : 0,
       bottom: showingPartialHeightNavSheet
         ? Math.round(this.uiEnvStore.height * 0.4)
-        : this.appStore.activeRoute
+        : this.route.activeRoute
           ? routeStackBottom
           : 0,
     };
@@ -72,7 +69,7 @@ export class MapPaddingStoreImpl implements MapPaddingStore {
 
   //of the target center relative to real map container center at the end of animation.
   get offset(): [number, number] {
-    if (this.appStore.bearingMode === BearingMode.NORTH_LOCK) {
+    if (this.camera.bearingMode === BearingMode.NORTH_LOCK) {
       // no need to offset in north-lock mode: map should be centered on player.
       return [0, 0];
     }
@@ -82,14 +79,13 @@ export class MapPaddingStoreImpl implements MapPaddingStore {
     const markerHeight = 50;
     const bottomControlsHeight =
       this.uiEnvStore.orientation === 'portrait' &&
-      this.appStore.showNavSheet &&
+      this.navStore.showNavSheet &&
       navSheetPagesRequiringMapVisibility.has(this.navStore.currentPageKey)
         ? this.uiEnvStore.height * 0.4
-        : this.uiEnvStore.orientation === 'portrait' &&
-            this.appStore.activeRoute
+        : this.uiEnvStore.orientation === 'portrait' && this.route.activeRoute
           ? routeStackBottom
           : 0;
-    const padding = this.appStore.activeRoute
+    const padding = this.route.activeRoute
       ? markerHeight + verticalPadding
       : markerHeight + verticalPadding / 2;
     const offsetY = this.uiEnvStore.height / 2 - bottomControlsHeight - padding;
