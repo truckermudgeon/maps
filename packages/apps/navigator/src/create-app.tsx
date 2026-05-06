@@ -134,7 +134,7 @@ export function createApp({
       selectedDestinationNodeUid={navSheetStore.selectedDestination?.nodeUid}
       forceDisplay={navSheetStore.currentPageKey === NavPageKey.DESTINATIONS}
       onDestinationClick={action(dest =>
-        navSheetController.onDestinationRoutesClick(navSheetStore, dest),
+        navSheetController.onDestinationRoutesClick(dest),
       )}
     />
   ));

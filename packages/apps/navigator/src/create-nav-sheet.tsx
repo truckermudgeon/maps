@@ -51,7 +51,7 @@ export function createNavSheet({
   controller: NavSheetController;
 } {
   const store = new NavSheetStoreImpl();
-  const controller = new NavSheetControllerImpl(appClient);
+  const controller = new NavSheetControllerImpl(store, appClient);
   const { CurrentNavPage } = createCurrentNavPage({
     store,
     controller,
@@ -63,7 +63,7 @@ export function createNavSheet({
     <TitleControls
       showBackButton={store.showBackButton}
       title={store.title}
-      onBackClick={action(() => controller.onBackClick(store))}
+      onBackClick={action(() => controller.onBackClick())}
       onCloseClick={props.onCloseClick}
     />
   ));
@@ -112,7 +112,7 @@ function createCurrentNavPage(opts: {
 
         setLoading(true);
         controller
-          .search(store, value)
+          .search(value)
           .then(
             results => setOptions(results),
             error => console.log('search failed:', error),
@@ -127,13 +127,13 @@ function createCurrentNavPage(opts: {
         showSearchLoading={loading}
         mode={'chooseDestination'}
         onSelect={action(stringOrResult =>
-          controller.onSearchSelect(store, stringOrResult),
+          controller.onSearchSelect(stringOrResult),
         )}
         onInputChange={debouncedOnInput}
         onDestinationTypeClick={action((type, label) =>
-          controller.onDestinationTypeClick(store, type, label, appController),
+          controller.onDestinationTypeClick(type, label, appController),
         )}
-        onChooseOnMapClick={action(() => controller.onChooseOnMapClick(store))}
+        onChooseOnMapClick={action(() => controller.onChooseOnMapClick())}
         options={options}
       />
     );
@@ -153,7 +153,7 @@ function createCurrentNavPage(opts: {
 
         setLoading(true);
         controller
-          .search(store, value)
+          .search(value)
           .then(
             results => setOptions(results),
             error => console.log('search failed:', error),
@@ -168,13 +168,13 @@ function createCurrentNavPage(opts: {
         mode={'searchAlong'}
         showSearchLoading={loading}
         onSelect={action(stringOrResult =>
-          controller.onSearchSelect(store, stringOrResult),
+          controller.onSearchSelect(stringOrResult),
         )}
         onInputChange={debouncedOnInput}
         onDestinationTypeClick={action((type, label) =>
-          controller.onDestinationTypeClick(store, type, label, appController),
+          controller.onDestinationTypeClick(type, label, appController),
         )}
-        onChooseOnMapClick={action(() => controller.onChooseOnMapClick(store))}
+        onChooseOnMapClick={action(() => controller.onChooseOnMapClick())}
         options={options}
       />
     );
@@ -200,10 +200,10 @@ function createCurrentNavPage(opts: {
           <CollapsibleButtonBar
             visible={visible.get()}
             onDestinationRoutesClick={action(() =>
-              controller.onDestinationRoutesClick(store, destination),
+              controller.onDestinationRoutesClick(destination),
             )}
             onDestinationGoClick={action(() => {
-              controller.onDestinationGoClick(store, destination);
+              controller.onDestinationGoClick(destination);
               props.onDestinationGoClick();
             })}
           />
@@ -217,7 +217,7 @@ function createCurrentNavPage(opts: {
         destinations={store.destinations}
         CollapsibleButtonBar={_CollapsibleButtonBar}
         onDestinationHighlight={action(dest =>
-          controller.onDestinationHighlight(store, dest),
+          controller.onDestinationHighlight(dest),
         )}
       />
     );
@@ -228,14 +228,12 @@ function createCurrentNavPage(opts: {
       units={appStore.map === 'usa' ? 'imperial' : 'metric'}
       isLoading={store.isLoading}
       routes={store.routes}
-      onRouteHighlight={action(route =>
-        controller.onRouteHighlight(store, route),
-      )}
+      onRouteHighlight={action(route => controller.onRouteHighlight(route))}
       onRouteDetailsClick={action(route =>
-        controller.onRouteDetailsClick(store, route),
+        controller.onRouteDetailsClick(route),
       )}
       onRouteGoClick={action(route => {
-        controller.onRouteGoClick(store, route);
+        controller.onRouteGoClick(route);
         props.onRouteGoClick();
       })}
     />

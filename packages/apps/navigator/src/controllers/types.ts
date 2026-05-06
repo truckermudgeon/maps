@@ -7,12 +7,7 @@ import type {
 } from '@truckermudgeon/navigation/types';
 import type { Marker } from 'maplibre-gl';
 import type { MapRef } from 'react-map-gl/maplibre';
-import type {
-  CameraStore,
-  NavSheetStore,
-  RouteStore,
-  SessionStore,
-} from '../stores/types';
+import type { CameraStore, RouteStore, SessionStore } from '../stores/types';
 
 export type { NavSheetStore } from '../stores/types';
 
@@ -53,39 +48,32 @@ export interface ControlsController {
 }
 
 export interface NavSheetController {
-  search(store: NavSheetStore, query: string): Promise<SearchResult[]>;
-  onSearchSelect(
-    store: NavSheetStore,
-    queryOrResult: string | SearchResult,
-  ): void;
+  search(query: string): Promise<SearchResult[]>;
+  onSearchSelect(queryOrResult: string | SearchResult): void;
 
-  onBackClick(store: NavSheetStore): void;
+  onBackClick(): void;
 
-  onChooseOnMapClick(store: NavSheetStore): void;
+  onChooseOnMapClick(): void;
   onDestinationTypeClick(
-    store: NavSheetStore,
     type: PoiType,
     label: string,
     appController: AppController,
   ): void;
 
-  onDestinationHighlight(store: NavSheetStore, destination: SearchResult): void;
-  onDestinationGoClick(store: NavSheetStore, destination: SearchResult): void;
-  onDestinationRoutesClick(
-    store: NavSheetStore,
-    destination: SearchResult,
-  ): void;
+  onDestinationHighlight(destination: SearchResult): void;
+  onDestinationGoClick(destination: SearchResult): void;
+  onDestinationRoutesClick(destination: SearchResult): void;
 
-  onRouteHighlight(store: NavSheetStore, route: Route): void;
-  onRouteDetailsClick(store: NavSheetStore, route: Route): void;
-  onRouteGoClick(store: NavSheetStore, route: Route): void;
+  onRouteHighlight(route: Route): void;
+  onRouteDetailsClick(route: Route): void;
+  onRouteGoClick(route: Route): void;
 
-  reset(store: NavSheetStore): void;
+  reset(): void;
 
-  startChooseDestinationFlow(navSheetStore: NavSheetStore): void;
-  startSearchAlongFlow(navSheetStore: NavSheetStore): void;
-  startShowActiveRouteDirectionsFlow(navSheetStore: NavSheetStore): void;
-  startManageStopsFlow(navSheetStore: NavSheetStore): void;
+  startChooseDestinationFlow(): void;
+  startSearchAlongFlow(): void;
+  startShowActiveRouteDirectionsFlow(): void;
+  startManageStopsFlow(): void;
 }
 
 export interface Breakpoints {

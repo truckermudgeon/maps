@@ -72,7 +72,7 @@ export function buildHideNavSheet(deps: HideNavSheetDeps): () => void {
     // Wait until nav sheet finishes transitioning away before resetting,
     // otherwise the nav sheet will flash the UI for the reset state.
     void delay(transitionDurationMs).then(
-      action(() => navSheetController.reset(navSheetStore)),
+      action(() => navSheetController.reset()),
     );
     // HACK but reset destinations list right away, because we want to hide
     // markers right away.
@@ -113,10 +113,7 @@ export function buildNavSheetHandlers(
       navSheetStore.isLoading = true;
       controller.synthesizeSearchResult().then(
         action(searchResult => {
-          navSheetController.onDestinationRoutesClick(
-            navSheetStore,
-            searchResult,
-          );
+          navSheetController.onDestinationRoutesClick(searchResult);
         }),
         error => console.log('error trying to synthesize result', error),
       );
@@ -158,12 +155,12 @@ export function buildControlsHandlers(
     }),
     onRouteFabClick: action(() => {
       controller.requestWakeLock();
-      navSheetController.startChooseDestinationFlow(navSheetStore);
+      navSheetController.startChooseDestinationFlow();
       store.showNavSheet = true;
     }),
     onSearchFabClick: action(() => {
       controller.requestWakeLock();
-      navSheetController.startSearchAlongFlow(navSheetStore);
+      navSheetController.startSearchAlongFlow();
       store.showNavSheet = true;
     }),
   };
@@ -172,15 +169,14 @@ export function buildControlsHandlers(
 export function buildRouteControlsHandlers(
   deps: HandlerDeps,
 ): RouteControlsCallbacks {
-  const { store, controller, navSheetStore, navSheetController, appClient } =
-    deps;
+  const { store, controller, navSheetController } = deps;
   return {
     onManageStops: action(() => {
-      navSheetController.startManageStopsFlow(navSheetStore);
+      navSheetController.startManageStopsFlow();
       store.showNavSheet = true;
     }),
     onSearchAlongRoute: action(() => {
-      navSheetController.startSearchAlongFlow(navSheetStore);
+      navSheetController.startSearchAlongFlow();
       store.showNavSheet = true;
     }),
     onRoutePreview: action(() => {
@@ -192,7 +188,7 @@ export function buildRouteControlsHandlers(
       controller.fitPoints(routeCornerPair(store.activeRoute));
     }),
     onRouteDirections: action(() => {
-      navSheetController.startShowActiveRouteDirectionsFlow(navSheetStore);
+      navSheetController.startShowActiveRouteDirectionsFlow();
       store.showNavSheet = true;
     }),
     onRouteEnd: action(() => controller.setActiveRoute(undefined)),

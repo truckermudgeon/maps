@@ -19,37 +19,38 @@ import type {
 } from './types';
 
 export class NavSheetControllerImpl implements NavSheetController {
-  constructor(private readonly appClient: AppClient) {}
+  constructor(
+    private readonly store: NavSheetStore,
+    private readonly appClient: AppClient,
+  ) {}
 
-  startChooseDestinationFlow(store: NavSheetStore): void {
-    this.reset(store, NavPageKey.CHOOSE_DESTINATION);
+  startChooseDestinationFlow(): void {
+    this.reset(NavPageKey.CHOOSE_DESTINATION);
   }
 
-  startSearchAlongFlow(store: NavSheetStore): void {
-    this.reset(store, NavPageKey.SEARCH_ALONG);
+  startSearchAlongFlow(): void {
+    this.reset(NavPageKey.SEARCH_ALONG);
   }
 
-  startShowActiveRouteDirectionsFlow(store: NavSheetStore): void {
-    this.reset(store, NavPageKey.DIRECTIONS_FROM_ROUTE_CONTROLS);
+  startShowActiveRouteDirectionsFlow(): void {
+    this.reset(NavPageKey.DIRECTIONS_FROM_ROUTE_CONTROLS);
   }
 
-  startManageStopsFlow(store: NavSheetStore): void {
-    this.reset(store, NavPageKey.MANAGE_STOPS);
+  startManageStopsFlow(): void {
+    this.reset(NavPageKey.MANAGE_STOPS);
   }
 
-  search(
-    _store: NavSheetStore,
-    query: string,
-  ): Promise<SearchResultWithRelativeTruckInfo[]> {
+  search(query: string): Promise<SearchResultWithRelativeTruckInfo[]> {
     return searchApi.getAutocompleteOptions(this.appClient, query);
   }
 
-  onSearchSelect(store: NavSheetStore, queryOrResult: string | SearchResult) {
+  onSearchSelect(queryOrResult: string | SearchResult) {
+    const { store } = this;
     if (typeof queryOrResult === 'string') {
       store.pushPage(NavPageKey.DESTINATIONS);
       store.isLoading = true;
 
-      void this.search(store, queryOrResult)
+      void this.search(queryOrResult)
         .then(
           action(response => {
             store.searchQuery = queryOrResult;
@@ -59,11 +60,12 @@ export class NavSheetControllerImpl implements NavSheetController {
         )
         .finally(action(() => (store.isLoading = false)));
     } else {
-      this.onDestinationRoutesClick(store, queryOrResult);
+      this.onDestinationRoutesClick(queryOrResult);
     }
   }
 
-  onBackClick(store: NavSheetStore) {
+  onBackClick() {
+    const { store } = this;
     switch (store.currentPageKey) {
       case NavPageKey.CHOOSE_DESTINATION:
       case NavPageKey.SEARCH_ALONG:
@@ -76,7 +78,7 @@ export class NavSheetControllerImpl implements NavSheetController {
       case NavPageKey.DESTINATIONS:
         // reset() forces the stack to length 1 with CHOOSE_DESTINATION on
         // top, so callers must not also pop after invoking reset().
-        this.reset(store);
+        this.reset();
         break;
       case NavPageKey.ROUTES:
         store.selectedDestination = undefined;
@@ -89,18 +91,18 @@ export class NavSheetControllerImpl implements NavSheetController {
     }
   }
 
-  onChooseOnMapClick(store: NavSheetStore) {
-    store.pushPage(NavPageKey.CHOOSE_ON_MAP);
+  onChooseOnMapClick() {
+    this.store.pushPage(NavPageKey.CHOOSE_ON_MAP);
   }
 
   onDestinationTypeClick(
-    store: NavSheetStore,
     type: PoiType,
     _label: string,
     // TODO get this out of here. handle in create-app, e.g., via
     //  a NavSheetProp for onDestinationTypeClick
     appController: AppController,
   ): void {
+    const { store } = this;
     const currentPage = store.currentPageKey;
     console.log('currentPage', currentPage);
     const scope =
@@ -145,18 +147,19 @@ export class NavSheetControllerImpl implements NavSheetController {
     }
   }
 
-  onDestinationHighlight(store: NavSheetStore, dest: SearchResult): void {
+  onDestinationHighlight(dest: SearchResult): void {
     // toggles if `dest` is the currently selected dest.
-    store.selectedDestination =
-      dest === store.selectedDestination ? undefined : dest;
+    this.store.selectedDestination =
+      dest === this.store.selectedDestination ? undefined : dest;
   }
 
-  onDestinationGoClick(store: NavSheetStore, dest: SearchResult): void {
+  onDestinationGoClick(dest: SearchResult): void {
     console.log('go', dest);
-    store.selectedDestination = dest;
+    this.store.selectedDestination = dest;
   }
 
-  onDestinationRoutesClick(store: NavSheetStore, dest: SearchResult): void {
+  onDestinationRoutesClick(dest: SearchResult): void {
+    const { store } = this;
     console.log('routes', dest);
     store.selectedDestination = dest;
     store.pushPage(NavPageKey.ROUTES);
@@ -172,26 +175,24 @@ export class NavSheetControllerImpl implements NavSheetController {
     );
   }
 
-  onRouteHighlight(store: NavSheetStore, route: Route): void {
+  onRouteHighlight(route: Route): void {
     console.log('highlight route', route);
-    store.selectedRoute = route;
+    this.store.selectedRoute = route;
   }
 
-  onRouteDetailsClick(store: NavSheetStore, route: Route): void {
+  onRouteDetailsClick(route: Route): void {
     console.log('route details', route);
-    store.selectedRoute = route;
-    store.pushPage(NavPageKey.DIRECTIONS_FROM_ROUTES_LIST);
+    this.store.selectedRoute = route;
+    this.store.pushPage(NavPageKey.DIRECTIONS_FROM_ROUTES_LIST);
   }
 
-  onRouteGoClick(store: NavSheetStore, route: Route): void {
+  onRouteGoClick(route: Route): void {
     console.log('go route', route);
-    store.selectedRoute = route;
+    this.store.selectedRoute = route;
   }
 
-  reset(
-    store: NavSheetStore,
-    initialPage: NavPageKey = NavPageKey.CHOOSE_DESTINATION,
-  ) {
+  reset(initialPage: NavPageKey = NavPageKey.CHOOSE_DESTINATION) {
+    const { store } = this;
     console.log('nav sheet reset');
     store.resetStack(initialPage);
     store.isLoading = false;

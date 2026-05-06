@@ -154,7 +154,7 @@ describe('buildHideNavSheet', () => {
     expect(navSheetController.reset).not.toHaveBeenCalled();
 
     await vi.advanceTimersByTimeAsync(300);
-    expect(navSheetController.reset).toHaveBeenCalledWith(navSheetStore);
+    expect(navSheetController.reset).toHaveBeenCalledTimes(1);
   });
 
   it('clears step arrow when there is no active route', () => {
@@ -264,7 +264,6 @@ describe('buildNavSheetHandlers', () => {
     expect(navSheetStore.isLoading).toBe(true);
     await vi.waitFor(() =>
       expect(navSheetController.onDestinationRoutesClick).toHaveBeenCalledWith(
-        navSheetStore,
         searchResult,
       ),
     );
