@@ -3,62 +3,21 @@ import type { PoiType } from '@truckermudgeon/navigation/constants';
 import type {
   AppRouter,
   Route,
-  RouteIndex,
-  RouteStep,
   RouteWithSummary,
   SearchResult,
   SearchResultWithRelativeTruckInfo,
-  SegmentInfo,
-  StepManeuver,
 } from '@truckermudgeon/navigation/types';
 import type { Marker } from 'maplibre-gl';
 import type { MapRef } from 'react-map-gl/maplibre';
-import type { BearingMode, CameraMode, NavPageKey } from './constants';
+import type { CameraStore, RouteStore, SessionStore } from '../stores/types';
+import type { NavPageKey } from './constants';
 
 export type AppClient = ReturnType<
   typeof createTRPCProxyClient<AppRouter>
 >['app'];
 
-export interface AppStore {
-  themeMode: 'light' | 'dark';
-  map: 'usa' | 'europe';
-  cameraMode: CameraMode;
-  bearingMode: BearingMode;
-  truckPoint: readonly [lon: number, lat: number];
-  trailerPoint: readonly [lon: number, lat: number] | undefined;
+export interface AppStore extends SessionStore, CameraStore, RouteStore {
   showNavSheet: boolean;
-  // true once the webapp has received its first positionUpdate from the
-  // server; never flipped back.
-  hasReceivedFirstTelemetry: boolean;
-  readyToLoad: boolean;
-  // true when the server has signaled that no telemetry has arrived within
-  // its grace window, false when telemetry is flowing normally.
-  bindingStale: boolean;
-
-  // TODO naming.
-  activeRoute: Route | undefined;
-  activeRouteIndex: RouteIndex | undefined;
-
-  segmentComplete: SegmentInfo | undefined;
-
-  // total route
-  readonly activeRouteSummary:
-    | { distanceMeters: number; minutes: number }
-    | undefined;
-  // to first waypoint
-  readonly activeRouteToFirstWayPointSummary:
-    | { distanceMeters: number; minutes: number }
-    | undefined;
-  readonly distanceToNextManeuver: number;
-  readonly activeRouteDirection: StepManeuver | undefined;
-  readonly activeStepLine:
-    | { line: GeoJSON.Feature<GeoJSON.LineString>; length: number }
-    | undefined;
-  readonly activeArrowStep: RouteStep | undefined;
-  readonly geoJsonRoute: {
-    steps: readonly { step: RouteStep; featureLength: number }[];
-    featureLength: number;
-  };
 }
 
 export interface AppController {

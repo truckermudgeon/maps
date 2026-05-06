@@ -11,283 +11,155 @@ import type {
   RouteStep,
   SearchResult,
   SegmentInfo,
-  StepManeuver,
 } from '@truckermudgeon/navigation/types';
 import bearing from '@turf/bearing';
 import { featureCollection, lineString, point } from '@turf/helpers';
-import { length } from '@turf/length';
 import nearestPointOnLine from '@turf/nearest-point-on-line';
 import type { GeoJSONSource } from 'maplibre-gl';
 import { Marker } from 'maplibre-gl';
-import { action, makeAutoObservable, observable, runInAction } from 'mobx';
+import { action, makeAutoObservable, runInAction } from 'mobx';
 import type { MapRef } from 'react-map-gl/maplibre';
 import { lineGradientExpression } from '../components/RoutesStyle';
 import { toRouteFeatures } from '../route-features';
+import { CameraStoreImpl } from '../stores/camera';
+import { RouteStoreImpl } from '../stores/route';
+import { SessionStoreImpl } from '../stores/session';
 import { calculateDelta, toCameraOptions } from '../util/camera-options';
 import { clamp } from '../util/clamp';
-import { getNextStep, routeSummaryReducer } from '../util/route-geometry';
 import { TelemetryTimeline } from '../util/telemetry-timeline';
 import { BearingMode, CameraMode } from './constants';
 import type { AppClient, AppController, AppStore } from './types';
 
+/**
+ * Facade over the focused stores (Session/Camera/Route). Exists so that
+ * callers can keep using a flat `appStore.activeRoute` API during the
+ * controllers/ refactor; once domain hooks land, consumers can access
+ * the focused stores directly and this facade can be retired.
+ */
 export class AppStoreImpl implements AppStore {
-  themeMode: 'light' | 'dark' = 'light';
-  cameraMode: CameraMode = CameraMode.FOLLOW;
-  bearingMode: BearingMode = BearingMode.MATCH_MAP;
-  activeRoute: Route | undefined = undefined;
-  activeRouteIndex: RouteIndex | undefined = undefined;
-  truckPoint: [lon: number, lat: number] = [0, 0];
-  trailerPoint: [lon: number, lat: number] | undefined;
+  readonly session: SessionStoreImpl;
+  readonly camera: CameraStoreImpl;
+  readonly route: RouteStoreImpl;
+
   showNavSheet = false;
-  readyToLoad = false;
-  hasReceivedFirstTelemetry = false;
-  bindingStale = false;
 
-  segmentComplete: SegmentInfo | undefined = undefined;
-
-  constructor(public map: 'usa' | 'europe') {
+  constructor(map: 'usa' | 'europe') {
+    this.session = new SessionStoreImpl(map);
+    this.camera = new CameraStoreImpl();
+    this.route = new RouteStoreImpl();
+    // Children own their own observability; opt the refs out so MobX
+    // doesn't try to deep-observe them here.
     makeAutoObservable(this, {
-      activeRoute: observable.ref,
-      activeRouteIndex: observable.struct,
-      truckPoint: observable.ref,
-      trailerPoint: observable.ref,
-      segmentComplete: observable.ref,
+      session: false,
+      camera: false,
+      route: false,
     });
   }
 
-  private get activeStep(): RouteStep | undefined {
-    // N.B.: activeRoute and activeRouteIndex can get out of sync. An undefined
-    // activeRouteIndex signals this, and forces an early exit here so that
-    // a possibly-invalid StepManeuver isn't calculated.
-    if (!this.activeRoute || this.activeRouteIndex == null) {
-      return undefined;
-    }
-
-    const { segmentIndex, stepIndex } = this.activeRouteIndex;
-    return assertExists(
-      this.activeRoute.segments[segmentIndex].steps[stepIndex],
-    );
+  get themeMode(): 'light' | 'dark' {
+    return this.session.themeMode;
+  }
+  set themeMode(v: 'light' | 'dark') {
+    this.session.themeMode = v;
   }
 
-  private get nextStep(): RouteStep | undefined {
-    if (!this.activeRoute || !this.activeStep) {
-      return;
-    }
-    return getNextStep(this.activeStep, this.activeRoute);
+  get map(): 'usa' | 'europe' {
+    return this.session.map;
+  }
+  set map(v: 'usa' | 'europe') {
+    this.session.map = v;
   }
 
-  private get nextStepArrow():
-    | {
-        geometry: GeoJSON.Feature<GeoJSON.LineString>;
-        length: number;
-      }
-    | undefined {
-    if (!this.nextStep?.arrowPoints) {
-      return;
-    }
-
-    const arrowPoints = polyline
-      .decode(this.nextStep.geometry)
-      .slice(0, this.nextStep.arrowPoints);
-    const arrow = lineString(arrowPoints);
-    return {
-      geometry: arrow,
-      length: length(arrow),
-    };
+  get hasReceivedFirstTelemetry(): boolean {
+    return this.session.hasReceivedFirstTelemetry;
+  }
+  set hasReceivedFirstTelemetry(v: boolean) {
+    this.session.hasReceivedFirstTelemetry = v;
   }
 
-  get activeStepLine():
-    | {
-        line: GeoJSON.Feature<GeoJSON.LineString>;
-        length: number;
-        arrow?: {
-          geometry: GeoJSON.Feature<GeoJSON.LineString>;
-          length: number;
-        };
-      }
-    | undefined {
-    if (!this.activeStep) {
-      return undefined;
-    }
-
-    const linePoints = polyline.decode(this.activeStep.geometry);
-    const line = lineString(linePoints);
-    let arrow;
-    if (this.activeStep.arrowPoints) {
-      const geometry = lineString(
-        linePoints.slice(0, this.activeStep.arrowPoints),
-      );
-      arrow = {
-        geometry,
-        length: length(geometry),
-      };
-    }
-    return {
-      line,
-      length: length(line),
-      arrow,
-    };
+  get readyToLoad(): boolean {
+    return this.session.readyToLoad;
+  }
+  set readyToLoad(v: boolean) {
+    this.session.readyToLoad = v;
   }
 
-  get activeRouteSummary():
-    | { distanceMeters: number; minutes: number }
-    | undefined {
-    const firstWayPointSummary = this.activeRouteToFirstWayPointSummary;
-    if (!firstWayPointSummary || !this.activeRoute || !this.activeRouteIndex) {
-      return;
-    }
-
-    const restSegments = this.activeRoute.segments.slice(
-      this.activeRouteIndex.segmentIndex + 1,
-    );
-
-    const restSegmentTotals = restSegments
-      .flatMap(segment => segment.steps)
-      .reduce(routeSummaryReducer, {
-        duration: 0,
-        distanceMeters: 0,
-        activeRouteNodeIndex: this.activeRouteIndex.nodeIndex,
-      });
-
-    return {
-      distanceMeters:
-        firstWayPointSummary.distanceMeters + restSegmentTotals.distanceMeters,
-      minutes:
-        firstWayPointSummary.minutes +
-        Math.ceil(restSegmentTotals.duration / 60),
-    };
+  get bindingStale(): boolean {
+    return this.session.bindingStale;
+  }
+  set bindingStale(v: boolean) {
+    this.session.bindingStale = v;
   }
 
-  get activeRouteToFirstWayPointSummary():
-    | { distanceMeters: number; minutes: number }
-    | undefined {
-    if (!this.activeRoute || !this.activeRouteIndex) {
-      return;
-    }
-
-    const [firstSegment] = this.activeRoute.segments.slice(
-      this.activeRouteIndex.segmentIndex,
-    );
-
-    const firstSegmentTotals = firstSegment.steps
-      .slice(this.activeRouteIndex.stepIndex)
-      .reduce(routeSummaryReducer, {
-        duration: 0,
-        distanceMeters: 0,
-        activeRouteNodeIndex: this.activeRouteIndex.nodeIndex,
-      });
-
-    return {
-      distanceMeters: firstSegmentTotals.distanceMeters,
-      minutes: Math.ceil(firstSegmentTotals.duration / 60),
-    };
+  get cameraMode(): CameraMode {
+    return this.camera.cameraMode;
+  }
+  set cameraMode(v: CameraMode) {
+    this.camera.cameraMode = v;
   }
 
-  get activeRouteDirection(): StepManeuver | undefined {
-    if (!this.activeStepLine) {
-      return;
-    }
-
-    const { line } = this.activeStepLine;
-    // check for degenerate lines
-    const firstCoord = line.geometry.coordinates[0];
-    if (
-      line.geometry.coordinates.every(
-        pos => pos[0] === firstCoord[0] && pos[1] === firstCoord[1],
-      )
-    ) {
-      return undefined; //this.activeStep?.maneuver;
-    }
-
-    const distanceAlongLineKm = nearestPointOnLine(line, this.truckPoint)
-      .properties.location;
-    if (distanceAlongLineKm < (this.activeStepLine.arrow?.length ?? 0) / 2) {
-      return this.activeStep?.maneuver;
-    }
-    return this.nextStep?.maneuver;
+  get bearingMode(): BearingMode {
+    return this.camera.bearingMode;
+  }
+  set bearingMode(v: BearingMode) {
+    this.camera.bearingMode = v;
   }
 
-  get distanceToNextManeuver(): number {
-    if (!this.activeStepLine) {
-      return 0;
-    }
-
-    const { line, length } = this.activeStepLine;
-    // check for degenerate lines
-    const firstCoord = line.geometry.coordinates[0];
-    if (
-      line.geometry.coordinates.every(
-        pos => pos[0] === firstCoord[0] && pos[1] === firstCoord[1],
-      )
-    ) {
-      return 0;
-    }
-
-    const distanceAlongLineKm = nearestPointOnLine(line, this.truckPoint)
-      .properties.location;
-    const arrowMidpointLocation = (this.activeStepLine.arrow?.length ?? 0) / 2;
-    if (distanceAlongLineKm < arrowMidpointLocation) {
-      return ((arrowMidpointLocation - distanceAlongLineKm) * 1000) / 19.668;
-    }
-
-    return (
-      ((length - distanceAlongLineKm + (this.nextStepArrow?.length ?? 0) / 2) *
-        1000) /
-      19.668
-    );
+  get activeRoute(): Route | undefined {
+    return this.route.activeRoute;
+  }
+  set activeRoute(v: Route | undefined) {
+    this.route.activeRoute = v;
   }
 
-  get activeArrowStep(): RouteStep | undefined {
-    if (!this.activeStepLine) {
-      return;
-    }
-    const { line } = this.activeStepLine;
-    // check for degenerate lines
-    const firstCoord = line.geometry.coordinates[0];
-    if (
-      line.geometry.coordinates.every(
-        pos => pos[0] === firstCoord[0] && pos[1] === firstCoord[1],
-      )
-    ) {
-      return undefined;
-    }
-
-    const distanceAlongLineKm = nearestPointOnLine(line, this.truckPoint)
-      .properties.location;
-    if (distanceAlongLineKm < (this.activeStepLine.arrow?.length ?? 0) / 2) {
-      return this.activeStep!;
-    }
-    return this.nextStep!;
+  get activeRouteIndex(): RouteIndex | undefined {
+    return this.route.activeRouteIndex;
+  }
+  set activeRouteIndex(v: RouteIndex | undefined) {
+    this.route.activeRouteIndex = v;
   }
 
-  get geoJsonRoute(): {
-    steps: readonly { step: RouteStep; featureLength: number }[];
-    featureLength: number;
-  } {
-    if (!this.activeRoute) {
-      return {
-        steps: [],
-        featureLength: 0,
-      };
-    }
+  get truckPoint(): readonly [lon: number, lat: number] {
+    return this.route.truckPoint;
+  }
+  set truckPoint(v: [lon: number, lat: number]) {
+    this.route.truckPoint = v;
+  }
 
-    let totalLength = 0;
-    const steps = this.activeRoute.segments.flatMap(s =>
-      s.steps.map(step => {
-        const points = polyline.decode(step.geometry);
-        const stepLine = lineString(points);
-        const featureLength = length(stepLine);
-        totalLength += featureLength;
-        return {
-          step,
-          featureLength,
-        };
-      }),
-    );
-    return {
-      steps,
-      featureLength: totalLength,
-    };
+  get trailerPoint(): readonly [lon: number, lat: number] | undefined {
+    return this.route.trailerPoint;
+  }
+  set trailerPoint(v: [lon: number, lat: number] | undefined) {
+    this.route.trailerPoint = v;
+  }
+
+  get segmentComplete(): SegmentInfo | undefined {
+    return this.route.segmentComplete;
+  }
+  set segmentComplete(v: SegmentInfo | undefined) {
+    this.route.segmentComplete = v;
+  }
+
+  get activeStepLine() {
+    return this.route.activeStepLine;
+  }
+  get activeRouteSummary() {
+    return this.route.activeRouteSummary;
+  }
+  get activeRouteToFirstWayPointSummary() {
+    return this.route.activeRouteToFirstWayPointSummary;
+  }
+  get distanceToNextManeuver() {
+    return this.route.distanceToNextManeuver;
+  }
+  get activeRouteDirection() {
+    return this.route.activeRouteDirection;
+  }
+  get activeArrowStep() {
+    return this.route.activeArrowStep;
+  }
+  get geoJsonRoute() {
+    return this.route.geoJsonRoute;
   }
 }
 
