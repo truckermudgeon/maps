@@ -1,5 +1,3 @@
-import polyline from '@mapbox/polyline';
-import { assertExists } from '@truckermudgeon/base/assert';
 import type { Position } from '@truckermudgeon/base/geom';
 import { UnreachableError } from '@truckermudgeon/base/precon';
 import { toPosAndBearing } from '@truckermudgeon/navigation/helpers';
@@ -11,22 +9,17 @@ import type {
   SearchResult,
   SegmentInfo,
 } from '@truckermudgeon/navigation/types';
-import bearing from '@turf/bearing';
-import { featureCollection, lineString, point } from '@turf/helpers';
-import nearestPointOnLine from '@turf/nearest-point-on-line';
-import type { GeoJSONSource, Marker } from 'maplibre-gl';
+import type { Marker } from 'maplibre-gl';
 import { action, makeAutoObservable, runInAction } from 'mobx';
 import type { MapRef } from 'react-map-gl/maplibre';
-import { lineGradientExpression } from '../components/RoutesStyle';
-import { toRouteFeatures } from '../route-features';
 import { ChooseOnMapService } from '../services/choose-on-map';
 import { MapAdapter } from '../services/map-adapter';
+import { RouteRenderer } from '../services/route-renderer';
 import { CameraStoreImpl } from '../stores/camera';
 import { RouteStoreImpl } from '../stores/route';
 import { SessionStoreImpl } from '../stores/session';
 import { clearCredentialsAndReload, requestWakeLock } from '../util/browser';
 import { calculateDelta, toCameraOptions } from '../util/camera-options';
-import { clamp } from '../util/clamp';
 import { TelemetryTimeline } from '../util/telemetry-timeline';
 import { BearingMode, CameraMode } from './constants';
 import type { AppClient, AppController, AppStore } from './types';
@@ -167,12 +160,10 @@ export class AppStoreImpl implements AppStore {
 export class AppControllerImpl implements AppController {
   private readonly mapAdapter = new MapAdapter();
   private readonly chooseOnMapService = new ChooseOnMapService(this.mapAdapter);
+  private readonly routeRenderer = new RouteRenderer(this.mapAdapter);
 
   private deviceSubscription: { unsubscribe: () => void } | undefined;
   private renderIntervalId: ReturnType<typeof setInterval> | undefined;
-  private lastRenderedActiveStepLine:
-    | GeoJSON.Feature<GeoJSON.LineString>
-    | undefined;
 
   setPadding(padding: {
     left: number;
@@ -392,7 +383,7 @@ export class AppControllerImpl implements AppController {
         return;
       }
 
-      this.renderActiveRouteProgress(store);
+      this.routeRenderer.renderActiveRouteProgress(store);
 
       if (prevPosition.every(v => !v)) {
         console.log('reset center', center);
@@ -455,29 +446,7 @@ export class AppControllerImpl implements AppController {
   }
 
   renderActiveRoute(maybeRoute: Route | undefined) {
-    const map = this.mapAdapter.getMap();
-    if (!map) {
-      // TODO what if map becomes defined after onData fires?
-      return;
-    }
-
-    const stepSource = assertExists(
-      map.getSource<GeoJSONSource>('activeRouteStep'),
-    );
-    stepSource.setData(emptyFeatureCollection);
-    this.lastRenderedActiveStepLine = undefined;
-
-    const routeSource = assertExists(
-      map.getSource<GeoJSONSource>('activeRoute'),
-    );
-    if (!maybeRoute) {
-      routeSource.setData(emptyFeatureCollection);
-      return;
-    }
-
-    routeSource.setData(toRouteFeatures(maybeRoute));
-
-    this.toggleActiveRouteLayers(true);
+    this.routeRenderer.renderActiveRoute(maybeRoute);
   }
 
   renderRoutePreview(
@@ -488,200 +457,11 @@ export class AppControllerImpl implements AppController {
       animate: boolean;
     },
   ) {
-    const map = this.mapAdapter.getMap();
-    if (!map) {
-      // TODO what if map becomes defined after onData fires?
-      return;
-    }
-
-    console.log('rendering route preview');
-    const routeSource = assertExists(
-      map.getSource<GeoJSONSource>(`previewRoute-${options.index}`),
-    );
-    if (!maybeRoute) {
-      routeSource.setData(emptyFeatureCollection);
-      return;
-    }
-
-    routeSource.setData(toRouteFeatures(maybeRoute));
-    if (options.animate) {
-      let start = 0;
-      const durationMs = 1_000;
-
-      const animate = (timestamp: number) => {
-        if (!start) {
-          start = timestamp;
-        }
-
-        const t = (timestamp - start) / durationMs;
-        const progress = Math.min(t, 1);
-        map
-          .getMap()
-          .setPaintProperty(
-            `previewRouteLayer-${options.index}`,
-            'line-gradient',
-            lineGradientExpression({
-              lineType: options.highlight
-                ? 'animatedPrimaryLine'
-                : 'animatedSecondaryLine',
-              progress,
-            }),
-          )
-          .setPaintProperty(
-            `previewRouteLayer-${options.index}-case`,
-            'line-gradient',
-            lineGradientExpression({
-              lineType: options.highlight
-                ? 'animatedPrimaryCase'
-                : 'animatedSecondaryCase',
-              progress,
-            }),
-          );
-
-        if (progress < 1) {
-          requestAnimationFrame(animate);
-        }
-      };
-
-      requestAnimationFrame(animate);
-    }
-
-    this.toggleActiveRouteLayers(false);
-  }
-
-  private toggleActiveRouteLayers(visible: boolean) {
-    const map = this.mapAdapter.getMap();
-    if (!map) {
-      return;
-    }
-
-    // note: setting paint property by getting a reference to the style layer
-    // with react-map-gl apis, then calling setpaintproperty on the style layer,
-    // does *not* work.
-    const visibility = visible ? 'visible' : 'none';
-    map
-      .getMap()
-      .setLayoutProperty('activeRouteLayer', 'visibility', visibility)
-      .setLayoutProperty('activeRouteLayer-case', 'visibility', visibility)
-      .setLayoutProperty('activeRouteIconsLayer', 'visibility', visibility)
-      .setLayoutProperty('activeRouteStartLayer', 'visibility', visibility)
-      .setLayoutProperty('activeRouteStepLayer', 'visibility', visibility)
-      .setLayoutProperty('activeRouteStepLayer-case', 'visibility', visibility);
-  }
-
-  private renderActiveRouteProgress(store: AppStore) {
-    const map = this.mapAdapter.getMap();
-    if (
-      !map ||
-      !store.activeRoute ||
-      !store.activeRouteIndex ||
-      !store.activeStepLine
-    ) {
-      return;
-    }
-
-    let distanceTraveled = 0;
-    const activeStep =
-      store.activeRoute.segments[store.activeRouteIndex.segmentIndex].steps[
-        store.activeRouteIndex.stepIndex
-      ];
-    for (const { step, featureLength } of store.geoJsonRoute.steps) {
-      if (step === activeStep) {
-        break;
-      }
-      distanceTraveled += featureLength;
-    }
-
-    const snapPoint = nearestPointOnLine(
-      store.activeStepLine.line,
-      // cast as mutable, and assume nearestPointOnLine doesn't mutate.
-      store.truckPoint as [number, number],
-    );
-    const distanceAlongActiveStepLine = snapPoint.properties.lineDistance;
-    distanceTraveled += distanceAlongActiveStepLine;
-    if (distanceTraveled >= 0.2 && snapPoint.properties.dist < 0.1) {
-      //center = snapPoint.geometry.coordinates as [number, number];
-      //store.truckPoint = center;
-    }
-
-    const stepSource = assertExists(
-      map.getSource<GeoJSONSource>('activeRouteStep'),
-    );
-    if (this.lastRenderedActiveStepLine !== store.activeStepLine.line) {
-      console.log('rendering step line');
-      stepSource.setData(store.activeStepLine.line);
-    }
-    const stepProgress =
-      distanceAlongActiveStepLine / store.activeStepLine.length;
-    map
-      .getMap()
-      .setPaintProperty(
-        `activeRouteStepLayer-case`,
-        'line-gradient',
-        lineGradientExpression({
-          lineType: 'case',
-          progress: stepProgress,
-        }),
-      )
-      .setPaintProperty(
-        'activeRouteStepLayer',
-        'line-gradient',
-        lineGradientExpression({
-          lineType: 'line',
-          progress: stepProgress,
-        }),
-      );
-
-    this.lastRenderedActiveStepLine = store.activeStepLine.line;
-
-    const progress = clamp(
-      distanceTraveled / store.geoJsonRoute.featureLength,
-      0,
-      1,
-    );
-    map
-      .getMap()
-      .setPaintProperty(
-        'activeRouteLayer-case',
-        'line-gradient',
-        lineGradientExpression({
-          lineType: 'case',
-          progress,
-        }),
-      )
-      .setPaintProperty(
-        'activeRouteLayer',
-        'line-gradient',
-        lineGradientExpression({
-          lineType: 'line',
-          progress,
-        }),
-      );
+    this.routeRenderer.renderRoutePreview(maybeRoute, options);
   }
 
   drawStepArrow(step: RouteStep | undefined) {
-    const map = this.mapAdapter.getMap();
-    if (!map) {
-      // TODO what if map becomes defined after onData fires?
-      return;
-    }
-
-    const arrowSource = assertExists(
-      map.getSource<GeoJSONSource>('previewStepArrow'),
-    );
-    if (!step?.arrowPoints || step.arrowPoints < 2) {
-      arrowSource.setData(emptyFeatureCollection);
-      return;
-    }
-
-    const points = polyline.decode(step.geometry).slice(0, step.arrowPoints);
-    const line = lineString(points);
-    const bearingDegrees = bearing(points.at(-2)!, points.at(-1)!);
-    const arrowHead = point(points.at(-1)!, { bearing: bearingDegrees });
-
-    arrowSource.setData(
-      featureCollection<GeoJSON.LineString | GeoJSON.Point>([line, arrowHead]),
-    );
+    this.routeRenderer.drawStepArrow(step);
   }
 
   unpauseRouteEvents(store: AppStore, client: AppClient) {
@@ -689,8 +469,3 @@ export class AppControllerImpl implements AppController {
     void client.unpauseRouteEvents.mutate();
   }
 }
-
-const emptyFeatureCollection: GeoJSON.FeatureCollection = {
-  type: 'FeatureCollection',
-  features: [],
-} as const;
