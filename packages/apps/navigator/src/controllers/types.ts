@@ -3,14 +3,18 @@ import type { PoiType } from '@truckermudgeon/navigation/constants';
 import type {
   AppRouter,
   Route,
-  RouteWithSummary,
   SearchResult,
-  SearchResultWithRelativeTruckInfo,
 } from '@truckermudgeon/navigation/types';
 import type { Marker } from 'maplibre-gl';
 import type { MapRef } from 'react-map-gl/maplibre';
-import type { CameraStore, RouteStore, SessionStore } from '../stores/types';
-import type { NavPageKey } from './constants';
+import type {
+  CameraStore,
+  NavSheetStore,
+  RouteStore,
+  SessionStore,
+} from '../stores/types';
+
+export type { NavSheetStore } from '../stores/types';
 
 export type AppClient = ReturnType<
   typeof createTRPCProxyClient<AppRouter>
@@ -47,24 +51,6 @@ export interface ControlsStore {
 export interface ControlsController {
   startListening(store: ControlsStore, appClient: AppClient): void;
   onMapLoad(store: ControlsStore, map: MapRef): void;
-}
-
-// TODO clean this data up. Some fields can probably be inferred.
-export interface NavSheetStore {
-  readonly title: string;
-  readonly currentPageKey: NavPageKey;
-  readonly showBackButton: boolean;
-  readonly pageStack: NavPageKey[];
-
-  isLoading: boolean;
-  disableFitToBounds: boolean;
-
-  searchQuery: string;
-  destinations: SearchResultWithRelativeTruckInfo[];
-  selectedDestination: SearchResult | undefined;
-
-  routes: RouteWithSummary[];
-  selectedRoute: Route | undefined;
 }
 
 export interface NavSheetController {

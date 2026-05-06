@@ -18,10 +18,7 @@ import { RouteStepsList } from './components/RouteStepsList';
 import { TitleControls } from './components/TitleControls';
 import { withLoading } from './components/WithLoading';
 import { NavPageKey } from './controllers/constants';
-import {
-  NavSheetControllerImpl,
-  NavSheetStoreImpl,
-} from './controllers/nav-sheet';
+import { NavSheetControllerImpl } from './controllers/nav-sheet';
 import type {
   AppClient,
   AppController,
@@ -29,6 +26,7 @@ import type {
   NavSheetController,
   NavSheetStore,
 } from './controllers/types';
+import { NavSheetStoreImpl } from './stores/nav-sheet';
 
 interface NavSheetProps {
   onCloseClick: () => void;

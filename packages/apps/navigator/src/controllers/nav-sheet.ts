@@ -1,14 +1,12 @@
-import { assertExists } from '@truckermudgeon/base/assert';
-import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
+import { UnreachableError } from '@truckermudgeon/base/precon';
 import type { PoiType } from '@truckermudgeon/navigation/constants';
 import { ScopeType } from '@truckermudgeon/navigation/constants';
 import type {
   Route,
-  RouteWithSummary,
   SearchResult,
   SearchResultWithRelativeTruckInfo,
 } from '@truckermudgeon/navigation/types';
-import { action, makeAutoObservable, observable, when } from 'mobx';
+import { action, when } from 'mobx';
 import { destinations } from '../components/DestinationTypes';
 import { NavPageKey } from './constants';
 import type {
@@ -18,82 +16,23 @@ import type {
   NavSheetStore,
 } from './types';
 
-export class NavSheetStoreImpl implements NavSheetStore {
-  readonly pageStack: NavPageKey[] = [NavPageKey.CHOOSE_DESTINATION];
-
-  isLoading = false;
-  disableFitToBounds = false;
-
-  searchQuery = '';
-  destinations: SearchResultWithRelativeTruckInfo[] = [];
-  selectedDestination: SearchResult | undefined = undefined;
-
-  routes: RouteWithSummary[] = [];
-  selectedRoute: Route | undefined = undefined;
-
-  constructor() {
-    makeAutoObservable(this, {
-      destinations: observable.ref,
-      selectedDestination: observable.ref,
-      routes: observable.ref,
-      selectedRoute: observable.ref,
-    });
-  }
-
-  get currentPageKey(): NavPageKey {
-    return assertExists(this.pageStack.at(-1));
-  }
-
-  get title(): string {
-    switch (this.currentPageKey) {
-      case NavPageKey.CHOOSE_DESTINATION:
-        return 'Choose destination';
-      case NavPageKey.SEARCH_ALONG:
-        return 'Search along route';
-      case NavPageKey.CHOOSE_ON_MAP:
-        return 'Choose destination';
-      case NavPageKey.DESTINATIONS:
-        // TODO improve
-        return this.searchQuery || 'Search results';
-      case NavPageKey.ROUTES:
-        return `Routes to ${assertExists(this.selectedDestination).label}`;
-      case NavPageKey.DIRECTIONS_FROM_ROUTE_CONTROLS:
-        return 'Directions';
-      case NavPageKey.DIRECTIONS_FROM_ROUTES_LIST:
-        return 'Details';
-      case NavPageKey.MANAGE_STOPS:
-        return 'Manage stops';
-      default:
-        throw new UnreachableError(this.currentPageKey);
-    }
-  }
-
-  get showBackButton(): boolean {
-    return this.pageStack.length > 1;
-  }
-}
-
 export class NavSheetControllerImpl implements NavSheetController {
   constructor(private readonly appClient: AppClient) {}
 
-  startChooseDestinationFlow(navSheetStore: NavSheetStore): void {
-    this.reset(navSheetStore);
-    navSheetStore.pageStack[0] = NavPageKey.CHOOSE_DESTINATION;
+  startChooseDestinationFlow(store: NavSheetStore): void {
+    this.reset(store, NavPageKey.CHOOSE_DESTINATION);
   }
 
-  startSearchAlongFlow(navSheetStore: NavSheetStore): void {
-    this.reset(navSheetStore);
-    navSheetStore.pageStack[0] = NavPageKey.SEARCH_ALONG;
+  startSearchAlongFlow(store: NavSheetStore): void {
+    this.reset(store, NavPageKey.SEARCH_ALONG);
   }
 
-  startShowActiveRouteDirectionsFlow(navSheetStore: NavSheetStore): void {
-    this.reset(navSheetStore);
-    navSheetStore.pageStack[0] = NavPageKey.DIRECTIONS_FROM_ROUTE_CONTROLS;
+  startShowActiveRouteDirectionsFlow(store: NavSheetStore): void {
+    this.reset(store, NavPageKey.DIRECTIONS_FROM_ROUTE_CONTROLS);
   }
 
-  startManageStopsFlow(navSheetStore: NavSheetStore): void {
-    this.reset(navSheetStore);
-    navSheetStore.pageStack[0] = NavPageKey.MANAGE_STOPS;
+  startManageStopsFlow(store: NavSheetStore): void {
+    this.reset(store, NavPageKey.MANAGE_STOPS);
   }
 
   search(
@@ -105,7 +44,7 @@ export class NavSheetControllerImpl implements NavSheetController {
 
   onSearchSelect(store: NavSheetStore, queryOrResult: string | SearchResult) {
     if (typeof queryOrResult === 'string') {
-      store.pageStack.push(NavPageKey.DESTINATIONS);
+      store.pushPage(NavPageKey.DESTINATIONS);
       store.isLoading = true;
 
       void this.search(store, queryOrResult)
@@ -123,9 +62,6 @@ export class NavSheetControllerImpl implements NavSheetController {
   }
 
   onBackClick(store: NavSheetStore) {
-    Preconditions.checkState(store.pageStack.length > 0);
-
-    // reset store state associated with currentPageKey.
     switch (store.currentPageKey) {
       case NavPageKey.CHOOSE_DESTINATION:
       case NavPageKey.SEARCH_ALONG:
@@ -133,18 +69,18 @@ export class NavSheetControllerImpl implements NavSheetController {
       case NavPageKey.DIRECTIONS_FROM_ROUTES_LIST:
       case NavPageKey.CHOOSE_ON_MAP:
       case NavPageKey.MANAGE_STOPS:
-        store.pageStack.pop();
+        store.popPage();
         break;
       case NavPageKey.DESTINATIONS:
+        // reset() forces the stack to length 1 with CHOOSE_DESTINATION on
+        // top, so callers must not also pop after invoking reset().
         this.reset(store);
-        // N.B.: do not pop page stack, because `this.reset` manually sets its
-        // length to 1 :-/
         break;
       case NavPageKey.ROUTES:
         store.selectedDestination = undefined;
         store.routes = [];
         store.selectedRoute = undefined;
-        store.pageStack.pop();
+        store.popPage();
         break;
       default:
         throw new UnreachableError(store.currentPageKey);
@@ -152,7 +88,7 @@ export class NavSheetControllerImpl implements NavSheetController {
   }
 
   onChooseOnMapClick(store: NavSheetStore) {
-    store.pageStack.push(NavPageKey.CHOOSE_ON_MAP);
+    store.pushPage(NavPageKey.CHOOSE_ON_MAP);
   }
 
   onDestinationTypeClick(
@@ -170,7 +106,7 @@ export class NavSheetControllerImpl implements NavSheetController {
         ? ScopeType.NEARBY
         : ScopeType.ROUTE;
 
-    store.pageStack.push(NavPageKey.DESTINATIONS);
+    store.pushPage(NavPageKey.DESTINATIONS);
     store.isLoading = true;
 
     void this.appClient.search
@@ -230,7 +166,7 @@ export class NavSheetControllerImpl implements NavSheetController {
   onDestinationRoutesClick(store: NavSheetStore, dest: SearchResult): void {
     console.log('routes', dest);
     store.selectedDestination = dest;
-    store.pageStack.push(NavPageKey.ROUTES);
+    store.pushPage(NavPageKey.ROUTES);
     store.isLoading = true;
 
     void this.appClient.previewRoutes
@@ -255,7 +191,7 @@ export class NavSheetControllerImpl implements NavSheetController {
   onRouteDetailsClick(store: NavSheetStore, route: Route): void {
     console.log('route details', route);
     store.selectedRoute = route;
-    store.pageStack.push(NavPageKey.DIRECTIONS_FROM_ROUTES_LIST);
+    store.pushPage(NavPageKey.DIRECTIONS_FROM_ROUTES_LIST);
   }
 
   onRouteGoClick(store: NavSheetStore, route: Route): void {
@@ -263,18 +199,15 @@ export class NavSheetControllerImpl implements NavSheetController {
     store.selectedRoute = route;
   }
 
-  reset(store: NavSheetStore) {
+  reset(
+    store: NavSheetStore,
+    initialPage: NavPageKey = NavPageKey.CHOOSE_DESTINATION,
+  ) {
     console.log('nav sheet reset');
-    store.pageStack.length = 1;
-    // overwrite [0]: callers may invoke reset() without a follow-up start*Flow
-    // (e.g., on nav sheet dismiss), so the prior page key must not linger.
-    store.pageStack[0] = NavPageKey.CHOOSE_DESTINATION;
-
+    store.resetStack(initialPage);
     store.isLoading = false;
-
     store.destinations = [];
     store.selectedDestination = undefined;
-
     store.routes = [];
     store.selectedRoute = undefined;
   }

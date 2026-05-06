@@ -9,9 +9,9 @@ import { observable, runInAction } from 'mobx';
 import { vi } from 'vitest';
 import type { AppControllerImpl } from '../controllers/app';
 import { CameraMode, NavPageKey } from '../controllers/constants';
-import { NavSheetStoreImpl } from '../controllers/nav-sheet';
 import type { AppStore, MapPaddingStore } from '../controllers/types';
 import { wireAppReactions } from '../create-app-reactions';
+import { NavSheetStoreImpl } from '../stores/nav-sheet';
 
 function makeObservableStore(overrides: Partial<AppStore> = {}): AppStore {
   return observable<AppStore>(
@@ -110,7 +110,7 @@ describe('wireAppReactions', () => {
       const s = setup();
       runInAction(() => {
         s.store.showNavSheet = true;
-        s.navSheetStore.pageStack.push(NavPageKey.CHOOSE_ON_MAP);
+        s.navSheetStore.pushPage(NavPageKey.CHOOSE_ON_MAP);
       });
 
       expect(s.controller.toggleChooseOnMapUi).toHaveBeenCalledWith(
@@ -126,14 +126,14 @@ describe('wireAppReactions', () => {
       const s = setup();
       runInAction(() => {
         s.store.showNavSheet = true;
-        s.navSheetStore.pageStack.push(NavPageKey.CHOOSE_ON_MAP);
+        s.navSheetStore.pushPage(NavPageKey.CHOOSE_ON_MAP);
       });
       (
         s.controller.toggleChooseOnMapUi as ReturnType<typeof vi.fn>
       ).mockClear();
 
       runInAction(() => {
-        s.navSheetStore.pageStack.pop();
+        s.navSheetStore.popPage();
       });
 
       expect(s.controller.toggleChooseOnMapUi).toHaveBeenCalledWith(
@@ -150,7 +150,7 @@ describe('wireAppReactions', () => {
       const dest1 = { lonLat: [-100, 40] } as SearchResultWithRelativeTruckInfo;
       const dest2 = { lonLat: [-90, 35] } as SearchResultWithRelativeTruckInfo;
       runInAction(() => {
-        s.navSheetStore.pageStack.push(NavPageKey.DESTINATIONS);
+        s.navSheetStore.pushPage(NavPageKey.DESTINATIONS);
         s.navSheetStore.destinations = [dest1, dest2];
       });
 
@@ -165,7 +165,7 @@ describe('wireAppReactions', () => {
     it('does not fit when disableFitToBounds is true', () => {
       const s = setup();
       runInAction(() => {
-        s.navSheetStore.pageStack.push(NavPageKey.DESTINATIONS);
+        s.navSheetStore.pushPage(NavPageKey.DESTINATIONS);
         s.navSheetStore.disableFitToBounds = true;
         s.navSheetStore.destinations = [
           { lonLat: [0, 0] } as SearchResultWithRelativeTruckInfo,

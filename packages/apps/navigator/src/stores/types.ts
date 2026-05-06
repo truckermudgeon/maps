@@ -2,10 +2,17 @@ import type {
   Route,
   RouteIndex,
   RouteStep,
+  RouteWithSummary,
+  SearchResult,
+  SearchResultWithRelativeTruckInfo,
   SegmentInfo,
   StepManeuver,
 } from '@truckermudgeon/navigation/types';
-import type { BearingMode, CameraMode } from '../controllers/constants';
+import type {
+  BearingMode,
+  CameraMode,
+  NavPageKey,
+} from '../controllers/constants';
 
 export interface SessionStore {
   themeMode: 'light' | 'dark';
@@ -51,4 +58,26 @@ export interface RouteStore {
     steps: readonly { step: RouteStep; featureLength: number }[];
     featureLength: number;
   };
+}
+
+export interface NavSheetStore {
+  readonly title: string;
+  readonly currentPageKey: NavPageKey;
+  readonly showBackButton: boolean;
+  readonly pageStack: readonly NavPageKey[];
+
+  pushPage(key: NavPageKey): void;
+  popPage(): void;
+  replaceTopPage(key: NavPageKey): void;
+  resetStack(initial?: NavPageKey): void;
+
+  isLoading: boolean;
+  disableFitToBounds: boolean;
+
+  searchQuery: string;
+  destinations: SearchResultWithRelativeTruckInfo[];
+  selectedDestination: SearchResult | undefined;
+
+  routes: RouteWithSummary[];
+  selectedRoute: Route | undefined;
 }
