@@ -78,7 +78,10 @@ src/
     constants.ts      ← NavPageKey, CameraMode, BearingMode
   util/               ← pure helpers (camera-options, route-geometry, telemetry-timeline,
                         clamp, browser)
-  components/         ← React components (with .stories.tsx files for Storybook)
+  components/         ← presentational React components — hook-free, take props.
+                        Lift-able to packages/libs/ui/ for sharing with apps/demo.
+                        (A views/ sibling for hook-using observer wrappers is
+                        planned in docs/navigator-followups.md #2.)
   tests/              ← mirrors src/ structure (stores/, util/, plus integration tests)
   create-app.tsx      ← composition root: builds the stores, services, reactions, returns <App/>
   create-app-handlers.ts  ← handler builders that the App component wires to UI

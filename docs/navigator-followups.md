@@ -7,6 +7,26 @@ up (commits `d21a97c7..057feb2f` across `navigator-refactor` →
 codebase is in good shape — but each is a real improvement worth picking
 up later.
 
+## A note on directory layers
+
+Two ground rules clarify what goes where, and what's lift-able to
+`packages/libs/ui/` for sharing with `apps/demo/`:
+
+- **`components/` is hook-free.** Pure presentational — takes props,
+  renders UI. Importing `@truckermudgeon/navigation/types` is fine
+  (it's a workspace package), but no `useRouteStore`, no MobX
+  `observer()`, no navigator-specific store shapes. **This is the
+  lift-to-`libs/ui/` candidate pool.**
+- **`views/` (new dir, planned in #2 below) is the observer-wrapper
+  layer.** Uses hooks + `observer()` to pull store data and feed it to
+  presentational components as props. Navigator-specific by design;
+  never lift-able.
+
+The followups below assume this split. In particular, **don't put
+hook-using components into `components/`** — that would taint the lift
+candidate pool with navigator dependencies and force a per-file audit
+later.
+
 ## 1. `AppController` is still bifurcated
 
 Two unrelated jobs share one class:
@@ -46,19 +66,26 @@ Each of these is wrapped inline in `createApp`'s factory closure:
   `_SegmentCompleteToast`, `_RouteControls`, `_RouteStack`,
   `_WaitingForTelemetry`
 
-Each could be a real component in `components/` that uses the per-domain
-hooks (`useRouteStore`, `useSessionStore`, etc.) for its reads. Wins:
+Each should become a real component file in a new `views/` directory
+(NOT `components/` — see "Directory layers" above). Each `views/X.tsx`
+uses per-domain hooks (`useRouteStore`, `useSessionStore`, etc.) to
+read store data and passes it as props to the matching presentational
+component in `components/`. Wins:
 
-- Storybook stories become possible — current closure-bound observers
-  can't be rendered standalone.
 - `create-app.tsx` shrinks to pure composition (~100 LOC).
 - Easier to navigate — a newcomer looking for "where does the player
-  marker / segment-complete toast / waiting-for-telemetry UI live?" gets
-  a file path instead of a `grep` hit inside a 500-line factory.
+  marker / segment-complete toast / waiting-for-telemetry UI live?"
+  gets a file path instead of a `grep` hit inside a 500-line factory.
+- Unblocks #5 (drop handler factories) — once views own their callback
+  wiring, click handlers can be defined inline in the view (reading
+  from hooks directly) instead of being prebuilt by a factory in
+  `create-app-handlers.ts`.
+- Keeps `components/` hook-free, preserving its lift-to-`libs/ui/`
+  status (see "Lifting to libs/ui/" below).
 
-The migration is mechanical: each inline observer becomes a top-level
-component file + an `import` in `create-app.tsx`. The handler-callback
-plumbing stays the same.
+The migration is mechanical: each inline observer becomes a `views/X.tsx`
+file + an `import` in `create-app.tsx`. The handler-callback plumbing
+stays the same in the short term.
 
 ## 3. `ControlsControllerImpl` is vestigial
 
@@ -115,6 +142,51 @@ of `create-app.tsx` (item 2), this is a natural co-migration.
 
 If picking these up sequentially, **#3 (ControlsController) → #4 (eager
 services) → #2 (extract observers) → #5 (drop handler factories) → #1
-(split AppController)** flows nicely: each unblocks the next. Or pick #2
-first as a standalone Storybook win that doesn't depend on anything
-else.
+(split AppController)** flows nicely: each unblocks the next.
+
+## Lifting to `libs/ui/`
+
+Parallel concern, separate from the internal cleanups above. The team
+already has a memory-pinned preference: when `apps/navigator` and
+`apps/demo` would share a component or helper, prefer extracting to
+`libs/ui/` over duplicating. Most of `components/` is presentational
+already and would qualify — once the directory-layer split (#2) is in
+place, `components/` becomes a clean lift candidate pool.
+
+Suggested approach (its own focused PR; no dependency on the items
+above except #2):
+
+1. **Audit pass.** Walk `components/` and tag each as
+   `lift-now | lift-later | navigator-only`:
+
+   - `lift-now`: pure presentational, takes props, no maplibre, no
+     navigator-specific imports beyond `@truckermudgeon/navigation/types`.
+     Likely candidates: `Compass`, `Fab`, `SpeedLimit`, `LaneIcon`,
+     `RouteItem`, `DestinationItem`, `AnimatedDirections`,
+     `SegmentCompleteToast`, `WaitingForTelemetry`,
+     `CollapsibleButtonBar`, the page components
+     (`ChooseDestinationPage`, `RoutesList`, `RouteStepsList`,
+     `ManageStopsPage`, `DestinationList`, `NavSheet`, `TitleControls`,
+     `ChooseOnMapPage`).
+   - `lift-later`: depends on maplibre source/layer ids (`SlippyMap`,
+     `DestinationMarkers`, `TrailerOrWaypointMarkers`, `RoutesStyle`,
+     `PlayerMarker`). Lifting these is its own PR — the source/layer
+     id assumptions become a contract that `apps/demo` would need to
+     match, alongside the existing map-style scaffolding in
+     `libs/ui/{BaseMapStyle,GameMapStyle,Contours,SceneryTownSource}`.
+   - `navigator-only`: the new `views/` dir from #2. Never lift.
+
+2. **Lift the easy ones in batches.** Each lift is `git mv` +
+   import-path updates in `apps/navigator/src/` consumers. Stories move
+   too; stories at `libs/ui/` work the same way as in apps.
+
+3. **Watch for hidden dependencies.** Things to check during the audit:
+   - Does the component import from `@mui/joy` / `@mui/material`?
+     `libs/ui/` should already be set up for this (most existing
+     `libs/ui/` files use it); confirm.
+   - Does it use `runInAction`, `observer`, MobX anything? If yes, it
+     belongs in `views/`, not `components/` — split the smart vs. dumb
+     parts before lifting.
+   - Does it import constants like `navSheetPagesRequiringMapVisibility`
+     from `controllers/constants.ts`? Either lift the relevant constants
+     to `libs/ui/`, or keep the component navigator-side.
