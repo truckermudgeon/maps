@@ -124,6 +124,9 @@ See `docs/refactor-controllers.md` for the migration plan. Outstanding:
   `useSessionStore`, `useUIEnvironmentStore`, `useMapPaddingStore`)
   are wired in `create-app.tsx`. New components should reach for the
   hooks; existing prop-drilled stores can be migrated lazily.
-- **Step 10** — drop the `AppStore` facade and the `(store, ...)`
-  first-arg pattern on controller methods once enough consumers use
-  the domain hooks directly.
+- **Step 10 (partial)** — the `(store, ...)` first-arg pattern is gone
+  from both `AppController` and `NavSheetController`; their
+  constructors now take the store. Dropping the `AppStore` facade
+  itself is the remaining piece — it requires migrating handlers,
+  reactions, and tests off the flat shape and onto focused-store
+  types.
