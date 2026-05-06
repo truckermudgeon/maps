@@ -7,6 +7,19 @@ up (commits `d21a97c7..057feb2f` across `navigator-refactor` →
 codebase is in good shape — but each is a real improvement worth picking
 up later.
 
+## Status (2026-05-06)
+
+- [x] **#4 — eager services in AppController** (commit `0931fde1`)
+- [x] **#3 — drop vestigial ControlsControllerImpl** (commit `a65918f5`)
+- [x] **#1 — split AppController, extract MapPresenter** (commit `65b61482`)
+- [x] **#2 — extract create-app.tsx inline observers into views/** (commit `c585f935`)
+- [ ] **#5 — drop handler-builder factories** — _deferred_. Without
+      React Testing Library in the navigator, inlining callbacks into views
+      would delete the 428 LOC of regression coverage in
+      `tests/create-app-handlers.test.ts` with no equivalent replacement
+      (stories aren't assertion-driven without `@storybook/test`). Revisit
+      when adopting RTL.
+
 ## A note on directory layers
 
 Two ground rules clarify what goes where, and what's lift-able to
