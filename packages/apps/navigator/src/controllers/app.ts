@@ -23,6 +23,9 @@ import { action, makeAutoObservable, observable, runInAction } from 'mobx';
 import type { MapRef } from 'react-map-gl/maplibre';
 import { lineGradientExpression } from '../components/RoutesStyle';
 import { toRouteFeatures } from '../route-features';
+import { calculateDelta, toCameraOptions } from '../util/camera-options';
+import { clamp } from '../util/clamp';
+import { getNextStep, routeSummaryReducer } from '../util/route-geometry';
 import { TelemetryTimeline } from '../util/telemetry-timeline';
 import { BearingMode, CameraMode } from './constants';
 import type { AppClient, AppController, AppStore } from './types';
@@ -958,82 +961,3 @@ const emptyFeatureCollection: GeoJSON.FeatureCollection = {
   type: 'FeatureCollection',
   features: [],
 } as const;
-
-function calculateDelta(currBearing: number, nextBearing: number): number {
-  const normalizedCurr = currBearing % 360;
-  const normalizedNext = nextBearing > 0 ? nextBearing : nextBearing + 360;
-  let delta = normalizedNext - normalizedCurr;
-  if (delta > 180) {
-    delta -= 360;
-  }
-  return delta;
-}
-
-function toCameraOptions(
-  center: Position,
-  bearing: number,
-  speedMph: number,
-  options: { isNorthLock: boolean },
-) {
-  let zoom;
-  let pitch;
-  if (speedMph > 60) {
-    zoom = 11;
-    pitch = 30;
-  } else if (speedMph > 30) {
-    zoom = 12;
-    pitch = 45;
-  } else {
-    zoom = 13;
-    pitch = 50;
-  }
-  return {
-    center,
-    zoom: options.isNorthLock ? zoom - 2 : zoom,
-    pitch: options.isNorthLock ? 0 : pitch,
-    bearing: options.isNorthLock ? 0 : bearing,
-  };
-}
-
-function getNextStep(step: RouteStep, route: Route): RouteStep | undefined {
-  const allSteps = route.segments.flatMap(segment => segment.steps);
-  const index = allSteps.indexOf(step);
-  if (index === -1) {
-    return undefined;
-  }
-  return allSteps[index + 1];
-}
-
-const routeSummaryReducer = (
-  acc: {
-    duration: number;
-    distanceMeters: number;
-    activeRouteNodeIndex: number;
-  },
-  step: RouteStep,
-  stepIndex: number,
-) => {
-  const stepFraction =
-    stepIndex === 0
-      ? // TODO tests.
-        (step.nodesTraveled - acc.activeRouteNodeIndex) / step.nodesTraveled
-      : 1;
-
-  // TODO figure this out. is it because of arrival steps?
-  let dDuration = step.duration * stepFraction;
-  if (isNaN(dDuration) || !isFinite(dDuration)) {
-    dDuration = 0;
-  }
-  let dDistance = step.distanceMeters * stepFraction;
-  if (isNaN(dDistance) || !isFinite(dDistance)) {
-    dDistance = 0;
-  }
-
-  acc.duration += dDuration;
-  acc.distanceMeters += dDistance;
-  return acc;
-};
-
-function clamp(v: number, lo: number, hi: number): number {
-  return Math.max(lo, Math.min(hi, v));
-}

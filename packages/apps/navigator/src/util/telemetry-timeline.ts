@@ -1,4 +1,5 @@
 import type { TelemetrySample } from '@truckermudgeon/navigation/types';
+import { clamp } from './clamp';
 
 interface Vec3 {
   x: number;
@@ -176,10 +177,6 @@ function extrapolate<T extends TelemetrySample>(s: T, dtMs: number): T {
 }
 
 //
-
-function clamp(v: number, lo: number, hi: number): number {
-  return Math.max(lo, Math.min(hi, v));
-}
 
 function lerp(a: number, b: number, u: number): number {
   return a + (b - a) * u;
