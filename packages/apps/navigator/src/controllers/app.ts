@@ -1,8 +1,7 @@
 import polyline from '@mapbox/polyline';
 import { assertExists } from '@truckermudgeon/base/assert';
 import type { Position } from '@truckermudgeon/base/geom';
-import { center, getExtent } from '@truckermudgeon/base/geom';
-import { Preconditions, UnreachableError } from '@truckermudgeon/base/precon';
+import { UnreachableError } from '@truckermudgeon/base/precon';
 import { toPosAndBearing } from '@truckermudgeon/navigation/helpers';
 import type {
   GameState,
@@ -15,15 +14,17 @@ import type {
 import bearing from '@turf/bearing';
 import { featureCollection, lineString, point } from '@turf/helpers';
 import nearestPointOnLine from '@turf/nearest-point-on-line';
-import type { GeoJSONSource } from 'maplibre-gl';
-import { Marker } from 'maplibre-gl';
+import type { GeoJSONSource, Marker } from 'maplibre-gl';
 import { action, makeAutoObservable, runInAction } from 'mobx';
 import type { MapRef } from 'react-map-gl/maplibre';
 import { lineGradientExpression } from '../components/RoutesStyle';
 import { toRouteFeatures } from '../route-features';
+import { ChooseOnMapService } from '../services/choose-on-map';
+import { MapAdapter } from '../services/map-adapter';
 import { CameraStoreImpl } from '../stores/camera';
 import { RouteStoreImpl } from '../stores/route';
 import { SessionStoreImpl } from '../stores/session';
+import { clearCredentialsAndReload, requestWakeLock } from '../util/browser';
 import { calculateDelta, toCameraOptions } from '../util/camera-options';
 import { clamp } from '../util/clamp';
 import { TelemetryTimeline } from '../util/telemetry-timeline';
@@ -164,24 +165,11 @@ export class AppStoreImpl implements AppStore {
 }
 
 export class AppControllerImpl implements AppController {
-  private map: MapRef | undefined;
-  private playerMarker: Marker | undefined;
-  private chooseOnMapUi:
-    | {
-        marker: Marker;
-        unsubscribeOnMove: () => void;
-      }
-    | undefined;
+  private readonly mapAdapter = new MapAdapter();
+  private readonly chooseOnMapService = new ChooseOnMapService(this.mapAdapter);
+
   private deviceSubscription: { unsubscribe: () => void } | undefined;
   private renderIntervalId: ReturnType<typeof setInterval> | undefined;
-  private wakeLock?: WakeLockSentinel = undefined;
-  private padding = {
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-  };
-  private offset: [number, number] = [0, 0];
   private lastRenderedActiveStepLine:
     | GeoJSON.Feature<GeoJSON.LineString>
     | undefined;
@@ -192,148 +180,48 @@ export class AppControllerImpl implements AppController {
     top: number;
     bottom: number;
   }) {
-    this.padding = padding;
-    if (this.map) {
-      this.map.easeTo({ padding });
-    }
+    this.mapAdapter.setPadding(padding);
   }
 
   setOffset(offset: [number, number]) {
-    this.offset = offset;
-    if (this.map) {
-      this.map.easeTo({ offset });
-    }
+    this.mapAdapter.setOffset(offset);
   }
 
   forceRePair() {
-    console.log('forceRePair: clearing viewer credentials and reloading');
     this.deviceSubscription?.unsubscribe();
     this.deviceSubscription = undefined;
     if (this.renderIntervalId != null) {
       clearInterval(this.renderIntervalId);
       this.renderIntervalId = undefined;
     }
-    localStorage.removeItem('viewerId');
-    localStorage.removeItem('telemetryId');
-    // SessionGate decides what to render based on local useState that's
-    // initialized from localStorage at mount; reload to restart that flow
-    // at the pairing form.
-    window.location.reload();
+    clearCredentialsAndReload();
   }
 
   requestWakeLock() {
-    if (this.wakeLock != null && !this.wakeLock.released) {
-      console.log('already have a wakelock');
-      return;
-    }
-
-    const requestWakeLock = async () => {
-      try {
-        console.log('requesting wake lock');
-        this.wakeLock = await navigator.wakeLock.request();
-        console.log('wake lock released?:', this.wakeLock.released);
-      } catch (err) {
-        if (err instanceof Error) {
-          console.error(
-            `error requesting wakelock: ${err.name}, ${err.message}`,
-          );
-        } else {
-          console.error('unknown error requesting wakelock:', err);
-        }
-      }
-    };
-
-    void requestWakeLock();
+    requestWakeLock();
   }
 
   addMapDragEndListener(
     cb: (centerLngLat: [number, number]) => void,
   ): () => void {
-    const map = Preconditions.checkExists(this.map);
-    const subscription = map.on('dragend', e =>
-      cb(e.target.getCenter().toArray()),
-    );
-    return () => subscription.unsubscribe();
+    return this.mapAdapter.addMapDragEndListener(cb);
   }
 
-  // used for choose-on-map ui
   clearPitchAndBearing(_store: AppStore) {
     console.log('clear pitch and bearing');
-    Preconditions.checkState(this.map != null);
-    this.map.panTo(this.map.getCenter(), {
-      duration: 500,
-      pitch: 0,
-      zoom: 10,
-      bearing: 0,
-    });
+    this.mapAdapter.clearPitchAndBearing();
   }
 
   fitPoints(_store: AppStore, lonLats: [number, number][]) {
-    if (!this.map || !this.playerMarker) {
-      console.warn("tried to view points but map/marker hasn't loaded");
-      return;
-    }
-
-    const extent = getExtent([
-      ...lonLats,
-      //this.playerMarker.getLngLat().toArray(),
-    ]);
-    const sw = [extent[0], extent[1]] as [number, number];
-    const ne = [extent[2], extent[3]] as [number, number];
-    const camera = this.map.cameraForBounds([sw, ne], {
-      padding: 0,
-      pitch: 0,
-      bearing: 0,
-    });
-    console.log('fitting to', { bounds: [sw, ne], camera });
-    if (!camera) {
-      console.warn(
-        'could not calculate camera for bounds. falling back to center of BB.',
-      );
-      this.map.easeTo({
-        duration: 500,
-        center: center(extent),
-        zoom: this.map.getZoom() - 2,
-        pitch: 0,
-        bearing: 0,
-      });
-      return;
-    }
-
-    // HACK until map files are re-built to support lower zoom levels.
-    if (camera.zoom! < this.map.getMinZoom()) {
-      camera.center = this.playerMarker.getLngLat().toArray();
-    }
-
-    this.map.easeTo({
-      duration: 500,
-      ...camera,
-      zoom: camera.zoom! - 1,
-      pitch: 0,
-      bearing: 0,
-      padding: this.padding,
-    });
+    this.mapAdapter.fitPoints(lonLats);
   }
 
   flyTo(_store: AppStore, lonLat: [number, number], bearing = 0) {
-    if (!this.map) {
-      console.warn("tried to fly butmap hasn't loaded");
-      return;
-    }
-
-    this.map.panTo(lonLat, {
-      duration: 500,
-      pitch: 0,
-      zoom: 13,
-      bearing,
-      padding: this.padding,
-      offset: this.offset,
-    });
+    this.mapAdapter.flyTo(lonLat, bearing);
   }
 
   onMapLoad(map: MapRef, player: Marker) {
-    this.map = map;
-    this.playerMarker = player;
+    this.mapAdapter.onMapLoad(map, player);
   }
 
   setFree(store: AppStore) {
@@ -449,14 +337,7 @@ export class AppControllerImpl implements AppController {
             runInAction(() => (store.segmentComplete = event.data));
             break;
           case 'themeModeUpdate':
-            runInAction(() => {
-              store.themeMode = event.data;
-              // HACK is this the best way to change theme mode, outside of a React
-              // component?
-              const htmlElement = document.documentElement;
-              htmlElement.setAttribute('data-joy-color-scheme', event.data);
-              htmlElement.setAttribute('data-mui-color-scheme', event.data);
-            });
+            runInAction(() => (store.themeMode = event.data));
             break;
           case 'trailerUpdate':
             runInAction(() => (store.trailerPoint = event.data?.position));
@@ -504,7 +385,8 @@ export class AppControllerImpl implements AppController {
 
       store.truckPoint = center;
 
-      const { map, playerMarker } = this;
+      const map = this.mapAdapter.getMap();
+      const playerMarker = this.mapAdapter.getPlayerMarker();
       if (!map || !playerMarker) {
         console.log('early return: positionUpdate before map/marker ready');
         return;
@@ -530,8 +412,8 @@ export class AppControllerImpl implements AppController {
               isNorthLock: store.bearingMode === BearingMode.NORTH_LOCK,
             }),
             duration,
-            padding: this.padding,
-            offset: this.offset,
+            padding: this.mapAdapter.getPadding(),
+            offset: this.mapAdapter.getOffset(),
             easing: t => {
               // HACK update marker here
               markerPosition[0] =
@@ -563,40 +445,17 @@ export class AppControllerImpl implements AppController {
     _store: AppStore,
     client: AppClient,
   ): Promise<SearchResult> {
-    Preconditions.checkState(this.chooseOnMapUi != null);
     return client.synthesizeSearchResult.query(
-      this.chooseOnMapUi.marker.getLngLat().toArray(),
+      this.chooseOnMapService.getChosenLngLat(),
     );
   }
 
   toggleChooseOnMapUi(_store: AppStore, enable: boolean) {
-    if (!enable) {
-      if (!this.chooseOnMapUi) {
-        return;
-      }
-
-      this.chooseOnMapUi.marker.remove();
-      this.chooseOnMapUi.unsubscribeOnMove();
-      this.chooseOnMapUi = undefined;
-    } else {
-      Preconditions.checkState(this.chooseOnMapUi == null);
-      const map = Preconditions.checkExists(this.map);
-      const marker = new Marker()
-        .setLngLat(map.getCenter())
-        .setDraggable(false)
-        .addTo(map.getMap());
-      const subscription = map.on('move', () =>
-        marker.setLngLat(map.getCenter()),
-      );
-      this.chooseOnMapUi = {
-        marker,
-        unsubscribeOnMove: () => subscription.unsubscribe(),
-      };
-    }
+    this.chooseOnMapService.toggle(enable);
   }
 
   renderActiveRoute(maybeRoute: Route | undefined) {
-    const { map } = this;
+    const map = this.mapAdapter.getMap();
     if (!map) {
       // TODO what if map becomes defined after onData fires?
       return;
@@ -629,7 +488,7 @@ export class AppControllerImpl implements AppController {
       animate: boolean;
     },
   ) {
-    const { map } = this;
+    const map = this.mapAdapter.getMap();
     if (!map) {
       // TODO what if map becomes defined after onData fires?
       return;
@@ -691,7 +550,8 @@ export class AppControllerImpl implements AppController {
   }
 
   private toggleActiveRouteLayers(visible: boolean) {
-    if (!this.map) {
+    const map = this.mapAdapter.getMap();
+    if (!map) {
       return;
     }
 
@@ -699,7 +559,7 @@ export class AppControllerImpl implements AppController {
     // with react-map-gl apis, then calling setpaintproperty on the style layer,
     // does *not* work.
     const visibility = visible ? 'visible' : 'none';
-    this.map
+    map
       .getMap()
       .setLayoutProperty('activeRouteLayer', 'visibility', visibility)
       .setLayoutProperty('activeRouteLayer-case', 'visibility', visibility)
@@ -710,8 +570,9 @@ export class AppControllerImpl implements AppController {
   }
 
   private renderActiveRouteProgress(store: AppStore) {
+    const map = this.mapAdapter.getMap();
     if (
-      !this.map ||
+      !map ||
       !store.activeRoute ||
       !store.activeRouteIndex ||
       !store.activeStepLine
@@ -744,7 +605,7 @@ export class AppControllerImpl implements AppController {
     }
 
     const stepSource = assertExists(
-      this.map.getSource<GeoJSONSource>('activeRouteStep'),
+      map.getSource<GeoJSONSource>('activeRouteStep'),
     );
     if (this.lastRenderedActiveStepLine !== store.activeStepLine.line) {
       console.log('rendering step line');
@@ -752,7 +613,7 @@ export class AppControllerImpl implements AppController {
     }
     const stepProgress =
       distanceAlongActiveStepLine / store.activeStepLine.length;
-    this.map
+    map
       .getMap()
       .setPaintProperty(
         `activeRouteStepLayer-case`,
@@ -778,7 +639,7 @@ export class AppControllerImpl implements AppController {
       0,
       1,
     );
-    this.map
+    map
       .getMap()
       .setPaintProperty(
         'activeRouteLayer-case',
@@ -799,7 +660,7 @@ export class AppControllerImpl implements AppController {
   }
 
   drawStepArrow(step: RouteStep | undefined) {
-    const { map } = this;
+    const map = this.mapAdapter.getMap();
     if (!map) {
       // TODO what if map becomes defined after onData fires?
       return;

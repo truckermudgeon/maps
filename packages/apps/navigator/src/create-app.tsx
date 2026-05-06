@@ -41,6 +41,7 @@ import { wireAppReactions } from './create-app-reactions';
 import { createControls } from './create-controls';
 import { createNavSheet } from './create-nav-sheet';
 import { setupDevtools } from './dev-tools';
+import { applyThemeReaction } from './reactions/theme';
 import { toRouteSummary } from './route-display';
 import { MapPaddingStoreImpl } from './stores/map-padding';
 import { UiEnvironmentStoreImpl } from './stores/ui-environment';
@@ -61,6 +62,7 @@ export function createApp({
 } {
   const store = new AppStoreImpl(map);
   const controller = new AppControllerImpl();
+  applyThemeReaction(store.session);
   setupDevtools({ appStore: store });
 
   const {
