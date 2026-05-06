@@ -2,15 +2,13 @@ import type { IReactionDisposer } from 'mobx';
 import { action, autorun, reaction } from 'mobx';
 import type { AppControllerImpl } from '../controllers/app';
 import { CameraMode, NavPageKey } from '../controllers/constants';
-import type {
-  AppStore,
-  MapPaddingStore,
-  NavSheetStore,
-} from '../controllers/types';
+import type { MapPaddingStore } from '../controllers/types';
 import { routeCornerPair, routesCornerPairs } from '../route-bounds';
+import type { CameraStore, NavSheetStore, RouteStore } from '../stores/types';
 
 export interface CameraReactionDeps {
-  store: AppStore;
+  camera: CameraStore;
+  route: RouteStore;
   controller: AppControllerImpl;
   navSheetStore: NavSheetStore;
   mapPaddingStore: MapPaddingStore;
@@ -24,7 +22,7 @@ export interface CameraReactionDeps {
 export function wireCameraReactions(
   deps: CameraReactionDeps,
 ): IReactionDisposer[] {
-  const { store, controller, navSheetStore, mapPaddingStore } = deps;
+  const { camera, route, controller, navSheetStore, mapPaddingStore } = deps;
   const disposers: IReactionDisposer[] = [];
 
   disposers.push(
@@ -43,7 +41,7 @@ export function wireCameraReactions(
         controller.toggleChooseOnMapUi(isChoosingOnMap);
         if (isChoosingOnMap) {
           controller.clearPitchAndBearing();
-          store.cameraMode = CameraMode.FREE;
+          camera.cameraMode = CameraMode.FREE;
         }
       }),
     ),
@@ -90,15 +88,15 @@ export function wireCameraReactions(
         if (!maybeRoutes) {
           return;
         }
-        if (maybeRoutes.every(route => route.detour)) {
-          const tlbrs = [store.truckPoint, maybeRoutes[0].detour!.lngLat];
+        if (maybeRoutes.every(r => r.detour)) {
+          const tlbrs = [route.truckPoint, maybeRoutes[0].detour!.lngLat];
           console.log('tlbrs', tlbrs);
-          store.cameraMode = CameraMode.FREE;
+          camera.cameraMode = CameraMode.FREE;
           controller.fitPoints(tlbrs as [number, number][]);
         } else {
           const tlbrs = routesCornerPairs(maybeRoutes);
           console.log('tlbrs', tlbrs);
-          store.cameraMode = CameraMode.FREE;
+          camera.cameraMode = CameraMode.FREE;
           controller.fitPoints(tlbrs);
         }
       },
@@ -110,13 +108,13 @@ export function wireCameraReactions(
       () =>
         navSheetStore.showNavSheet &&
         navSheetStore.currentPageKey === NavPageKey.MANAGE_STOPS
-          ? store.activeRoute
+          ? route.activeRoute
           : undefined,
       maybeRoute => {
         if (!maybeRoute) {
           return;
         }
-        store.cameraMode = CameraMode.FREE;
+        camera.cameraMode = CameraMode.FREE;
         controller.fitPoints(routeCornerPair(maybeRoute));
       },
     ),

@@ -83,18 +83,18 @@ export function createApp({
     store: navSheetStore,
   });
   const hideNavSheet = buildHideNavSheet({
-    store,
+    route: store.route,
     controller,
     navSheetStore,
     navSheetController,
     transitionDurationMs,
   });
   const navSheetCallbacks = buildNavSheetHandlers({
-    store,
+    camera: store.camera,
+    route: store.route,
     controller,
     navSheetStore,
     navSheetController,
-    appClient,
     hideNavSheet,
   });
   const _NavSheet = () => <NavSheet {...navSheetCallbacks} />;
@@ -114,7 +114,13 @@ export function createApp({
   });
   // TODO these reactions are hacks while figuring out a better way to
   // structure stores and controllers.
-  wireAppReactions({ store, controller, navSheetStore, mapPaddingStore });
+  wireAppReactions({
+    camera: store.camera,
+    route: store.route,
+    controller,
+    navSheetStore,
+    mapPaddingStore,
+  });
 
   const {
     Controls,
@@ -127,7 +133,7 @@ export function createApp({
     navSheet: navSheetStore,
   });
   const controlsCallbacks = buildControlsHandlers({
-    store,
+    camera: store.camera,
     controller,
     navSheetStore,
     navSheetController,
@@ -222,11 +228,11 @@ export function createApp({
   );
 
   const routeControlsCallbacks = buildRouteControlsHandlers({
-    store,
+    camera: store.camera,
+    route: store.route,
     controller,
     navSheetStore,
     navSheetController,
-    appClient,
   });
   const _RouteControls = observer(
     (props: { onExpandedToggle: (expanded: boolean) => void }) => (

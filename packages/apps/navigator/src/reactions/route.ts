@@ -1,11 +1,11 @@
 import type { IReactionDisposer } from 'mobx';
 import { reaction } from 'mobx';
 import type { AppControllerImpl } from '../controllers/app';
-import type { AppStore, NavSheetStore } from '../controllers/types';
 import { sortedRoutePreviewIndices } from '../route-display';
+import type { NavSheetStore, RouteStore } from '../stores/types';
 
 export interface RouteReactionDeps {
-  store: AppStore;
+  route: RouteStore;
   controller: AppControllerImpl;
   navSheetStore: NavSheetStore;
 }
@@ -18,7 +18,7 @@ export interface RouteReactionDeps {
 export function wireRouteReactions(
   deps: RouteReactionDeps,
 ): IReactionDisposer[] {
-  const { store, controller, navSheetStore } = deps;
+  const { route, controller, navSheetStore } = deps;
   const disposers: IReactionDisposer[] = [];
 
   // Render calls can also be made directly by the nav sheet controller;
@@ -41,7 +41,7 @@ export function wireRouteReactions(
         );
         if (routes.length === 0 && !selected) {
           // assume a navsheet reset happened. restore active route.
-          controller.renderActiveRoute(store.activeRoute);
+          controller.renderActiveRoute(route.activeRoute);
         }
       },
     ),
@@ -49,7 +49,7 @@ export function wireRouteReactions(
 
   disposers.push(
     reaction(
-      () => (navSheetStore.showNavSheet ? undefined : store.activeArrowStep),
+      () => (navSheetStore.showNavSheet ? undefined : route.activeArrowStep),
       step => controller.drawStepArrow(step),
     ),
   );

@@ -120,7 +120,7 @@ describe('buildHideNavSheet', () => {
     const navSheetController = makeNavSheetController();
 
     const hide = buildHideNavSheet({
-      store,
+      route: store,
       controller,
       navSheetStore,
       navSheetController,
@@ -143,7 +143,7 @@ describe('buildHideNavSheet', () => {
     const navSheetController = makeNavSheetController();
 
     const hide = buildHideNavSheet({
-      store,
+      route: store,
       controller,
       navSheetStore,
       navSheetController,
@@ -162,7 +162,7 @@ describe('buildHideNavSheet', () => {
     const controller = makeController();
 
     const hide = buildHideNavSheet({
-      store,
+      route: store,
       controller,
       navSheetStore: makeNavSheetStore(),
       navSheetController: makeNavSheetController(),
@@ -179,7 +179,7 @@ describe('buildHideNavSheet', () => {
     const controller = makeController();
 
     const hide = buildHideNavSheet({
-      store,
+      route: store,
       controller,
       navSheetStore: makeNavSheetStore(),
       navSheetController: makeNavSheetController(),
@@ -205,11 +205,11 @@ describe('buildNavSheetHandlers', () => {
     const navSheetController = makeNavSheetController();
     const hideNavSheet = vi.fn();
     const handlers = buildNavSheetHandlers({
-      store,
+      camera: store,
+      route: store,
       controller,
       navSheetStore,
       navSheetController,
-      appClient: fakeAppClient,
       hideNavSheet,
     });
     return {
@@ -309,7 +309,7 @@ describe('buildControlsHandlers', () => {
     const controller = makeController();
     const navSheetController = makeNavSheetController();
     const handlers = buildControlsHandlers({
-      store,
+      camera: store,
       controller,
       navSheetStore,
       navSheetController,
@@ -366,11 +366,11 @@ describe('buildRouteControlsHandlers', () => {
     const controller = makeController();
     const navSheetController = makeNavSheetController();
     const handlers = buildRouteControlsHandlers({
-      store,
+      camera: store,
+      route: store,
       controller,
       navSheetStore,
       navSheetController,
-      appClient: fakeAppClient,
     });
     return { store, navSheetStore, controller, navSheetController, handlers };
   }
