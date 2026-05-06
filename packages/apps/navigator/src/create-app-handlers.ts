@@ -62,7 +62,7 @@ export function buildHideNavSheet(deps: HideNavSheetDeps): () => void {
     // Wait until nav sheet finishes transitioning away before resetting,
     // otherwise the nav sheet will flash the UI for the reset state.
     void delay(transitionDurationMs).then(
-      action(() => deps.navSheetController.reset()),
+      action(() => deps.navSheetStore.reset()),
     );
     // HACK but reset destinations list right away, because we want to hide
     // markers right away.
@@ -138,13 +138,11 @@ export function buildControlsHandlers(
     }),
     onRouteFabClick: action(() => {
       controller.requestWakeLock();
-      navSheetController.startChooseDestinationFlow();
-      navSheetStore.showNavSheet = true;
+      navSheetStore.startChooseDestinationFlow();
     }),
     onSearchFabClick: action(() => {
       controller.requestWakeLock();
-      navSheetController.startSearchAlongFlow();
-      navSheetStore.showNavSheet = true;
+      navSheetStore.startSearchAlongFlow();
     }),
   };
 }
@@ -152,16 +150,10 @@ export function buildControlsHandlers(
 export function buildRouteControlsHandlers(
   deps: HandlerDeps,
 ): RouteControlsCallbacks {
-  const { camera, route, controller, navSheetStore, navSheetController } = deps;
+  const { camera, route, controller, navSheetStore } = deps;
   return {
-    onManageStops: action(() => {
-      navSheetController.startManageStopsFlow();
-      navSheetStore.showNavSheet = true;
-    }),
-    onSearchAlongRoute: action(() => {
-      navSheetController.startSearchAlongFlow();
-      navSheetStore.showNavSheet = true;
-    }),
+    onManageStops: action(() => navSheetStore.startManageStopsFlow()),
+    onSearchAlongRoute: action(() => navSheetStore.startSearchAlongFlow()),
     onRoutePreview: action(() => {
       if (!route.activeRoute) {
         console.warn('no active route to preview');
@@ -170,10 +162,9 @@ export function buildRouteControlsHandlers(
       camera.cameraMode = CameraMode.FREE;
       controller.fitPoints(routeCornerPair(route.activeRoute));
     }),
-    onRouteDirections: action(() => {
-      navSheetController.startShowActiveRouteDirectionsFlow();
-      navSheetStore.showNavSheet = true;
-    }),
+    onRouteDirections: action(() =>
+      navSheetStore.startShowActiveRouteDirectionsFlow(),
+    ),
     onRouteEnd: action(() => controller.setActiveRoute(undefined)),
   };
 }

@@ -1,3 +1,9 @@
+import type {
+  Route,
+  RouteWithSummary,
+  SearchResult,
+  SearchResultWithRelativeTruckInfo,
+} from '@truckermudgeon/navigation/types';
 import { describe, expect, it } from 'vitest';
 import { NavPageKey } from '../../controllers/constants';
 import { NavSheetStoreImpl } from '../../stores/nav-sheet';
@@ -91,6 +97,106 @@ describe('NavSheetStoreImpl', () => {
       expect(s.title).toBe('Search results');
       s.searchQuery = 'gas';
       expect(s.title).toBe('gas');
+    });
+  });
+
+  describe('reset', () => {
+    it('clears state and pins the stack to the given initial page', () => {
+      const s = new NavSheetStoreImpl();
+      s.pushPage(NavPageKey.DESTINATIONS);
+      s.destinations = [{ nodeUid: 'a' } as SearchResultWithRelativeTruckInfo];
+      s.selectedDestination = { nodeUid: 'a' } as SearchResult;
+      s.routes = [{ id: 'r0' } as RouteWithSummary];
+      s.selectedRoute = { id: 'r0' } as Route;
+      s.isLoading = true;
+
+      s.reset(NavPageKey.SEARCH_ALONG);
+
+      expect(s.pageStack).toEqual([NavPageKey.SEARCH_ALONG]);
+      expect(s.destinations).toEqual([]);
+      expect(s.selectedDestination).toBeUndefined();
+      expect(s.routes).toEqual([]);
+      expect(s.selectedRoute).toBeUndefined();
+      expect(s.isLoading).toBe(false);
+    });
+
+    it('defaults to CHOOSE_DESTINATION', () => {
+      const s = new NavSheetStoreImpl();
+      s.pushPage(NavPageKey.DESTINATIONS);
+      s.reset();
+      expect(s.pageStack).toEqual([NavPageKey.CHOOSE_DESTINATION]);
+    });
+  });
+
+  describe('start*Flow', () => {
+    it.each([
+      {
+        name: 'startChooseDestinationFlow',
+        run: (s: NavSheetStoreImpl) => s.startChooseDestinationFlow(),
+        expected: NavPageKey.CHOOSE_DESTINATION,
+      },
+      {
+        name: 'startSearchAlongFlow',
+        run: (s: NavSheetStoreImpl) => s.startSearchAlongFlow(),
+        expected: NavPageKey.SEARCH_ALONG,
+      },
+      {
+        name: 'startShowActiveRouteDirectionsFlow',
+        run: (s: NavSheetStoreImpl) => s.startShowActiveRouteDirectionsFlow(),
+        expected: NavPageKey.DIRECTIONS_FROM_ROUTE_CONTROLS,
+      },
+      {
+        name: 'startManageStopsFlow',
+        run: (s: NavSheetStoreImpl) => s.startManageStopsFlow(),
+        expected: NavPageKey.MANAGE_STOPS,
+      },
+    ])(
+      '$name resets to its page and shows the nav sheet',
+      ({ run, expected }) => {
+        const s = new NavSheetStoreImpl();
+        // start in a dirty state to verify reset semantics
+        s.pushPage(NavPageKey.DESTINATIONS);
+        s.destinations = [
+          { nodeUid: 'a' } as SearchResultWithRelativeTruckInfo,
+        ];
+        run(s);
+        expect(s.pageStack).toEqual([expected]);
+        expect(s.destinations).toEqual([]);
+        expect(s.showNavSheet).toBe(true);
+      },
+    );
+  });
+
+  describe('selection mutations', () => {
+    it('highlightDestination toggles when re-applied', () => {
+      const s = new NavSheetStoreImpl();
+      const dest = { nodeUid: 'a' } as SearchResult;
+      s.highlightDestination(dest);
+      expect(s.selectedDestination).toBe(dest);
+      s.highlightDestination(dest);
+      expect(s.selectedDestination).toBeUndefined();
+    });
+
+    it('selectDestination sets without toggling', () => {
+      const s = new NavSheetStoreImpl();
+      const dest = { nodeUid: 'a' } as SearchResult;
+      s.selectDestination(dest);
+      s.selectDestination(dest);
+      expect(s.selectedDestination).toBe(dest);
+    });
+
+    it('openChooseOnMap pushes the CHOOSE_ON_MAP page', () => {
+      const s = new NavSheetStoreImpl();
+      s.openChooseOnMap();
+      expect(s.currentPageKey).toBe(NavPageKey.CHOOSE_ON_MAP);
+    });
+
+    it('showRouteDetails sets selectedRoute and pushes DIRECTIONS_FROM_ROUTES_LIST', () => {
+      const s = new NavSheetStoreImpl();
+      const route = { id: 'r0' } as Route;
+      s.showRouteDetails(route);
+      expect(s.selectedRoute).toBe(route);
+      expect(s.currentPageKey).toBe(NavPageKey.DIRECTIONS_FROM_ROUTES_LIST);
     });
   });
 });

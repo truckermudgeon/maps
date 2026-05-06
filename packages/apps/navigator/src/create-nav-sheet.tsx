@@ -136,7 +136,7 @@ function createCurrentNavPage(opts: {
         onDestinationTypeClick={action((type, label) =>
           controller.onDestinationTypeClick(type, label, appController),
         )}
-        onChooseOnMapClick={action(() => controller.onChooseOnMapClick())}
+        onChooseOnMapClick={action(() => store.openChooseOnMap())}
         options={options}
       />
     );
@@ -177,7 +177,7 @@ function createCurrentNavPage(opts: {
         onDestinationTypeClick={action((type, label) =>
           controller.onDestinationTypeClick(type, label, appController),
         )}
-        onChooseOnMapClick={action(() => controller.onChooseOnMapClick())}
+        onChooseOnMapClick={action(() => store.openChooseOnMap())}
         options={options}
       />
     );
@@ -206,7 +206,7 @@ function createCurrentNavPage(opts: {
               controller.onDestinationRoutesClick(destination),
             )}
             onDestinationGoClick={action(() => {
-              controller.onDestinationGoClick(destination);
+              store.selectDestination(destination);
               props.onDestinationGoClick();
             })}
           />
@@ -220,7 +220,7 @@ function createCurrentNavPage(opts: {
         destinations={store.destinations}
         CollapsibleButtonBar={_CollapsibleButtonBar}
         onDestinationHighlight={action(dest =>
-          controller.onDestinationHighlight(dest),
+          store.highlightDestination(dest),
         )}
       />
     );
@@ -231,12 +231,10 @@ function createCurrentNavPage(opts: {
       units={session.map === 'usa' ? 'imperial' : 'metric'}
       isLoading={store.isLoading}
       routes={store.routes}
-      onRouteHighlight={action(route => controller.onRouteHighlight(route))}
-      onRouteDetailsClick={action(route =>
-        controller.onRouteDetailsClick(route),
-      )}
+      onRouteHighlight={action(route => store.highlightRoute(route))}
+      onRouteDetailsClick={action(route => store.showRouteDetails(route))}
       onRouteGoClick={action(route => {
-        controller.onRouteGoClick(route);
+        store.selectRoute(route);
         props.onRouteGoClick();
       })}
     />

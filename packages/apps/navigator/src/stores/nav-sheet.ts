@@ -92,4 +92,61 @@ export class NavSheetStoreImpl implements NavSheetStore {
     this._pageStack.length = 1;
     this._pageStack[0] = initial;
   }
+
+  reset(initialPage: NavPageKey = NavPageKey.CHOOSE_DESTINATION): void {
+    this.resetStack(initialPage);
+    this.isLoading = false;
+    this.destinations = [];
+    this.selectedDestination = undefined;
+    this.routes = [];
+    this.selectedRoute = undefined;
+  }
+
+  startChooseDestinationFlow(): void {
+    this.reset(NavPageKey.CHOOSE_DESTINATION);
+    this.showNavSheet = true;
+  }
+
+  startSearchAlongFlow(): void {
+    this.reset(NavPageKey.SEARCH_ALONG);
+    this.showNavSheet = true;
+  }
+
+  startShowActiveRouteDirectionsFlow(): void {
+    this.reset(NavPageKey.DIRECTIONS_FROM_ROUTE_CONTROLS);
+    this.showNavSheet = true;
+  }
+
+  startManageStopsFlow(): void {
+    this.reset(NavPageKey.MANAGE_STOPS);
+    this.showNavSheet = true;
+  }
+
+  // Toggles selection — the user re-tapping the highlighted destination
+  // un-highlights it.
+  highlightDestination(dest: SearchResult): void {
+    this.selectedDestination =
+      dest === this.selectedDestination ? undefined : dest;
+  }
+
+  selectDestination(dest: SearchResult): void {
+    this.selectedDestination = dest;
+  }
+
+  openChooseOnMap(): void {
+    this.pushPage(NavPageKey.CHOOSE_ON_MAP);
+  }
+
+  highlightRoute(route: Route): void {
+    this.selectedRoute = route;
+  }
+
+  selectRoute(route: Route): void {
+    this.selectedRoute = route;
+  }
+
+  showRouteDetails(route: Route): void {
+    this.selectedRoute = route;
+    this.pushPage(NavPageKey.DIRECTIONS_FROM_ROUTES_LIST);
+  }
 }

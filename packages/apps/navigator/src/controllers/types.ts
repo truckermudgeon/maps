@@ -1,10 +1,6 @@
 import type { createTRPCProxyClient } from '@trpc/client';
 import type { PoiType } from '@truckermudgeon/navigation/constants';
-import type {
-  AppRouter,
-  Route,
-  SearchResult,
-} from '@truckermudgeon/navigation/types';
+import type { AppRouter, SearchResult } from '@truckermudgeon/navigation/types';
 import type { Marker } from 'maplibre-gl';
 import type { MapRef } from 'react-map-gl/maplibre';
 import type { CameraStore, RouteStore, SessionStore } from '../stores/types';
@@ -51,27 +47,13 @@ export interface NavSheetController {
 
   onBackClick(): void;
 
-  onChooseOnMapClick(): void;
   onDestinationTypeClick(
     type: PoiType,
     label: string,
     appController: AppController,
   ): void;
 
-  onDestinationHighlight(destination: SearchResult): void;
-  onDestinationGoClick(destination: SearchResult): void;
   onDestinationRoutesClick(destination: SearchResult): void;
-
-  onRouteHighlight(route: Route): void;
-  onRouteDetailsClick(route: Route): void;
-  onRouteGoClick(route: Route): void;
-
-  reset(): void;
-
-  startChooseDestinationFlow(): void;
-  startSearchAlongFlow(): void;
-  startShowActiveRouteDirectionsFlow(): void;
-  startManageStopsFlow(): void;
 }
 
 export interface Breakpoints {

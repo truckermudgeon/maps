@@ -2,7 +2,6 @@ import { UnreachableError } from '@truckermudgeon/base/precon';
 import type { PoiType } from '@truckermudgeon/navigation/constants';
 import { ScopeType } from '@truckermudgeon/navigation/constants';
 import type {
-  Route,
   SearchResult,
   SearchResultWithRelativeTruckInfo,
 } from '@truckermudgeon/navigation/types';
@@ -18,27 +17,16 @@ import type {
   NavSheetStore,
 } from './types';
 
+/**
+ * Coordinates the cross-domain or async-IO flows for the nav sheet —
+ * search, page transitions involving tRPC calls, back-navigation
+ * cleanup. Pure state mutations live as actions on NavSheetStore.
+ */
 export class NavSheetControllerImpl implements NavSheetController {
   constructor(
     private readonly store: NavSheetStore,
     private readonly appClient: AppClient,
   ) {}
-
-  startChooseDestinationFlow(): void {
-    this.reset(NavPageKey.CHOOSE_DESTINATION);
-  }
-
-  startSearchAlongFlow(): void {
-    this.reset(NavPageKey.SEARCH_ALONG);
-  }
-
-  startShowActiveRouteDirectionsFlow(): void {
-    this.reset(NavPageKey.DIRECTIONS_FROM_ROUTE_CONTROLS);
-  }
-
-  startManageStopsFlow(): void {
-    this.reset(NavPageKey.MANAGE_STOPS);
-  }
 
   search(query: string): Promise<SearchResultWithRelativeTruckInfo[]> {
     return searchApi.getAutocompleteOptions(this.appClient, query);
@@ -78,7 +66,7 @@ export class NavSheetControllerImpl implements NavSheetController {
       case NavPageKey.DESTINATIONS:
         // reset() forces the stack to length 1 with CHOOSE_DESTINATION on
         // top, so callers must not also pop after invoking reset().
-        this.reset();
+        store.reset();
         break;
       case NavPageKey.ROUTES:
         store.selectedDestination = undefined;
@@ -89,10 +77,6 @@ export class NavSheetControllerImpl implements NavSheetController {
       default:
         throw new UnreachableError(store.currentPageKey);
     }
-  }
-
-  onChooseOnMapClick() {
-    this.store.pushPage(NavPageKey.CHOOSE_ON_MAP);
   }
 
   onDestinationTypeClick(
@@ -147,17 +131,6 @@ export class NavSheetControllerImpl implements NavSheetController {
     }
   }
 
-  onDestinationHighlight(dest: SearchResult): void {
-    // toggles if `dest` is the currently selected dest.
-    this.store.selectedDestination =
-      dest === this.store.selectedDestination ? undefined : dest;
-  }
-
-  onDestinationGoClick(dest: SearchResult): void {
-    console.log('go', dest);
-    this.store.selectedDestination = dest;
-  }
-
   onDestinationRoutesClick(dest: SearchResult): void {
     const { store } = this;
     console.log('routes', dest);
@@ -173,32 +146,5 @@ export class NavSheetControllerImpl implements NavSheetController {
         store.selectedRoute = store.routes[0];
       }),
     );
-  }
-
-  onRouteHighlight(route: Route): void {
-    console.log('highlight route', route);
-    this.store.selectedRoute = route;
-  }
-
-  onRouteDetailsClick(route: Route): void {
-    console.log('route details', route);
-    this.store.selectedRoute = route;
-    this.store.pushPage(NavPageKey.DIRECTIONS_FROM_ROUTES_LIST);
-  }
-
-  onRouteGoClick(route: Route): void {
-    console.log('go route', route);
-    this.store.selectedRoute = route;
-  }
-
-  reset(initialPage: NavPageKey = NavPageKey.CHOOSE_DESTINATION) {
-    const { store } = this;
-    console.log('nav sheet reset');
-    store.resetStack(initialPage);
-    store.isLoading = false;
-    store.destinations = [];
-    store.selectedDestination = undefined;
-    store.routes = [];
-    store.selectedRoute = undefined;
   }
 }

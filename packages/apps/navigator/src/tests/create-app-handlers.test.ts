@@ -59,6 +59,17 @@ function makeNavSheetStore(
     popPage: vi.fn(),
     replaceTopPage: vi.fn(),
     resetStack: vi.fn(),
+    reset: vi.fn(),
+    startChooseDestinationFlow: vi.fn(),
+    startSearchAlongFlow: vi.fn(),
+    startShowActiveRouteDirectionsFlow: vi.fn(),
+    startManageStopsFlow: vi.fn(),
+    highlightDestination: vi.fn(),
+    selectDestination: vi.fn(),
+    openChooseOnMap: vi.fn(),
+    highlightRoute: vi.fn(),
+    selectRoute: vi.fn(),
+    showRouteDetails: vi.fn(),
     showNavSheet: false,
     isLoading: false,
     disableFitToBounds: false,
@@ -133,7 +144,7 @@ describe('buildHideNavSheet', () => {
     expect(controller.setFollow).toHaveBeenCalledTimes(1);
     expect(navSheetStore.destinations).toEqual([]);
     // Reset has not yet been called — happens after transitionDurationMs.
-    expect(navSheetController.reset).not.toHaveBeenCalled();
+    expect(navSheetStore.reset).not.toHaveBeenCalled();
   });
 
   it('resets navsheet only after transitionDurationMs elapses', async () => {
@@ -151,10 +162,10 @@ describe('buildHideNavSheet', () => {
     });
 
     hide();
-    expect(navSheetController.reset).not.toHaveBeenCalled();
+    expect(navSheetStore.reset).not.toHaveBeenCalled();
 
     await vi.advanceTimersByTimeAsync(300);
-    expect(navSheetController.reset).toHaveBeenCalledTimes(1);
+    expect(navSheetStore.reset).toHaveBeenCalledTimes(1);
   });
 
   it('clears step arrow when there is no active route', () => {
@@ -342,20 +353,16 @@ describe('buildControlsHandlers', () => {
     expect(controller.setFollow).toHaveBeenCalledTimes(1);
   });
 
-  it('onRouteFabClick: starts choose destination flow + shows nav sheet', () => {
-    const { handlers, navSheetStore, navSheetController } = setup();
+  it('onRouteFabClick: starts choose destination flow', () => {
+    const { handlers, navSheetStore } = setup();
     handlers.onRouteFabClick();
-    expect(navSheetController.startChooseDestinationFlow).toHaveBeenCalledTimes(
-      1,
-    );
-    expect(navSheetStore.showNavSheet).toBe(true);
+    expect(navSheetStore.startChooseDestinationFlow).toHaveBeenCalledTimes(1);
   });
 
-  it('onSearchFabClick: starts search-along flow + shows nav sheet', () => {
-    const { handlers, navSheetStore, navSheetController } = setup();
+  it('onSearchFabClick: starts search-along flow', () => {
+    const { handlers, navSheetStore } = setup();
     handlers.onSearchFabClick();
-    expect(navSheetController.startSearchAlongFlow).toHaveBeenCalledTimes(1);
-    expect(navSheetStore.showNavSheet).toBe(true);
+    expect(navSheetStore.startSearchAlongFlow).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -375,11 +382,10 @@ describe('buildRouteControlsHandlers', () => {
     return { store, navSheetStore, controller, navSheetController, handlers };
   }
 
-  it('onManageStops: starts manage-stops flow + shows nav sheet', () => {
-    const { handlers, navSheetStore, navSheetController } = setup();
+  it('onManageStops: starts manage-stops flow', () => {
+    const { handlers, navSheetStore } = setup();
     handlers.onManageStops();
-    expect(navSheetController.startManageStopsFlow).toHaveBeenCalledTimes(1);
-    expect(navSheetStore.showNavSheet).toBe(true);
+    expect(navSheetStore.startManageStopsFlow).toHaveBeenCalledTimes(1);
   });
 
   it('onRoutePreview: warns and noops when no active route', () => {

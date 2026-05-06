@@ -66,10 +66,24 @@ export interface NavSheetStore {
   readonly showBackButton: boolean;
   readonly pageStack: readonly NavPageKey[];
 
+  // Page-stack mutations.
   pushPage(key: NavPageKey): void;
   popPage(): void;
   replaceTopPage(key: NavPageKey): void;
   resetStack(initial?: NavPageKey): void;
+
+  // Flow / selection mutations.
+  reset(initialPage?: NavPageKey): void;
+  startChooseDestinationFlow(): void;
+  startSearchAlongFlow(): void;
+  startShowActiveRouteDirectionsFlow(): void;
+  startManageStopsFlow(): void;
+  highlightDestination(dest: SearchResult): void;
+  selectDestination(dest: SearchResult): void;
+  openChooseOnMap(): void;
+  highlightRoute(route: Route): void;
+  selectRoute(route: Route): void;
+  showRouteDetails(route: Route): void;
 
   showNavSheet: boolean;
   isLoading: boolean;
