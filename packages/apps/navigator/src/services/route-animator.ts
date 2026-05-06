@@ -4,7 +4,7 @@ import { toPosAndBearing } from '@truckermudgeon/navigation/helpers';
 import type { GameState } from '@truckermudgeon/navigation/types';
 import { action } from 'mobx';
 import { BearingMode, CameraMode } from '../controllers/constants';
-import type { AppStore } from '../controllers/types';
+import type { CameraStore, RouteStore } from '../stores/types';
 import { calculateDelta, toCameraOptions } from '../util/camera-options';
 import type { TelemetryTimeline } from '../util/telemetry-timeline';
 import type { MapAdapter } from './map-adapter';
@@ -26,7 +26,7 @@ export class RouteAnimator {
     private readonly timeline: TelemetryTimeline<GameState>,
   ) {}
 
-  start(store: AppStore): void {
+  start(camera: CameraStore, route: RouteStore): void {
     this.stop();
     let prevPosition: Position = [0, 0];
     let currPosition: Position = [0, 0];
@@ -51,7 +51,7 @@ export class RouteAnimator {
       );
       const speedMph = Math.round(speed * 2.236936);
 
-      store.truckPoint = center;
+      route.truckPoint = center;
 
       const map = this.mapAdapter.getMap();
       const playerMarker = this.mapAdapter.getPlayerMarker();
@@ -60,7 +60,7 @@ export class RouteAnimator {
         return;
       }
 
-      this.routeRenderer.renderActiveRouteProgress(store);
+      this.routeRenderer.renderActiveRouteProgress(route);
 
       if (prevPosition.every(v => !v)) {
         console.log('reset center', center);
@@ -73,11 +73,11 @@ export class RouteAnimator {
       prevBearing = currBearing;
       currBearing = bearing;
 
-      switch (store.cameraMode) {
+      switch (camera.cameraMode) {
         case CameraMode.FOLLOW:
           map.easeTo({
             ...toCameraOptions(center, bearing, speedMph, {
-              isNorthLock: store.bearingMode === BearingMode.NORTH_LOCK,
+              isNorthLock: camera.bearingMode === BearingMode.NORTH_LOCK,
             }),
             duration: DURATION_MS,
             padding: this.mapAdapter.getPadding(),
@@ -101,7 +101,7 @@ export class RouteAnimator {
           playerMarker.setRotation(bearing);
           break;
         default:
-          throw new UnreachableError(store.cameraMode);
+          throw new UnreachableError(camera.cameraMode);
       }
     };
 

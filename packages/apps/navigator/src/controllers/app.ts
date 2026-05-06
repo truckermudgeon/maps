@@ -160,7 +160,9 @@ export class AppControllerImpl implements AppController {
   private routeAnimator: RouteAnimator | undefined;
 
   constructor(
-    private readonly appStore: AppStore,
+    private readonly session: SessionStoreImpl,
+    private readonly camera: CameraStoreImpl,
+    private readonly route: RouteStoreImpl,
     private readonly navSheetStore: NavSheetStore,
     private readonly appClient: AppClient,
   ) {}
@@ -212,19 +214,19 @@ export class AppControllerImpl implements AppController {
   }
 
   setFree() {
-    this.appStore.cameraMode = CameraMode.FREE;
+    this.camera.cameraMode = CameraMode.FREE;
   }
 
   setFollow() {
-    this.appStore.cameraMode = CameraMode.FOLLOW;
+    this.camera.cameraMode = CameraMode.FOLLOW;
   }
 
   setNorthUnlock() {
-    this.appStore.bearingMode = BearingMode.MATCH_MAP;
+    this.camera.bearingMode = BearingMode.MATCH_MAP;
   }
 
   setNorthLock() {
-    this.appStore.bearingMode = BearingMode.NORTH_LOCK;
+    this.camera.bearingMode = BearingMode.NORTH_LOCK;
   }
 
   hideNavSheet() {
@@ -245,8 +247,8 @@ export class AppControllerImpl implements AppController {
 
   setActiveRoute(route: Route | undefined) {
     // optimistically set route and index.
-    this.appStore.activeRoute = route;
-    this.appStore.activeRouteIndex = {
+    this.route.activeRoute = route;
+    this.route.activeRouteIndex = {
       segmentIndex: 0,
       stepIndex: 0,
       nodeIndex: 0,
@@ -276,7 +278,8 @@ export class AppControllerImpl implements AppController {
     this.routeAnimator?.stop();
 
     this.telemetryService = new TelemetryService(
-      this.appStore,
+      this.session,
+      this.route,
       controlsStore,
       this.routeRenderer,
     );
@@ -287,7 +290,7 @@ export class AppControllerImpl implements AppController {
       this.routeRenderer,
       this.telemetryService.timeline,
     );
-    this.routeAnimator.start(this.appStore);
+    this.routeAnimator.start(this.camera, this.route);
   }
 
   synthesizeSearchResult(): Promise<SearchResult> {
@@ -321,7 +324,7 @@ export class AppControllerImpl implements AppController {
   }
 
   unpauseRouteEvents() {
-    this.appStore.segmentComplete = undefined;
+    this.route.segmentComplete = undefined;
     void routeApi.unpauseRouteEvents(this.appClient);
   }
 }

@@ -66,7 +66,13 @@ export function createApp({
 } {
   const store = new AppStoreImpl(map);
   const navSheetStore = new NavSheetStoreImpl();
-  const controller = new AppControllerImpl(store, navSheetStore, appClient);
+  const controller = new AppControllerImpl(
+    store.session,
+    store.camera,
+    store.route,
+    navSheetStore,
+    appClient,
+  );
   applyThemeReaction(store.session);
   setupDevtools({ appStore: store });
 

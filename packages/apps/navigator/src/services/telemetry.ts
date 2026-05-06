@@ -1,7 +1,8 @@
 import { UnreachableError } from '@truckermudgeon/base/precon';
 import type { GameState } from '@truckermudgeon/navigation/types';
 import { runInAction } from 'mobx';
-import type { AppClient, AppStore, ControlsStore } from '../controllers/types';
+import type { AppClient, ControlsStore } from '../controllers/types';
+import type { RouteStore, SessionStore } from '../stores/types';
 import { TelemetryTimeline } from '../util/telemetry-timeline';
 import type { RouteRenderer } from './route-renderer';
 
@@ -22,7 +23,8 @@ export class TelemetryService {
   private subscription: { unsubscribe: () => void } | undefined;
 
   constructor(
-    private readonly store: AppStore,
+    private readonly session: SessionStore,
+    private readonly route: RouteStore,
     private readonly controls: ControlsStore,
     private readonly routeRenderer: RouteRenderer,
   ) {}
@@ -36,20 +38,20 @@ export class TelemetryService {
       // Surface it (force re-pair or flip bindingStale) instead.
       onError: err => console.error('subscribeToDevice error', err),
       onData: event => {
-        const { store, routeRenderer, timeline } = this;
+        const { session, route, routeRenderer, timeline } = this;
         switch (event.type) {
           case 'positionUpdate': {
             timeline.push(event.data);
             const gameState = event.data;
             const speedAbs = Math.abs(gameState.speed);
             runInAction(() => {
-              if (!store.hasReceivedFirstTelemetry) {
-                store.hasReceivedFirstTelemetry = true;
+              if (!session.hasReceivedFirstTelemetry) {
+                session.hasReceivedFirstTelemetry = true;
               }
-              if (store.bindingStale) {
-                store.bindingStale = false;
+              if (session.bindingStale) {
+                session.bindingStale = false;
               }
-              if (store.map === 'usa') {
+              if (session.map === 'usa') {
                 this.controls.limit = gameState.speedLimit.mph;
                 this.controls.speed = Math.round(speedAbs * 2.236936);
               } else {
@@ -61,32 +63,32 @@ export class TelemetryService {
           }
           case 'routeUpdate':
             runInAction(() => {
-              store.activeRoute = event.data;
-              store.activeRouteIndex = undefined;
+              route.activeRoute = event.data;
+              route.activeRouteIndex = undefined;
               routeRenderer.renderActiveRoute(event.data);
             });
             break;
           case 'routeProgress':
-            runInAction(() => (store.activeRouteIndex = event.data));
+            runInAction(() => (route.activeRouteIndex = event.data));
             break;
           case 'segmentComplete':
-            runInAction(() => (store.segmentComplete = event.data));
+            runInAction(() => (route.segmentComplete = event.data));
             break;
           case 'themeModeUpdate':
-            runInAction(() => (store.themeMode = event.data));
+            runInAction(() => (session.themeMode = event.data));
             break;
           case 'trailerUpdate':
-            runInAction(() => (store.trailerPoint = event.data?.position));
+            runInAction(() => (route.trailerPoint = event.data?.position));
             break;
           case 'mapUpdate':
-            runInAction(() => (store.map = event.data));
+            runInAction(() => (session.map = event.data));
             localStorage.setItem('map', event.data);
             timeline.reset();
             break;
           case 'jobUpdate':
             break;
           case 'staleBinding':
-            runInAction(() => (store.bindingStale = true));
+            runInAction(() => (session.bindingStale = true));
             break;
           default:
             throw new UnreachableError(event);
