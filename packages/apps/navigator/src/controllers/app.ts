@@ -1,8 +1,4 @@
-import type { Position } from '@truckermudgeon/base/geom';
-import { UnreachableError } from '@truckermudgeon/base/precon';
-import { toPosAndBearing } from '@truckermudgeon/navigation/helpers';
 import type {
-  GameState,
   Route,
   RouteIndex,
   RouteStep,
@@ -10,17 +6,17 @@ import type {
   SegmentInfo,
 } from '@truckermudgeon/navigation/types';
 import type { Marker } from 'maplibre-gl';
-import { action, makeAutoObservable, runInAction } from 'mobx';
+import { action, makeAutoObservable } from 'mobx';
 import type { MapRef } from 'react-map-gl/maplibre';
 import { ChooseOnMapService } from '../services/choose-on-map';
 import { MapAdapter } from '../services/map-adapter';
+import { RouteAnimator } from '../services/route-animator';
 import { RouteRenderer } from '../services/route-renderer';
+import { TelemetryService } from '../services/telemetry';
 import { CameraStoreImpl } from '../stores/camera';
 import { RouteStoreImpl } from '../stores/route';
 import { SessionStoreImpl } from '../stores/session';
 import { clearCredentialsAndReload, requestWakeLock } from '../util/browser';
-import { calculateDelta, toCameraOptions } from '../util/camera-options';
-import { TelemetryTimeline } from '../util/telemetry-timeline';
 import { BearingMode, CameraMode } from './constants';
 import type { AppClient, AppController, AppStore } from './types';
 
@@ -162,8 +158,10 @@ export class AppControllerImpl implements AppController {
   private readonly chooseOnMapService = new ChooseOnMapService(this.mapAdapter);
   private readonly routeRenderer = new RouteRenderer(this.mapAdapter);
 
-  private deviceSubscription: { unsubscribe: () => void } | undefined;
-  private renderIntervalId: ReturnType<typeof setInterval> | undefined;
+  // Built lazily on the first startListening() call so the constructor
+  // doesn't need an AppStore reference.
+  private telemetryService: TelemetryService | undefined;
+  private routeAnimator: RouteAnimator | undefined;
 
   setPadding(padding: {
     left: number;
@@ -179,12 +177,8 @@ export class AppControllerImpl implements AppController {
   }
 
   forceRePair() {
-    this.deviceSubscription?.unsubscribe();
-    this.deviceSubscription = undefined;
-    if (this.renderIntervalId != null) {
-      clearInterval(this.renderIntervalId);
-      this.renderIntervalId = undefined;
-    }
+    this.telemetryService?.stop();
+    this.routeAnimator?.stop();
     clearCredentialsAndReload();
   }
 
@@ -270,166 +264,18 @@ export class AppControllerImpl implements AppController {
   }
 
   startListening(store: AppStore, client: AppClient) {
-    if (this.deviceSubscription || this.renderIntervalId != null) {
-      console.log('tearing down previous device subscription');
-      this.deviceSubscription?.unsubscribe();
-      this.deviceSubscription = undefined;
-      if (this.renderIntervalId != null) {
-        clearInterval(this.renderIntervalId);
-        this.renderIntervalId = undefined;
-      }
-    }
+    this.telemetryService?.stop();
+    this.routeAnimator?.stop();
 
-    let prevPosition: Position = [0, 0];
-    let currPosition: Position = [0, 0];
-    const markerPosition: Position = [0, 0];
-    let prevBearing = 0;
-    let currBearing = 0;
-    let markerBearing = 0;
-    console.log('subscribing');
+    this.telemetryService = new TelemetryService(store, this.routeRenderer);
+    this.telemetryService.start(client);
 
-    const timeline = new TelemetryTimeline<GameState>({
-      lookbackMs: 250,
-      maxExtrapolationMs: 500,
-      emaAlpha: 0.5,
-    });
-
-    this.deviceSubscription = client.subscribeToDevice.subscribe(void 0, {
-      // TODO: a WS gap longer than the publicKey TTL (12h) makes the
-      // resubscribe fail auth — we log it here but the user sees nothing.
-      // Surface it (force re-pair or flip bindingStale) instead.
-      onError: err => {
-        console.error('subscribeToDevice error', err);
-      },
-      onData: event => {
-        switch (event.type) {
-          case 'positionUpdate':
-            timeline.push(event.data);
-            runInAction(() => {
-              if (!store.hasReceivedFirstTelemetry) {
-                store.hasReceivedFirstTelemetry = true;
-              }
-              if (store.bindingStale) {
-                store.bindingStale = false;
-              }
-            });
-            break;
-          case 'routeUpdate':
-            runInAction(() => {
-              store.activeRoute = event.data;
-              store.activeRouteIndex = undefined;
-              this.renderActiveRoute(event.data);
-            });
-            break;
-          case 'routeProgress':
-            runInAction(() => (store.activeRouteIndex = event.data));
-            break;
-          case 'segmentComplete':
-            runInAction(() => (store.segmentComplete = event.data));
-            break;
-          case 'themeModeUpdate':
-            runInAction(() => (store.themeMode = event.data));
-            break;
-          case 'trailerUpdate':
-            runInAction(() => (store.trailerPoint = event.data?.position));
-            break;
-          case 'mapUpdate':
-            runInAction(() => (store.map = event.data));
-            localStorage.setItem('map', event.data);
-            timeline.reset();
-            break;
-          case 'jobUpdate':
-            break;
-          case 'staleBinding':
-            runInAction(() => {
-              store.bindingStale = true;
-            });
-            break;
-          default:
-            throw new UnreachableError(event);
-        }
-      },
-    });
-
-    const duration = 500;
-    const render = () => {
-      const gameState = timeline.sample(Date.now());
-      if (gameState == null) {
-        return;
-      }
-
-      const { speed, position, heading, game } = gameState;
-      const { position: center, bearing } = toPosAndBearing(
-        {
-          position: {
-            X: position.x,
-            Y: position.z,
-            Z: position.y,
-          },
-          orientation: {
-            heading,
-          },
-        },
-        game === 'ats' ? 'usa' : 'europe',
-      );
-      const speedMph = Math.round(speed * 2.236936);
-
-      store.truckPoint = center;
-
-      const map = this.mapAdapter.getMap();
-      const playerMarker = this.mapAdapter.getPlayerMarker();
-      if (!map || !playerMarker) {
-        console.log('early return: positionUpdate before map/marker ready');
-        return;
-      }
-
-      this.routeRenderer.renderActiveRouteProgress(store);
-
-      if (prevPosition.every(v => !v)) {
-        console.log('reset center', center);
-        map.setCenter(center);
-        playerMarker.setLngLat(center);
-        playerMarker.setRotation(bearing);
-      }
-      prevPosition = currPosition;
-      currPosition = center;
-      prevBearing = currBearing;
-      currBearing = bearing;
-
-      switch (store.cameraMode) {
-        case CameraMode.FOLLOW:
-          map.easeTo({
-            ...toCameraOptions(center, bearing, speedMph, {
-              isNorthLock: store.bearingMode === BearingMode.NORTH_LOCK,
-            }),
-            duration,
-            padding: this.mapAdapter.getPadding(),
-            offset: this.mapAdapter.getOffset(),
-            easing: t => {
-              // HACK update marker here
-              markerPosition[0] =
-                prevPosition[0] + t * (currPosition[0] - prevPosition[0]);
-              markerPosition[1] =
-                prevPosition[1] + t * (currPosition[1] - prevPosition[1]);
-              markerBearing =
-                prevBearing + t * calculateDelta(prevBearing, currBearing);
-
-              playerMarker.setLngLat(markerPosition);
-              playerMarker.setRotation(markerBearing);
-              return t;
-            },
-          });
-          break;
-        case CameraMode.FREE:
-          playerMarker.setLngLat(center);
-          playerMarker.setRotation(bearing);
-          break;
-        default:
-          throw new UnreachableError(store.cameraMode);
-      }
-    };
-
-    this.renderIntervalId = setInterval(action(render), duration);
+    this.routeAnimator = new RouteAnimator(
+      this.mapAdapter,
+      this.routeRenderer,
+      this.telemetryService.timeline,
+    );
+    this.routeAnimator.start(store);
   }
 
   synthesizeSearchResult(
