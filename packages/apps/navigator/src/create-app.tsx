@@ -3,31 +3,14 @@ import { Box } from '@mui/joy';
 import { Grid, Slide, useMediaQuery, useTheme } from '@mui/material';
 import type { Marker as MapLibreGLMarker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { action, comparer, computed, when } from 'mobx';
+import { computed, when } from 'mobx';
 import { observer } from 'mobx-react-lite';
 import type { ReactElement } from 'react';
 import type { MapRef } from 'react-map-gl/maplibre';
-import { AnimatedDirections } from './components/AnimatedDirections';
-import { DestinationMarkers } from './components/DestinationMarkers';
-import { PlayerMarker } from './components/PlayerMarker';
-import { RouteControls } from './components/RouteControls';
-import { RouteStack } from './components/RouteStack';
-import { SegmentCompleteToast } from './components/SegmentCompleteToast';
-import { SlippyMap } from './components/SlippyMap';
 import { SpriteProvider } from './components/SpriteProvider';
-import {
-  defaultImperialOptions,
-  defaultMetricOptions,
-} from './components/text';
-import { TrailerOrWaypointMarkers } from './components/TrailerOrWaypointMarkers';
-import {
-  WaitingForTelemetry,
-  type WaitingForTelemetryState,
-} from './components/WaitingForTelemetry';
 import { AppControllerImpl } from './controllers/app';
 import {
   maxPortraitSheetCssHeight,
-  NavPageKey,
   navSheetPagesRequiringMapVisibility,
 } from './controllers/constants';
 import type { AppClient } from './controllers/types';
@@ -42,7 +25,6 @@ import { createControls } from './create-controls';
 import { createNavSheet } from './create-nav-sheet';
 import { setupDevtools } from './dev-tools';
 import { applyThemeReaction } from './reactions/theme';
-import { toRouteSummary } from './route-display';
 import { MapPresenter } from './services/map-presenter';
 import { CameraStoreImpl } from './stores/camera';
 import { RootStoreProvider } from './stores/context';
@@ -54,6 +36,9 @@ import { RootStore } from './stores/root-store';
 import { RouteStoreImpl } from './stores/route';
 import { SessionStoreImpl } from './stores/session';
 import { UiEnvironmentStoreImpl } from './stores/ui-environment';
+import { RouteStack } from './views/RouteStack';
+import { SlippyMap } from './views/SlippyMap';
+import { WaitingForTelemetry } from './views/WaitingForTelemetry';
 
 export function createApp({
   map,
@@ -168,80 +153,6 @@ export function createApp({
     mapPresenter.onMapLoad(map, marker);
     bindControlsToMap(map);
   };
-  const _Destinations = observer(() => (
-    <DestinationMarkers
-      destinations={navSheetStore.destinations}
-      selectedDestinationNodeUid={navSheetStore.selectedDestination?.nodeUid}
-      forceDisplay={navSheetStore.currentPageKey === NavPageKey.DESTINATIONS}
-      onDestinationClick={action(dest =>
-        navSheetController.onDestinationRoutesClick(dest),
-      )}
-    />
-  ));
-  const tp = computed(
-    () =>
-      route.trailerPoint?.map(n => Number(n.toFixed(6))) as
-        | [number, number]
-        | undefined,
-    { equals: comparer.structural },
-  );
-  const _TrailerOrWaypointMarkers = observer(() => {
-    return (
-      <TrailerOrWaypointMarkers
-        trailerPoint={tp.get()}
-        activeRoute={route.activeRoute}
-      />
-    );
-  });
-  const _SlippyMap = observer(() => {
-    const _map = session.hasReceivedFirstTelemetry ? session.map : map;
-    return (
-      <SlippyMap
-        key={_map}
-        map={_map}
-        mode={session.themeMode}
-        onLoad={onMapLoad}
-        onDragStart={action(() => camera.setFree())}
-        Destinations={_Destinations}
-        TrailerOrWaypointMarkers={_TrailerOrWaypointMarkers}
-        PlayerMarker={PlayerMarker}
-      />
-    );
-  });
-
-  const _Directions = observer(() => (
-    <AnimatedDirections
-      direction={route.activeRouteDirection}
-      distanceToNextManeuver={route.distanceToNextManeuver}
-      units={session.map === 'usa' ? 'imperial' : 'metric'}
-    />
-  ));
-  const _SegmentCompleteToast = observer(() =>
-    route.segmentComplete != null ? (
-      <SegmentCompleteToast
-        open={true}
-        place={route.segmentComplete.place}
-        placeInfo={route.segmentComplete.placeInfo}
-        isFinalSegment={route.segmentComplete.isFinal}
-        onContinueClick={action(() => controller.unpauseRouteEvents())}
-        onEndClick={action(() => {
-          controller.unpauseRouteEvents();
-          controller.setActiveRoute(undefined);
-        })}
-      />
-    ) : (
-      <></>
-    ),
-  );
-
-  const routeSummary = computed(
-    () =>
-      toRouteSummary(
-        route.activeRouteToFirstWayPointSummary,
-        session.map === 'usa' ? defaultImperialOptions : defaultMetricOptions,
-      ),
-    { equals: comparer.structural },
-  );
 
   const routeControlsCallbacks = buildRouteControlsHandlers({
     camera,
@@ -251,54 +162,22 @@ export function createApp({
     navSheetStore,
     navSheetController,
   });
-  const _RouteControls = observer(
-    (props: { onExpandedToggle: (expanded: boolean) => void }) => (
-      <RouteControls
-        summary={routeSummary.get()}
-        onExpandedToggle={props.onExpandedToggle}
-        onManageStopsClick={
-          route.activeRoute != null && route.activeRoute.segments.length > 1
-            ? routeControlsCallbacks.onManageStops
-            : undefined
-        }
-        onSearchAlongRouteClick={routeControlsCallbacks.onSearchAlongRoute}
-        onRoutePreviewClick={routeControlsCallbacks.onRoutePreview}
-        onRouteDirectionsClick={routeControlsCallbacks.onRouteDirections}
-        onRouteEndClick={routeControlsCallbacks.onRouteEnd}
-      />
-    ),
-  );
-
-  const _RouteStack = () => (
-    <RouteStack
-      Guidance={_Directions}
-      RouteControls={_RouteControls}
-      SegmentCompleteToast={_SegmentCompleteToast}
+  const _SlippyMap = () => (
+    <SlippyMap
+      initialMap={map}
+      onMapLoad={onMapLoad}
+      navSheetController={navSheetController}
     />
   );
-
-  const _WaitingForTelemetry = observer(() => {
-    if (!session.readyToLoad) {
-      // assume some other component will show "waiting to load" UI
-      return <></>;
-    }
-    // TODO show "Loading map..." UI if map hasn't loaded yet, instead of
-    //  showing "Waiting for telemetry..." UI.
-    if (session.hasReceivedFirstTelemetry && !session.bindingStale) {
-      return <></>;
-    }
-    const state: WaitingForTelemetryState = !session.hasReceivedFirstTelemetry
-      ? session.bindingStale
-        ? 'orphaned'
-        : 'awaiting'
-      : 'lost';
-    return (
-      <WaitingForTelemetry
-        state={state}
-        onRePair={() => controller.forceRePair()}
-      />
-    );
-  });
+  const _RouteStack = () => (
+    <RouteStack
+      controller={controller}
+      routeControlsCallbacks={routeControlsCallbacks}
+    />
+  );
+  const _WaitingForTelemetry = () => (
+    <WaitingForTelemetry controller={controller} />
+  );
 
   return {
     App: () => (
