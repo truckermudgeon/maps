@@ -43,7 +43,9 @@ import { createNavSheet } from './create-nav-sheet';
 import { setupDevtools } from './dev-tools';
 import { applyThemeReaction } from './reactions/theme';
 import { toRouteSummary } from './route-display';
+import { RootStoreProvider } from './stores/context';
 import { MapPaddingStoreImpl } from './stores/map-padding';
+import { RootStore } from './stores/root-store';
 import { UiEnvironmentStoreImpl } from './stores/ui-environment';
 
 export function createApp({
@@ -87,11 +89,14 @@ export function createApp({
   });
   const _NavSheet = () => <NavSheet {...navSheetCallbacks} />;
 
-  const mapPaddingStore = new MapPaddingStoreImpl(
-    new UiEnvironmentStoreImpl(joyTheme.breakpoints.values),
-    store,
-    navSheetStore,
-  );
+  const uiEnv = new UiEnvironmentStoreImpl(joyTheme.breakpoints.values);
+  const mapPaddingStore = new MapPaddingStoreImpl(uiEnv, store, navSheetStore);
+  const rootStore = new RootStore({
+    appStore: store,
+    navSheet: navSheetStore,
+    uiEnv,
+    mapPadding: mapPaddingStore,
+  });
   // TODO these reactions are hacks while figuring out a better way to
   // structure stores and controllers.
   wireAppReactions({ store, controller, navSheetStore, mapPaddingStore });
@@ -258,16 +263,18 @@ export function createApp({
 
   return {
     App: () => (
-      <App
-        store={store}
-        navSheetStore={navSheetStore}
-        transitionDurationMs={transitionDurationMs}
-        SlippyMap={_SlippyMap}
-        NavSheet={_NavSheet}
-        RouteStack={_RouteStack}
-        Controls={_Controls}
-        WaitingForTelemetry={_WaitingForTelemetry}
-      />
+      <RootStoreProvider store={rootStore}>
+        <App
+          store={store}
+          navSheetStore={navSheetStore}
+          transitionDurationMs={transitionDurationMs}
+          SlippyMap={_SlippyMap}
+          NavSheet={_NavSheet}
+          RouteStack={_RouteStack}
+          Controls={_Controls}
+          WaitingForTelemetry={_WaitingForTelemetry}
+        />
+      </RootStoreProvider>
     ),
     store,
   };

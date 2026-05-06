@@ -118,11 +118,12 @@ src/
 
 See `docs/refactor-controllers.md` for the migration plan. Outstanding:
 
-- **Step 8** — introduce `RootStoreContext` + per-domain hooks
-  (`useRouteStore`, `useCameraStore`, etc.) so components stop receiving
-  stores by props.
+- **Step 8 (infrastructure landed; consumer migration in flight)** —
+  `RootStore` + `RootStoreContext` + per-domain hooks
+  (`useRouteStore`, `useCameraStore`, `useNavSheetStore`,
+  `useSessionStore`, `useUIEnvironmentStore`, `useMapPaddingStore`)
+  are wired in `create-app.tsx`. New components should reach for the
+  hooks; existing prop-drilled stores can be migrated lazily.
 - **Step 10** — drop the `AppStore` facade and the `(store, ...)`
-  first-arg pattern on controller methods once domain hooks are in
-  place.
-- **Drop ControlsController's duplicate tRPC subscription** (planned in
-  step 6 but deferred — see commit log).
+  first-arg pattern on controller methods once enough consumers use
+  the domain hooks directly.
