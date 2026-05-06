@@ -190,3 +190,44 @@ above except #2):
    - Does it import constants like `navSheetPagesRequiringMapVisibility`
      from `controllers/constants.ts`? Either lift the relevant constants
      to `libs/ui/`, or keep the component navigator-side.
+   - Does it import routing/step/maneuver types from
+     `@truckermudgeon/navigation/types`? See "Lifting routing types to
+     `libs/map/`" below — those types want to move first, so the lifted
+     UI component imports them from `libs/map` instead of pulling
+     `apis/navigation` into the dep graph of `libs/ui/`.
+
+## Lifting routing types to `libs/map/`
+
+Precondition / sibling concern to the `libs/ui/` lift above. Several
+types in `packages/apis/navigation/types.ts` are domain types describing
+the _output of routing/search_, not the wire protocol:
+
+- `StepManeuver`, `NonTerminalStepManeuver`, `LaneHint`, `ThenHint`
+- `RouteStep`, `RouteSegment`, `Route`, `RouteIndex`
+- `RouteGrade`, `RouteSummary`, `RouteWithSummary`
+- `SearchResult`, `SearchResultWithRelativeTruckInfo`
+
+They want to move to `packages/libs/map/routing.ts` — the file already
+exports `Mode` and `RouteKey`, and `apis/navigation/types.ts` already
+imports from there. After the lift, `ActorEvent` and the rest of the
+wire-protocol union in `apis/navigation/types.ts` import these types
+back from `libs/map`.
+
+What stays in `apis/navigation/types.ts`:
+
+- `AppRouter`, `ActorEvent` — wire protocol
+- `TrailerState`, `JobState`, `SegmentInfo` — app-state event payloads
+- `TelemetrySample`, `GameState` — telemetry input shapes
+- `Speed`, `JobLocation`, `TruckSimTelemetry` — zod-derived types
+
+**Why this matters for the `libs/ui/` lift:** a presentational
+component that takes a `Route` or `RouteStep` prop will, post-lift,
+import the type from `libs/map`. Doing the routing-types lift _first_
+keeps `libs/ui/`'s dep graph clean (it depends on `libs/map`, which is
+already a foundation lib); deferring it forces lifted components to
+either import from `apis/navigation` (pulling the entire navigator API
+package into `libs/ui/`'s deps) or duplicate the types.
+
+Order: routing-types lift → `libs/ui/` audit → individual UI lifts.
+The routing-types lift is mostly mechanical (move type declarations,
+update import paths), no runtime behavior change.
