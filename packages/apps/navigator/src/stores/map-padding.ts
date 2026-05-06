@@ -1,11 +1,14 @@
 import { computed, makeAutoObservable } from 'mobx';
-import { BearingMode, navSheetPagesRequiringMapVisibility } from './constants';
+import {
+  BearingMode,
+  navSheetPagesRequiringMapVisibility,
+} from '../controllers/constants';
 import type {
   AppStore,
   MapPaddingStore,
   NavSheetStore,
   UIEnvironmentStore,
-} from './types';
+} from '../controllers/types';
 
 const directionBannerBottom = 120;
 const routeStackBottom = 90;

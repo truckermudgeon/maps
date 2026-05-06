@@ -1,6 +1,6 @@
 import { throttle } from '@truckermudgeon/base/throttle';
 import { action, makeAutoObservable } from 'mobx';
-import type { Breakpoints, UIEnvironmentStore } from './types';
+import type { Breakpoints, UIEnvironmentStore } from '../controllers/types';
 
 export class UiEnvironmentStoreImpl implements UIEnvironmentStore {
   readonly breakpoints: Breakpoints;

@@ -30,9 +30,7 @@ import {
   NavPageKey,
   navSheetPagesRequiringMapVisibility,
 } from './controllers/constants';
-import { MapPaddingStoreImpl } from './controllers/map-padding';
 import type { AppClient, AppStore, NavSheetStore } from './controllers/types';
-import { UiEnvironmentStoreImpl } from './controllers/ui-environment';
 import {
   buildControlsHandlers,
   buildHideNavSheet,
@@ -44,6 +42,8 @@ import { createControls } from './create-controls';
 import { createNavSheet } from './create-nav-sheet';
 import { setupDevtools } from './dev-tools';
 import { toRouteSummary } from './route-display';
+import { MapPaddingStoreImpl } from './stores/map-padding';
+import { UiEnvironmentStoreImpl } from './stores/ui-environment';
 
 export function createApp({
   map,
