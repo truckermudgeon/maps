@@ -1,9 +1,8 @@
 import type { Position } from '@truckermudgeon/base/geom';
 
 /**
- * Angular delta in degrees from `currBearing` to `nextBearing`, used to
- * interpolate the player-marker rotation between telemetry samples.
- * Inputs are expected in turf's (-180, 180] bearing convention.
+ * Angular delta in degrees from `currBearing` to `nextBearing`. Inputs
+ * are expected in turf's (-180, 180] bearing convention.
  */
 export function calculateDelta(
   currBearing: number,
@@ -20,10 +19,9 @@ export function calculateDelta(
 }
 
 /**
- * Map camera options for the player-follow camera, derived from speed
- * and heading. Faster speeds zoom out and reduce pitch. North-lock mode
- * forces pitch and bearing to 0 and drops zoom by 2 levels for a wider
- * top-down view.
+ * Map camera options derived from current speed and heading. Faster
+ * speeds zoom out and reduce pitch. North-lock mode forces pitch and
+ * bearing to 0 and drops zoom by 2 levels for a wider top-down view.
  */
 export function toCameraOptions(
   center: Position,

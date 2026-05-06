@@ -7,9 +7,10 @@ import type { RouteRenderer } from './route-renderer';
 
 /**
  * Single subscription point for the navigator's tRPC telemetry stream.
- * Dispatches each event into the right store field and pushes
- * positionUpdates into a TelemetryTimeline that the RouteAnimator
- * samples. Owns its subscription via start()/stop().
+ * Decodes each event into the right store field and exposes the
+ * underlying TelemetryTimeline for consumers that need to sample
+ * positionUpdates at their own cadence. Owns its subscription via
+ * start()/stop().
  */
 export class TelemetryService {
   readonly timeline = new TelemetryTimeline<GameState>({

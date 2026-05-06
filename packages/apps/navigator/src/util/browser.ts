@@ -23,10 +23,9 @@ export function requestWakeLock(): void {
 }
 
 /**
- * Clears the local pairing credentials and reloads the page. SessionGate
- * decides what to render based on a useState that's initialized from
- * localStorage at mount, so reloading is what restarts the flow at the
- * pairing form.
+ * Clears the local pairing credentials and reloads the page,
+ * effectively logging the user out and returning them to the pairing
+ * form on next load.
  */
 export function clearCredentialsAndReload(): void {
   console.log('clearing viewer credentials and reloading');

@@ -12,9 +12,9 @@ interface Padding {
 
 /**
  * Thin wrapper around MapLibre/react-map-gl that owns the map ref, the
- * player marker, and the current camera padding/offset. Other services
- * read the map through this adapter; nothing else in the navigator app
- * should import maplibre directly.
+ * player marker, and the current camera padding/offset. Encapsulates
+ * maplibre access — nothing else in the navigator app should import
+ * maplibre directly.
  */
 export class MapAdapter {
   private map: MapRef | undefined;

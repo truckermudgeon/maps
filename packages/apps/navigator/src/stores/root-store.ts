@@ -4,9 +4,7 @@ import type { NavSheetStore } from './types';
 
 /**
  * Composition root: bundles the focused stores plus the legacy
- * `appStore` facade that older consumers still reach for. Created by
- * `create-app.tsx` once everything has been instantiated and provided
- * to the React tree via `RootStoreProvider`.
+ * `appStore` facade that older consumers still reach for.
  *
  * New components should access stores via the per-domain hooks
  * (`useRouteStore`, `useCameraStore`, etc.) rather than through this
