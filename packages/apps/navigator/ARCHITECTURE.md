@@ -59,10 +59,10 @@ get the same picture from the file tree.
    uses requestAnimationFrame for smooth pacing; everything else flows
    from store changes through reactions.
 5. **`AppController` and `NavSheetController` are flow-orchestration
-   coordinators.** They take handler-shaped methods (onClick, onSelect)
-   and translate them into store mutations + service calls. They are
-   shrinking; once domain hooks land (planned, see `docs/refactor-controllers.md`)
-   most of their methods will inline at the call site.
+   coordinators.** Their methods coordinate cross-domain or async-IO
+   work — anything that's _just_ a state mutation lives as an action on
+   the relevant store instead. If a controller method ends up being
+   `this.store.X = Y` and nothing else, move it to the store.
 
 ## File tree
 
@@ -73,8 +73,7 @@ src/
   services/           ← IO, DOM, lifecycle (TelemetryService, RouteAnimator, RouteRenderer,
                         MapAdapter, ChooseOnMapService)
   reactions/          ← MobX glue (camera, route, theme)
-  controllers/        ← flow-orchestration (AppController, NavSheetController) — shrinking
-    app.ts            ← AppStoreImpl facade lives here too, retiring once domain hooks land
+  controllers/        ← flow-orchestration (AppController, NavSheetController)
     types.ts
     constants.ts      ← NavPageKey, CameraMode, BearingMode
   util/               ← pure helpers (camera-options, route-geometry, telemetry-timeline,
@@ -114,22 +113,11 @@ src/
 3. Wrap it in `observer()` and read the computed.
 4. Add a Storybook story.
 
-## Things still in flight
+## Follow-ups
 
-See `docs/refactor-controllers.md` for the migration plan. Outstanding:
-
-- **Step 8 (infrastructure landed; consumer migration in flight)** —
-  `RootStore` + `RootStoreContext` + per-domain hooks
-  (`useRouteStore`, `useCameraStore`, `useNavSheetStore`,
-  `useSessionStore`, `useUIEnvironmentStore`, `useMapPaddingStore`)
-  are wired in `create-app.tsx`. New components should reach for the
-  hooks; existing prop-drilled stores can be migrated lazily.
-- **Step 10 (mostly landed)** — the `(store, ...)` first-arg pattern
-  is gone from both `AppController` and `NavSheetController`. The
-  `AppStore` facade has been retired from services
-  (`TelemetryService`, `RouteAnimator`), reactions, handlers, and
-  the focused stores themselves (`MapPaddingStore`, `ControlsStore`).
-  `AppStoreImpl` is still used by the App component (and a handful of
-  inner observers in `create-app.tsx` / `create-nav-sheet.tsx`) as a
-  flat kitchen-sink for prop/closure access; migrating those to the
-  domain hooks is the last remaining piece.
+The original migration plan (`docs/refactor-controllers.md`) is fully
+done. A short list of architectural smells worth picking up later lives
+in `docs/navigator-followups.md` — `AppController` is still bifurcated,
+`create-app.tsx` has ~500 LOC of inline observers that want to move to
+`components/`, `ControlsController` is vestigial, etc. None blocks
+anything; each is a real improvement when you have a free afternoon.
