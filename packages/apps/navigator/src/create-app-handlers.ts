@@ -9,6 +9,7 @@ import type { NavSheetController } from './controllers/types';
 import type { MapAdapter } from './services/map-adapter';
 import type { RouteRenderer } from './services/route-renderer';
 import type { CameraStore, NavSheetStore, RouteStore } from './stores/types';
+import { requestWakeLock } from './util/browser';
 import { routeCornerPair } from './util/route-bounds';
 import { bearingAfterStepManeuver } from './util/route-features';
 
@@ -143,7 +144,7 @@ export function buildControlsHandlers(
   const { camera, controller, navSheetStore } = deps;
   return {
     onCompassClick: action(() => {
-      controller.requestWakeLock();
+      requestWakeLock();
       switch (camera.bearingMode) {
         case BearingMode.MATCH_MAP:
           camera.setNorthLock();
@@ -156,15 +157,15 @@ export function buildControlsHandlers(
       }
     }),
     onRecenterFabClick: action(() => {
-      controller.requestWakeLock();
+      requestWakeLock();
       camera.setFollow();
     }),
     onRouteFabClick: action(() => {
-      controller.requestWakeLock();
+      requestWakeLock();
       navSheetStore.startChooseDestinationFlow();
     }),
     onSearchFabClick: action(() => {
-      controller.requestWakeLock();
+      requestWakeLock();
       navSheetStore.startSearchAlongFlow();
     }),
   };

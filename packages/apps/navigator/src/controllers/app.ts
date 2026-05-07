@@ -13,7 +13,7 @@ import type {
   RouteStore,
   SessionStore,
 } from '../stores/types';
-import { clearCredentialsAndReload, requestWakeLock } from '../util/browser';
+import { clearCredentialsAndReload } from '../util/browser';
 import type { AppClient } from './types';
 
 export class AppControllerImpl {
@@ -48,10 +48,6 @@ export class AppControllerImpl {
     this.telemetryService.stop();
     this.routeAnimator.stop();
     clearCredentialsAndReload();
-  }
-
-  requestWakeLock() {
-    requestWakeLock();
   }
 
   hideNavSheet() {

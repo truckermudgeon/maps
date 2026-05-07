@@ -22,7 +22,13 @@ import {
 } from '../create-app-handlers';
 import type { MapAdapter } from '../services/map-adapter';
 import type { RouteRenderer } from '../services/route-renderer';
+import { requestWakeLock } from '../util/browser';
 import type { AppStore } from './util/types';
+
+vi.mock('../util/browser', () => ({
+  requestWakeLock: vi.fn(),
+  clearCredentialsAndReload: vi.fn(),
+}));
 
 function makeStore(overrides: Partial<AppStore> = {}): AppStore {
   return {
@@ -94,7 +100,6 @@ function makeController(): AppControllerImpl {
     setDestinationNodeUid: vi.fn(),
     setActiveRoute: vi.fn(),
     setActiveRouteFromNodeUids: vi.fn(),
-    requestWakeLock: vi.fn(),
     synthesizeSearchResult: vi.fn(),
   } as unknown as AppControllerImpl;
 }
@@ -370,16 +375,18 @@ describe('buildControlsHandlers', () => {
       expectedMethod: 'setNorthUnlock' as const,
     },
   ])('onCompassClick: $name', ({ mode, expectedMethod }) => {
-    const { handlers, controller, store } = setup({ bearingMode: mode });
+    vi.mocked(requestWakeLock).mockClear();
+    const { handlers, store } = setup({ bearingMode: mode });
     handlers.onCompassClick();
     expect(store[expectedMethod]).toHaveBeenCalledTimes(1);
-    expect(controller.requestWakeLock).toHaveBeenCalledTimes(1);
+    expect(requestWakeLock).toHaveBeenCalledTimes(1);
   });
 
   it('onRecenterFabClick: requests wake lock and follows', () => {
-    const { handlers, controller, store } = setup();
+    vi.mocked(requestWakeLock).mockClear();
+    const { handlers, store } = setup();
     handlers.onRecenterFabClick();
-    expect(controller.requestWakeLock).toHaveBeenCalledTimes(1);
+    expect(requestWakeLock).toHaveBeenCalledTimes(1);
     expect(store.setFollow).toHaveBeenCalledTimes(1);
   });
 
