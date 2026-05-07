@@ -18,7 +18,6 @@ export interface AppController {
   setDestinationNodeUid(toNodeUid: string): void;
   setActiveRoute(route: Route | undefined): void;
   setActiveRouteFromNodeUids(waypoints: bigint[]): void;
-  startListening(): void;
   synthesizeSearchResult(): Promise<SearchResult>;
   unpauseRouteEvents(): void;
 }
