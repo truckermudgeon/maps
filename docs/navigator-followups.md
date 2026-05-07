@@ -13,12 +13,20 @@ up later.
 - [x] **#3 — drop vestigial ControlsControllerImpl** (commit `a65918f5`)
 - [x] **#1 — split AppController, extract MapPresenter** (commit `65b61482`)
 - [x] **#2 — extract create-app.tsx inline observers into views/** (commit `c585f935`)
-- [ ] **#5 — drop handler-builder factories** — _deferred_. Without
-      React Testing Library in the navigator, inlining callbacks into views
-      would delete the 428 LOC of regression coverage in
-      `tests/create-app-handlers.test.ts` with no equivalent replacement
-      (stories aren't assertion-driven without `@storybook/test`). Revisit
-      when adopting RTL.
+- [x] **#5 — drop handler-builder factories** (commits `e41548d1`,
+      `0daf8d14`, `3e7cb0d8`, `0687d4fe`). Adopted React Testing Library
+      and `ServicesProvider` + per-service hooks; inlined all 19 callbacks
+      formerly built by `buildHideNavSheet` / `buildNavSheetHandlers` /
+      `buildControlsHandlers` / `buildRouteControlsHandlers` into the views
+      that consume them. Then dissolved `createControls` and `createNavSheet`
+      factories — `Controls`, `NavSheet`, and 7 nav-sheet pages now live as
+      top-level files in `views/` (with `views/nav-sheet/` for the page
+      components). `ControlsStoreImpl` joined `RootStore` with a matching
+      `useControlsStore` hook. Lost the 19 pure-fn factory tests; replaced
+      with per-view RTL coverage (5 + 1 + 5 + 8 = 19 cases) using a new
+      `renderWithApp` fixture. Two cases (`onRouteStepClick` and
+      `onWaypointsChange`) are flagged TODO in `tests/views/nav-sheet.test.tsx`
+      — mechanical inlines that need heavy LaneIcon/dnd-kit stub data.
 - [ ] **#6 — drop `appClient` from `AppController`** — _deferred_. After
       the `RouteApi` / `SearchApi` deepening, `AppController` only holds
       `appClient` to seed `TelemetryService.start(appClient)`. Pushing
