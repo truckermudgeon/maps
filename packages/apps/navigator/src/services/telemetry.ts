@@ -1,8 +1,8 @@
 import { UnreachableError } from '@truckermudgeon/base/precon';
 import type { GameState } from '@truckermudgeon/navigation/types';
 import { runInAction } from 'mobx';
-import type { AppClient, ControlsStore } from '../controllers/types';
-import type { RouteStore, SessionStore } from '../stores/types';
+import type { AppClient } from '../controllers/types';
+import type { ControlsStore, RouteStore, SessionStore } from '../stores/types';
 import { TelemetryTimeline } from '../util/telemetry-timeline';
 import type { RouteRenderer } from './route-renderer';
 

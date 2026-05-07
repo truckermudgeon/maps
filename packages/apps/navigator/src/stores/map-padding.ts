@@ -3,8 +3,13 @@ import {
   BearingMode,
   navSheetPagesRequiringMapVisibility,
 } from '../controllers/constants';
-import type { MapPaddingStore, UIEnvironmentStore } from '../controllers/types';
-import type { CameraStore, NavSheetStore, RouteStore } from './types';
+import type {
+  CameraStore,
+  MapPaddingStore,
+  NavSheetStore,
+  RouteStore,
+  UIEnvironmentStore,
+} from './types';
 
 const directionBannerBottom = 120;
 const routeStackBottom = 90;

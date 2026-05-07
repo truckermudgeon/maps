@@ -7,9 +7,9 @@ import { TelemetryService } from '../services/telemetry';
 import type { CameraStoreImpl } from '../stores/camera';
 import type { RouteStoreImpl } from '../stores/route';
 import type { SessionStoreImpl } from '../stores/session';
-import type { NavSheetStore } from '../stores/types';
+import type { ControlsStore, NavSheetStore } from '../stores/types';
 import { clearCredentialsAndReload, requestWakeLock } from '../util/browser';
-import type { AppClient, ControlsStore } from './types';
+import type { AppClient } from './types';
 
 export class AppControllerImpl {
   private readonly telemetryService: TelemetryService;

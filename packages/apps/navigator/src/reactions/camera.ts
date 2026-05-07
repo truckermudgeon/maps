@@ -1,10 +1,14 @@
 import type { IReactionDisposer } from 'mobx';
 import { action, autorun, reaction } from 'mobx';
 import { CameraMode, NavPageKey } from '../controllers/constants';
-import type { MapPaddingStore } from '../controllers/types';
 import { routeCornerPair, routesCornerPairs } from '../route-bounds';
 import type { MapPresenter } from '../services/map-presenter';
-import type { CameraStore, NavSheetStore, RouteStore } from '../stores/types';
+import type {
+  CameraStore,
+  MapPaddingStore,
+  NavSheetStore,
+  RouteStore,
+} from '../stores/types';
 
 export interface CameraReactionDeps {
   camera: CameraStore;

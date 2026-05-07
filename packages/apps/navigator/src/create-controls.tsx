@@ -8,9 +8,9 @@ import { Fab } from './components/Fab';
 import { HudStack } from './components/HudStack';
 import { SpeedLimit } from './components/SpeedLimit';
 import { ControlsStoreImpl } from './controllers/controls';
-import type { ControlsStore } from './controllers/types';
 import type {
   CameraStore,
+  ControlsStore,
   NavSheetStore,
   RouteStore,
   SessionStore,

@@ -1,8 +1,11 @@
-import type { MapPaddingStore, UIEnvironmentStore } from '../controllers/types';
 import type { CameraStoreImpl } from './camera';
 import type { RouteStoreImpl } from './route';
 import type { SessionStoreImpl } from './session';
-import type { NavSheetStore } from './types';
+import type {
+  MapPaddingStore,
+  NavSheetStore,
+  UIEnvironmentStore,
+} from './types';
 
 /**
  * Composition root: bundles the focused stores into a single object

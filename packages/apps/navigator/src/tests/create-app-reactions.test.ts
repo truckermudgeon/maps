@@ -8,10 +8,11 @@ import type { IReactionDisposer } from 'mobx';
 import { observable, runInAction } from 'mobx';
 import { vi } from 'vitest';
 import { CameraMode, NavPageKey } from '../controllers/constants';
-import type { AppStore, MapPaddingStore } from '../controllers/types';
+import type { AppStore } from '../controllers/types';
 import { wireAppReactions } from '../create-app-reactions';
 import type { MapPresenter } from '../services/map-presenter';
 import { NavSheetStoreImpl } from '../stores/nav-sheet';
+import type { MapPaddingStore } from '../stores/types';
 
 function makeObservableStore(overrides: Partial<AppStore> = {}): AppStore {
   return observable<AppStore>(
