@@ -12,11 +12,11 @@ import { wireAppReactions } from './reactions';
 import { applyThemeReaction } from './reactions/theme';
 import { ServicesProvider } from './services/context';
 import { MapAdapter } from './services/map-adapter';
-import { RouteAnimator } from './services/route-animator';
 import { RouteApiImpl } from './services/route-api';
 import { RouteRenderer } from './services/route-renderer';
 import { SearchApiImpl } from './services/search-api';
 import { TelemetryService } from './services/telemetry';
+import { TelemetryPlayer } from './services/telemetry-player';
 import { CameraStoreImpl } from './stores/camera';
 import { RootStoreProvider } from './stores/context';
 import { bindControlsToMap, ControlsStoreImpl } from './stores/controls';
@@ -62,7 +62,7 @@ export function createApp({
     controlsStore,
     appClient,
   );
-  const routeAnimator = new RouteAnimator(
+  const telemetryPlayer = new TelemetryPlayer(
     mapAdapter,
     routeRenderer,
     telemetryService.timeline,
@@ -75,7 +75,7 @@ export function createApp({
     mapAdapter,
     routeApi,
     telemetryService,
-    routeAnimator,
+    telemetryPlayer,
   );
   applyThemeReaction(session);
 

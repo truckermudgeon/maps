@@ -1,10 +1,10 @@
 import type { Route, SearchResult } from '@truckermudgeon/navigation/types';
 import { action } from 'mobx';
 import type { MapAdapter } from '../services/map-adapter';
-import type { RouteAnimator } from '../services/route-animator';
 import type { RouteApi } from '../services/route-api';
 import type { RouteRenderer } from '../services/route-renderer';
 import type { TelemetryService } from '../services/telemetry';
+import type { TelemetryPlayer } from '../services/telemetry-player';
 import type { CameraStore, NavSheetStore, RouteStore } from '../stores/types';
 import { clearCredentialsAndReload } from '../util/browser';
 
@@ -17,12 +17,12 @@ export class AppControllerImpl {
     private readonly mapAdapter: MapAdapter,
     private readonly routeApi: RouteApi,
     private readonly telemetryService: TelemetryService,
-    private readonly routeAnimator: RouteAnimator,
+    private readonly telemetryPlayer: TelemetryPlayer,
   ) {}
 
   forceRePair() {
     this.telemetryService.stop();
-    this.routeAnimator.stop();
+    this.telemetryPlayer.stop();
     clearCredentialsAndReload();
   }
 
@@ -66,7 +66,7 @@ export class AppControllerImpl {
 
   startListening() {
     this.telemetryService.start();
-    this.routeAnimator.start(this.camera, this.route);
+    this.telemetryPlayer.start(this.camera, this.route);
   }
 
   synthesizeSearchResult(): Promise<SearchResult> {

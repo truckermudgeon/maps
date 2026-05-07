@@ -17,7 +17,7 @@ const DURATION_MS = 500;
  * TelemetryTimeline at a fixed interval. Owns its setInterval via
  * start()/stop().
  */
-export class RouteAnimator {
+export class TelemetryPlayer {
   private intervalId: ReturnType<typeof setInterval> | undefined;
 
   constructor(
