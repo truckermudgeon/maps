@@ -17,6 +17,7 @@ const DURATION_MS = 500;
  */
 export class TelemetryPlayer {
   private intervalId: ReturnType<typeof setInterval> | undefined;
+  private follow: ReturnType<MapAdapter['beginFollowCamera']> | undefined;
 
   constructor(
     private readonly mapAdapter: MapAdapter,
@@ -26,6 +27,8 @@ export class TelemetryPlayer {
 
   start(camera: CameraStore, route: RouteStore): void {
     this.stop();
+    const follow = this.mapAdapter.beginFollowCamera();
+    this.follow = follow;
 
     const render = () => {
       const gameState = this.timeline.sample(Date.now());
@@ -48,7 +51,7 @@ export class TelemetryPlayer {
 
       switch (camera.cameraMode) {
         case CameraMode.FOLLOW:
-          this.mapAdapter.animateFollowCamera({
+          follow.animate({
             position: center,
             bearing,
             speedMph,
@@ -72,7 +75,7 @@ export class TelemetryPlayer {
       clearInterval(this.intervalId);
       this.intervalId = undefined;
     }
-    // Reset so a later start() snaps instead of tweening from a stale pose.
-    this.mapAdapter.clearLastPlayerPose();
+    this.follow?.stop();
+    this.follow = undefined;
   }
 }

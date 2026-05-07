@@ -92,56 +92,59 @@ export class MapAdapter {
   }
 
   /**
-   * Clears the cached last-pose so the next animateFollowCamera call
-   * snaps instead of interpolating. Call this when the playback loop
-   * stops, so a later restart doesn't tween from a stale pose.
+   * Begins a follow-camera session. The returned `animate` is called
+   * per-tick by the playback loop with the current player pose; the
+   * first call (and the first call after `stop()`) snaps without
+   * animating, subsequent calls interpolate from the previously-set
+   * pose. `stop()` resets the cached pose so a future session
+   * re-snaps instead of tweening from a stale tick.
    */
-  clearLastPlayerPose(): void {
-    this.lastPlayerPose = undefined;
-  }
-
-  /**
-   * Eases the camera into a follow-cam pose at the given player
-   * `position` / `bearing` while interpolating the player marker
-   * from its last-set pose on each animation frame. On the first
-   * call (or after `clearLastPlayerPose`), snaps without animating.
-   */
-  animateFollowCamera(opts: {
-    position: [number, number];
-    bearing: number;
-    speedMph: number;
-    isNorthLock: boolean;
-    durationMs: number;
-  }): void {
-    if (!this.map) {
-      return;
-    }
-    const prev = this.lastPlayerPose;
-    if (!prev) {
-      this.map.setCenter(opts.position);
-      this.setPlayerPose(opts.position, opts.bearing);
-      return;
-    }
-    const bearingDelta = calculateDelta(prev.bearing, opts.bearing);
-    this.map.easeTo({
-      ...toCameraOptions(opts.position, opts.bearing, opts.speedMph, {
-        isNorthLock: opts.isNorthLock,
-      }),
-      duration: opts.durationMs,
-      padding: this.padding,
-      offset: this.offset,
-      easing: t => {
-        this.playerPoseBuffer[0] =
-          prev.position[0] + t * (opts.position[0] - prev.position[0]);
-        this.playerPoseBuffer[1] =
-          prev.position[1] + t * (opts.position[1] - prev.position[1]);
-        this.setPlayerPose(
-          this.playerPoseBuffer,
-          prev.bearing + t * bearingDelta,
-        );
-        return t;
+  beginFollowCamera(): {
+    animate(opts: {
+      position: [number, number];
+      bearing: number;
+      speedMph: number;
+      isNorthLock: boolean;
+      durationMs: number;
+    }): void;
+    stop(): void;
+  } {
+    return {
+      animate: opts => {
+        if (!this.map) {
+          return;
+        }
+        const prev = this.lastPlayerPose;
+        if (!prev) {
+          this.map.setCenter(opts.position);
+          this.setPlayerPose(opts.position, opts.bearing);
+          return;
+        }
+        const bearingDelta = calculateDelta(prev.bearing, opts.bearing);
+        this.map.easeTo({
+          ...toCameraOptions(opts.position, opts.bearing, opts.speedMph, {
+            isNorthLock: opts.isNorthLock,
+          }),
+          duration: opts.durationMs,
+          padding: this.padding,
+          offset: this.offset,
+          easing: t => {
+            this.playerPoseBuffer[0] =
+              prev.position[0] + t * (opts.position[0] - prev.position[0]);
+            this.playerPoseBuffer[1] =
+              prev.position[1] + t * (opts.position[1] - prev.position[1]);
+            this.setPlayerPose(
+              this.playerPoseBuffer,
+              prev.bearing + t * bearingDelta,
+            );
+            return t;
+          },
+        });
       },
-    });
+      stop: () => {
+        this.lastPlayerPose = undefined;
+      },
+    };
   }
 
   addMapDragEndListener(
