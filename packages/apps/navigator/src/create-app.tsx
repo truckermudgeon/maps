@@ -20,10 +20,10 @@ import {
   buildNavSheetHandlers,
   buildRouteControlsHandlers,
 } from './create-app-handlers';
-import { wireAppReactions } from './create-app-reactions';
 import { createControls } from './create-controls';
 import { createNavSheet } from './create-nav-sheet';
 import { setupDevtools } from './dev-tools';
+import { wireAppReactions } from './reactions';
 import { applyThemeReaction } from './reactions/theme';
 import { MapPresenter } from './services/map-presenter';
 import { CameraStoreImpl } from './stores/camera';

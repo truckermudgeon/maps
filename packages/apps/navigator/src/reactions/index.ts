@@ -1,13 +1,13 @@
 import type { IReactionDisposer } from 'mobx';
-import { wireCameraReactions } from './reactions/camera';
-import { wireRouteReactions } from './reactions/route';
-import type { MapPresenter } from './services/map-presenter';
+import type { MapPresenter } from '../services/map-presenter';
 import type {
   CameraStore,
   MapPaddingStore,
   NavSheetStore,
   RouteStore,
-} from './stores/types';
+} from '../stores/types';
+import { wireCameraReactions } from './camera';
+import { wireRouteReactions } from './route';
 
 export interface ReactionDeps {
   camera: CameraStore;
