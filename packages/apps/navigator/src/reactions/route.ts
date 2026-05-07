@@ -1,12 +1,12 @@
 import type { IReactionDisposer } from 'mobx';
 import { reaction } from 'mobx';
-import type { MapPresenter } from '../services/map-presenter';
+import type { RouteRenderer } from '../services/route-renderer';
 import type { NavSheetStore, RouteStore } from '../stores/types';
 import { sortedRoutePreviewIndices } from '../util/route-display';
 
 export interface RouteReactionDeps {
   route: RouteStore;
-  mapPresenter: MapPresenter;
+  routeRenderer: RouteRenderer;
   navSheetStore: NavSheetStore;
 }
 
@@ -18,7 +18,7 @@ export interface RouteReactionDeps {
 export function wireRouteReactions(
   deps: RouteReactionDeps,
 ): IReactionDisposer[] {
-  const { route, mapPresenter, navSheetStore } = deps;
+  const { route, routeRenderer, navSheetStore } = deps;
   const disposers: IReactionDisposer[] = [];
 
   // Render calls can also be made directly by the nav sheet controller;
@@ -33,7 +33,7 @@ export function wireRouteReactions(
       ({ routes, selected }, prev) => {
         sortedRoutePreviewIndices(routes, selected).forEach(
           (routeIndex, layerIndex) =>
-            mapPresenter.renderRoutePreview(routes[routeIndex], {
+            routeRenderer.renderRoutePreview(routes[routeIndex], {
               index: layerIndex,
               highlight: selected?.id === routes[routeIndex]?.id,
               animate: prev.routes !== routes,
@@ -41,7 +41,7 @@ export function wireRouteReactions(
         );
         if (routes.length === 0 && !selected) {
           // assume a navsheet reset happened. restore active route.
-          mapPresenter.renderActiveRoute(route.activeRoute);
+          routeRenderer.renderActiveRoute(route.activeRoute);
         }
       },
     ),
@@ -50,7 +50,7 @@ export function wireRouteReactions(
   disposers.push(
     reaction(
       () => (navSheetStore.showNavSheet ? undefined : route.activeArrowStep),
-      step => mapPresenter.drawStepArrow(step),
+      step => routeRenderer.drawStepArrow(step),
     ),
   );
 

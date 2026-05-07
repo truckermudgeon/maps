@@ -7,7 +7,7 @@ import type {
 } from '@truckermudgeon/navigation/types';
 import { action, when } from 'mobx';
 import { destinations } from '../components/DestinationTypes';
-import type { MapPresenter } from '../services/map-presenter';
+import type { MapAdapter } from '../services/map-adapter';
 import * as routeApi from '../services/route-api';
 import * as searchApi from '../services/search-api';
 import { NavPageKey } from './constants';
@@ -80,7 +80,7 @@ export class NavSheetControllerImpl implements NavSheetController {
     _label: string,
     // TODO get this out of here. handle in create-app, e.g., via
     //  a NavSheetProp for onDestinationTypeClick
-    mapPresenter: MapPresenter,
+    mapAdapter: MapAdapter,
   ): void {
     const { store } = this;
     const currentPage = store.currentPageKey;
@@ -106,7 +106,7 @@ export class NavSheetControllerImpl implements NavSheetController {
 
     if (scope === ScopeType.NEARBY) {
       // TODO how to reattach this listener when pressing Back into NavPageKey.DESTINATIONS?
-      const mapDragUnsubscribe = mapPresenter.addMapDragEndListener(center => {
+      const mapDragUnsubscribe = mapAdapter.addMapDragEndListener(center => {
         void searchApi.searchPoi(this.appClient, { type, scope, center }).then(
           action(response => {
             store.searchQuery = destinations[type].label;

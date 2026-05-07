@@ -6,7 +6,8 @@ import { action } from 'mobx';
 import type { AppControllerImpl } from './controllers/app';
 import { BearingMode, CameraMode } from './controllers/constants';
 import type { NavSheetController } from './controllers/types';
-import type { MapPresenter } from './services/map-presenter';
+import type { MapAdapter } from './services/map-adapter';
+import type { RouteRenderer } from './services/route-renderer';
 import type { CameraStore, NavSheetStore, RouteStore } from './stores/types';
 import { routeCornerPair } from './util/route-bounds';
 import { bearingAfterStepManeuver } from './util/route-features';
@@ -15,7 +16,8 @@ export interface HandlerDeps {
   camera: CameraStore;
   route: RouteStore;
   controller: AppControllerImpl;
-  mapPresenter: MapPresenter;
+  mapAdapter: MapAdapter;
+  routeRenderer: RouteRenderer;
   navSheetStore: NavSheetStore;
   navSheetController: NavSheetController;
 }
@@ -30,7 +32,7 @@ export interface HideNavSheetDeps
     | 'camera'
     | 'route'
     | 'controller'
-    | 'mapPresenter'
+    | 'routeRenderer'
     | 'navSheetStore'
     | 'navSheetController'
   > {
@@ -66,7 +68,7 @@ export function buildHideNavSheet(deps: HideNavSheetDeps): () => void {
     camera,
     route,
     controller,
-    mapPresenter,
+    routeRenderer,
     navSheetStore,
     transitionDurationMs,
   } = deps;
@@ -85,7 +87,7 @@ export function buildHideNavSheet(deps: HideNavSheetDeps): () => void {
     // case where there's no active route, but a preview-step arrow has been
     // drawn. Handle it here.
     if (!route.activeRoute) {
-      mapPresenter.drawStepArrow(undefined);
+      routeRenderer.drawStepArrow(undefined);
     }
   });
 }
@@ -95,7 +97,8 @@ export function buildNavSheetHandlers(
 ): NavSheetCallbacks {
   const {
     controller,
-    mapPresenter,
+    mapAdapter,
+    routeRenderer,
     navSheetStore,
     navSheetController,
     hideNavSheet,
@@ -122,8 +125,8 @@ export function buildNavSheetHandlers(
       );
     }),
     onRouteStepClick: action(step => {
-      mapPresenter.flyTo(step.maneuver.lonLat, bearingAfterStepManeuver(step));
-      mapPresenter.drawStepArrow(step);
+      mapAdapter.flyTo(step.maneuver.lonLat, bearingAfterStepManeuver(step));
+      routeRenderer.drawStepArrow(step);
     }),
     onWaypointsChange: action(waypoints => {
       controller.setActiveRouteFromNodeUids(waypoints);
@@ -168,9 +171,17 @@ export function buildControlsHandlers(
 }
 
 export function buildRouteControlsHandlers(
-  deps: HandlerDeps,
+  deps: Pick<
+    HandlerDeps,
+    | 'camera'
+    | 'route'
+    | 'controller'
+    | 'mapAdapter'
+    | 'navSheetStore'
+    | 'navSheetController'
+  >,
 ): RouteControlsCallbacks {
-  const { camera, route, controller, mapPresenter, navSheetStore } = deps;
+  const { camera, route, controller, mapAdapter, navSheetStore } = deps;
   return {
     onManageStops: action(() => navSheetStore.startManageStopsFlow()),
     onSearchAlongRoute: action(() => navSheetStore.startSearchAlongFlow()),
@@ -180,7 +191,7 @@ export function buildRouteControlsHandlers(
         return;
       }
       camera.cameraMode = CameraMode.FREE;
-      mapPresenter.fitPoints(routeCornerPair(route.activeRoute));
+      mapAdapter.fitPoints(routeCornerPair(route.activeRoute));
     }),
     onRouteDirections: action(() =>
       navSheetStore.startShowActiveRouteDirectionsFlow(),

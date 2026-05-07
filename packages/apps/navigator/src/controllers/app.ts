@@ -1,8 +1,10 @@
 import type { Route, SearchResult } from '@truckermudgeon/navigation/types';
 import { action } from 'mobx';
-import type { MapPresenter } from '../services/map-presenter';
+import type { ChooseOnMapService } from '../services/choose-on-map';
+import type { MapAdapter } from '../services/map-adapter';
 import { RouteAnimator } from '../services/route-animator';
 import * as routeApi from '../services/route-api';
+import type { RouteRenderer } from '../services/route-renderer';
 import { TelemetryService } from '../services/telemetry';
 import type {
   CameraStore,
@@ -23,7 +25,9 @@ export class AppControllerImpl {
     private readonly camera: CameraStore,
     private readonly route: RouteStore,
     private readonly navSheetStore: NavSheetStore,
-    private readonly mapPresenter: MapPresenter,
+    mapAdapter: MapAdapter,
+    private readonly routeRenderer: RouteRenderer,
+    private readonly chooseOnMapService: ChooseOnMapService,
     controlsStore: ControlsStore,
     private readonly appClient: AppClient,
   ) {
@@ -31,11 +35,11 @@ export class AppControllerImpl {
       session,
       route,
       controlsStore,
-      mapPresenter.routeRenderer,
+      routeRenderer,
     );
     this.routeAnimator = new RouteAnimator(
-      mapPresenter.mapAdapter,
-      mapPresenter.routeRenderer,
+      mapAdapter,
+      routeRenderer,
       this.telemetryService.timeline,
     );
   }
@@ -74,7 +78,7 @@ export class AppControllerImpl {
       stepIndex: 0,
       nodeIndex: 0,
     };
-    this.mapPresenter.renderActiveRoute(route);
+    this.routeRenderer.renderActiveRoute(route);
     void routeApi.setActiveRoute(
       this.appClient,
       route?.segments.map(s => s.key),
@@ -102,7 +106,7 @@ export class AppControllerImpl {
   synthesizeSearchResult(): Promise<SearchResult> {
     return routeApi.synthesizeSearchResult(
       this.appClient,
-      this.mapPresenter.chooseOnMapService.getChosenLngLat(),
+      this.chooseOnMapService.getChosenLngLat(),
     );
   }
 

@@ -1,5 +1,7 @@
 import type { IReactionDisposer } from 'mobx';
-import type { MapPresenter } from '../services/map-presenter';
+import type { ChooseOnMapService } from '../services/choose-on-map';
+import type { MapAdapter } from '../services/map-adapter';
+import type { RouteRenderer } from '../services/route-renderer';
 import type {
   CameraStore,
   MapPaddingStore,
@@ -12,7 +14,9 @@ import { wireRouteReactions } from './route';
 export interface ReactionDeps {
   camera: CameraStore;
   route: RouteStore;
-  mapPresenter: MapPresenter;
+  mapAdapter: MapAdapter;
+  chooseOnMapService: ChooseOnMapService;
+  routeRenderer: RouteRenderer;
   navSheetStore: NavSheetStore;
   mapPaddingStore: MapPaddingStore;
 }

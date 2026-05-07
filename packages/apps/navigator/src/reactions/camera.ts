@@ -1,7 +1,8 @@
 import type { IReactionDisposer } from 'mobx';
 import { action, autorun, reaction } from 'mobx';
 import { CameraMode, NavPageKey } from '../controllers/constants';
-import type { MapPresenter } from '../services/map-presenter';
+import type { ChooseOnMapService } from '../services/choose-on-map';
+import type { MapAdapter } from '../services/map-adapter';
 import type {
   CameraStore,
   MapPaddingStore,
@@ -13,7 +14,8 @@ import { routeCornerPair, routesCornerPairs } from '../util/route-bounds';
 export interface CameraReactionDeps {
   camera: CameraStore;
   route: RouteStore;
-  mapPresenter: MapPresenter;
+  mapAdapter: MapAdapter;
+  chooseOnMapService: ChooseOnMapService;
   navSheetStore: NavSheetStore;
   mapPaddingStore: MapPaddingStore;
 }
@@ -26,13 +28,20 @@ export interface CameraReactionDeps {
 export function wireCameraReactions(
   deps: CameraReactionDeps,
 ): IReactionDisposer[] {
-  const { camera, route, mapPresenter, navSheetStore, mapPaddingStore } = deps;
+  const {
+    camera,
+    route,
+    mapAdapter,
+    chooseOnMapService,
+    navSheetStore,
+    mapPaddingStore,
+  } = deps;
   const disposers: IReactionDisposer[] = [];
 
   disposers.push(
     autorun(() => {
-      mapPresenter.setOffset(mapPaddingStore.offset);
-      mapPresenter.setPadding(mapPaddingStore.padding);
+      mapAdapter.setOffset(mapPaddingStore.offset);
+      mapAdapter.setPadding(mapPaddingStore.padding);
     }),
   );
 
@@ -42,9 +51,9 @@ export function wireCameraReactions(
         navSheetStore.showNavSheet &&
         navSheetStore.currentPageKey === NavPageKey.CHOOSE_ON_MAP,
       action(isChoosingOnMap => {
-        mapPresenter.toggleChooseOnMapUi(isChoosingOnMap);
+        chooseOnMapService.toggle(isChoosingOnMap);
         if (isChoosingOnMap) {
-          mapPresenter.clearPitchAndBearing();
+          mapAdapter.clearPitchAndBearing();
           camera.cameraMode = CameraMode.FREE;
         }
       }),
@@ -68,7 +77,7 @@ export function wireCameraReactions(
         if (maybeLonLats) {
           camera.setFree();
           if (!navSheetStore.disableFitToBounds) {
-            mapPresenter.fitPoints(maybeLonLats);
+            mapAdapter.fitPoints(maybeLonLats);
           }
         }
       }),
@@ -96,12 +105,12 @@ export function wireCameraReactions(
           const tlbrs = [route.truckPoint, maybeRoutes[0].detour!.lngLat];
           console.log('tlbrs', tlbrs);
           camera.cameraMode = CameraMode.FREE;
-          mapPresenter.fitPoints(tlbrs as [number, number][]);
+          mapAdapter.fitPoints(tlbrs as [number, number][]);
         } else {
           const tlbrs = routesCornerPairs(maybeRoutes);
           console.log('tlbrs', tlbrs);
           camera.cameraMode = CameraMode.FREE;
-          mapPresenter.fitPoints(tlbrs);
+          mapAdapter.fitPoints(tlbrs);
         }
       },
     ),
@@ -119,7 +128,7 @@ export function wireCameraReactions(
           return;
         }
         camera.cameraMode = CameraMode.FREE;
-        mapPresenter.fitPoints(routeCornerPair(maybeRoute));
+        mapAdapter.fitPoints(routeCornerPair(maybeRoute));
       },
     ),
   );

@@ -25,7 +25,9 @@ import { createNavSheet } from './create-nav-sheet';
 import { setupDevtools } from './dev-tools';
 import { wireAppReactions } from './reactions';
 import { applyThemeReaction } from './reactions/theme';
-import { MapPresenter } from './services/map-presenter';
+import { ChooseOnMapService } from './services/choose-on-map';
+import { MapAdapter } from './services/map-adapter';
+import { RouteRenderer } from './services/route-renderer';
 import { CameraStoreImpl } from './stores/camera';
 import { RootStoreProvider } from './stores/context';
 import { useNavSheetStore } from './stores/hooks/use-nav-sheet';
@@ -58,7 +60,9 @@ export function createApp({
   const camera = new CameraStoreImpl();
   const route = new RouteStoreImpl();
   const navSheetStore = new NavSheetStoreImpl();
-  const mapPresenter = new MapPresenter();
+  const mapAdapter = new MapAdapter();
+  const routeRenderer = new RouteRenderer(mapAdapter);
+  const chooseOnMapService = new ChooseOnMapService(mapAdapter);
   const {
     Controls,
     bindMap: bindControlsToMap,
@@ -74,7 +78,9 @@ export function createApp({
     camera,
     route,
     navSheetStore,
-    mapPresenter,
+    mapAdapter,
+    routeRenderer,
+    chooseOnMapService,
     controlsStore,
     appClient,
   );
@@ -84,14 +90,14 @@ export function createApp({
     appClient,
     session,
     route,
-    mapPresenter,
+    mapAdapter,
     store: navSheetStore,
   });
   const hideNavSheet = buildHideNavSheet({
     camera,
     route,
     controller,
-    mapPresenter,
+    routeRenderer,
     navSheetStore,
     navSheetController,
     transitionDurationMs,
@@ -100,7 +106,8 @@ export function createApp({
     camera,
     route,
     controller,
-    mapPresenter,
+    mapAdapter,
+    routeRenderer,
     navSheetStore,
     navSheetController,
     hideNavSheet,
@@ -128,7 +135,9 @@ export function createApp({
   wireAppReactions({
     camera,
     route,
-    mapPresenter,
+    mapAdapter,
+    chooseOnMapService,
+    routeRenderer,
     navSheetStore,
     mapPaddingStore,
   });
@@ -150,7 +159,7 @@ export function createApp({
   );
 
   const onMapLoad = (map: MapRef, marker: MapLibreGLMarker) => {
-    mapPresenter.onMapLoad(map, marker);
+    mapAdapter.onMapLoad(map, marker);
     bindControlsToMap(map);
   };
 
@@ -158,7 +167,7 @@ export function createApp({
     camera,
     route,
     controller,
-    mapPresenter,
+    mapAdapter,
     navSheetStore,
     navSheetController,
   });
