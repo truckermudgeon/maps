@@ -6,7 +6,7 @@ import { Compass } from '../components/Compass';
 import { Fab } from '../components/Fab';
 import { HudStack } from '../components/HudStack';
 import { SpeedLimit } from '../components/SpeedLimit';
-import { BearingMode } from '../controllers/constants';
+import { BearingMode } from '../stores/camera';
 import { useCameraStore } from '../stores/hooks/use-camera';
 import { useControlsStore } from '../stores/hooks/use-controls';
 import { useNavSheetStore } from '../stores/hooks/use-nav-sheet';

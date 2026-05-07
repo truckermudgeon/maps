@@ -5,8 +5,7 @@ import type {
   SearchResultWithRelativeTruckInfo,
 } from '@truckermudgeon/navigation/types';
 import { describe, expect, it } from 'vitest';
-import { NavPageKey } from '../../controllers/constants';
-import { NavSheetStoreImpl } from '../nav-sheet';
+import { NavPageKey, NavSheetStoreImpl } from '../nav-sheet';
 
 describe('NavSheetStoreImpl', () => {
   it('starts with CHOOSE_DESTINATION on the stack', () => {

@@ -1,6 +1,15 @@
 import { makeAutoObservable } from 'mobx';
-import { BearingMode, CameraMode } from '../controllers/constants';
 import type { CameraStore } from './types';
+
+export const enum CameraMode {
+  FOLLOW,
+  FREE,
+}
+
+export const enum BearingMode {
+  MATCH_MAP,
+  NORTH_LOCK,
+}
 
 export class CameraStoreImpl implements CameraStore {
   cameraMode: CameraMode = CameraMode.FOLLOW;

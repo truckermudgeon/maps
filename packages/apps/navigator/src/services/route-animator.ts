@@ -3,7 +3,7 @@ import { UnreachableError } from '@truckermudgeon/base/precon';
 import { toPosAndBearing } from '@truckermudgeon/navigation/helpers';
 import type { GameState } from '@truckermudgeon/navigation/types';
 import { action } from 'mobx';
-import { BearingMode, CameraMode } from '../controllers/constants';
+import { BearingMode, CameraMode } from '../stores/camera';
 import type { CameraStore, RouteStore } from '../stores/types';
 import { calculateDelta, toCameraOptions } from '../util/camera-options';
 import type { TelemetryTimeline } from '../util/telemetry-timeline';

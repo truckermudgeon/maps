@@ -1,8 +1,5 @@
 import { computed, makeAutoObservable } from 'mobx';
-import {
-  BearingMode,
-  navSheetPagesRequiringMapVisibility,
-} from '../controllers/constants';
+import { BearingMode } from './camera';
 import type {
   CameraStore,
   MapPaddingStore,
@@ -36,7 +33,7 @@ export class MapPaddingStoreImpl implements MapPaddingStore {
   } {
     const showingPartialHeightNavSheet =
       this.navStore.showNavSheet &&
-      navSheetPagesRequiringMapVisibility.has(this.navStore.currentPageKey);
+      this.navStore.currentPageRequiresMapVisibility;
 
     return {
       left:
@@ -85,7 +82,7 @@ export class MapPaddingStoreImpl implements MapPaddingStore {
     const bottomControlsHeight =
       this.uiEnvStore.orientation === 'portrait' &&
       this.navStore.showNavSheet &&
-      navSheetPagesRequiringMapVisibility.has(this.navStore.currentPageKey)
+      this.navStore.currentPageRequiresMapVisibility
         ? this.uiEnvStore.height * 0.4
         : this.uiEnvStore.orientation === 'portrait' && this.route.activeRoute
           ? routeStackBottom

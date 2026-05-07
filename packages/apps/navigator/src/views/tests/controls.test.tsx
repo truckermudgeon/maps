@@ -2,8 +2,7 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
-import { BearingMode, CameraMode } from '../../controllers/constants';
-import { CameraStoreImpl } from '../../stores/camera';
+import { BearingMode, CameraMode, CameraStoreImpl } from '../../stores/camera';
 import { ControlsStoreImpl } from '../../stores/controls';
 import { NavSheetStoreImpl } from '../../stores/nav-sheet';
 import { RouteStoreImpl } from '../../stores/route';

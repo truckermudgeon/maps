@@ -1,8 +1,9 @@
 import type { IReactionDisposer } from 'mobx';
 import { action, autorun, reaction } from 'mobx';
-import { CameraMode, NavPageKey } from '../controllers/constants';
 import type { ChooseOnMapService } from '../services/choose-on-map';
 import type { MapAdapter } from '../services/map-adapter';
+import { CameraMode } from '../stores/camera';
+import { NavPageKey } from '../stores/nav-sheet';
 import type {
   CameraStore,
   MapPaddingStore,

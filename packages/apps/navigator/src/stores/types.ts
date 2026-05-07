@@ -8,11 +8,8 @@ import type {
   SegmentInfo,
   StepManeuver,
 } from '@truckermudgeon/navigation/types';
-import type {
-  BearingMode,
-  CameraMode,
-  NavPageKey,
-} from '../controllers/constants';
+import type { BearingMode, CameraMode } from './camera';
+import type { NavPageKey } from './nav-sheet';
 
 export interface ControlsStore {
   // (-180, 180] CW, 0 is north.
@@ -121,6 +118,7 @@ export interface RouteStore {
 export interface NavSheetStore {
   readonly title: string;
   readonly currentPageKey: NavPageKey;
+  readonly currentPageRequiresMapVisibility: boolean;
   readonly showBackButton: boolean;
   readonly pageStack: readonly NavPageKey[];
 

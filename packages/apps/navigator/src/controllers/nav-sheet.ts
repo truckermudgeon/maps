@@ -10,7 +10,7 @@ import { destinations } from '../components/DestinationTypes';
 import type { MapAdapter } from '../services/map-adapter';
 import type { RouteApi } from '../services/route-api';
 import type { SearchApi } from '../services/search-api';
-import { NavPageKey } from './constants';
+import { NavPageKey } from '../stores/nav-sheet';
 import type { NavSheetController, NavSheetStore } from './types';
 
 /**

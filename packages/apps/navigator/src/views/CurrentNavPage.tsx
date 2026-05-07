@@ -1,7 +1,7 @@
 import { UnreachableError } from '@truckermudgeon/base/precon';
 import { observer } from 'mobx-react-lite';
-import { NavPageKey } from '../controllers/constants';
 import { useNavSheetStore } from '../stores/hooks/use-nav-sheet';
+import { NavPageKey } from '../stores/nav-sheet';
 import { ChooseDestinationPage } from './nav-sheet/ChooseDestinationPage';
 import { ChooseOnMapPage } from './nav-sheet/ChooseOnMapPage';
 import { DestinationsListPage } from './nav-sheet/DestinationsListPage';

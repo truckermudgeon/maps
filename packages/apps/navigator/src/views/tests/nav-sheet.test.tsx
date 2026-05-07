@@ -9,7 +9,6 @@ import type {
 import { runInAction } from 'mobx';
 import { vi } from 'vitest';
 import type { AppControllerImpl } from '../../controllers/app';
-import { NavPageKey } from '../../controllers/constants';
 import { NavSheetControllerImpl } from '../../controllers/nav-sheet';
 import type { NavSheetController } from '../../controllers/types';
 import { useHideNavSheet } from '../../services/context';
@@ -18,7 +17,7 @@ import type { RouteApi } from '../../services/route-api';
 import type { RouteRenderer } from '../../services/route-renderer';
 import type { SearchApi } from '../../services/search-api';
 import { CameraStoreImpl } from '../../stores/camera';
-import { NavSheetStoreImpl } from '../../stores/nav-sheet';
+import { NavPageKey, NavSheetStoreImpl } from '../../stores/nav-sheet';
 import { RouteStoreImpl } from '../../stores/route';
 import { SessionStoreImpl } from '../../stores/session';
 import { NavSheet } from '../NavSheet';

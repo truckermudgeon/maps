@@ -1,6 +1,6 @@
 import { action, makeAutoObservable } from 'mobx';
 import type { MapRef } from 'react-map-gl/maplibre';
-import { CameraMode } from '../controllers/constants';
+import { CameraMode } from './camera';
 import type {
   CameraStore,
   ControlsStore,

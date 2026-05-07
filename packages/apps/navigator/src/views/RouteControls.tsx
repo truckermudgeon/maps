@@ -5,8 +5,8 @@ import {
   defaultImperialOptions,
   defaultMetricOptions,
 } from '../components/text';
-import { CameraMode } from '../controllers/constants';
 import { useAppController, useMapAdapter } from '../services/context';
+import { CameraMode } from '../stores/camera';
 import { useCameraStore } from '../stores/hooks/use-camera';
 import { useNavSheetStore } from '../stores/hooks/use-nav-sheet';
 import { useRouteStore } from '../stores/hooks/use-route';

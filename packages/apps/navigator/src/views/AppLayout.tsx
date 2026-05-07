@@ -6,10 +6,6 @@ import { observer } from 'mobx-react-lite';
 import type { ReactElement } from 'react';
 import type { MapRef } from 'react-map-gl/maplibre';
 import { SpriteProvider } from '../components/SpriteProvider';
-import {
-  maxPortraitSheetCssHeight,
-  navSheetPagesRequiringMapVisibility,
-} from '../controllers/constants';
 import { useNavSheetStore } from '../stores/hooks/use-nav-sheet';
 import { useRouteStore } from '../stores/hooks/use-route';
 import { Controls } from './Controls';
@@ -17,6 +13,8 @@ import { NavSheet } from './NavSheet';
 import { RouteStack } from './RouteStack';
 import { SlippyMap } from './SlippyMap';
 import { WaitingForTelemetry } from './WaitingForTelemetry';
+
+const maxPortraitSheetCssHeight = '40vh';
 
 export const AppLayout = observer(
   (props: {
@@ -33,7 +31,7 @@ export const AppLayout = observer(
     const isMapVisibilityRequired = computed(
       () =>
         navSheetStore.showNavSheet &&
-        navSheetPagesRequiringMapVisibility.has(navSheetStore.currentPageKey),
+        navSheetStore.currentPageRequiresMapVisibility,
     );
 
     return (

@@ -7,8 +7,35 @@ import type {
   SearchResultWithRelativeTruckInfo,
 } from '@truckermudgeon/navigation/types';
 import { makeAutoObservable, observable } from 'mobx';
-import { NavPageKey } from '../controllers/constants';
 import type { NavSheetStore } from './types';
+
+export const enum NavPageKey {
+  /** shows search bar and destination types */
+  CHOOSE_DESTINATION,
+  /** shows search bar and destination types */
+  SEARCH_ALONG,
+  /** shows instructions for panning/zooming map to choose */
+  CHOOSE_ON_MAP,
+  /** a list of search results that can be routed to */
+  DESTINATIONS,
+  /** a list of routes to a destination */
+  ROUTES,
+  /** step-by-step directions, from an in-progress route */
+  DIRECTIONS_FROM_ROUTE_CONTROLS,
+  /** step-by-step directions, from the `ROUTES` page */
+  DIRECTIONS_FROM_ROUTES_LIST,
+  /** re-order and/or delete waypoints in the active route. */
+  MANAGE_STOPS,
+}
+
+const pagesRequiringMapVisibility = new Set<NavPageKey>([
+  NavPageKey.CHOOSE_ON_MAP,
+  NavPageKey.DESTINATIONS,
+  NavPageKey.ROUTES,
+  NavPageKey.DIRECTIONS_FROM_ROUTE_CONTROLS,
+  NavPageKey.DIRECTIONS_FROM_ROUTES_LIST,
+  NavPageKey.MANAGE_STOPS,
+]);
 
 export class NavSheetStoreImpl implements NavSheetStore {
   // Underscore-prefixed so the array reference can't escape; callers
@@ -42,6 +69,10 @@ export class NavSheetStoreImpl implements NavSheetStore {
 
   get currentPageKey(): NavPageKey {
     return assertExists(this._pageStack.at(-1));
+  }
+
+  get currentPageRequiresMapVisibility(): boolean {
+    return pagesRequiringMapVisibility.has(this.currentPageKey);
   }
 
   get title(): string {
