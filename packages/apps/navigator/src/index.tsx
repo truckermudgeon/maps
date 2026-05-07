@@ -11,9 +11,9 @@ import * as mobx from 'mobx';
 import * as React from 'react';
 import { memo } from 'react';
 import { createRoot } from 'react-dom/client';
-import { SessionGate } from './components/SessionGate';
 import { createApp } from './create-app';
 import './index.css';
+import { SessionGate } from './views/SessionGate';
 
 // https://mobx.js.org/configuration.html#linting-options
 mobx.configure({
