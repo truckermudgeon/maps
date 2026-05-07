@@ -1,5 +1,5 @@
 import type { RouteWithSummary } from '@truckermudgeon/navigation/types';
-import { toLengthAndUnit } from './components/text';
+import { toLengthAndUnit } from '../components/text';
 
 type ToLengthAndUnitOptions = Parameters<typeof toLengthAndUnit>[1];
 

@@ -6,10 +6,10 @@ import { action } from 'mobx';
 import type { AppControllerImpl } from './controllers/app';
 import { BearingMode, CameraMode } from './controllers/constants';
 import type { NavSheetController } from './controllers/types';
-import { routeCornerPair } from './route-bounds';
-import { bearingAfterStepManeuver } from './route-features';
 import type { MapPresenter } from './services/map-presenter';
 import type { CameraStore, NavSheetStore, RouteStore } from './stores/types';
+import { routeCornerPair } from './util/route-bounds';
+import { bearingAfterStepManeuver } from './util/route-features';
 
 export interface HandlerDeps {
   camera: CameraStore;

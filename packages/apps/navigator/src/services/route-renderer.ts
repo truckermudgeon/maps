@@ -6,9 +6,9 @@ import { featureCollection, lineString, point } from '@turf/helpers';
 import nearestPointOnLine from '@turf/nearest-point-on-line';
 import type { GeoJSONSource } from 'maplibre-gl';
 import { lineGradientExpression } from '../components/RoutesStyle';
-import { toRouteFeatures } from '../route-features';
 import type { RouteStore } from '../stores/types';
 import { clamp } from '../util/clamp';
+import { toRouteFeatures } from '../util/route-features';
 import type { MapAdapter } from './map-adapter';
 
 const emptyFeatureCollection: GeoJSON.FeatureCollection = {

@@ -5,9 +5,9 @@ import {
   defaultMetricOptions,
 } from '../components/text';
 import type { RouteControlsCallbacks } from '../create-app-handlers';
-import { toRouteSummary } from '../route-display';
 import { useRouteStore } from '../stores/hooks/use-route';
 import { useSessionStore } from '../stores/hooks/use-session';
+import { toRouteSummary } from '../util/route-display';
 
 export const RouteControls = observer(
   (props: {

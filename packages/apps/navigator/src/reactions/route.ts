@@ -1,8 +1,8 @@
 import type { IReactionDisposer } from 'mobx';
 import { reaction } from 'mobx';
-import { sortedRoutePreviewIndices } from '../route-display';
 import type { MapPresenter } from '../services/map-presenter';
 import type { NavSheetStore, RouteStore } from '../stores/types';
+import { sortedRoutePreviewIndices } from '../util/route-display';
 
 export interface RouteReactionDeps {
   route: RouteStore;
