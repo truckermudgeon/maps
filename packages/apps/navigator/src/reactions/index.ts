@@ -1,23 +1,10 @@
 import type { IReactionDisposer } from 'mobx';
-import type { MapAdapter } from '../services/map-adapter';
-import type { RouteRenderer } from '../services/route-renderer';
-import type {
-  CameraStore,
-  MapPaddingStore,
-  NavSheetStore,
-  RouteStore,
-} from '../stores/types';
+import type { CameraReactionDeps } from './camera';
 import { wireCameraReactions } from './camera';
+import type { RouteReactionDeps } from './route';
 import { wireRouteReactions } from './route';
 
-export interface ReactionDeps {
-  camera: CameraStore;
-  route: RouteStore;
-  mapAdapter: MapAdapter;
-  routeRenderer: RouteRenderer;
-  navSheetStore: NavSheetStore;
-  mapPaddingStore: MapPaddingStore;
-}
+export type ReactionDeps = CameraReactionDeps & RouteReactionDeps;
 
 /**
  * Composes the per-domain reaction wirings into a single call site

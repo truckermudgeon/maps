@@ -116,7 +116,6 @@ export function createApp({
   //
   applyThemeReaction(session);
   wireAppReactions({
-    camera,
     route,
     mapAdapter,
     routeRenderer,

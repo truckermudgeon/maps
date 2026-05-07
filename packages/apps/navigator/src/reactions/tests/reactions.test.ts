@@ -90,7 +90,6 @@ function setup(storeOverrides: Partial<AppStore> = {}): Setup {
   const navSheetStore = new NavSheetStoreImpl();
   const mapPaddingStore = makeMapPaddingStore();
   const disposers = wireAppReactions({
-    camera: store,
     route: store,
     mapAdapter,
     routeRenderer,
