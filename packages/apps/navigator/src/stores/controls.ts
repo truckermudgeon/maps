@@ -1,5 +1,4 @@
-import { action, makeAutoObservable } from 'mobx';
-import type { MapRef } from 'react-map-gl/maplibre';
+import { makeAutoObservable } from 'mobx';
 import { CameraMode } from './camera';
 import type {
   CameraStore,
@@ -38,16 +37,4 @@ export class ControlsStoreImpl implements ControlsStore {
   get showSearchFab(): boolean {
     return !!this.route.activeRoute && !this.navSheet.showNavSheet;
   }
-}
-
-/**
- * Wires the maplibre `move` event into `store.bearing` so the
- * compass UI tracks the map's heading. Called once from the map's
- * onLoad handler; the listener lives for the lifetime of the map.
- */
-export function bindControlsToMap(map: MapRef, store: ControlsStore): void {
-  map.on(
-    'move',
-    action(() => (store.bearing = map.getBearing())),
-  );
 }

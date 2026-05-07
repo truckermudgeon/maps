@@ -1,7 +1,7 @@
 import type { Theme } from '@mui/joy';
 import type { Marker as MapLibreGLMarker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { when } from 'mobx';
+import { action, when } from 'mobx';
 import type { ReactElement } from 'react';
 import type { MapRef } from 'react-map-gl/maplibre';
 import { AppControllerImpl } from './controllers/app';
@@ -19,7 +19,7 @@ import { TelemetryService } from './services/telemetry';
 import { TelemetryPlayer } from './services/telemetry-player';
 import { CameraStoreImpl } from './stores/camera';
 import { RootStoreProvider } from './stores/context';
-import { bindControlsToMap, ControlsStoreImpl } from './stores/controls';
+import { ControlsStoreImpl } from './stores/controls';
 import { MapPaddingStoreImpl } from './stores/map-padding';
 import { NavSheetStoreImpl } from './stores/nav-sheet';
 import { RootStore } from './stores/root-store';
@@ -138,7 +138,9 @@ export function createApp({
 
   const onMapLoad = (map: MapRef, marker: MapLibreGLMarker) => {
     mapAdapter.onMapLoad(map, marker);
-    bindControlsToMap(map, controlsStore);
+    mapAdapter.onBearingChange(
+      action(bearing => (controlsStore.bearing = bearing)),
+    );
   };
 
   const services = {

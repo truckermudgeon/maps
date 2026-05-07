@@ -157,6 +157,17 @@ export class MapAdapter {
     return () => subscription.unsubscribe();
   }
 
+  /**
+   * Subscribes to map bearing changes (driven by user pan/rotate or
+   * camera animations). The callback fires with the current bearing
+   * on every `move` event. Returns an unsubscribe function.
+   */
+  onBearingChange(cb: (bearing: number) => void): () => void {
+    const map = Preconditions.checkExists(this.map);
+    const subscription = map.on('move', () => cb(map.getBearing()));
+    return () => subscription.unsubscribe();
+  }
+
   clearPitchAndBearing(): void {
     Preconditions.checkState(this.map != null);
     this.map.panTo(this.map.getCenter(), {
