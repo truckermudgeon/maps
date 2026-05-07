@@ -1,6 +1,6 @@
 import { center, getExtent } from '@truckermudgeon/base/geom';
 import { Preconditions } from '@truckermudgeon/base/precon';
-import type { Marker } from 'maplibre-gl';
+import { Marker } from 'maplibre-gl';
 import { action, makeObservable, observable } from 'mobx';
 import type { MapRef } from 'react-map-gl/maplibre';
 
@@ -12,10 +12,13 @@ interface Padding {
 }
 
 /**
- * Thin wrapper around MapLibre/react-map-gl that owns the map ref, the
- * player marker, and the current camera padding/offset. Encapsulates
- * maplibre access — nothing else in the navigator app should import
- * maplibre directly.
+ * The navigator app's single boundary to MapLibre/react-map-gl. No
+ * other file in `packages/apps/navigator` should import `maplibre-gl`
+ * or `react-map-gl/maplibre`; everything maplibre-shaped routes
+ * through this class.
+ *
+ * Add a method here if it imports from `maplibre-gl` / `react-map-gl`,
+ * calls a method on `MapRef`, or manages a map-attached DOM artifact.
  */
 export class MapAdapter {
   // Observable so reactions can re-fire renderers that were called
@@ -25,6 +28,9 @@ export class MapAdapter {
   private _isMapLoaded = false;
   private map: MapRef | undefined;
   private playerMarker: Marker | undefined;
+  private chooseOnMapUi:
+    | { marker: Marker; unsubscribeOnMove: () => void }
+    | undefined;
   private padding: Padding = { left: 0, right: 0, top: 0, bottom: 0 };
   private offset: [number, number] = [0, 0];
 
@@ -149,5 +155,41 @@ export class MapAdapter {
       padding: this.padding,
       offset: this.offset,
     });
+  }
+
+  /**
+   * Toggles the draggable "choose on map" marker — a centered Marker
+   * that follows the map center as the user pans. Use
+   * {@link getChooseOnMapMarkerLngLat} to read the chosen position
+   * before toggling off.
+   */
+  toggleChooseOnMapMarker(enable: boolean): void {
+    if (!enable) {
+      if (!this.chooseOnMapUi) {
+        return;
+      }
+      this.chooseOnMapUi.marker.remove();
+      this.chooseOnMapUi.unsubscribeOnMove();
+      this.chooseOnMapUi = undefined;
+      return;
+    }
+    Preconditions.checkState(this.chooseOnMapUi == null);
+    const map = Preconditions.checkExists(this.map);
+    const marker = new Marker()
+      .setLngLat(map.getCenter())
+      .setDraggable(false)
+      .addTo(map.getMap());
+    const subscription = map.on('move', () =>
+      marker.setLngLat(map.getCenter()),
+    );
+    this.chooseOnMapUi = {
+      marker,
+      unsubscribeOnMove: () => subscription.unsubscribe(),
+    };
+  }
+
+  getChooseOnMapMarkerLngLat(): [number, number] {
+    Preconditions.checkState(this.chooseOnMapUi != null);
+    return this.chooseOnMapUi.marker.getLngLat().toArray();
   }
 }

@@ -1,6 +1,6 @@
 import type { Route, SearchResult } from '@truckermudgeon/navigation/types';
 import { action } from 'mobx';
-import type { ChooseOnMapService } from '../services/choose-on-map';
+import type { MapAdapter } from '../services/map-adapter';
 import type { RouteAnimator } from '../services/route-animator';
 import type { RouteApi } from '../services/route-api';
 import type { RouteRenderer } from '../services/route-renderer';
@@ -14,7 +14,7 @@ export class AppControllerImpl {
     private readonly route: RouteStore,
     private readonly navSheetStore: NavSheetStore,
     private readonly routeRenderer: RouteRenderer,
-    private readonly chooseOnMapService: ChooseOnMapService,
+    private readonly mapAdapter: MapAdapter,
     private readonly routeApi: RouteApi,
     private readonly telemetryService: TelemetryService,
     private readonly routeAnimator: RouteAnimator,
@@ -71,7 +71,7 @@ export class AppControllerImpl {
 
   synthesizeSearchResult(): Promise<SearchResult> {
     return this.routeApi.synthesizeSearchResult(
-      this.chooseOnMapService.getChosenLngLat(),
+      this.mapAdapter.getChooseOnMapMarkerLngLat(),
     );
   }
 

@@ -1,6 +1,5 @@
 import type { IReactionDisposer } from 'mobx';
 import { action, autorun, reaction } from 'mobx';
-import type { ChooseOnMapService } from '../services/choose-on-map';
 import type { MapAdapter } from '../services/map-adapter';
 import { NavPageKey } from '../stores/nav-sheet';
 import type {
@@ -13,7 +12,6 @@ import { routeCornerPair, routesCornerPairs } from '../util/route-bounds';
 export interface CameraReactionDeps {
   route: RouteStore;
   mapAdapter: MapAdapter;
-  chooseOnMapService: ChooseOnMapService;
   navSheetStore: NavSheetStore;
   mapPaddingStore: MapPaddingStore;
 }
@@ -29,13 +27,7 @@ export interface CameraReactionDeps {
 export function wireCameraReactions(
   deps: CameraReactionDeps,
 ): IReactionDisposer[] {
-  const {
-    route,
-    mapAdapter,
-    chooseOnMapService,
-    navSheetStore,
-    mapPaddingStore,
-  } = deps;
+  const { route, mapAdapter, navSheetStore, mapPaddingStore } = deps;
   const disposers: IReactionDisposer[] = [];
 
   disposers.push(
@@ -51,7 +43,7 @@ export function wireCameraReactions(
         navSheetStore.showNavSheet &&
         navSheetStore.currentPageKey === NavPageKey.CHOOSE_ON_MAP,
       action(isChoosingOnMap => {
-        chooseOnMapService.toggle(isChoosingOnMap);
+        mapAdapter.toggleChooseOnMapMarker(isChoosingOnMap);
         if (isChoosingOnMap) {
           mapAdapter.clearPitchAndBearing();
         }

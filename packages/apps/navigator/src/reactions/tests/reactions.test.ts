@@ -8,7 +8,6 @@ import type { IReactionDisposer } from 'mobx';
 import { observable, runInAction } from 'mobx';
 import { vi } from 'vitest';
 import { wireAppReactions } from '..';
-import type { ChooseOnMapService } from '../../services/choose-on-map';
 import type { MapAdapter } from '../../services/map-adapter';
 import type { RouteRenderer } from '../../services/route-renderer';
 import { CameraMode } from '../../stores/camera';
@@ -63,11 +62,8 @@ function makeMapAdapter(): MapAdapter {
     setPadding: vi.fn(),
     clearPitchAndBearing: vi.fn(),
     fitPoints: vi.fn(),
+    toggleChooseOnMapMarker: vi.fn(),
   } as unknown as MapAdapter;
-}
-
-function makeChooseOnMapService(): ChooseOnMapService {
-  return { toggle: vi.fn() } as unknown as ChooseOnMapService;
 }
 
 function makeRouteRenderer(): RouteRenderer {
@@ -81,7 +77,6 @@ function makeRouteRenderer(): RouteRenderer {
 interface Setup {
   store: AppStore;
   mapAdapter: MapAdapter;
-  chooseOnMapService: ChooseOnMapService;
   routeRenderer: RouteRenderer;
   navSheetStore: NavSheetStoreImpl;
   mapPaddingStore: MapPaddingStore;
@@ -91,7 +86,6 @@ interface Setup {
 function setup(storeOverrides: Partial<AppStore> = {}): Setup {
   const store = makeObservableStore(storeOverrides);
   const mapAdapter = makeMapAdapter();
-  const chooseOnMapService = makeChooseOnMapService();
   const routeRenderer = makeRouteRenderer();
   const navSheetStore = new NavSheetStoreImpl();
   const mapPaddingStore = makeMapPaddingStore();
@@ -99,7 +93,6 @@ function setup(storeOverrides: Partial<AppStore> = {}): Setup {
     camera: store,
     route: store,
     mapAdapter,
-    chooseOnMapService,
     routeRenderer,
     navSheetStore,
     mapPaddingStore,
@@ -107,7 +100,6 @@ function setup(storeOverrides: Partial<AppStore> = {}): Setup {
   return {
     store,
     mapAdapter,
-    chooseOnMapService,
     routeRenderer,
     navSheetStore,
     mapPaddingStore,
@@ -142,7 +134,7 @@ describe('wireAppReactions', () => {
         s.navSheetStore.pushPage(NavPageKey.CHOOSE_ON_MAP);
       });
 
-      expect(s.chooseOnMapService.toggle).toHaveBeenCalledWith(true);
+      expect(s.mapAdapter.toggleChooseOnMapMarker).toHaveBeenCalledWith(true);
       expect(s.mapAdapter.clearPitchAndBearing).toHaveBeenCalled();
       // cameraMode is derived; assert the policy that drives it.
       expect(s.navSheetStore.requiresFreeCamera).toBe(true);
@@ -155,13 +147,15 @@ describe('wireAppReactions', () => {
         s.navSheetStore.showNavSheet = true;
         s.navSheetStore.pushPage(NavPageKey.CHOOSE_ON_MAP);
       });
-      (s.chooseOnMapService.toggle as ReturnType<typeof vi.fn>).mockClear();
+      (
+        s.mapAdapter.toggleChooseOnMapMarker as ReturnType<typeof vi.fn>
+      ).mockClear();
 
       runInAction(() => {
         s.navSheetStore.popPage();
       });
 
-      expect(s.chooseOnMapService.toggle).toHaveBeenCalledWith(false);
+      expect(s.mapAdapter.toggleChooseOnMapMarker).toHaveBeenCalledWith(false);
       teardown(s);
     });
   });

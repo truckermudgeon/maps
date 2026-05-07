@@ -10,7 +10,6 @@ import type { AppClient } from './controllers/types';
 import { setupDevtools } from './dev-tools';
 import { wireAppReactions } from './reactions';
 import { applyThemeReaction } from './reactions/theme';
-import { ChooseOnMapService } from './services/choose-on-map';
 import { ServicesProvider } from './services/context';
 import { MapAdapter } from './services/map-adapter';
 import { RouteAnimator } from './services/route-animator';
@@ -49,7 +48,6 @@ export function createApp({
   const route = new RouteStoreImpl();
   const mapAdapter = new MapAdapter();
   const routeRenderer = new RouteRenderer(mapAdapter);
-  const chooseOnMapService = new ChooseOnMapService(mapAdapter);
   const routeApi = new RouteApiImpl(appClient);
   const searchApi = new SearchApiImpl(appClient);
   const controlsStore = new ControlsStoreImpl(
@@ -74,7 +72,7 @@ export function createApp({
     route,
     navSheetStore,
     routeRenderer,
-    chooseOnMapService,
+    mapAdapter,
     routeApi,
     telemetryService,
     routeAnimator,
@@ -111,7 +109,6 @@ export function createApp({
     camera,
     route,
     mapAdapter,
-    chooseOnMapService,
     routeRenderer,
     navSheetStore,
     mapPaddingStore,
