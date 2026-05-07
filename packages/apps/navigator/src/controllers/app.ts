@@ -4,10 +4,13 @@ import type { MapPresenter } from '../services/map-presenter';
 import { RouteAnimator } from '../services/route-animator';
 import * as routeApi from '../services/route-api';
 import { TelemetryService } from '../services/telemetry';
-import type { CameraStoreImpl } from '../stores/camera';
-import type { RouteStoreImpl } from '../stores/route';
-import type { SessionStoreImpl } from '../stores/session';
-import type { ControlsStore, NavSheetStore } from '../stores/types';
+import type {
+  CameraStore,
+  ControlsStore,
+  NavSheetStore,
+  RouteStore,
+  SessionStore,
+} from '../stores/types';
 import { clearCredentialsAndReload, requestWakeLock } from '../util/browser';
 import type { AppClient } from './types';
 
@@ -16,9 +19,9 @@ export class AppControllerImpl {
   private readonly routeAnimator: RouteAnimator;
 
   constructor(
-    private readonly session: SessionStoreImpl,
-    private readonly camera: CameraStoreImpl,
-    private readonly route: RouteStoreImpl,
+    private readonly session: SessionStore,
+    private readonly camera: CameraStore,
+    private readonly route: RouteStore,
     private readonly navSheetStore: NavSheetStore,
     private readonly mapPresenter: MapPresenter,
     controlsStore: ControlsStore,

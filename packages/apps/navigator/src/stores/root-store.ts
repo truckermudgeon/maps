@@ -1,9 +1,9 @@
-import type { CameraStoreImpl } from './camera';
-import type { RouteStoreImpl } from './route';
-import type { SessionStoreImpl } from './session';
 import type {
+  CameraStore,
   MapPaddingStore,
   NavSheetStore,
+  RouteStore,
+  SessionStore,
   UIEnvironmentStore,
 } from './types';
 
@@ -16,17 +16,17 @@ import type {
  * object directly.
  */
 export class RootStore {
-  readonly session: SessionStoreImpl;
-  readonly camera: CameraStoreImpl;
-  readonly route: RouteStoreImpl;
+  readonly session: SessionStore;
+  readonly camera: CameraStore;
+  readonly route: RouteStore;
   readonly navSheet: NavSheetStore;
   readonly uiEnv: UIEnvironmentStore;
   readonly mapPadding: MapPaddingStore;
 
   constructor(opts: {
-    session: SessionStoreImpl;
-    camera: CameraStoreImpl;
-    route: RouteStoreImpl;
+    session: SessionStore;
+    camera: CameraStore;
+    route: RouteStore;
     navSheet: NavSheetStore;
     uiEnv: UIEnvironmentStore;
     mapPadding: MapPaddingStore;

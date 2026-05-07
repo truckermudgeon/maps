@@ -1,6 +1,6 @@
-import type { CameraStoreImpl } from '../camera';
 import { useRootStore } from '../context';
+import type { CameraStore } from '../types';
 
-export function useCameraStore(): CameraStoreImpl {
+export function useCameraStore(): CameraStore {
   return useRootStore().camera;
 }
