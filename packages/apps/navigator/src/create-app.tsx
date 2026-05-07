@@ -42,50 +42,19 @@ export function createApp({
   App: () => ReactElement;
   store: { isAuthenticated: boolean };
 } {
+  //
+  // Stores
+  //
   const session = new SessionStoreImpl(map);
   const navSheetStore = new NavSheetStoreImpl();
   const camera = new CameraStoreImpl(navSheetStore);
   const route = new RouteStoreImpl();
-  const mapAdapter = new MapAdapter();
-  const routeRenderer = new RouteRenderer(mapAdapter);
-  const routeApi = new RouteApiImpl(appClient);
-  const searchApi = new SearchApiImpl(appClient);
   const controlsStore = new ControlsStoreImpl(
     session,
     camera,
     route,
     navSheetStore,
   );
-  const telemetryService = new TelemetryService(
-    session,
-    route,
-    controlsStore,
-    appClient,
-  );
-  const telemetryPlayer = new TelemetryPlayer(
-    mapAdapter,
-    routeRenderer,
-    telemetryService.timeline,
-  );
-  const controller = new AppControllerImpl(
-    camera,
-    route,
-    navSheetStore,
-    routeRenderer,
-    mapAdapter,
-    routeApi,
-    telemetryService,
-    telemetryPlayer,
-  );
-  applyThemeReaction(session);
-
-  const navSheetController = new NavSheetControllerImpl(
-    navSheetStore,
-    routeApi,
-    searchApi,
-    mapAdapter,
-  );
-
   const uiEnv = new UiEnvironmentStoreImpl(joyTheme.breakpoints.values);
   const mapPaddingStore = new MapPaddingStoreImpl(
     uiEnv,
@@ -102,9 +71,50 @@ export function createApp({
     uiEnv,
     mapPadding: mapPaddingStore,
   });
-  setupDevtools({ rootStore });
-  // TODO these reactions are hacks while figuring out a better way to
-  // structure stores and controllers.
+
+  //
+  // Services
+  //
+  const mapAdapter = new MapAdapter();
+  const routeRenderer = new RouteRenderer(mapAdapter);
+  const routeApi = new RouteApiImpl(appClient);
+  const searchApi = new SearchApiImpl(appClient);
+  const telemetryService = new TelemetryService(
+    session,
+    route,
+    controlsStore,
+    appClient,
+  );
+  const telemetryPlayer = new TelemetryPlayer(
+    mapAdapter,
+    routeRenderer,
+    telemetryService.timeline,
+  );
+
+  //
+  // Controllers
+  //
+  const controller = new AppControllerImpl(
+    camera,
+    route,
+    navSheetStore,
+    routeRenderer,
+    mapAdapter,
+    routeApi,
+    telemetryService,
+    telemetryPlayer,
+  );
+  const navSheetController = new NavSheetControllerImpl(
+    navSheetStore,
+    routeApi,
+    searchApi,
+    mapAdapter,
+  );
+
+  //
+  // Reactions
+  //
+  applyThemeReaction(session);
   wireAppReactions({
     camera,
     route,
@@ -114,6 +124,10 @@ export function createApp({
     mapPaddingStore,
   });
 
+  //
+  // App lifecycle
+  //
+  setupDevtools({ rootStore });
   when(
     () => session.isAuthenticated,
     () => {
@@ -127,9 +141,6 @@ export function createApp({
     bindControlsToMap(map, controlsStore);
   };
 
-  // Hoisted out of App() render fn so the context value reference
-  // is stable — otherwise every render produces a new services
-  // object and forces every `useAppController` consumer to re-render.
   const services = {
     controller,
     mapAdapter,
