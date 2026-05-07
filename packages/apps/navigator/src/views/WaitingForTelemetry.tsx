@@ -3,11 +3,10 @@ import {
   WaitingForTelemetry as WaitingForTelemetryComponent,
   type WaitingForTelemetryState,
 } from '../components/WaitingForTelemetry';
-import type { AppControllerImpl } from '../controllers/app';
 import { useSessionStore } from '../stores/hooks/use-session';
 
 export const WaitingForTelemetry = observer(
-  (props: { controller: AppControllerImpl }) => {
+  (props: { onRePair: () => void }) => {
     const session = useSessionStore();
     if (!session.readyToLoad) {
       // assume some other component will show "waiting to load" UI
@@ -24,10 +23,7 @@ export const WaitingForTelemetry = observer(
         : 'awaiting'
       : 'lost';
     return (
-      <WaitingForTelemetryComponent
-        state={state}
-        onRePair={() => props.controller.forceRePair()}
-      />
+      <WaitingForTelemetryComponent state={state} onRePair={props.onRePair} />
     );
   },
 );

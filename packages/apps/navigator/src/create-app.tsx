@@ -3,7 +3,7 @@ import { Box } from '@mui/joy';
 import { Grid, Slide, useMediaQuery, useTheme } from '@mui/material';
 import type { Marker as MapLibreGLMarker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { computed, when } from 'mobx';
+import { action, computed, when } from 'mobx';
 import { observer } from 'mobx-react-lite';
 import type { ReactElement } from 'react';
 import type { MapRef } from 'react-map-gl/maplibre';
@@ -171,12 +171,16 @@ export function createApp({
   );
   const _RouteStack = () => (
     <RouteStack
-      controller={controller}
       routeControlsCallbacks={routeControlsCallbacks}
+      onSegmentContinue={action(() => controller.unpauseRouteEvents())}
+      onSegmentEnd={action(() => {
+        controller.unpauseRouteEvents();
+        controller.setActiveRoute(undefined);
+      })}
     />
   );
   const _WaitingForTelemetry = () => (
-    <WaitingForTelemetry controller={controller} />
+    <WaitingForTelemetry onRePair={() => controller.forceRePair()} />
   );
 
   return {

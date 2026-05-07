@@ -1,13 +1,13 @@
 import { RouteStack as RouteStackComponent } from '../components/RouteStack';
-import type { AppControllerImpl } from '../controllers/app';
 import type { RouteControlsCallbacks } from '../create-app-handlers';
 import { Directions } from './Directions';
 import { RouteControls } from './RouteControls';
 import { SegmentCompleteToast } from './SegmentCompleteToast';
 
 export const RouteStack = (props: {
-  controller: AppControllerImpl;
   routeControlsCallbacks: RouteControlsCallbacks;
+  onSegmentContinue: () => void;
+  onSegmentEnd: () => void;
 }) => (
   <RouteStackComponent
     Guidance={Directions}
@@ -18,7 +18,10 @@ export const RouteStack = (props: {
       />
     )}
     SegmentCompleteToast={() => (
-      <SegmentCompleteToast controller={props.controller} />
+      <SegmentCompleteToast
+        onContinue={props.onSegmentContinue}
+        onEnd={props.onSegmentEnd}
+      />
     )}
   />
 );
