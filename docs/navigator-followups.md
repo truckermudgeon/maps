@@ -27,12 +27,11 @@ up later.
       `renderWithApp` fixture. Two cases (`onRouteStepClick` and
       `onWaypointsChange`) are flagged TODO in `tests/views/nav-sheet.test.tsx`
       — mechanical inlines that need heavy LaneIcon/dnd-kit stub data.
-- [ ] **#6 — drop `appClient` from `AppController`** — _deferred_. After
-      the `RouteApi` / `SearchApi` deepening, `AppController` only holds
-      `appClient` to seed `TelemetryService.start(appClient)`. Pushing
-      `appClient` into `TelemetryService`'s constructor (or factory)
-      would let `AppController` depend on `RouteApi` only. Out of scope
-      for the api-class PR.
+- [x] **#6 — drop `appClient` from `AppController`**. `TelemetryService`
+      and `RouteAnimator` now constructed in `create-app.tsx` and
+      injected into `AppController`. `AppController` constructor lost
+      `session`, `mapAdapter`, `controlsStore`, and `appClient` (10 →
+      8 deps); `TelemetryService.start()` is argless.
 
 ## A note on directory layers
 
@@ -44,8 +43,8 @@ Two ground rules clarify what goes where, and what's lift-able to
   (it's a workspace package), but no `useRouteStore`, no MobX
   `observer()`, no navigator-specific store shapes. **This is the
   lift-to-`libs/ui/` candidate pool.**
-- **`views/` (new dir, planned in #2 below) is the observer-wrapper
-  layer.** Uses hooks + `observer()` to pull store data and feed it to
+- **`views/` (incl. `views/nav-sheet/`) is the observer-wrapper layer.**
+  Uses hooks + `observer()` to pull store/service data and feed it to
   presentational components as props. Navigator-specific by design;
   never lift-able.
 
@@ -53,123 +52,6 @@ The followups below assume this split. In particular, **don't put
 hook-using components into `components/`** — that would taint the lift
 candidate pool with navigator dependencies and force a per-file audit
 later.
-
-## 1. `AppController` is still bifurcated
-
-Two unrelated jobs share one class:
-
-- **Map-imperative API**: `setPadding`, `setOffset`, `addMapDragEndListener`,
-  `clearPitchAndBearing`, `fitPoints`, `flyTo`, `onMapLoad`,
-  `renderActiveRoute`, `renderRoutePreview`, `drawStepArrow`. These are
-  typed wrappers over `MapAdapter` + `RouteRenderer`.
-- **User-action / orchestration methods**: `setActiveRoute`,
-  `setDestinationNodeUid`, `setActiveRouteFromNodeUids`, `hideNavSheet`,
-  `unpauseRouteEvents`, `synthesizeSearchResult`, `setFree`/`setFollow`/
-  `setNorthLock`/`setNorthUnlock`, `forceRePair`, `requestWakeLock`,
-  `toggleChooseOnMapUi`.
-
-These have different change frequencies and audiences. Splitting:
-
-- Move the imperative-map methods onto `MapAdapter` directly (or a thin
-  `MapPresenter` shell that bundles `MapAdapter` + `RouteRenderer` +
-  `ChooseOnMapService`). Components/handlers that today reach for
-  `controller.fitPoints(...)` reach for `mapPresenter.fitPoints(...)`
-  instead.
-- Keep `AppController` for the user-action methods only, and consider
-  whether several of those are now thin enough to fold further (e.g.,
-  `setFree`/`setFollow` are 1-line camera writes — they could be
-  `camera.setFollow()` actions on the `CameraStore` directly, the same
-  way we collapsed `NavSheetController`).
-
-Net effect: `AppController` becomes 3–5 methods of genuine
-flow-orchestration. Good chance the class disappears entirely once
-those methods get distributed onto stores or services.
-
-## 2. `create-app.tsx` is ~500 LOC of inline observers
-
-Each of these is wrapped inline in `createApp`'s factory closure:
-
-- `_Destinations`, `_TrailerOrWaypointMarkers`, `_SlippyMap`, `_Directions`,
-  `_SegmentCompleteToast`, `_RouteControls`, `_RouteStack`,
-  `_WaitingForTelemetry`
-
-Each should become a real component file in a new `views/` directory
-(NOT `components/` — see "Directory layers" above). Each `views/X.tsx`
-uses per-domain hooks (`useRouteStore`, `useSessionStore`, etc.) to
-read store data and passes it as props to the matching presentational
-component in `components/`. Wins:
-
-- `create-app.tsx` shrinks to pure composition (~100 LOC).
-- Easier to navigate — a newcomer looking for "where does the player
-  marker / segment-complete toast / waiting-for-telemetry UI live?"
-  gets a file path instead of a `grep` hit inside a 500-line factory.
-- Unblocks #5 (drop handler factories) — once views own their callback
-  wiring, click handlers can be defined inline in the view (reading
-  from hooks directly) instead of being prebuilt by a factory in
-  `create-app-handlers.ts`.
-- Keeps `components/` hook-free, preserving its lift-to-`libs/ui/`
-  status (see "Lifting to libs/ui/" below).
-
-The migration is mechanical: each inline observer becomes a `views/X.tsx`
-file + an `import` in `create-app.tsx`. The handler-callback plumbing
-stays the same in the short term.
-
-## 3. `ControlsControllerImpl` is vestigial
-
-After dropping the duplicate tRPC subscription (commit `af67ae35`), the
-class has exactly one method: `onMapLoad`, which subscribes to
-`map.on('move', ...)` and writes `bearing` into `ControlsStore`. The
-class doesn't earn its name anymore.
-
-Options:
-
-- Inline into `createControls.tsx` as a one-shot effect.
-- Replace with a reaction-style binding in `reactions/` that wires the
-  `map.on('move')` subscription via `MapAdapter`.
-
-Either way, drop `ControlsController` interface + impl + the wiring in
-`create-app.tsx`.
-
-## 4. `AppController.startListening` is lazy
-
-Services (`TelemetryService`, `RouteAnimator`) are constructed on first
-call instead of in the constructor:
-
-```ts
-private telemetryService: TelemetryService | undefined;
-private routeAnimator: RouteAnimator | undefined;
-```
-
-…because `controlsStore` wasn't around at AppController construction
-time when this was written. With `RootStore` now built up-front, that
-constraint is gone. `AppController` can take `controlsStore` (or just
-`rootStore`) at construction and build services eagerly. Removes the
-`| undefined` field types and the `?.stop()` calls in `forceRePair` /
-`startListening`.
-
-## 5. Handler-builder factories are holdover infrastructure
-
-`buildHideNavSheet`, `buildNavSheetHandlers`, `buildControlsHandlers`,
-`buildRouteControlsHandlers` each take a deps blob (camera, route,
-controller, navSheetStore, navSheetController, hideNavSheet) and return
-a callbacks object. This pattern predates `RootStoreContext` + the
-per-domain hooks.
-
-Now that components have hooks, the natural shape is: each callback is
-defined inline in its consuming component, reading whatever stores /
-services it needs from hooks. The `build*Handlers` factories +
-`HandlerDeps` shape disappear; the callbacks live next to the UI that
-uses them.
-
-This is the biggest "feels like fighting the framework" smell remaining.
-Not urgent — the factories work fine — but if/when components move out
-of `create-app.tsx` (item 2), this is a natural co-migration.
-
-## Suggested order
-
-If picking these up sequentially, **#3 (ControlsController) → #4 (eager
-services) → #2 (extract observers) → #5 (drop handler factories) → #1
-(split AppController)** flows nicely: each unblocks the next.
 
 ## Lifting to `libs/ui/`
 
@@ -180,8 +62,7 @@ already has a memory-pinned preference: when `apps/navigator` and
 already and would qualify — once the directory-layer split (#2) is in
 place, `components/` becomes a clean lift candidate pool.
 
-Suggested approach (its own focused PR; no dependency on the items
-above except #2):
+Suggested approach (its own focused PR):
 
 1. **Audit pass.** Walk `components/` and tag each as
    `lift-now | lift-later | navigator-only`:

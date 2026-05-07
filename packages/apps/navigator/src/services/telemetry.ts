@@ -27,12 +27,13 @@ export class TelemetryService {
     private readonly route: RouteStore,
     private readonly controls: ControlsStore,
     private readonly routeRenderer: RouteRenderer,
+    private readonly appClient: AppClient,
   ) {}
 
-  start(client: AppClient): void {
+  start(): void {
     this.subscription?.unsubscribe();
     console.log('subscribing');
-    this.subscription = client.subscribeToDevice.subscribe(void 0, {
+    this.subscription = this.appClient.subscribeToDevice.subscribe(void 0, {
       // TODO: a WS gap longer than the publicKey TTL (12h) makes the
       // resubscribe fail auth — we log it here but the user sees nothing.
       // Surface it (force re-pair or flip bindingStale) instead.

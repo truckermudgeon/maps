@@ -1,49 +1,24 @@
 import type { Route, SearchResult } from '@truckermudgeon/navigation/types';
 import { action } from 'mobx';
 import type { ChooseOnMapService } from '../services/choose-on-map';
-import type { MapAdapter } from '../services/map-adapter';
-import { RouteAnimator } from '../services/route-animator';
+import type { RouteAnimator } from '../services/route-animator';
 import type { RouteApi } from '../services/route-api';
 import type { RouteRenderer } from '../services/route-renderer';
-import { TelemetryService } from '../services/telemetry';
-import type {
-  CameraStore,
-  ControlsStore,
-  NavSheetStore,
-  RouteStore,
-  SessionStore,
-} from '../stores/types';
+import type { TelemetryService } from '../services/telemetry';
+import type { CameraStore, NavSheetStore, RouteStore } from '../stores/types';
 import { clearCredentialsAndReload } from '../util/browser';
-import type { AppClient } from './types';
 
 export class AppControllerImpl {
-  private readonly telemetryService: TelemetryService;
-  private readonly routeAnimator: RouteAnimator;
-
   constructor(
-    private readonly session: SessionStore,
     private readonly camera: CameraStore,
     private readonly route: RouteStore,
     private readonly navSheetStore: NavSheetStore,
-    mapAdapter: MapAdapter,
     private readonly routeRenderer: RouteRenderer,
     private readonly chooseOnMapService: ChooseOnMapService,
-    controlsStore: ControlsStore,
     private readonly routeApi: RouteApi,
-    private readonly appClient: AppClient,
-  ) {
-    this.telemetryService = new TelemetryService(
-      session,
-      route,
-      controlsStore,
-      routeRenderer,
-    );
-    this.routeAnimator = new RouteAnimator(
-      mapAdapter,
-      routeRenderer,
-      this.telemetryService.timeline,
-    );
-  }
+    private readonly telemetryService: TelemetryService,
+    private readonly routeAnimator: RouteAnimator,
+  ) {}
 
   forceRePair() {
     this.telemetryService.stop();
@@ -90,7 +65,7 @@ export class AppControllerImpl {
   }
 
   startListening() {
-    this.telemetryService.start(this.appClient);
+    this.telemetryService.start();
     this.routeAnimator.start(this.camera, this.route);
   }
 
