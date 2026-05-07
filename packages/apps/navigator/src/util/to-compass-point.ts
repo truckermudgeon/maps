@@ -1,5 +1,6 @@
 import { assert } from '@truckermudgeon/base/assert';
-import type { CompassPoint } from '../controllers/types';
+
+export type CompassPoint = 'N' | 'S' | 'E' | 'W' | 'NE' | 'NW' | 'SE' | 'SW';
 
 export function toCompassPoint(bearing: number): CompassPoint {
   const azimuth = bearing >= 0 ? bearing : 360 + bearing;

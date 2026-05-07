@@ -9,8 +9,6 @@ export type AppClient = ReturnType<
   typeof createTRPCProxyClient<AppRouter>
 >['app'];
 
-export type CompassPoint = 'N' | 'S' | 'E' | 'W' | 'NE' | 'NW' | 'SE' | 'SW';
-
 export interface NavSheetController {
   search(query: string): Promise<SearchResult[]>;
   onSearchSelect(queryOrResult: string | SearchResult): void;
