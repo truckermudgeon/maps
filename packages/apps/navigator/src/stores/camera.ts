@@ -1,5 +1,5 @@
 import { makeAutoObservable } from 'mobx';
-import type { CameraStore } from './types';
+import type { CameraStore, NavSheetStore } from './types';
 
 export const enum CameraMode {
   FOLLOW,
@@ -12,19 +12,28 @@ export const enum BearingMode {
 }
 
 export class CameraStoreImpl implements CameraStore {
-  cameraMode: CameraMode = CameraMode.FOLLOW;
+  // Tracks whether the user has manually detached the camera (e.g. by
+  // dragging the map). `cameraMode` is derived from this plus the
+  // navsheet's policy: certain pages force FREE for their duration.
+  userDetached = false;
   bearingMode: BearingMode = BearingMode.MATCH_MAP;
 
-  constructor() {
-    makeAutoObservable(this);
+  constructor(private readonly navSheet: NavSheetStore) {
+    makeAutoObservable<this, 'navSheet'>(this, { navSheet: false });
+  }
+
+  get cameraMode(): CameraMode {
+    return this.userDetached || this.navSheet.requiresFreeCamera
+      ? CameraMode.FREE
+      : CameraMode.FOLLOW;
   }
 
   setFollow(): void {
-    this.cameraMode = CameraMode.FOLLOW;
+    this.userDetached = false;
   }
 
   setFree(): void {
-    this.cameraMode = CameraMode.FREE;
+    this.userDetached = true;
   }
 
   setNorthLock(): void {

@@ -28,11 +28,12 @@ const fakeSearchApi = {} as SearchApi;
 const fakeMapAdapter = {} as MapAdapter;
 
 function setupStores() {
+  const navSheet = new NavSheetStoreImpl();
   return {
     session: new SessionStoreImpl('usa'),
-    camera: new CameraStoreImpl(),
+    camera: new CameraStoreImpl(navSheet),
     route: new RouteStoreImpl(),
-    navSheet: new NavSheetStoreImpl(),
+    navSheet,
   };
 }
 

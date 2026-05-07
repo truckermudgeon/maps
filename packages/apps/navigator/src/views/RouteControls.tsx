@@ -6,7 +6,6 @@ import {
   defaultMetricOptions,
 } from '../components/text';
 import { useAppController, useMapAdapter } from '../services/context';
-import { CameraMode } from '../stores/camera';
 import { useCameraStore } from '../stores/hooks/use-camera';
 import { useNavSheetStore } from '../stores/hooks/use-nav-sheet';
 import { useRouteStore } from '../stores/hooks/use-route';
@@ -46,7 +45,7 @@ export const RouteControls = observer(
             console.warn('no active route to preview');
             return;
           }
-          camera.cameraMode = CameraMode.FREE;
+          camera.setFree();
           mapAdapter.fitPoints(routeCornerPair(route.activeRoute));
         })}
         onRouteDirectionsClick={action(() =>

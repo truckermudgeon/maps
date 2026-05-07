@@ -44,9 +44,9 @@ export function createApp({
   store: { isAuthenticated: boolean };
 } {
   const session = new SessionStoreImpl(map);
-  const camera = new CameraStoreImpl();
-  const route = new RouteStoreImpl();
   const navSheetStore = new NavSheetStoreImpl();
+  const camera = new CameraStoreImpl(navSheetStore);
+  const route = new RouteStoreImpl();
   const mapAdapter = new MapAdapter();
   const routeRenderer = new RouteRenderer(mapAdapter);
   const chooseOnMapService = new ChooseOnMapService(mapAdapter);

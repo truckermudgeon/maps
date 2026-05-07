@@ -144,7 +144,8 @@ describe('wireAppReactions', () => {
 
       expect(s.chooseOnMapService.toggle).toHaveBeenCalledWith(true);
       expect(s.mapAdapter.clearPitchAndBearing).toHaveBeenCalled();
-      expect(s.store.cameraMode).toBe(CameraMode.FREE);
+      // cameraMode is derived; assert the policy that drives it.
+      expect(s.navSheetStore.requiresFreeCamera).toBe(true);
       teardown(s);
     });
 
@@ -171,11 +172,14 @@ describe('wireAppReactions', () => {
       const dest1 = { lonLat: [-100, 40] } as SearchResultWithRelativeTruckInfo;
       const dest2 = { lonLat: [-90, 35] } as SearchResultWithRelativeTruckInfo;
       runInAction(() => {
+        s.navSheetStore.showNavSheet = true;
         s.navSheetStore.pushPage(NavPageKey.DESTINATIONS);
         s.navSheetStore.destinations = [dest1, dest2];
       });
 
-      expect(s.store.setFree).toHaveBeenCalled();
+      // cameraMode is derived; assert the policy that drives it + the
+      // imperative side effect that this reaction is responsible for.
+      expect(s.navSheetStore.requiresFreeCamera).toBe(true);
       expect(s.mapAdapter.fitPoints).toHaveBeenCalledWith([
         [-100, 40],
         [-90, 35],

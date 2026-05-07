@@ -119,9 +119,9 @@ export function renderWithApp(
 ): RenderWithAppResult {
   const { stores, services: serviceOverrides, ...renderOptions } = options;
   const session = stores?.session ?? new SessionStoreImpl('usa');
-  const camera = stores?.camera ?? new CameraStoreImpl();
-  const route = stores?.route ?? new RouteStoreImpl();
   const navSheet = stores?.navSheet ?? new NavSheetStoreImpl();
+  const camera = stores?.camera ?? new CameraStoreImpl(navSheet);
+  const route = stores?.route ?? new RouteStoreImpl();
   const controls =
     stores?.controls ?? new ControlsStoreImpl(session, camera, route, navSheet);
   const uiEnv = stores?.uiEnv ?? new UiEnvironmentStoreImpl(defaultBreakpoints);

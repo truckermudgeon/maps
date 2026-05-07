@@ -76,7 +76,7 @@ describe('RouteControls (view)', () => {
 
   it('Preview route → no-op + warns when there is no active route', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const camera = new CameraStoreImpl();
+    const camera = new CameraStoreImpl(new NavSheetStoreImpl());
     const mapAdapter = { fitPoints: vi.fn(), flyTo: vi.fn() };
     const user = userEvent.setup();
     renderWithApp(<RouteControls onExpandedToggle={vi.fn()} />, {
@@ -94,7 +94,7 @@ describe('RouteControls (view)', () => {
   });
 
   it('Preview route → sets free camera + fits points to active route', async () => {
-    const camera = new CameraStoreImpl();
+    const camera = new CameraStoreImpl(new NavSheetStoreImpl());
     const mapAdapter = { fitPoints: vi.fn(), flyTo: vi.fn() };
     const user = userEvent.setup();
     renderWithApp(<RouteControls onExpandedToggle={vi.fn()} />, {

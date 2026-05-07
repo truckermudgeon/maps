@@ -2,7 +2,7 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
-import { BearingMode, CameraMode, CameraStoreImpl } from '../../stores/camera';
+import { BearingMode, CameraStoreImpl } from '../../stores/camera';
 import { ControlsStoreImpl } from '../../stores/controls';
 import { NavSheetStoreImpl } from '../../stores/nav-sheet';
 import { RouteStoreImpl } from '../../stores/route';
@@ -26,9 +26,9 @@ interface Stores {
 
 function setup(): Stores {
   const session = new SessionStoreImpl('usa');
-  const camera = new CameraStoreImpl();
-  const route = new RouteStoreImpl();
   const navSheet = new NavSheetStoreImpl();
+  const camera = new CameraStoreImpl(navSheet);
+  const route = new RouteStoreImpl();
   const controls = new ControlsStoreImpl(session, camera, route, navSheet);
   return { session, camera, route, navSheet, controls };
 }
@@ -85,7 +85,7 @@ describe('Controls (view)', () => {
 
   it('recenter fab: requests wake lock + setFollow (only visible in FREE camera)', async () => {
     const stores = setup();
-    stores.camera.cameraMode = CameraMode.FREE;
+    stores.camera.setFree();
     const setFollow = vi.spyOn(stores.camera, 'setFollow');
     const user = userEvent.setup();
     renderWithApp(<Controls />, { stores });

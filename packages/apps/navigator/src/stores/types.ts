@@ -74,7 +74,7 @@ export interface SessionStore {
 }
 
 export interface CameraStore {
-  cameraMode: CameraMode;
+  readonly cameraMode: CameraMode;
   bearingMode: BearingMode;
   setFollow(): void;
   setFree(): void;
@@ -119,6 +119,7 @@ export interface NavSheetStore {
   readonly title: string;
   readonly currentPageKey: NavPageKey;
   readonly currentPageRequiresMapVisibility: boolean;
+  readonly requiresFreeCamera: boolean;
   readonly showBackButton: boolean;
   readonly pageStack: readonly NavPageKey[];
 

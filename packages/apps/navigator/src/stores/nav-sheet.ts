@@ -75,6 +75,21 @@ export class NavSheetStoreImpl implements NavSheetStore {
     return pagesRequiringMapVisibility.has(this.currentPageKey);
   }
 
+  get requiresFreeCamera(): boolean {
+    if (!this.showNavSheet) {
+      return false;
+    }
+    switch (this.currentPageKey) {
+      case NavPageKey.CHOOSE_ON_MAP:
+      case NavPageKey.DESTINATIONS:
+      case NavPageKey.ROUTES:
+      case NavPageKey.MANAGE_STOPS:
+        return true;
+      default:
+        return false;
+    }
+  }
+
   get title(): string {
     switch (this.currentPageKey) {
       case NavPageKey.CHOOSE_DESTINATION:
