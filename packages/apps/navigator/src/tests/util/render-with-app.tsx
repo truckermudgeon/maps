@@ -37,15 +37,40 @@ const defaultBreakpoints: Breakpoints = {
 };
 
 /**
- * Default no-op AppController stub. Methods grow as views start
- * calling them via `useAppController`. Tests override individual
- * methods (or the whole controller) via `services.controller`.
+ * Default no-op service stubs. Methods listed are the ones views
+ * actually call via the per-service hooks; if a view starts calling
+ * a new one, add it here. Tests override individual methods (or the
+ * whole service) via `services.{controller,mapAdapter,...}`.
  */
 function defaultFakeController(): AppControllerImpl {
   return {
-    unpauseRouteEvents: vi.fn(),
+    hideNavSheet: vi.fn(),
+    setDestinationNodeUid: vi.fn(),
     setActiveRoute: vi.fn(),
+    setActiveRouteFromNodeUids: vi.fn(),
+    synthesizeSearchResult: vi.fn().mockResolvedValue({ nodeUid: 'fake' }),
+    unpauseRouteEvents: vi.fn(),
+    forceRePair: vi.fn(),
   } as unknown as AppControllerImpl;
+}
+
+function defaultFakeMapAdapter(): MapAdapter {
+  return {
+    flyTo: vi.fn(),
+    fitPoints: vi.fn(),
+  } as unknown as MapAdapter;
+}
+
+function defaultFakeRouteRenderer(): RouteRenderer {
+  return {
+    drawStepArrow: vi.fn(),
+  } as unknown as RouteRenderer;
+}
+
+function defaultFakeNavSheetController(): NavSheetController {
+  return {
+    onDestinationRoutesClick: vi.fn(),
+  } as unknown as NavSheetController;
 }
 
 export interface RenderWithAppOptions extends Omit<RenderOptions, 'wrapper'> {
@@ -108,10 +133,11 @@ export function renderWithApp(
   });
   const services: AppServices = {
     controller: serviceOverrides?.controller ?? defaultFakeController(),
-    mapAdapter: serviceOverrides?.mapAdapter ?? ({} as MapAdapter),
-    routeRenderer: serviceOverrides?.routeRenderer ?? ({} as RouteRenderer),
+    mapAdapter: serviceOverrides?.mapAdapter ?? defaultFakeMapAdapter(),
+    routeRenderer:
+      serviceOverrides?.routeRenderer ?? defaultFakeRouteRenderer(),
     navSheetController:
-      serviceOverrides?.navSheetController ?? ({} as NavSheetController),
+      serviceOverrides?.navSheetController ?? defaultFakeNavSheetController(),
     transitionDurationMs: serviceOverrides?.transitionDurationMs ?? 0,
   };
   const result = render(ui, {

@@ -14,12 +14,6 @@ import {
   navSheetPagesRequiringMapVisibility,
 } from './controllers/constants';
 import type { AppClient } from './controllers/types';
-import {
-  buildControlsHandlers,
-  buildHideNavSheet,
-  buildNavSheetHandlers,
-  buildRouteControlsHandlers,
-} from './create-app-handlers';
 import { createControls } from './create-controls';
 import { createNavSheet } from './create-nav-sheet';
 import { setupDevtools } from './dev-tools';
@@ -100,26 +94,6 @@ export function createApp({
     mapAdapter,
     store: navSheetStore,
   });
-  const hideNavSheet = buildHideNavSheet({
-    camera,
-    route,
-    controller,
-    routeRenderer,
-    navSheetStore,
-    navSheetController,
-    transitionDurationMs,
-  });
-  const navSheetCallbacks = buildNavSheetHandlers({
-    camera,
-    route,
-    controller,
-    mapAdapter,
-    routeRenderer,
-    navSheetStore,
-    navSheetController,
-    hideNavSheet,
-  });
-  const _NavSheet = () => <NavSheet {...navSheetCallbacks} />;
 
   const uiEnv = new UiEnvironmentStoreImpl(joyTheme.breakpoints.values);
   const mapPaddingStore = new MapPaddingStoreImpl(
@@ -149,14 +123,6 @@ export function createApp({
     mapPaddingStore,
   });
 
-  const controlsCallbacks = buildControlsHandlers({
-    camera,
-    controller,
-    navSheetStore,
-    navSheetController,
-  });
-  const _Controls = () => <Controls {...controlsCallbacks} />;
-
   when(
     () => session.readyToLoad,
     () => {
@@ -170,27 +136,7 @@ export function createApp({
     bindControlsToMap(map);
   };
 
-  const routeControlsCallbacks = buildRouteControlsHandlers({
-    camera,
-    route,
-    controller,
-    mapAdapter,
-    navSheetStore,
-    navSheetController,
-  });
-  const _SlippyMap = () => (
-    <SlippyMap
-      initialMap={map}
-      onMapLoad={onMapLoad}
-      navSheetController={navSheetController}
-    />
-  );
-  const _RouteStack = () => (
-    <RouteStack routeControlsCallbacks={routeControlsCallbacks} />
-  );
-  const _WaitingForTelemetry = () => (
-    <WaitingForTelemetry onRePair={() => controller.forceRePair()} />
-  );
+  const _SlippyMap = () => <SlippyMap initialMap={map} onMapLoad={onMapLoad} />;
 
   // Hoisted out of the App() render fn so the context value reference
   // is stable — otherwise every App render produces a new services
@@ -210,10 +156,10 @@ export function createApp({
           <App
             transitionDurationMs={transitionDurationMs}
             SlippyMap={_SlippyMap}
-            NavSheet={_NavSheet}
-            RouteStack={_RouteStack}
-            Controls={_Controls}
-            WaitingForTelemetry={_WaitingForTelemetry}
+            NavSheet={NavSheet}
+            RouteStack={RouteStack}
+            Controls={Controls}
+            WaitingForTelemetry={WaitingForTelemetry}
           />
         </ServicesProvider>
       </RootStoreProvider>

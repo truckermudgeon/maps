@@ -3,27 +3,30 @@ import {
   WaitingForTelemetry as WaitingForTelemetryComponent,
   type WaitingForTelemetryState,
 } from '../components/WaitingForTelemetry';
+import { useAppController } from '../services/context';
 import { useSessionStore } from '../stores/hooks/use-session';
 
-export const WaitingForTelemetry = observer(
-  (props: { onRePair: () => void }) => {
-    const session = useSessionStore();
-    if (!session.readyToLoad) {
-      // assume some other component will show "waiting to load" UI
-      return <></>;
-    }
-    // TODO show "Loading map..." UI if map hasn't loaded yet, instead of
-    //  showing "Waiting for telemetry..." UI.
-    if (session.hasReceivedFirstTelemetry && !session.bindingStale) {
-      return <></>;
-    }
-    const state: WaitingForTelemetryState = !session.hasReceivedFirstTelemetry
-      ? session.bindingStale
-        ? 'orphaned'
-        : 'awaiting'
-      : 'lost';
-    return (
-      <WaitingForTelemetryComponent state={state} onRePair={props.onRePair} />
-    );
-  },
-);
+export const WaitingForTelemetry = observer(() => {
+  const session = useSessionStore();
+  const controller = useAppController();
+  if (!session.readyToLoad) {
+    // assume some other component will show "waiting to load" UI
+    return <></>;
+  }
+  // TODO show "Loading map..." UI if map hasn't loaded yet, instead of
+  //  showing "Waiting for telemetry..." UI.
+  if (session.hasReceivedFirstTelemetry && !session.bindingStale) {
+    return <></>;
+  }
+  const state: WaitingForTelemetryState = !session.hasReceivedFirstTelemetry
+    ? session.bindingStale
+      ? 'orphaned'
+      : 'awaiting'
+    : 'lost';
+  return (
+    <WaitingForTelemetryComponent
+      state={state}
+      onRePair={() => controller.forceRePair()}
+    />
+  );
+});

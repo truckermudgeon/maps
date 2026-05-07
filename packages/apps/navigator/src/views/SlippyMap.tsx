@@ -4,7 +4,6 @@ import { observer } from 'mobx-react-lite';
 import type { MapRef } from 'react-map-gl/maplibre';
 import { PlayerMarker } from '../components/PlayerMarker';
 import { SlippyMap as SlippyMapComponent } from '../components/SlippyMap';
-import type { NavSheetController } from '../controllers/types';
 import { useCameraStore } from '../stores/hooks/use-camera';
 import { useSessionStore } from '../stores/hooks/use-session';
 import { Destinations } from './Destinations';
@@ -14,7 +13,6 @@ export const SlippyMap = observer(
   (props: {
     initialMap: 'usa' | 'europe';
     onMapLoad: (map: MapRef, marker: MapLibreGLMarker) => void;
-    navSheetController: NavSheetController;
   }) => {
     const session = useSessionStore();
     const camera = useCameraStore();
@@ -28,9 +26,7 @@ export const SlippyMap = observer(
         mode={session.themeMode}
         onLoad={props.onMapLoad}
         onDragStart={action(() => camera.setFree())}
-        Destinations={() => (
-          <Destinations navSheetController={props.navSheetController} />
-        )}
+        Destinations={Destinations}
         TrailerOrWaypointMarkers={TrailerOrWaypointMarkers}
         PlayerMarker={PlayerMarker}
       />

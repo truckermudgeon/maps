@@ -1,6 +1,11 @@
-import { createContext, useContext, type ReactNode } from 'react';
+import { delay } from '@truckermudgeon/base/delay';
+import { action } from 'mobx';
+import { createContext, useCallback, useContext, type ReactNode } from 'react';
 import type { AppControllerImpl } from '../controllers/app';
 import type { NavSheetController } from '../controllers/types';
+import { useCameraStore } from '../stores/hooks/use-camera';
+import { useNavSheetStore } from '../stores/hooks/use-nav-sheet';
+import { useRouteStore } from '../stores/hooks/use-route';
 import type { MapAdapter } from './map-adapter';
 import type { RouteRenderer } from './route-renderer';
 
@@ -42,4 +47,59 @@ function useServices(): AppServices {
 
 export function useAppController(): AppControllerImpl {
   return useServices().controller;
+}
+
+export function useMapAdapter(): MapAdapter {
+  return useServices().mapAdapter;
+}
+
+export function useRouteRenderer(): RouteRenderer {
+  return useServices().routeRenderer;
+}
+
+export function useNavSheetController(): NavSheetController {
+  return useServices().navSheetController;
+}
+
+export function useTransitionDurationMs(): number {
+  return useServices().transitionDurationMs;
+}
+
+/**
+ * Returns a stable closure that hides the nav sheet and resets
+ * orchestration state. Mirrors the pre-#5 `buildHideNavSheet`:
+ * tells the controller to hide, returns the camera to follow mode,
+ * waits for the transition before resetting the navsheet stack,
+ * clears the destinations list immediately, and clears the
+ * step-arrow when there's no active route.
+ */
+export function useHideNavSheet(): () => void {
+  const camera = useCameraStore();
+  const route = useRouteStore();
+  const navSheetStore = useNavSheetStore();
+  const controller = useAppController();
+  const routeRenderer = useRouteRenderer();
+  const transitionDurationMs = useTransitionDurationMs();
+
+  return useCallback(
+    action(() => {
+      controller.hideNavSheet();
+      camera.setFollow();
+      void delay(transitionDurationMs).then(
+        action(() => navSheetStore.reset()),
+      );
+      navSheetStore.destinations = [];
+      if (!route.activeRoute) {
+        routeRenderer.drawStepArrow(undefined);
+      }
+    }),
+    [
+      camera,
+      route,
+      navSheetStore,
+      controller,
+      routeRenderer,
+      transitionDurationMs,
+    ],
+  );
 }
