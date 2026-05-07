@@ -10,7 +10,7 @@ import { CameraMode, CameraStoreImpl } from '../../stores/camera';
 import { NavSheetStoreImpl } from '../../stores/nav-sheet';
 import { RouteStoreImpl } from '../../stores/route';
 import { RouteControls } from '../RouteControls';
-import { renderWithApp } from './_helpers/render-with-app';
+import { renderWithApp } from './render-with-app';
 
 function makeRouteWithSegments(segmentCount: number): Route {
   const segment = {

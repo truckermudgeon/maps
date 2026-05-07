@@ -8,18 +8,18 @@ import { vi } from 'vitest';
 import type {
   AppController,
   NavSheetController,
-} from '../../../controllers/types';
-import { ServicesProvider, type AppServices } from '../../../services/context';
-import type { MapAdapter } from '../../../services/map-adapter';
-import type { RouteRenderer } from '../../../services/route-renderer';
-import { CameraStoreImpl } from '../../../stores/camera';
-import { RootStoreProvider } from '../../../stores/context';
-import { ControlsStoreImpl } from '../../../stores/controls';
-import { MapPaddingStoreImpl } from '../../../stores/map-padding';
-import { NavSheetStoreImpl } from '../../../stores/nav-sheet';
-import { RootStore } from '../../../stores/root-store';
-import { RouteStoreImpl } from '../../../stores/route';
-import { SessionStoreImpl } from '../../../stores/session';
+} from '../../controllers/types';
+import { ServicesProvider, type AppServices } from '../../services/context';
+import type { MapAdapter } from '../../services/map-adapter';
+import type { RouteRenderer } from '../../services/route-renderer';
+import { CameraStoreImpl } from '../../stores/camera';
+import { RootStoreProvider } from '../../stores/context';
+import { ControlsStoreImpl } from '../../stores/controls';
+import { MapPaddingStoreImpl } from '../../stores/map-padding';
+import { NavSheetStoreImpl } from '../../stores/nav-sheet';
+import { RootStore } from '../../stores/root-store';
+import { RouteStoreImpl } from '../../stores/route';
+import { SessionStoreImpl } from '../../stores/session';
 import type {
   Breakpoints,
   CameraStore,
@@ -29,8 +29,8 @@ import type {
   RouteStore,
   SessionStore,
   UIEnvironmentStore,
-} from '../../../stores/types';
-import { UiEnvironmentStoreImpl } from '../../../stores/ui-environment';
+} from '../../stores/types';
+import { UiEnvironmentStoreImpl } from '../../stores/ui-environment';
 
 const defaultBreakpoints: Breakpoints = {
   xs: 0,

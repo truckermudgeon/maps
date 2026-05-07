@@ -7,7 +7,7 @@ import { vi } from 'vitest';
 import type { AppController } from '../../controllers/types';
 import { RouteStoreImpl } from '../../stores/route';
 import { SegmentCompleteToast } from '../SegmentCompleteToast';
-import { renderWithApp } from './_helpers/render-with-app';
+import { renderWithApp } from './render-with-app';
 
 const segmentArrived: SegmentInfo = {
   place: 'Sacramento',

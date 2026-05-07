@@ -9,7 +9,7 @@ import { RouteStoreImpl } from '../../stores/route';
 import { SessionStoreImpl } from '../../stores/session';
 import { requestWakeLock } from '../../util/browser';
 import { Controls } from '../Controls';
-import { renderWithApp } from './_helpers/render-with-app';
+import { renderWithApp } from './render-with-app';
 
 vi.mock('../../util/browser', () => ({
   requestWakeLock: vi.fn(),

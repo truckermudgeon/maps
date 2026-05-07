@@ -8,7 +8,8 @@ import { AppControllerImpl } from './controllers/app';
 import { NavSheetControllerImpl } from './controllers/nav-sheet';
 import type { AppClient } from './controllers/types';
 import { setupDevtools } from './dev-tools';
-import { wireAppReactions } from './reactions';
+import { wireCameraReactions } from './reactions/camera';
+import { wireRouteReactions } from './reactions/route';
 import { applyThemeReaction } from './reactions/theme';
 import { ServicesProvider } from './services/context';
 import { MapAdapter } from './services/map-adapter';
@@ -115,13 +116,8 @@ export function createApp({
   // Reactions
   //
   applyThemeReaction(session);
-  wireAppReactions({
-    route,
-    mapAdapter,
-    routeRenderer,
-    navSheetStore,
-    mapPaddingStore,
-  });
+  wireCameraReactions({ route, mapAdapter, navSheetStore, mapPaddingStore });
+  wireRouteReactions({ route, routeRenderer, navSheetStore, mapAdapter });
 
   //
   // App lifecycle

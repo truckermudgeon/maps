@@ -6,7 +6,7 @@ import { vi } from 'vitest';
 import type { AppController } from '../../controllers/types';
 import { SessionStoreImpl } from '../../stores/session';
 import { WaitingForTelemetry } from '../WaitingForTelemetry';
-import { renderWithApp } from './_helpers/render-with-app';
+import { renderWithApp } from './render-with-app';
 
 function makeOrphanedSession(): SessionStoreImpl {
   const session = new SessionStoreImpl('usa');

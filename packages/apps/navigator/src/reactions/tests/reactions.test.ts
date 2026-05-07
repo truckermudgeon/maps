@@ -7,12 +7,13 @@ import type {
 import type { IReactionDisposer } from 'mobx';
 import { observable, runInAction } from 'mobx';
 import { vi } from 'vitest';
-import { wireAppReactions } from '..';
 import type { MapAdapter } from '../../services/map-adapter';
 import type { RouteRenderer } from '../../services/route-renderer';
 import { CameraMode } from '../../stores/camera';
 import { NavPageKey, NavSheetStoreImpl } from '../../stores/nav-sheet';
 import type { MapPaddingStore } from '../../stores/types';
+import { wireCameraReactions } from '../camera';
+import { wireRouteReactions } from '../route';
 import type { AppStore } from './types';
 
 function makeObservableStore(overrides: Partial<AppStore> = {}): AppStore {
@@ -89,13 +90,20 @@ function setup(storeOverrides: Partial<AppStore> = {}): Setup {
   const routeRenderer = makeRouteRenderer();
   const navSheetStore = new NavSheetStoreImpl();
   const mapPaddingStore = makeMapPaddingStore();
-  const disposers = wireAppReactions({
-    route: store,
-    mapAdapter,
-    routeRenderer,
-    navSheetStore,
-    mapPaddingStore,
-  });
+  const disposers = [
+    ...wireCameraReactions({
+      route: store,
+      mapAdapter,
+      navSheetStore,
+      mapPaddingStore,
+    }),
+    ...wireRouteReactions({
+      route: store,
+      routeRenderer,
+      navSheetStore,
+      mapAdapter,
+    }),
+  ];
   return {
     store,
     mapAdapter,

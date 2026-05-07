@@ -23,7 +23,7 @@ import { NavPageKey, NavSheetStoreImpl } from '../../stores/nav-sheet';
 import { RouteStoreImpl } from '../../stores/route';
 import { SessionStoreImpl } from '../../stores/session';
 import { NavSheet } from '../NavSheet';
-import { renderWithApp } from './_helpers/render-with-app';
+import { renderWithApp } from './render-with-app';
 
 const fakeRouteApi = {} as RouteApi;
 const fakeSearchApi = {} as SearchApi;
