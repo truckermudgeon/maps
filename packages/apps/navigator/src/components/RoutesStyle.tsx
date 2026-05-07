@@ -5,6 +5,7 @@ import type {
   DataDrivenPropertyValueSpecification,
   ExpressionSpecification,
 } from 'maplibre-gl';
+import { memo } from 'react';
 import { Layer, Source } from 'react-map-gl/maplibre';
 
 const lineColors = {
@@ -52,7 +53,7 @@ export const lineGradientExpression = ({
   ] satisfies ExpressionSpecification;
 };
 
-export const RoutesStyle = () => {
+export const RoutesStyle = memo(() => {
   console.log('render routes layers');
   return (
     <>
@@ -254,7 +255,7 @@ export const RoutesStyle = () => {
       </Source>
     </>
   );
-};
+});
 
 const routeLineWidth: DataDrivenPropertyValueSpecification<number> = [
   'interpolate',
