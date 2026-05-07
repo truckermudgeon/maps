@@ -3,10 +3,10 @@ import type { Route, RouteStep } from '@truckermudgeon/navigation/types';
 import bearing from '@turf/bearing';
 import { featureCollection, lineString, point } from '@turf/helpers';
 import nearestPointOnLine from '@turf/nearest-point-on-line';
-import { lineGradientExpression } from '../components/RoutesStyle';
 import type { RouteStore } from '../stores/types';
 import { clamp } from '../util/clamp';
 import { toRouteFeatures } from '../util/route-features';
+import { lineGradientExpression } from '../util/route-gradient';
 import type { MapHandle, MapStyle } from './map';
 
 const emptyFeatureCollection: GeoJSON.FeatureCollection = {

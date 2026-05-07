@@ -1,6 +1,5 @@
 import type { Theme } from '@mui/joy';
 import type { Marker as MapLibreGLMarker } from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
 import { action, when } from 'mobx';
 import type { ReactElement } from 'react';
 import type { MapRef } from 'react-map-gl/maplibre';
