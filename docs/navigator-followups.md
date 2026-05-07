@@ -7,7 +7,11 @@ up (commits `d21a97c7..057feb2f` across `navigator-refactor` →
 codebase is in good shape — but each is a real improvement worth picking
 up later.
 
-## Status (2026-05-06)
+## Status (2026-05-07)
+
+All six numbered items resolved. Two parallel tracks still open at the
+bottom of the doc: lifting to `libs/ui/` and lifting routing types to
+`libs/map/`.
 
 - [x] **#4 — eager services in AppController** (commit `0931fde1`)
 - [x] **#3 — drop vestigial ControlsControllerImpl** (commit `a65918f5`)
@@ -27,11 +31,22 @@ up later.
       `renderWithApp` fixture. Two cases (`onRouteStepClick` and
       `onWaypointsChange`) are flagged TODO in `tests/views/nav-sheet.test.tsx`
       — mechanical inlines that need heavy LaneIcon/dnd-kit stub data.
-- [x] **#6 — drop `appClient` from `AppController`**. `TelemetryService`
-      and `RouteAnimator` now constructed in `create-app.tsx` and
-      injected into `AppController`. `AppController` constructor lost
-      `session`, `mapAdapter`, `controlsStore`, and `appClient` (10 →
-      8 deps); `TelemetryService.start()` is argless.
+- [x] **#6 — drop `appClient` from `AppController`** (commit `4b96a525`).
+      `TelemetryService` and `RouteAnimator` now constructed in
+      `create-app.tsx` and injected into `AppController`. `AppController`
+      constructor lost `session`, `mapAdapter`, `controlsStore`, and
+      `appClient` (10 → 8 deps); `TelemetryService.start()` is argless.
+
+### Resolved out-of-band
+
+- **Telemetry polish** (post-ralph memory-pinned, commit `eb56ef6e`):
+  `SessionStore` now exposes a derived `telemetryStatus` enum
+  (`awaiting` / `orphaned` / `live` / `lost`) computed from
+  `hasReceivedFirstTelemetry` × `bindingStale`. `WaitingForTelemetry`
+  view switches on it instead of hand-deriving in JSX. The
+  `readyToLoad` → `isAuthenticated` rename was already done; the
+  separate `TelemetryLostToast` was dropped — the existing 3-state
+  `WaitingForTelemetry` already covers the lost case.
 
 ## A note on directory layers
 
