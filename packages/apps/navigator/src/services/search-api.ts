@@ -3,9 +3,7 @@ import type { SearchResultWithRelativeTruckInfo } from '@truckermudgeon/navigati
 import type { AppClient } from '../controllers/types';
 
 /**
- * Wraps the search-related tRPC procedures behind a class so consumers
- * (controllers) depend on a small injectable seam instead of the full
- * tRPC client shape.
+ * Search-related tRPC procedures.
  */
 export interface SearchApi {
   getAutocompleteOptions(

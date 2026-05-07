@@ -27,8 +27,7 @@ const ACTIVE_ROUTE_LAYERS = [
  * Mutates map sources and paint properties to draw the active route,
  * the route preview list, the active step's progress gradient, and the
  * step-arrow on demand. Imperative API; callers fire render*() methods
- * when they decide to. All map mutations route through MapAdapter, so
- * this file does not import maplibre.
+ * when they decide to.
  */
 export class RouteRenderer {
   private lastRenderedActiveStepLine:

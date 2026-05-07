@@ -2,30 +2,28 @@ import { Preconditions } from '@truckermudgeon/base/precon';
 import { Marker } from 'maplibre-gl';
 import type { MapHandle } from './handle';
 
-interface PlayerPose {
+interface Pose {
   position: [number, number];
   bearing: number;
 }
 
 /**
- * Owns map-attached marker lifecycles: the player marker (created
- * outside this class and registered via MapHandle.onMapLoad), and
- * the draggable choose-on-map marker. Keeps `lastPlayerPose` fresh
- * so MapCamera can interpolate smoothly across mode transitions.
+ * Owns the player marker and the draggable choose-on-map marker
+ * lifecycles.
  */
 export class MapMarkers {
   private chooseOnMapUi:
     | { marker: Marker; unsubscribeOnMove: () => void }
     | undefined;
-  private lastPlayerPose: PlayerPose | undefined;
+  // Tracked so MapCamera can interpolate from the last-set pose
+  // smoothly across FREE -> FOLLOW transitions.
+  private lastPlayerPose: Pose | undefined;
 
   constructor(private readonly handle: MapHandle) {}
 
   /**
    * Sets the player marker's position and bearing in one call. No-ops
-   * if the marker hasn't loaded yet. Updates `lastPlayerPose` so the
-   * follow-camera always interpolates from a fresh start, including
-   * across FREE -> FOLLOW mode transitions.
+   * if the marker hasn't loaded yet.
    */
   setPlayerPose(position: [number, number], bearing: number): void {
     const marker = this.handle.getPlayerMarker();
@@ -41,7 +39,7 @@ export class MapMarkers {
   }
 
   /** @internal — read by MapCamera.beginFollowCamera. */
-  getLastPlayerPose(): PlayerPose | undefined {
+  getLastPlayerPose(): Pose | undefined {
     return this.lastPlayerPose;
   }
 

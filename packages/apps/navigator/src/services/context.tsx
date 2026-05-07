@@ -65,12 +65,9 @@ export function useTransitionDurationMs(): number {
 }
 
 /**
- * Returns a stable closure that hides the nav sheet and resets
- * orchestration state. Mirrors the pre-#5 `buildHideNavSheet`:
- * tells the controller to hide, returns the camera to follow mode,
- * waits for the transition before resetting the navsheet stack,
- * clears the destinations list immediately, and clears the
- * step-arrow when there's no active route.
+ * Returns a stable closure that hides the nav sheet, resets the
+ * camera to follow mode, and clears transient navsheet state once
+ * the sheet's transition completes.
  */
 export function useHideNavSheet(): () => void {
   const camera = useCameraStore();

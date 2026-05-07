@@ -13,8 +13,7 @@ interface Padding {
 /**
  * Camera-shaped operations on the map: padding/offset state,
  * fit/fly/clearPitchAndBearing, and the follow-camera animation
- * session. Reads the current player pose from MapMarkers to
- * interpolate the marker during follow-cam easing.
+ * session.
  */
 export class MapCamera {
   private padding: Padding = { left: 0, right: 0, top: 0, bottom: 0 };

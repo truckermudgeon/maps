@@ -6,9 +6,7 @@ import type {
 import type { AppClient } from '../controllers/types';
 
 /**
- * Wraps the route-related tRPC procedures behind a class so consumers
- * (controllers) depend on a small injectable seam instead of the full
- * tRPC client shape.
+ * Route-related tRPC procedures.
  */
 export interface RouteApi {
   previewRoutes(toNodeUid: string): Promise<RouteWithSummary[]>;

@@ -5,12 +5,9 @@ import type { MapRef } from 'react-map-gl/maplibre';
 
 /**
  * Custodian of the imperative map ref + player marker ref. Exposes
- * `isMapLoaded` as the one observable so reactions can replay
- * renderers that fired before MapGl finished loading. Sibling map
- * adapters (MapMarkers, MapCamera, MapStyle) hold a reference to
- * this class and read the underlying refs via `getMap` /
- * `getPlayerMarker`. External callers should not use those getters —
- * go through the appropriate sibling instead.
+ * `isMapLoaded` as an observable so reactions can gate on map
+ * readiness, and offers low-level event-listener helpers
+ * (`addMapDragEndListener`, `onBearingChange`).
  */
 export class MapHandle {
   private _isMapLoaded = false;

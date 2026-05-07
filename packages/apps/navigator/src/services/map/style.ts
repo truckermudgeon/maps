@@ -3,8 +3,7 @@ import type { MapHandle } from './handle';
 
 /**
  * Stylesheet-shaped mutations on the map: GeoJSON source data, layer
- * paint properties, and layer visibility. RouteRenderer is the
- * primary consumer.
+ * paint properties, and layer visibility.
  */
 export class MapStyle {
   constructor(private readonly handle: MapHandle) {}
@@ -17,8 +16,11 @@ export class MapStyle {
     sourceId: string,
     data: GeoJSON.Feature | GeoJSON.FeatureCollection,
   ): void {
-    const source = this.handle.getMap()?.getSource<GeoJSONSource>(sourceId);
-    source?.setData(data);
+    const map = this.handle.getMap();
+    if (!map) {
+      return;
+    }
+    map.getSource<GeoJSONSource>(sourceId)?.setData(data);
   }
 
   /**

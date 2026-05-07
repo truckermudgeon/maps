@@ -20,10 +20,7 @@ export interface CameraReactionDeps {
 /**
  * Reactions that move or reshape the map camera in response to store
  * changes — padding/offset, choose-on-map mode, and the various
- * fit-to-bounds events that fire during navsheet flows. Camera mode
- * itself is now derived (CameraStore.cameraMode is a computed of
- * userDetached + NavSheetStore.requiresFreeCamera), so these reactions
- * only invoke imperative map-side effects.
+ * fit-to-bounds events that fire during navsheet flows.
  */
 export function wireCameraReactions(
   deps: CameraReactionDeps,
