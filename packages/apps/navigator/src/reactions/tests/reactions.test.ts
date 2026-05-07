@@ -118,7 +118,7 @@ function teardown(s: Setup) {
   s.disposers.forEach(d => d());
 }
 
-describe('wireAppReactions', () => {
+describe('app reactions', () => {
   describe('autorun for map padding/offset', () => {
     it('calls setOffset and setPadding immediately on wire-up', () => {
       const s = setup();
