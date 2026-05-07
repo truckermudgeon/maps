@@ -179,9 +179,6 @@ src/
 - `MapAdapter` is currently a single ~250 LOC facade. If/when it grows
   past ~500 LOC, consider splitting along responsibility lines
   (`map-load`, `markers`, `camera`).
-- `controllers/` only has one interface (`NavSheetController`) for one
-  impl. Asymmetric with `AppControllerImpl` which has none. Pick one
-  rule.
 - `services/{route,search}-api.ts` are thin tRPC delegates. They're
   intentional seams (deepened in commit `2ad20b29` to enable mocking
   without `vi.mock`); keep until that mocking style stops paying off.
