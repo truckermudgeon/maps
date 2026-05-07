@@ -62,7 +62,6 @@ export function createApp({
     session,
     route,
     controlsStore,
-    routeRenderer,
     appClient,
   );
   const routeAnimator = new RouteAnimator(

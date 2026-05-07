@@ -4,7 +4,6 @@ import { runInAction } from 'mobx';
 import type { AppClient } from '../controllers/types';
 import type { ControlsStore, RouteStore, SessionStore } from '../stores/types';
 import { TelemetryTimeline } from '../util/telemetry-timeline';
-import type { RouteRenderer } from './route-renderer';
 
 /**
  * Single subscription point for the navigator's tRPC telemetry stream.
@@ -26,7 +25,6 @@ export class TelemetryService {
     private readonly session: SessionStore,
     private readonly route: RouteStore,
     private readonly controls: ControlsStore,
-    private readonly routeRenderer: RouteRenderer,
     private readonly appClient: AppClient,
   ) {}
 
@@ -39,7 +37,7 @@ export class TelemetryService {
       // Surface it (force re-pair or flip bindingStale) instead.
       onError: err => console.error('subscribeToDevice error', err),
       onData: event => {
-        const { session, route, routeRenderer, timeline } = this;
+        const { session, route, timeline } = this;
         switch (event.type) {
           case 'positionUpdate': {
             timeline.push(event.data);
@@ -66,7 +64,6 @@ export class TelemetryService {
             runInAction(() => {
               route.activeRoute = event.data;
               route.activeRouteIndex = undefined;
-              routeRenderer.renderActiveRoute(event.data);
             });
             break;
           case 'routeProgress':

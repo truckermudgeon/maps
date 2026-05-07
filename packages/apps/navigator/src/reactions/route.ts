@@ -1,5 +1,6 @@
 import type { IReactionDisposer } from 'mobx';
 import { reaction } from 'mobx';
+import type { MapAdapter } from '../services/map-adapter';
 import type { RouteRenderer } from '../services/route-renderer';
 import type { NavSheetStore, RouteStore } from '../stores/types';
 import { sortedRoutePreviewIndices } from '../util/route-display';
@@ -8,6 +9,7 @@ export interface RouteReactionDeps {
   route: RouteStore;
   routeRenderer: RouteRenderer;
   navSheetStore: NavSheetStore;
+  mapAdapter: MapAdapter;
 }
 
 /**
@@ -18,8 +20,19 @@ export interface RouteReactionDeps {
 export function wireRouteReactions(
   deps: RouteReactionDeps,
 ): IReactionDisposer[] {
-  const { route, routeRenderer, navSheetStore } = deps;
+  const { route, routeRenderer, navSheetStore, mapAdapter } = deps;
   const disposers: IReactionDisposer[] = [];
+
+  // Renders the active route geometry whenever it changes — and replays
+  // it once the map loads, in case routeUpdate arrived first (page
+  // reload race: WS reconnects faster than MapGl's onLoad fires).
+  disposers.push(
+    reaction(
+      () => (mapAdapter.isMapLoaded ? route.activeRoute : undefined),
+      activeRoute => routeRenderer.renderActiveRoute(activeRoute),
+      { fireImmediately: true },
+    ),
+  );
 
   // Render calls can also be made directly by the nav sheet controller;
   // this reaction handles the case where the routes list changes shape

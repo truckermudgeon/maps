@@ -1,6 +1,7 @@
 import { center, getExtent } from '@truckermudgeon/base/geom';
 import { Preconditions } from '@truckermudgeon/base/precon';
 import type { Marker } from 'maplibre-gl';
+import { action, makeObservable, observable } from 'mobx';
 import type { MapRef } from 'react-map-gl/maplibre';
 
 interface Padding {
@@ -17,14 +18,31 @@ interface Padding {
  * maplibre directly.
  */
 export class MapAdapter {
+  // Observable so reactions can re-fire renderers that were called
+  // before the map finished loading (e.g. routeUpdate from telemetry
+  // arriving before MapGl's onLoad). Read-only externally; mutated
+  // only inside onMapLoad.
+  private _isMapLoaded = false;
   private map: MapRef | undefined;
   private playerMarker: Marker | undefined;
   private padding: Padding = { left: 0, right: 0, top: 0, bottom: 0 };
   private offset: [number, number] = [0, 0];
 
+  constructor() {
+    makeObservable<this, '_isMapLoaded'>(this, {
+      _isMapLoaded: observable,
+      onMapLoad: action,
+    });
+  }
+
+  get isMapLoaded(): boolean {
+    return this._isMapLoaded;
+  }
+
   onMapLoad(map: MapRef, player: Marker): void {
     this.map = map;
     this.playerMarker = player;
+    this._isMapLoaded = true;
   }
 
   getMap(): MapRef | undefined {
