@@ -22,6 +22,7 @@ export class NavSheetControllerImpl implements NavSheetController {
   constructor(
     private readonly store: NavSheetStore,
     private readonly appClient: AppClient,
+    private readonly mapAdapter: MapAdapter,
   ) {}
 
   search(query: string): Promise<SearchResultWithRelativeTruckInfo[]> {
@@ -75,13 +76,8 @@ export class NavSheetControllerImpl implements NavSheetController {
     }
   }
 
-  onDestinationTypeClick(
-    type: PoiType,
-    _label: string,
-    // TODO get this out of here. handle in create-app, e.g., via
-    //  a NavSheetProp for onDestinationTypeClick
-    mapAdapter: MapAdapter,
-  ): void {
+  onDestinationTypeClick(type: PoiType, _label: string): void {
+    const { mapAdapter } = this;
     const { store } = this;
     const currentPage = store.currentPageKey;
     console.log('currentPage', currentPage);

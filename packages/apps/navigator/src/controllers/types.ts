@@ -1,7 +1,6 @@
 import type { createTRPCProxyClient } from '@trpc/client';
 import type { PoiType } from '@truckermudgeon/navigation/constants';
 import type { AppRouter, SearchResult } from '@truckermudgeon/navigation/types';
-import type { MapAdapter } from '../services/map-adapter';
 
 export type { NavSheetStore } from '../stores/types';
 
@@ -15,11 +14,7 @@ export interface NavSheetController {
 
   onBackClick(): void;
 
-  onDestinationTypeClick(
-    type: PoiType,
-    label: string,
-    mapAdapter: MapAdapter,
-  ): void;
+  onDestinationTypeClick(type: PoiType, label: string): void;
 
   onDestinationRoutesClick(destination: SearchResult): void;
 }

@@ -53,13 +53,12 @@ export function createNavSheet({
   NavSheet: (props: NavSheetProps) => React.ReactElement;
   controller: NavSheetController;
 } {
-  const controller = new NavSheetControllerImpl(store, appClient);
+  const controller = new NavSheetControllerImpl(store, appClient, mapAdapter);
   const { CurrentNavPage } = createCurrentNavPage({
     store,
     controller,
     session,
     route,
-    mapAdapter,
   });
 
   const _TitleControls = observer((props: { onCloseClick: () => void }) => (
@@ -97,9 +96,8 @@ function createCurrentNavPage(opts: {
   controller: NavSheetController;
   session: SessionStore;
   route: RouteStore;
-  mapAdapter: MapAdapter;
 }) {
-  const { store, controller, session, route: routeStore, mapAdapter } = opts;
+  const { store, controller, session, route: routeStore } = opts;
   const _ChooseDestinationPage = () => {
     const [options, setOptions] = useState<SearchResult[]>([]);
     const [loading, setLoading] = useState(false);
@@ -134,7 +132,7 @@ function createCurrentNavPage(opts: {
         )}
         onInputChange={debouncedOnInput}
         onDestinationTypeClick={action((type, label) =>
-          controller.onDestinationTypeClick(type, label, mapAdapter),
+          controller.onDestinationTypeClick(type, label),
         )}
         onChooseOnMapClick={action(() => store.openChooseOnMap())}
         options={options}
@@ -175,7 +173,7 @@ function createCurrentNavPage(opts: {
         )}
         onInputChange={debouncedOnInput}
         onDestinationTypeClick={action((type, label) =>
-          controller.onDestinationTypeClick(type, label, mapAdapter),
+          controller.onDestinationTypeClick(type, label),
         )}
         onChooseOnMapClick={action(() => store.openChooseOnMap())}
         options={options}
