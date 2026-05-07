@@ -69,8 +69,9 @@ export default [
       ],
     },
   },
-  // Navigator architecture: layer-boundary enforcement.
-  // See packages/apps/navigator/ARCHITECTURE.md for the rules.
+  // Navigator architecture: layer-boundary enforcement. The rules
+  // below encode the dependency graph between stores / services /
+  // reactions / controllers / views / components.
   {
     files: ['packages/apps/navigator/src/**/*.{ts,tsx}'],
     ignores: ['packages/apps/navigator/src/services/map/**'],
