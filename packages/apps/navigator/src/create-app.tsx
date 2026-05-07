@@ -13,9 +13,8 @@ import {
   maxPortraitSheetCssHeight,
   navSheetPagesRequiringMapVisibility,
 } from './controllers/constants';
+import { NavSheetControllerImpl } from './controllers/nav-sheet';
 import type { AppClient } from './controllers/types';
-import { createControls } from './create-controls';
-import { createNavSheet } from './create-nav-sheet';
 import { setupDevtools } from './dev-tools';
 import { wireAppReactions } from './reactions';
 import { applyThemeReaction } from './reactions/theme';
@@ -27,6 +26,7 @@ import { RouteRenderer } from './services/route-renderer';
 import { SearchApiImpl } from './services/search-api';
 import { CameraStoreImpl } from './stores/camera';
 import { RootStoreProvider } from './stores/context';
+import { bindControlsToMap, ControlsStoreImpl } from './stores/controls';
 import { useNavSheetStore } from './stores/hooks/use-nav-sheet';
 import { useRouteStore } from './stores/hooks/use-route';
 import { MapPaddingStoreImpl } from './stores/map-padding';
@@ -35,6 +35,8 @@ import { RootStore } from './stores/root-store';
 import { RouteStoreImpl } from './stores/route';
 import { SessionStoreImpl } from './stores/session';
 import { UiEnvironmentStoreImpl } from './stores/ui-environment';
+import { Controls } from './views/Controls';
+import { NavSheet } from './views/NavSheet';
 import { RouteStack } from './views/RouteStack';
 import { SlippyMap } from './views/SlippyMap';
 import { WaitingForTelemetry } from './views/WaitingForTelemetry';
@@ -62,16 +64,12 @@ export function createApp({
   const chooseOnMapService = new ChooseOnMapService(mapAdapter);
   const routeApi = new RouteApiImpl(appClient);
   const searchApi = new SearchApiImpl(appClient);
-  const {
-    Controls,
-    bindMap: bindControlsToMap,
-    store: controlsStore,
-  } = createControls({
+  const controlsStore = new ControlsStoreImpl(
     session,
     camera,
     route,
-    navSheet: navSheetStore,
-  });
+    navSheetStore,
+  );
   const controller = new AppControllerImpl(
     session,
     camera,
@@ -86,14 +84,12 @@ export function createApp({
   );
   applyThemeReaction(session);
 
-  const { NavSheet, controller: navSheetController } = createNavSheet({
+  const navSheetController = new NavSheetControllerImpl(
+    navSheetStore,
     routeApi,
     searchApi,
-    session,
-    route,
     mapAdapter,
-    store: navSheetStore,
-  });
+  );
 
   const uiEnv = new UiEnvironmentStoreImpl(joyTheme.breakpoints.values);
   const mapPaddingStore = new MapPaddingStoreImpl(
@@ -107,6 +103,7 @@ export function createApp({
     camera,
     route,
     navSheet: navSheetStore,
+    controls: controlsStore,
     uiEnv,
     mapPadding: mapPaddingStore,
   });
@@ -133,9 +130,13 @@ export function createApp({
 
   const onMapLoad = (map: MapRef, marker: MapLibreGLMarker) => {
     mapAdapter.onMapLoad(map, marker);
-    bindControlsToMap(map);
+    bindControlsToMap(map, controlsStore);
   };
 
+  // Hoisted out of the App() render fn so the lambda identity is
+  // stable across renders — otherwise React sees a new component
+  // type each render and remounts the SlippyMap subtree. Same
+  // reasoning applies to the `services` object below.
   const _SlippyMap = () => <SlippyMap initialMap={map} onMapLoad={onMapLoad} />;
 
   // Hoisted out of the App() render fn so the context value reference

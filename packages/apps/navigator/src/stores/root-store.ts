@@ -1,5 +1,6 @@
 import type {
   CameraStore,
+  ControlsStore,
   MapPaddingStore,
   NavSheetStore,
   RouteStore,
@@ -20,6 +21,7 @@ export class RootStore {
   readonly camera: CameraStore;
   readonly route: RouteStore;
   readonly navSheet: NavSheetStore;
+  readonly controls: ControlsStore;
   readonly uiEnv: UIEnvironmentStore;
   readonly mapPadding: MapPaddingStore;
 
@@ -28,6 +30,7 @@ export class RootStore {
     camera: CameraStore;
     route: RouteStore;
     navSheet: NavSheetStore;
+    controls: ControlsStore;
     uiEnv: UIEnvironmentStore;
     mapPadding: MapPaddingStore;
   }) {
@@ -35,6 +38,7 @@ export class RootStore {
     this.camera = opts.camera;
     this.route = opts.route;
     this.navSheet = opts.navSheet;
+    this.controls = opts.controls;
     this.uiEnv = opts.uiEnv;
     this.mapPadding = opts.mapPadding;
   }

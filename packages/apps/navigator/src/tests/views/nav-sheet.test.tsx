@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/unbound-method */
-import { act, fireEvent, screen } from '@testing-library/react';
+import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type {
   Route,
@@ -10,8 +10,8 @@ import { runInAction } from 'mobx';
 import { vi } from 'vitest';
 import type { AppControllerImpl } from '../../controllers/app';
 import { NavPageKey } from '../../controllers/constants';
+import { NavSheetControllerImpl } from '../../controllers/nav-sheet';
 import type { NavSheetController } from '../../controllers/types';
-import { createNavSheet } from '../../create-nav-sheet';
 import { useHideNavSheet } from '../../services/context';
 import type { MapAdapter } from '../../services/map-adapter';
 import type { RouteApi } from '../../services/route-api';
@@ -21,6 +21,7 @@ import { CameraStoreImpl } from '../../stores/camera';
 import { NavSheetStoreImpl } from '../../stores/nav-sheet';
 import { RouteStoreImpl } from '../../stores/route';
 import { SessionStoreImpl } from '../../stores/session';
+import { NavSheet } from '../../views/NavSheet';
 import { renderWithApp } from '../util/render-with-app';
 
 const fakeRouteApi = {} as RouteApi;
@@ -131,7 +132,7 @@ describe('useHideNavSheet', () => {
   });
 });
 
-// ---------- createNavSheet UI flows (covers buildNavSheetHandlers behaviors) ----------
+// ---------- NavSheet UI flows (covers buildNavSheetHandlers behaviors) ----------
 
 function makeFakeDestination(): SearchResult {
   return {
@@ -164,32 +165,29 @@ function renderNavSheet(opts: {
   transitionDurationMs?: number;
 }) {
   const { stores, controller, transitionDurationMs = 0 } = opts;
-  const { NavSheet, controller: navSheetController } = createNavSheet({
-    routeApi: fakeRouteApi,
-    searchApi: fakeSearchApi,
-    session: stores.session,
-    route: stores.route,
-    mapAdapter: fakeMapAdapter,
-    store: stores.navSheet,
-  });
+  const navSheetController = new NavSheetControllerImpl(
+    stores.navSheet,
+    fakeRouteApi,
+    fakeSearchApi,
+    fakeMapAdapter,
+  );
   if (opts.navSheetControllerOverride) {
     Object.assign(navSheetController, opts.navSheetControllerOverride);
   }
-  const services: Parameters<typeof renderWithApp>[1] = {
-    stores,
-    services: {
-      ...(controller ? { controller } : {}),
-      navSheetController,
-      transitionDurationMs,
-    },
-  };
   return {
-    ...renderWithApp(<NavSheet />, services),
+    ...renderWithApp(<NavSheet />, {
+      stores,
+      services: {
+        ...(controller ? { controller } : {}),
+        navSheetController,
+        transitionDurationMs,
+      },
+    }),
     navSheetController,
   };
 }
 
-describe('createNavSheet (factory) — handler flows', () => {
+describe('NavSheet (view) — handler flows', () => {
   it('close button → hides nav sheet (orchestration via useHideNavSheet)', async () => {
     const stores = setupStores();
     const controller = {
@@ -271,11 +269,6 @@ describe('createNavSheet (factory) — handler flows', () => {
       expect(onDestinationRoutesClick).toHaveBeenCalledWith(synthResult),
     );
   });
-
-  // unused fireEvent import suppressor: route-go test would use fireEvent if it
-  // wanted to bypass userEvent's microtasks. Reference here so the eslint rule
-  // doesn't flag it in case of refactor.
-  void fireEvent;
 
   // TODO onRouteStepClick (DIRECTIONS_FROM_ROUTES_LIST step click → mapAdapter.flyTo +
   // routeRenderer.drawStepArrow) and onWaypointsChange (MANAGE_STOPS reorder/delete →

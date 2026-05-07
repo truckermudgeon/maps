@@ -12,6 +12,7 @@ import type { MapAdapter } from '../../services/map-adapter';
 import type { RouteRenderer } from '../../services/route-renderer';
 import { CameraStoreImpl } from '../../stores/camera';
 import { RootStoreProvider } from '../../stores/context';
+import { ControlsStoreImpl } from '../../stores/controls';
 import { MapPaddingStoreImpl } from '../../stores/map-padding';
 import { NavSheetStoreImpl } from '../../stores/nav-sheet';
 import { RootStore } from '../../stores/root-store';
@@ -20,6 +21,7 @@ import { SessionStoreImpl } from '../../stores/session';
 import type {
   Breakpoints,
   CameraStore,
+  ControlsStore,
   MapPaddingStore,
   NavSheetStore,
   RouteStore,
@@ -84,6 +86,7 @@ export interface RenderWithAppOptions extends Omit<RenderOptions, 'wrapper'> {
     camera?: CameraStore;
     route?: RouteStore;
     navSheet?: NavSheetStore;
+    controls?: ControlsStore;
     uiEnv?: UIEnvironmentStore;
     mapPadding?: MapPaddingStore;
   };
@@ -119,6 +122,8 @@ export function renderWithApp(
   const camera = stores?.camera ?? new CameraStoreImpl();
   const route = stores?.route ?? new RouteStoreImpl();
   const navSheet = stores?.navSheet ?? new NavSheetStoreImpl();
+  const controls =
+    stores?.controls ?? new ControlsStoreImpl(session, camera, route, navSheet);
   const uiEnv = stores?.uiEnv ?? new UiEnvironmentStoreImpl(defaultBreakpoints);
   const mapPadding =
     stores?.mapPadding ??
@@ -128,6 +133,7 @@ export function renderWithApp(
     camera,
     route,
     navSheet,
+    controls,
     uiEnv,
     mapPadding,
   });

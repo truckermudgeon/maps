@@ -3,12 +3,13 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import { BearingMode, CameraMode } from '../../controllers/constants';
-import { createControls } from '../../create-controls';
 import { CameraStoreImpl } from '../../stores/camera';
+import { ControlsStoreImpl } from '../../stores/controls';
 import { NavSheetStoreImpl } from '../../stores/nav-sheet';
 import { RouteStoreImpl } from '../../stores/route';
 import { SessionStoreImpl } from '../../stores/session';
 import { requestWakeLock } from '../../util/browser';
+import { Controls } from '../../views/Controls';
 import { renderWithApp } from '../util/render-with-app';
 
 vi.mock('../../util/browser', () => ({
@@ -21,20 +22,16 @@ interface Stores {
   camera: CameraStoreImpl;
   route: RouteStoreImpl;
   navSheet: NavSheetStoreImpl;
+  controls: ControlsStoreImpl;
 }
 
 function setup(): Stores {
-  return {
-    session: new SessionStoreImpl('usa'),
-    camera: new CameraStoreImpl(),
-    route: new RouteStoreImpl(),
-    navSheet: new NavSheetStoreImpl(),
-  };
-}
-
-function renderControls(stores: Stores) {
-  const { Controls } = createControls(stores);
-  return renderWithApp(<Controls />, { stores });
+  const session = new SessionStoreImpl('usa');
+  const camera = new CameraStoreImpl();
+  const route = new RouteStoreImpl();
+  const navSheet = new NavSheetStoreImpl();
+  const controls = new ControlsStoreImpl(session, camera, route, navSheet);
+  return { session, camera, route, navSheet, controls };
 }
 
 function clickByIconTestId(
@@ -49,7 +46,7 @@ function clickByIconTestId(
   return user.click(button);
 }
 
-describe('Controls (createControls factory)', () => {
+describe('Controls (view)', () => {
   beforeEach(() => {
     vi.mocked(requestWakeLock).mockClear();
   });
@@ -73,9 +70,8 @@ describe('Controls (createControls factory)', () => {
       const setNorthLock = vi.spyOn(stores.camera, 'setNorthLock');
       const setNorthUnlock = vi.spyOn(stores.camera, 'setNorthUnlock');
       const user = userEvent.setup();
-      renderControls(stores);
+      renderWithApp(<Controls />, { stores });
 
-      // Compass renders the current cardinal point as text inside a clickable Sheet.
       await user.click(screen.getByText(/^[NESW]+$/));
 
       const fired =
@@ -93,7 +89,7 @@ describe('Controls (createControls factory)', () => {
     stores.camera.cameraMode = CameraMode.FREE;
     const setFollow = vi.spyOn(stores.camera, 'setFollow');
     const user = userEvent.setup();
-    renderControls(stores);
+    renderWithApp(<Controls />, { stores });
 
     await clickByIconTestId(user, 'NavigationOutlinedIcon');
 
@@ -105,7 +101,7 @@ describe('Controls (createControls factory)', () => {
     const stores = setup();
     stores.navSheet.startChooseDestinationFlow = vi.fn();
     const user = userEvent.setup();
-    renderControls(stores);
+    renderWithApp(<Controls />, { stores });
 
     await clickByIconTestId(user, 'DirectionsIcon');
 
@@ -118,7 +114,7 @@ describe('Controls (createControls factory)', () => {
     stores.route.activeRoute = { id: 'r' } as never;
     stores.navSheet.startSearchAlongFlow = vi.fn();
     const user = userEvent.setup();
-    renderControls(stores);
+    renderWithApp(<Controls />, { stores });
 
     await clickByIconTestId(user, 'SearchIcon');
 
