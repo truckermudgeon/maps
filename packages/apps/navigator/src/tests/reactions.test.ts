@@ -32,6 +32,7 @@ function makeObservableStore(overrides: Partial<AppStore> = {}): AppStore {
       hasReceivedFirstTelemetry: false,
       isAuthenticated: false,
       bindingStale: false,
+      telemetryStatus: 'awaiting',
       activeRoute: undefined,
       activeRouteIndex: undefined,
       activeRouteSummary: undefined,

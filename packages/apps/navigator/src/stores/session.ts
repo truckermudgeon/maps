@@ -1,5 +1,5 @@
 import { makeAutoObservable } from 'mobx';
-import type { SessionStore } from './types';
+import type { SessionStore, TelemetryStatus } from './types';
 
 export class SessionStoreImpl implements SessionStore {
   themeMode: 'light' | 'dark' = 'light';
@@ -9,5 +9,12 @@ export class SessionStoreImpl implements SessionStore {
 
   constructor(public map: 'usa' | 'europe') {
     makeAutoObservable(this);
+  }
+
+  get telemetryStatus(): TelemetryStatus {
+    if (!this.hasReceivedFirstTelemetry) {
+      return this.bindingStale ? 'orphaned' : 'awaiting';
+    }
+    return this.bindingStale ? 'lost' : 'live';
   }
 }

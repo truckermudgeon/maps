@@ -56,12 +56,24 @@ export interface MapPaddingStore {
   readonly offset: [number, number];
 }
 
+/**
+ * Two orthogonal telemetry flags (`hasReceivedFirstTelemetry` and
+ * `bindingStale`) collapse into one of these four states:
+ *
+ *   !first && !stale → awaiting (initial connect, no data yet)
+ *   !first &&  stale → orphaned (server said no binding before any data)
+ *    first && !stale → live     (steady-state)
+ *    first &&  stale → lost     (mid-session: subscription dropped)
+ */
+export type TelemetryStatus = 'awaiting' | 'orphaned' | 'live' | 'lost';
+
 export interface SessionStore {
   themeMode: 'light' | 'dark';
   map: 'usa' | 'europe';
   hasReceivedFirstTelemetry: boolean;
   isAuthenticated: boolean;
   bindingStale: boolean;
+  readonly telemetryStatus: TelemetryStatus;
 }
 
 export interface CameraStore {

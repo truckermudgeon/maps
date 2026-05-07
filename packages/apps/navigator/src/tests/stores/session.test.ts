@@ -1,6 +1,7 @@
 import { runInAction } from 'mobx';
 import { describe, expect, it } from 'vitest';
 import { SessionStoreImpl } from '../../stores/session';
+import type { TelemetryStatus } from '../../stores/types';
 
 describe('SessionStoreImpl', () => {
   it('seeds map from constructor argument', () => {
@@ -31,4 +32,25 @@ describe('SessionStoreImpl', () => {
     expect(s.bindingStale).toBe(true);
     expect(s.map).toBe('europe');
   });
+
+  it.each<{
+    first: boolean;
+    stale: boolean;
+    expected: TelemetryStatus;
+  }>([
+    { first: false, stale: false, expected: 'awaiting' },
+    { first: false, stale: true, expected: 'orphaned' },
+    { first: true, stale: false, expected: 'live' },
+    { first: true, stale: true, expected: 'lost' },
+  ])(
+    'telemetryStatus: first=$first stale=$stale → $expected',
+    ({ first, stale, expected }) => {
+      const s = new SessionStoreImpl('usa');
+      runInAction(() => {
+        s.hasReceivedFirstTelemetry = first;
+        s.bindingStale = stale;
+      });
+      expect(s.telemetryStatus).toBe(expected);
+    },
+  );
 });
