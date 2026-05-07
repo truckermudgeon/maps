@@ -12,8 +12,7 @@ interface Padding {
 
 /**
  * Camera-shaped operations on the map: padding/offset state,
- * fit/fly/clearPitchAndBearing, and the follow-camera animation
- * session.
+ * fit/fly/clearPitchAndBearing, and the follow-camera animation session.
  */
 export class MapCamera {
   private padding: Padding = { left: 0, right: 0, top: 0, bottom: 0 };
@@ -30,13 +29,19 @@ export class MapCamera {
   setPadding(padding: Padding): void {
     this.padding = padding;
     const map = this.handle.getMap();
-    map?.easeTo({ padding });
+    if (!map) {
+      return;
+    }
+    map.easeTo({ padding });
   }
 
   setOffset(offset: [number, number]): void {
     this.offset = offset;
     const map = this.handle.getMap();
-    map?.easeTo({ offset });
+    if (!map) {
+      return;
+    }
+    map.easeTo({ offset });
   }
 
   clearPitchAndBearing(): void {
@@ -97,7 +102,6 @@ export class MapCamera {
   flyTo(lonLat: [number, number], bearing = 0): void {
     const map = this.handle.getMap();
     if (!map) {
-      console.warn("tried to fly but map hasn't loaded");
       return;
     }
     map.panTo(lonLat, {

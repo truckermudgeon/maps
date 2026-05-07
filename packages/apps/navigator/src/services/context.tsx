@@ -9,11 +9,9 @@ import type { MapCamera } from './map';
 import type { RouteRenderer } from './route-renderer';
 
 /**
- * The non-store dependencies a view tree needs: the orchestrator
- * (`AppController`), the map/route side-effect services, and a few
- * config values that don't belong on a store. Construction lives in
- * `createApp`; views read individual entries via the per-service
- * hooks below.
+ * The non-store dependencies a view tree needs. Read individual
+ * entries via the per-service hooks below; don't reach into this
+ * object directly.
  */
 export interface AppServices {
   controller: AppController;

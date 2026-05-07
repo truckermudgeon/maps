@@ -5,7 +5,7 @@ import type { RouteApi } from '../services/route-api';
 import type { RouteRenderer } from '../services/route-renderer';
 import type { TelemetryService } from '../services/telemetry';
 import type { TelemetryPlayer } from '../services/telemetry-player';
-import type { CameraStore, NavSheetStore, RouteStore } from '../stores/types';
+import type { CameraStore, RouteStore } from '../stores/types';
 import { clearCredentialsAndReload } from '../util/browser';
 import type { AppController } from './types';
 
@@ -13,7 +13,6 @@ export class AppControllerImpl implements AppController {
   constructor(
     private readonly camera: CameraStore,
     private readonly route: RouteStore,
-    private readonly navSheetStore: NavSheetStore,
     private readonly routeRenderer: RouteRenderer,
     private readonly mapMarkers: MapMarkers,
     private readonly routeApi: RouteApi,

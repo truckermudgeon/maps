@@ -101,7 +101,6 @@ export function createApp({
   const controller = new AppControllerImpl(
     camera,
     route,
-    navSheetStore,
     routeRenderer,
     mapMarkers,
     routeApi,
