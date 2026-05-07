@@ -7,7 +7,7 @@ import type {
 } from '@truckermudgeon/navigation/types';
 import { action, when } from 'mobx';
 import { destinations } from '../components/DestinationTypes';
-import type { MapAdapter } from '../services/map-adapter';
+import type { MapHandle } from '../services/map';
 import type { RouteApi } from '../services/route-api';
 import type { SearchApi } from '../services/search-api';
 import { NavPageKey } from '../stores/nav-sheet';
@@ -23,7 +23,7 @@ export class NavSheetControllerImpl implements NavSheetController {
     private readonly store: NavSheetStore,
     private readonly routeApi: RouteApi,
     private readonly searchApi: SearchApi,
-    private readonly mapAdapter: MapAdapter,
+    private readonly mapHandle: MapHandle,
   ) {}
 
   search(query: string): Promise<SearchResultWithRelativeTruckInfo[]> {
@@ -78,7 +78,7 @@ export class NavSheetControllerImpl implements NavSheetController {
   }
 
   onDestinationTypeClick(type: PoiType, _label: string): void {
-    const { mapAdapter } = this;
+    const { mapHandle } = this;
     const { store } = this;
     const currentPage = store.currentPageKey;
     console.log('currentPage', currentPage);
@@ -103,7 +103,7 @@ export class NavSheetControllerImpl implements NavSheetController {
 
     if (scope === ScopeType.NEARBY) {
       // TODO how to reattach this listener when pressing Back into NavPageKey.DESTINATIONS?
-      const mapDragUnsubscribe = mapAdapter.addMapDragEndListener(center => {
+      const mapDragUnsubscribe = mapHandle.addMapDragEndListener(center => {
         void this.searchApi.searchPoi({ type, scope, center }).then(
           action(response => {
             store.searchQuery = destinations[type].label;

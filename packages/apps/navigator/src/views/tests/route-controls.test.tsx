@@ -81,7 +81,7 @@ describe('RouteControls (view)', () => {
     const user = userEvent.setup();
     renderWithApp(<RouteControls onExpandedToggle={vi.fn()} />, {
       stores: { camera, route: makeRouteStoreWith(undefined) },
-      services: { mapAdapter: mapAdapter as never },
+      services: { mapCamera: mapAdapter as never },
     });
 
     await expand(user);
@@ -102,7 +102,7 @@ describe('RouteControls (view)', () => {
         camera,
         route: makeRouteStoreWith(makeRouteWithSegments(1)),
       },
-      services: { mapAdapter: mapAdapter as never },
+      services: { mapCamera: mapAdapter as never },
     });
 
     await expand(user);

@@ -12,7 +12,7 @@ import { wireCameraReactions } from './reactions/camera';
 import { wireRouteReactions } from './reactions/route';
 import { applyThemeReaction } from './reactions/theme';
 import { ServicesProvider } from './services/context';
-import { MapAdapter } from './services/map-adapter';
+import { MapCamera, MapHandle, MapMarkers, MapStyle } from './services/map';
 import { RouteApiImpl } from './services/route-api';
 import { RouteRenderer } from './services/route-renderer';
 import { SearchApiImpl } from './services/search-api';
@@ -76,8 +76,11 @@ export function createApp({
   //
   // Services
   //
-  const mapAdapter = new MapAdapter();
-  const routeRenderer = new RouteRenderer(mapAdapter);
+  const mapHandle = new MapHandle();
+  const mapMarkers = new MapMarkers(mapHandle);
+  const mapStyle = new MapStyle(mapHandle);
+  const mapCamera = new MapCamera(mapHandle, mapMarkers);
+  const routeRenderer = new RouteRenderer(mapHandle, mapStyle);
   const routeApi = new RouteApiImpl(appClient);
   const searchApi = new SearchApiImpl(appClient);
   const telemetryService = new TelemetryService(
@@ -87,7 +90,8 @@ export function createApp({
     appClient,
   );
   const telemetryPlayer = new TelemetryPlayer(
-    mapAdapter,
+    mapCamera,
+    mapMarkers,
     routeRenderer,
     telemetryService.timeline,
   );
@@ -100,7 +104,7 @@ export function createApp({
     route,
     navSheetStore,
     routeRenderer,
-    mapAdapter,
+    mapMarkers,
     routeApi,
     telemetryService,
     telemetryPlayer,
@@ -109,15 +113,26 @@ export function createApp({
     navSheetStore,
     routeApi,
     searchApi,
-    mapAdapter,
+    mapHandle,
   );
 
   //
   // Reactions
   //
   applyThemeReaction(session);
-  wireCameraReactions({ route, mapAdapter, navSheetStore, mapPaddingStore });
-  wireRouteReactions({ route, routeRenderer, navSheetStore, mapAdapter });
+  wireCameraReactions({
+    route,
+    mapCamera,
+    mapMarkers,
+    navSheetStore,
+    mapPaddingStore,
+  });
+  wireRouteReactions({
+    route,
+    routeRenderer,
+    navSheetStore,
+    mapHandle,
+  });
 
   //
   // App lifecycle
@@ -129,15 +144,15 @@ export function createApp({
   );
 
   const onMapLoad = (map: MapRef, marker: MapLibreGLMarker) => {
-    mapAdapter.onMapLoad(map, marker);
-    mapAdapter.onBearingChange(
+    mapHandle.onMapLoad(map, marker);
+    mapHandle.onBearingChange(
       action(bearing => (controlsStore.bearing = bearing)),
     );
   };
 
   const services = {
     controller,
-    mapAdapter,
+    mapCamera,
     routeRenderer,
     navSheetController,
     transitionDurationMs,

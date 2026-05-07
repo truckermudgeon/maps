@@ -7,7 +7,7 @@ import { lineGradientExpression } from '../components/RoutesStyle';
 import type { RouteStore } from '../stores/types';
 import { clamp } from '../util/clamp';
 import { toRouteFeatures } from '../util/route-features';
-import type { MapAdapter } from './map-adapter';
+import type { MapHandle, MapStyle } from './map';
 
 const emptyFeatureCollection: GeoJSON.FeatureCollection = {
   type: 'FeatureCollection',
@@ -35,22 +35,25 @@ export class RouteRenderer {
     | GeoJSON.Feature<GeoJSON.LineString>
     | undefined;
 
-  constructor(private readonly mapAdapter: MapAdapter) {}
+  constructor(
+    private readonly mapHandle: MapHandle,
+    private readonly mapStyle: MapStyle,
+  ) {}
 
   renderActiveRoute(maybeRoute: Route | undefined): void {
-    if (!this.mapAdapter.isMapLoaded) {
+    if (!this.mapHandle.isMapLoaded) {
       return;
     }
 
-    this.mapAdapter.setSourceData('activeRouteStep', emptyFeatureCollection);
+    this.mapStyle.setSourceData('activeRouteStep', emptyFeatureCollection);
     this.lastRenderedActiveStepLine = undefined;
 
     if (!maybeRoute) {
-      this.mapAdapter.setSourceData('activeRoute', emptyFeatureCollection);
+      this.mapStyle.setSourceData('activeRoute', emptyFeatureCollection);
       return;
     }
 
-    this.mapAdapter.setSourceData('activeRoute', toRouteFeatures(maybeRoute));
+    this.mapStyle.setSourceData('activeRoute', toRouteFeatures(maybeRoute));
     this.toggleActiveRouteLayers(true);
   }
 
@@ -58,17 +61,17 @@ export class RouteRenderer {
     maybeRoute: Route | undefined,
     options: { highlight: boolean; index: number; animate: boolean },
   ): void {
-    if (!this.mapAdapter.isMapLoaded) {
+    if (!this.mapHandle.isMapLoaded) {
       return;
     }
 
     const sourceId = `previewRoute-${options.index}`;
     if (!maybeRoute) {
-      this.mapAdapter.setSourceData(sourceId, emptyFeatureCollection);
+      this.mapStyle.setSourceData(sourceId, emptyFeatureCollection);
       return;
     }
 
-    this.mapAdapter.setSourceData(sourceId, toRouteFeatures(maybeRoute));
+    this.mapStyle.setSourceData(sourceId, toRouteFeatures(maybeRoute));
     if (options.animate) {
       // The line-gradient is animated via rAF so callers don't need to
       // think about animation pacing — just pass animate:true. This is
@@ -81,7 +84,7 @@ export class RouteRenderer {
         }
         const t = (timestamp - start) / durationMs;
         const progress = Math.min(t, 1);
-        this.mapAdapter.setLayerPaintProperty(
+        this.mapStyle.setLayerPaintProperty(
           `previewRouteLayer-${options.index}`,
           'line-gradient',
           lineGradientExpression({
@@ -91,7 +94,7 @@ export class RouteRenderer {
             progress,
           }),
         );
-        this.mapAdapter.setLayerPaintProperty(
+        this.mapStyle.setLayerPaintProperty(
           `previewRouteLayer-${options.index}-case`,
           'line-gradient',
           lineGradientExpression({
@@ -113,7 +116,7 @@ export class RouteRenderer {
 
   renderActiveRouteProgress(store: RouteStore): void {
     if (
-      !this.mapAdapter.isMapLoaded ||
+      !this.mapHandle.isMapLoaded ||
       !store.activeRoute ||
       !store.activeRouteIndex ||
       !store.activeStepLine
@@ -142,19 +145,16 @@ export class RouteRenderer {
     distanceTraveled += distanceAlongActiveStepLine;
 
     if (this.lastRenderedActiveStepLine !== store.activeStepLine.line) {
-      this.mapAdapter.setSourceData(
-        'activeRouteStep',
-        store.activeStepLine.line,
-      );
+      this.mapStyle.setSourceData('activeRouteStep', store.activeStepLine.line);
     }
     const stepProgress =
       distanceAlongActiveStepLine / store.activeStepLine.length;
-    this.mapAdapter.setLayerPaintProperty(
+    this.mapStyle.setLayerPaintProperty(
       'activeRouteStepLayer-case',
       'line-gradient',
       lineGradientExpression({ lineType: 'case', progress: stepProgress }),
     );
-    this.mapAdapter.setLayerPaintProperty(
+    this.mapStyle.setLayerPaintProperty(
       'activeRouteStepLayer',
       'line-gradient',
       lineGradientExpression({ lineType: 'line', progress: stepProgress }),
@@ -167,12 +167,12 @@ export class RouteRenderer {
       0,
       1,
     );
-    this.mapAdapter.setLayerPaintProperty(
+    this.mapStyle.setLayerPaintProperty(
       'activeRouteLayer-case',
       'line-gradient',
       lineGradientExpression({ lineType: 'case', progress }),
     );
-    this.mapAdapter.setLayerPaintProperty(
+    this.mapStyle.setLayerPaintProperty(
       'activeRouteLayer',
       'line-gradient',
       lineGradientExpression({ lineType: 'line', progress }),
@@ -180,12 +180,12 @@ export class RouteRenderer {
   }
 
   drawStepArrow(step: RouteStep | undefined): void {
-    if (!this.mapAdapter.isMapLoaded) {
+    if (!this.mapHandle.isMapLoaded) {
       return;
     }
 
     if (!step?.arrowPoints || step.arrowPoints < 2) {
-      this.mapAdapter.setSourceData('previewStepArrow', emptyFeatureCollection);
+      this.mapStyle.setSourceData('previewStepArrow', emptyFeatureCollection);
       return;
     }
 
@@ -194,7 +194,7 @@ export class RouteRenderer {
     const bearingDegrees = bearing(points.at(-2)!, points.at(-1)!);
     const arrowHead = point(points.at(-1)!, { bearing: bearingDegrees });
 
-    this.mapAdapter.setSourceData(
+    this.mapStyle.setSourceData(
       'previewStepArrow',
       featureCollection<GeoJSON.LineString | GeoJSON.Point>([line, arrowHead]),
     );
@@ -205,7 +205,7 @@ export class RouteRenderer {
     // with react-map-gl apis, then calling setpaintproperty on the style layer,
     // does *not* work.
     for (const layerId of ACTIVE_ROUTE_LAYERS) {
-      this.mapAdapter.setLayerVisibility(layerId, visible);
+      this.mapStyle.setLayerVisibility(layerId, visible);
     }
   }
 }

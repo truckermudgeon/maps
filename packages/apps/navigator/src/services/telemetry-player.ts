@@ -5,7 +5,7 @@ import { action } from 'mobx';
 import { BearingMode, CameraMode } from '../stores/camera';
 import type { CameraStore, RouteStore } from '../stores/types';
 import type { TelemetryTimeline } from '../util/telemetry-timeline';
-import type { MapAdapter } from './map-adapter';
+import type { MapCamera, MapMarkers } from './map';
 import type { RouteRenderer } from './route-renderer';
 
 const DURATION_MS = 500;
@@ -17,17 +17,18 @@ const DURATION_MS = 500;
  */
 export class TelemetryPlayer {
   private intervalId: ReturnType<typeof setInterval> | undefined;
-  private follow: ReturnType<MapAdapter['beginFollowCamera']> | undefined;
+  private follow: ReturnType<MapCamera['beginFollowCamera']> | undefined;
 
   constructor(
-    private readonly mapAdapter: MapAdapter,
+    private readonly mapCamera: MapCamera,
+    private readonly mapMarkers: MapMarkers,
     private readonly routeRenderer: RouteRenderer,
     private readonly timeline: TelemetryTimeline<GameState>,
   ) {}
 
   start(camera: CameraStore, route: RouteStore): void {
     this.stop();
-    const follow = this.mapAdapter.beginFollowCamera();
+    const follow = this.mapCamera.beginFollowCamera();
     this.follow = follow;
 
     const render = () => {
@@ -60,7 +61,7 @@ export class TelemetryPlayer {
           });
           break;
         case CameraMode.FREE:
-          this.mapAdapter.setPlayerPose(center, bearing);
+          this.mapMarkers.setPlayerPose(center, bearing);
           break;
         default:
           throw new UnreachableError(camera.cameraMode);

@@ -1,6 +1,6 @@
 import type { IReactionDisposer } from 'mobx';
 import { action, autorun, reaction } from 'mobx';
-import type { MapAdapter } from '../services/map-adapter';
+import type { MapCamera, MapMarkers } from '../services/map';
 import { NavPageKey } from '../stores/nav-sheet';
 import type {
   MapPaddingStore,
@@ -11,7 +11,8 @@ import { routeCornerPair, routesCornerPairs } from '../util/route-bounds';
 
 export interface CameraReactionDeps {
   route: RouteStore;
-  mapAdapter: MapAdapter;
+  mapCamera: MapCamera;
+  mapMarkers: MapMarkers;
   navSheetStore: NavSheetStore;
   mapPaddingStore: MapPaddingStore;
 }
@@ -27,13 +28,13 @@ export interface CameraReactionDeps {
 export function wireCameraReactions(
   deps: CameraReactionDeps,
 ): IReactionDisposer[] {
-  const { route, mapAdapter, navSheetStore, mapPaddingStore } = deps;
+  const { route, mapCamera, mapMarkers, navSheetStore, mapPaddingStore } = deps;
   const disposers: IReactionDisposer[] = [];
 
   disposers.push(
     autorun(() => {
-      mapAdapter.setOffset(mapPaddingStore.offset);
-      mapAdapter.setPadding(mapPaddingStore.padding);
+      mapCamera.setOffset(mapPaddingStore.offset);
+      mapCamera.setPadding(mapPaddingStore.padding);
     }),
   );
 
@@ -43,9 +44,9 @@ export function wireCameraReactions(
         navSheetStore.showNavSheet &&
         navSheetStore.currentPageKey === NavPageKey.CHOOSE_ON_MAP,
       action(isChoosingOnMap => {
-        mapAdapter.toggleChooseOnMapMarker(isChoosingOnMap);
+        mapMarkers.toggleChooseOnMapMarker(isChoosingOnMap);
         if (isChoosingOnMap) {
-          mapAdapter.clearPitchAndBearing();
+          mapCamera.clearPitchAndBearing();
         }
       }),
     ),
@@ -66,7 +67,7 @@ export function wireCameraReactions(
       },
       maybeLonLats => {
         if (maybeLonLats && !navSheetStore.disableFitToBounds) {
-          mapAdapter.fitPoints(maybeLonLats);
+          mapCamera.fitPoints(maybeLonLats);
         }
       },
     ),
@@ -91,9 +92,9 @@ export function wireCameraReactions(
         }
         if (maybeRoutes.every(r => r.detour)) {
           const tlbrs = [route.truckPoint, maybeRoutes[0].detour!.lngLat];
-          mapAdapter.fitPoints(tlbrs as [number, number][]);
+          mapCamera.fitPoints(tlbrs as [number, number][]);
         } else {
-          mapAdapter.fitPoints(routesCornerPairs(maybeRoutes));
+          mapCamera.fitPoints(routesCornerPairs(maybeRoutes));
         }
       },
     ),
@@ -110,7 +111,7 @@ export function wireCameraReactions(
         if (!maybeRoute) {
           return;
         }
-        mapAdapter.fitPoints(routeCornerPair(maybeRoute));
+        mapCamera.fitPoints(routeCornerPair(maybeRoute));
       },
     ),
   );

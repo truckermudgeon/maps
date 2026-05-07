@@ -5,7 +5,7 @@ import {
   defaultImperialOptions,
   defaultMetricOptions,
 } from '../components/text';
-import { useAppController, useMapAdapter } from '../services/context';
+import { useAppController, useMapCamera } from '../services/context';
 import { useCameraStore } from '../stores/hooks/use-camera';
 import { useNavSheetStore } from '../stores/hooks/use-nav-sheet';
 import { useRouteStore } from '../stores/hooks/use-route';
@@ -20,7 +20,7 @@ export const RouteControls = observer(
     const camera = useCameraStore();
     const navSheetStore = useNavSheetStore();
     const controller = useAppController();
-    const mapAdapter = useMapAdapter();
+    const mapCamera = useMapCamera();
 
     const summary = toRouteSummary(
       route.activeRouteToFirstWayPointSummary,
@@ -46,7 +46,7 @@ export const RouteControls = observer(
             return;
           }
           camera.setFree();
-          mapAdapter.fitPoints(routeCornerPair(route.activeRoute));
+          mapCamera.fitPoints(routeCornerPair(route.activeRoute));
         })}
         onRouteDirectionsClick={action(() =>
           navSheetStore.startShowActiveRouteDirectionsFlow(),

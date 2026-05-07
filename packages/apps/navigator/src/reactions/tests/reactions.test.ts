@@ -7,7 +7,7 @@ import type {
 import type { IReactionDisposer } from 'mobx';
 import { observable, runInAction } from 'mobx';
 import { vi } from 'vitest';
-import type { MapAdapter } from '../../services/map-adapter';
+import type { MapCamera, MapHandle, MapMarkers } from '../../services/map';
 import type { RouteRenderer } from '../../services/route-renderer';
 import { CameraMode } from '../../stores/camera';
 import { NavPageKey, NavSheetStoreImpl } from '../../stores/nav-sheet';
@@ -57,14 +57,21 @@ function makeMapPaddingStore(): MapPaddingStore {
   };
 }
 
-function makeMapAdapter(): MapAdapter {
+function makeMapHandle(): MapHandle {
+  return { isMapLoaded: true } as unknown as MapHandle;
+}
+
+function makeMapCamera(): MapCamera {
   return {
     setOffset: vi.fn(),
     setPadding: vi.fn(),
     clearPitchAndBearing: vi.fn(),
     fitPoints: vi.fn(),
-    toggleChooseOnMapMarker: vi.fn(),
-  } as unknown as MapAdapter;
+  } as unknown as MapCamera;
+}
+
+function makeMapMarkers(): MapMarkers {
+  return { toggleChooseOnMapMarker: vi.fn() } as unknown as MapMarkers;
 }
 
 function makeRouteRenderer(): RouteRenderer {
@@ -77,7 +84,9 @@ function makeRouteRenderer(): RouteRenderer {
 
 interface Setup {
   store: AppStore;
-  mapAdapter: MapAdapter;
+  mapHandle: MapHandle;
+  mapCamera: MapCamera;
+  mapMarkers: MapMarkers;
   routeRenderer: RouteRenderer;
   navSheetStore: NavSheetStoreImpl;
   mapPaddingStore: MapPaddingStore;
@@ -86,14 +95,17 @@ interface Setup {
 
 function setup(storeOverrides: Partial<AppStore> = {}): Setup {
   const store = makeObservableStore(storeOverrides);
-  const mapAdapter = makeMapAdapter();
+  const mapHandle = makeMapHandle();
+  const mapCamera = makeMapCamera();
+  const mapMarkers = makeMapMarkers();
   const routeRenderer = makeRouteRenderer();
   const navSheetStore = new NavSheetStoreImpl();
   const mapPaddingStore = makeMapPaddingStore();
   const disposers = [
     ...wireCameraReactions({
       route: store,
-      mapAdapter,
+      mapCamera,
+      mapMarkers,
       navSheetStore,
       mapPaddingStore,
     }),
@@ -101,12 +113,14 @@ function setup(storeOverrides: Partial<AppStore> = {}): Setup {
       route: store,
       routeRenderer,
       navSheetStore,
-      mapAdapter,
+      mapHandle,
     }),
   ];
   return {
     store,
-    mapAdapter,
+    mapHandle,
+    mapCamera,
+    mapMarkers,
     routeRenderer,
     navSheetStore,
     mapPaddingStore,
@@ -122,8 +136,8 @@ describe('app reactions', () => {
   describe('autorun for map padding/offset', () => {
     it('calls setOffset and setPadding immediately on wire-up', () => {
       const s = setup();
-      expect(s.mapAdapter.setOffset).toHaveBeenCalledWith([0, 0]);
-      expect(s.mapAdapter.setPadding).toHaveBeenCalledWith({
+      expect(s.mapCamera.setOffset).toHaveBeenCalledWith([0, 0]);
+      expect(s.mapCamera.setPadding).toHaveBeenCalledWith({
         left: 0,
         right: 0,
         top: 0,
@@ -141,8 +155,8 @@ describe('app reactions', () => {
         s.navSheetStore.pushPage(NavPageKey.CHOOSE_ON_MAP);
       });
 
-      expect(s.mapAdapter.toggleChooseOnMapMarker).toHaveBeenCalledWith(true);
-      expect(s.mapAdapter.clearPitchAndBearing).toHaveBeenCalled();
+      expect(s.mapMarkers.toggleChooseOnMapMarker).toHaveBeenCalledWith(true);
+      expect(s.mapCamera.clearPitchAndBearing).toHaveBeenCalled();
       // cameraMode is derived; assert the policy that drives it.
       expect(s.navSheetStore.requiresFreeCamera).toBe(true);
       teardown(s);
@@ -155,14 +169,14 @@ describe('app reactions', () => {
         s.navSheetStore.pushPage(NavPageKey.CHOOSE_ON_MAP);
       });
       (
-        s.mapAdapter.toggleChooseOnMapMarker as ReturnType<typeof vi.fn>
+        s.mapMarkers.toggleChooseOnMapMarker as ReturnType<typeof vi.fn>
       ).mockClear();
 
       runInAction(() => {
         s.navSheetStore.popPage();
       });
 
-      expect(s.mapAdapter.toggleChooseOnMapMarker).toHaveBeenCalledWith(false);
+      expect(s.mapMarkers.toggleChooseOnMapMarker).toHaveBeenCalledWith(false);
       teardown(s);
     });
   });
@@ -181,7 +195,7 @@ describe('app reactions', () => {
       // cameraMode is derived; assert the policy that drives it + the
       // imperative side effect that this reaction is responsible for.
       expect(s.navSheetStore.requiresFreeCamera).toBe(true);
-      expect(s.mapAdapter.fitPoints).toHaveBeenCalledWith([
+      expect(s.mapCamera.fitPoints).toHaveBeenCalledWith([
         [-100, 40],
         [-90, 35],
       ]);
@@ -198,7 +212,7 @@ describe('app reactions', () => {
         ];
       });
 
-      expect(s.mapAdapter.fitPoints).not.toHaveBeenCalled();
+      expect(s.mapCamera.fitPoints).not.toHaveBeenCalled();
       teardown(s);
     });
   });

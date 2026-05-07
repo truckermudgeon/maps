@@ -5,7 +5,7 @@ import type { AppController, NavSheetController } from '../controllers/types';
 import { useCameraStore } from '../stores/hooks/use-camera';
 import { useNavSheetStore } from '../stores/hooks/use-nav-sheet';
 import { useRouteStore } from '../stores/hooks/use-route';
-import type { MapAdapter } from './map-adapter';
+import type { MapCamera } from './map';
 import type { RouteRenderer } from './route-renderer';
 
 /**
@@ -17,7 +17,7 @@ import type { RouteRenderer } from './route-renderer';
  */
 export interface AppServices {
   controller: AppController;
-  mapAdapter: MapAdapter;
+  mapCamera: MapCamera;
   routeRenderer: RouteRenderer;
   navSheetController: NavSheetController;
   transitionDurationMs: number;
@@ -48,8 +48,8 @@ export function useAppController(): AppController {
   return useServices().controller;
 }
 
-export function useMapAdapter(): MapAdapter {
-  return useServices().mapAdapter;
+export function useMapCamera(): MapCamera {
+  return useServices().mapCamera;
 }
 
 export function useRouteRenderer(): RouteRenderer {

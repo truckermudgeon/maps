@@ -10,7 +10,7 @@ import type {
   NavSheetController,
 } from '../../controllers/types';
 import { ServicesProvider, type AppServices } from '../../services/context';
-import type { MapAdapter } from '../../services/map-adapter';
+import type { MapCamera } from '../../services/map';
 import type { RouteRenderer } from '../../services/route-renderer';
 import { CameraStoreImpl } from '../../stores/camera';
 import { RootStoreProvider } from '../../stores/context';
@@ -58,11 +58,11 @@ function defaultFakeController(): AppController {
   } as unknown as AppController;
 }
 
-function defaultFakeMapAdapter(): MapAdapter {
+function defaultFakeMapCamera(): MapCamera {
   return {
     flyTo: vi.fn(),
     fitPoints: vi.fn(),
-  } as unknown as MapAdapter;
+  } as unknown as MapCamera;
 }
 
 function defaultFakeRouteRenderer(): RouteRenderer {
@@ -141,7 +141,7 @@ export function renderWithApp(
   });
   const services: AppServices = {
     controller: serviceOverrides?.controller ?? defaultFakeController(),
-    mapAdapter: serviceOverrides?.mapAdapter ?? defaultFakeMapAdapter(),
+    mapCamera: serviceOverrides?.mapCamera ?? defaultFakeMapCamera(),
     routeRenderer:
       serviceOverrides?.routeRenderer ?? defaultFakeRouteRenderer(),
     navSheetController:

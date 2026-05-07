@@ -14,7 +14,7 @@ import type {
   NavSheetController,
 } from '../../controllers/types';
 import { useHideNavSheet } from '../../services/context';
-import type { MapAdapter } from '../../services/map-adapter';
+import type { MapHandle } from '../../services/map';
 import type { RouteApi } from '../../services/route-api';
 import type { RouteRenderer } from '../../services/route-renderer';
 import type { SearchApi } from '../../services/search-api';
@@ -27,7 +27,7 @@ import { renderWithApp } from './render-with-app';
 
 const fakeRouteApi = {} as RouteApi;
 const fakeSearchApi = {} as SearchApi;
-const fakeMapAdapter = {} as MapAdapter;
+const fakeMapHandle = {} as MapHandle;
 
 function setupStores() {
   const navSheet = new NavSheetStoreImpl();
@@ -169,7 +169,7 @@ function renderNavSheet(opts: {
     stores.navSheet,
     fakeRouteApi,
     fakeSearchApi,
-    fakeMapAdapter,
+    fakeMapHandle,
   );
   if (opts.navSheetControllerOverride) {
     Object.assign(navSheetController, opts.navSheetControllerOverride);
