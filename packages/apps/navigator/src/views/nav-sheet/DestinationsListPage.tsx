@@ -14,35 +14,35 @@ import { useSessionStore } from '../../stores/hooks/use-session';
 
 const DestinationListWithLoading = withLoading(DestinationList);
 
-export const DestinationsListPage = observer(() => {
-  const session = useSessionStore();
+const Bar = observer(({ destination }: { destination: SearchResult }) => {
   const navSheetStore = useNavSheetStore();
   const navSheetController = useNavSheetController();
   const appController = useAppController();
   const hideNavSheet = useHideNavSheet();
+  // use a computed to minimize re-renders (e.g., collapsed button bars
+  // that stay collapsed don't need to re-render, even if
+  // selectedDestination changes)
+  const visible = computed(
+    () => navSheetStore.selectedDestination === destination,
+  );
+  return (
+    <CollapsibleButtonBar
+      visible={visible.get()}
+      onDestinationRoutesClick={action(() =>
+        navSheetController.onDestinationRoutesClick(destination),
+      )}
+      onDestinationGoClick={action(() => {
+        navSheetStore.selectDestination(destination);
+        appController.setDestinationNodeUid(destination.nodeUid);
+        hideNavSheet();
+      })}
+    />
+  );
+});
 
-  const Bar = observer(({ destination }: { destination: SearchResult }) => {
-    // use a computed to minimize re-renders (e.g., collapsed button bars
-    // that stay collapsed don't need to re-render, even if
-    // selectedDestination changes)
-    const visible = computed(
-      () => navSheetStore.selectedDestination === destination,
-    );
-    return (
-      <CollapsibleButtonBar
-        visible={visible.get()}
-        onDestinationRoutesClick={action(() =>
-          navSheetController.onDestinationRoutesClick(destination),
-        )}
-        onDestinationGoClick={action(() => {
-          navSheetStore.selectDestination(destination);
-          appController.setDestinationNodeUid(destination.nodeUid);
-          hideNavSheet();
-        })}
-      />
-    );
-  });
-
+export const DestinationsListPage = observer(() => {
+  const session = useSessionStore();
+  const navSheetStore = useNavSheetStore();
   return (
     <DestinationListWithLoading
       units={session.map === 'usa' ? 'imperial' : 'metric'}
