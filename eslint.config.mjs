@@ -69,4 +69,22 @@ export default [
       ],
     },
   },
+  {
+    files: ['packages/apps/navigator/src/components/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/stores/**', '**/controllers/**'],
+              message:
+                'components/ are pure presenters. Move store/controller access to views/.',
+              allowTypeImports: true,
+            },
+          ],
+        },
+      ],
+    },
+  },
 ];
