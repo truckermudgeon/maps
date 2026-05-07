@@ -8,10 +8,10 @@ import type {
 import { action, when } from 'mobx';
 import { destinations } from '../components/DestinationTypes';
 import type { MapAdapter } from '../services/map-adapter';
-import * as routeApi from '../services/route-api';
-import * as searchApi from '../services/search-api';
+import type { RouteApi } from '../services/route-api';
+import type { SearchApi } from '../services/search-api';
 import { NavPageKey } from './constants';
-import type { AppClient, NavSheetController, NavSheetStore } from './types';
+import type { NavSheetController, NavSheetStore } from './types';
 
 /**
  * Coordinates the cross-domain or async-IO flows for the nav sheet —
@@ -21,12 +21,13 @@ import type { AppClient, NavSheetController, NavSheetStore } from './types';
 export class NavSheetControllerImpl implements NavSheetController {
   constructor(
     private readonly store: NavSheetStore,
-    private readonly appClient: AppClient,
+    private readonly routeApi: RouteApi,
+    private readonly searchApi: SearchApi,
     private readonly mapAdapter: MapAdapter,
   ) {}
 
   search(query: string): Promise<SearchResultWithRelativeTruckInfo[]> {
-    return searchApi.getAutocompleteOptions(this.appClient, query);
+    return this.searchApi.getAutocompleteOptions(query);
   }
 
   onSearchSelect(queryOrResult: string | SearchResult) {
@@ -89,8 +90,8 @@ export class NavSheetControllerImpl implements NavSheetController {
     store.pushPage(NavPageKey.DESTINATIONS);
     store.isLoading = true;
 
-    void searchApi
-      .searchPoi(this.appClient, { type, scope })
+    void this.searchApi
+      .searchPoi({ type, scope })
       .then(
         action(response => {
           store.searchQuery = destinations[type].label;
@@ -103,7 +104,7 @@ export class NavSheetControllerImpl implements NavSheetController {
     if (scope === ScopeType.NEARBY) {
       // TODO how to reattach this listener when pressing Back into NavPageKey.DESTINATIONS?
       const mapDragUnsubscribe = mapAdapter.addMapDragEndListener(center => {
-        void searchApi.searchPoi(this.appClient, { type, scope, center }).then(
+        void this.searchApi.searchPoi({ type, scope, center }).then(
           action(response => {
             store.searchQuery = destinations[type].label;
             store.destinations = response;
@@ -130,7 +131,7 @@ export class NavSheetControllerImpl implements NavSheetController {
     store.pushPage(NavPageKey.ROUTES);
     store.isLoading = true;
 
-    void routeApi.previewRoutes(this.appClient, dest.nodeUid).then(
+    void this.routeApi.previewRoutes(dest.nodeUid).then(
       action(routes => {
         store.isLoading = false;
         store.routes = routes;

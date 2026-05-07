@@ -3,7 +3,7 @@ import { action } from 'mobx';
 import type { ChooseOnMapService } from '../services/choose-on-map';
 import type { MapAdapter } from '../services/map-adapter';
 import { RouteAnimator } from '../services/route-animator';
-import * as routeApi from '../services/route-api';
+import type { RouteApi } from '../services/route-api';
 import type { RouteRenderer } from '../services/route-renderer';
 import { TelemetryService } from '../services/telemetry';
 import type {
@@ -29,6 +29,7 @@ export class AppControllerImpl {
     private readonly routeRenderer: RouteRenderer,
     private readonly chooseOnMapService: ChooseOnMapService,
     controlsStore: ControlsStore,
+    private readonly routeApi: RouteApi,
     private readonly appClient: AppClient,
   ) {
     this.telemetryService = new TelemetryService(
@@ -56,7 +57,7 @@ export class AppControllerImpl {
   }
 
   setDestinationNodeUid(toNodeUid: string) {
-    void routeApi.previewRoutes(this.appClient, toNodeUid).then(
+    void this.routeApi.previewRoutes(toNodeUid).then(
       action(([firstRoute]) => {
         if (!firstRoute) {
           console.warn('could not find route to', toNodeUid);
@@ -75,18 +76,12 @@ export class AppControllerImpl {
       nodeIndex: 0,
     };
     this.routeRenderer.renderActiveRoute(route);
-    void routeApi.setActiveRoute(
-      this.appClient,
-      route?.segments.map(s => s.key),
-    );
+    void this.routeApi.setActiveRoute(route?.segments.map(s => s.key));
   }
 
   setActiveRouteFromNodeUids(waypoints: bigint[]) {
-    void routeApi
-      .generateRouteFromNodeUids(
-        this.appClient,
-        waypoints.map(wp => wp.toString(16)),
-      )
+    void this.routeApi
+      .generateRouteFromNodeUids(waypoints.map(wp => wp.toString(16)))
       .then(
         action(route => {
           this.setActiveRoute(route);
@@ -100,14 +95,13 @@ export class AppControllerImpl {
   }
 
   synthesizeSearchResult(): Promise<SearchResult> {
-    return routeApi.synthesizeSearchResult(
-      this.appClient,
+    return this.routeApi.synthesizeSearchResult(
       this.chooseOnMapService.getChosenLngLat(),
     );
   }
 
   unpauseRouteEvents() {
     this.route.segmentComplete = undefined;
-    void routeApi.unpauseRouteEvents(this.appClient);
+    void this.routeApi.unpauseRouteEvents();
   }
 }

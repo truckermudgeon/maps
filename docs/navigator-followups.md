@@ -19,6 +19,12 @@ up later.
       `tests/create-app-handlers.test.ts` with no equivalent replacement
       (stories aren't assertion-driven without `@storybook/test`). Revisit
       when adopting RTL.
+- [ ] **#6 — drop `appClient` from `AppController`** — _deferred_. After
+      the `RouteApi` / `SearchApi` deepening, `AppController` only holds
+      `appClient` to seed `TelemetryService.start(appClient)`. Pushing
+      `appClient` into `TelemetryService`'s constructor (or factory)
+      would let `AppController` depend on `RouteApi` only. Out of scope
+      for the api-class PR.
 
 ## A note on directory layers
 

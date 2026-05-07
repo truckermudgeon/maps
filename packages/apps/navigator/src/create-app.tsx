@@ -27,7 +27,9 @@ import { wireAppReactions } from './reactions';
 import { applyThemeReaction } from './reactions/theme';
 import { ChooseOnMapService } from './services/choose-on-map';
 import { MapAdapter } from './services/map-adapter';
+import { RouteApiImpl } from './services/route-api';
 import { RouteRenderer } from './services/route-renderer';
+import { SearchApiImpl } from './services/search-api';
 import { CameraStoreImpl } from './stores/camera';
 import { RootStoreProvider } from './stores/context';
 import { useNavSheetStore } from './stores/hooks/use-nav-sheet';
@@ -63,6 +65,8 @@ export function createApp({
   const mapAdapter = new MapAdapter();
   const routeRenderer = new RouteRenderer(mapAdapter);
   const chooseOnMapService = new ChooseOnMapService(mapAdapter);
+  const routeApi = new RouteApiImpl(appClient);
+  const searchApi = new SearchApiImpl(appClient);
   const {
     Controls,
     bindMap: bindControlsToMap,
@@ -82,12 +86,14 @@ export function createApp({
     routeRenderer,
     chooseOnMapService,
     controlsStore,
+    routeApi,
     appClient,
   );
   applyThemeReaction(session);
 
   const { NavSheet, controller: navSheetController } = createNavSheet({
-    appClient,
+    routeApi,
+    searchApi,
     session,
     route,
     mapAdapter,

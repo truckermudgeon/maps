@@ -19,12 +19,10 @@ import { TitleControls } from './components/TitleControls';
 import { withLoading } from './components/WithLoading';
 import { NavPageKey } from './controllers/constants';
 import { NavSheetControllerImpl } from './controllers/nav-sheet';
-import type {
-  AppClient,
-  NavSheetController,
-  NavSheetStore,
-} from './controllers/types';
+import type { NavSheetController, NavSheetStore } from './controllers/types';
 import type { MapAdapter } from './services/map-adapter';
+import type { RouteApi } from './services/route-api';
+import type { SearchApi } from './services/search-api';
 import { NavSheetStoreImpl } from './stores/nav-sheet';
 import type { RouteStore, SessionStore } from './stores/types';
 
@@ -38,13 +36,15 @@ interface NavSheetProps {
 }
 
 export function createNavSheet({
-  appClient,
+  routeApi,
+  searchApi,
   session,
   route,
   mapAdapter,
   store,
 }: {
-  appClient: AppClient;
+  routeApi: RouteApi;
+  searchApi: SearchApi;
   session: SessionStore;
   route: RouteStore;
   mapAdapter: MapAdapter;
@@ -53,7 +53,12 @@ export function createNavSheet({
   NavSheet: (props: NavSheetProps) => React.ReactElement;
   controller: NavSheetController;
 } {
-  const controller = new NavSheetControllerImpl(store, appClient, mapAdapter);
+  const controller = new NavSheetControllerImpl(
+    store,
+    routeApi,
+    searchApi,
+    mapAdapter,
+  );
   const { CurrentNavPage } = createCurrentNavPage({
     store,
     controller,
