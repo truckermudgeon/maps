@@ -55,7 +55,7 @@ export function createApp({
   transitionDurationMs: number;
 }): {
   App: () => ReactElement;
-  store: { readyToLoad: boolean };
+  store: { isAuthenticated: boolean };
 } {
   const session = new SessionStoreImpl(map);
   const camera = new CameraStoreImpl();
@@ -133,9 +133,9 @@ export function createApp({
   });
 
   when(
-    () => session.readyToLoad,
+    () => session.isAuthenticated,
     () => {
-      console.log('readyToLoad signal received.');
+      console.log('isAuthenticated signal received.');
       controller.startListening();
     },
   );

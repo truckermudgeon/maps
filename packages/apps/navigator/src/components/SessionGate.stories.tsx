@@ -38,7 +38,7 @@ const appClient: Pick<AppClient, 'redeemCode' | 'reconnect'> = {
 export const Default: Story = {
   args: {
     appClient,
-    readyToLoadStore: { readyToLoad: true },
+    isAuthenticatedStore: { isAuthenticated: true },
     App: memo(() => <div>Done.</div>),
   },
   loaders: [

@@ -26,10 +26,10 @@ const CODE_LENGTH = 4;
 
 export const SessionGate = (props: {
   appClient: Pick<AppClient, 'redeemCode' | 'reconnect'>;
-  readyToLoadStore: { readyToLoad: boolean };
+  isAuthenticatedStore: { isAuthenticated: boolean };
   App: React.NamedExoticComponent;
 }) => {
-  const { appClient, App, readyToLoadStore } = props;
+  const { appClient, App, isAuthenticatedStore } = props;
   const [status, setStatus] = useState<Status>('authorizing');
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -51,7 +51,7 @@ export const SessionGate = (props: {
           setStatus('loggedOut');
         } else {
           setStatus('loggedIn');
-          runInAction(() => (readyToLoadStore.readyToLoad = true));
+          runInAction(() => (isAuthenticatedStore.isAuthenticated = true));
         }
       }
     };
@@ -60,7 +60,7 @@ export const SessionGate = (props: {
 
   const onLoggedIn = action(() => {
     setStatus('loggedIn');
-    readyToLoadStore.readyToLoad = true;
+    isAuthenticatedStore.isAuthenticated = true;
   });
 
   return (

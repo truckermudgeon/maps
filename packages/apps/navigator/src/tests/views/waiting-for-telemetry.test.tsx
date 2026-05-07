@@ -11,7 +11,7 @@ import { renderWithApp } from '../util/render-with-app';
 function makeOrphanedSession(): SessionStoreImpl {
   const session = new SessionStoreImpl('usa');
   runInAction(() => {
-    session.readyToLoad = true;
+    session.isAuthenticated = true;
     session.bindingStale = true; // orphaned: ready+stale, no first telemetry
   });
   return session;

@@ -9,7 +9,7 @@ import { useSessionStore } from '../stores/hooks/use-session';
 export const WaitingForTelemetry = observer(() => {
   const session = useSessionStore();
   const controller = useAppController();
-  if (!session.readyToLoad) {
+  if (!session.isAuthenticated) {
     // assume some other component will show "waiting to load" UI
     return <></>;
   }

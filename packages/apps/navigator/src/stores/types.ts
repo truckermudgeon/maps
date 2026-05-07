@@ -60,7 +60,7 @@ export interface SessionStore {
   themeMode: 'light' | 'dark';
   map: 'usa' | 'europe';
   hasReceivedFirstTelemetry: boolean;
-  readyToLoad: boolean;
+  isAuthenticated: boolean;
   bindingStale: boolean;
 }
 

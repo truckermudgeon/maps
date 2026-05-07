@@ -75,7 +75,7 @@ root.render(
         <CssBaseline />
         <SessionGate
           appClient={appClient}
-          readyToLoadStore={store}
+          isAuthenticatedStore={store}
           App={MemoApp}
         ></SessionGate>
       </CssVarsProvider>

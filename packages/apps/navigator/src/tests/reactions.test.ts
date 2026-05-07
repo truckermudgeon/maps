@@ -30,7 +30,7 @@ function makeObservableStore(overrides: Partial<AppStore> = {}): AppStore {
       truckPoint: [0, 0],
       trailerPoint: undefined,
       hasReceivedFirstTelemetry: false,
-      readyToLoad: false,
+      isAuthenticated: false,
       bindingStale: false,
       activeRoute: undefined,
       activeRouteIndex: undefined,
