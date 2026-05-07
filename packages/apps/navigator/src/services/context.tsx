@@ -76,13 +76,12 @@ export function useHideNavSheet(): () => void {
   const camera = useCameraStore();
   const route = useRouteStore();
   const navSheetStore = useNavSheetStore();
-  const controller = useAppController();
   const routeRenderer = useRouteRenderer();
   const transitionDurationMs = useTransitionDurationMs();
 
   return useCallback(
     action(() => {
-      controller.hideNavSheet();
+      navSheetStore.hide();
       camera.setFollow();
       void delay(transitionDurationMs).then(
         action(() => navSheetStore.reset()),
@@ -92,13 +91,6 @@ export function useHideNavSheet(): () => void {
         routeRenderer.drawStepArrow(undefined);
       }
     }),
-    [
-      camera,
-      route,
-      navSheetStore,
-      controller,
-      routeRenderer,
-      transitionDurationMs,
-    ],
+    [camera, route, navSheetStore, routeRenderer, transitionDurationMs],
   );
 }

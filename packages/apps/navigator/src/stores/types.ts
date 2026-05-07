@@ -129,6 +129,8 @@ export interface NavSheetStore {
   replaceTopPage(key: NavPageKey): void;
   resetStack(initial?: NavPageKey): void;
 
+  hide(): void;
+
   // Flow / selection mutations.
   reset(initialPage?: NavPageKey): void;
   startChooseDestinationFlow(): void;
@@ -142,7 +144,7 @@ export interface NavSheetStore {
   selectRoute(route: Route): void;
   showRouteDetails(route: Route): void;
 
-  showNavSheet: boolean;
+  readonly showNavSheet: boolean;
   isLoading: boolean;
   disableFitToBounds: boolean;
 

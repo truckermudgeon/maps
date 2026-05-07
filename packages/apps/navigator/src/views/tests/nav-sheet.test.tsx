@@ -65,17 +65,15 @@ describe('useHideNavSheet', () => {
       ];
     });
     const setFollow = vi.spyOn(stores.camera, 'setFollow');
-    const controller = {
-      hideNavSheet: vi.fn(),
-    } as unknown as AppController;
+    const hide = vi.spyOn(stores.navSheet, 'hide');
     renderWithApp(<HideRig />, {
       stores,
-      services: { controller, transitionDurationMs: 300 },
+      services: { transitionDurationMs: 300 },
     });
 
     callHide();
 
-    expect(controller.hideNavSheet).toHaveBeenCalledTimes(1);
+    expect(hide).toHaveBeenCalledTimes(1);
     expect(setFollow).toHaveBeenCalledTimes(1);
     expect(stores.navSheet.destinations).toEqual([]);
   });
@@ -192,16 +190,14 @@ function renderNavSheet(opts: {
 describe('NavSheet (view) — handler flows', () => {
   it('close button → hides nav sheet (orchestration via useHideNavSheet)', async () => {
     const stores = setupStores();
-    const controller = {
-      hideNavSheet: vi.fn(),
-    } as unknown as AppController;
+    const hide = vi.spyOn(stores.navSheet, 'hide');
     const user = userEvent.setup();
-    renderNavSheet({ stores, controller });
+    renderNavSheet({ stores });
 
     const closeIcon = screen.getByTestId('CloseIcon');
     await user.click(closeIcon.closest('button')!);
 
-    expect(controller.hideNavSheet).toHaveBeenCalledTimes(1);
+    expect(hide).toHaveBeenCalledTimes(1);
   });
 
   it('destination "Go!" → setDestinationNodeUid + hides', async () => {
@@ -213,16 +209,16 @@ describe('NavSheet (view) — handler flows', () => {
       stores.navSheet.resetStack(NavPageKey.DESTINATIONS);
     });
     const controller = {
-      hideNavSheet: vi.fn(),
       setDestinationNodeUid: vi.fn(),
     } as unknown as AppController;
+    const hide = vi.spyOn(stores.navSheet, 'hide');
     const user = userEvent.setup();
     renderNavSheet({ stores, controller });
 
     await user.click(screen.getByRole('button', { name: /^go!$/i }));
 
     expect(controller.setDestinationNodeUid).toHaveBeenCalledWith('abc');
-    expect(controller.hideNavSheet).toHaveBeenCalledTimes(1);
+    expect(hide).toHaveBeenCalledTimes(1);
   });
 
   it('route "Go!" → setActiveRoute + hides', async () => {
@@ -234,9 +230,9 @@ describe('NavSheet (view) — handler flows', () => {
       stores.navSheet.resetStack(NavPageKey.ROUTES);
     });
     const controller = {
-      hideNavSheet: vi.fn(),
       setActiveRoute: vi.fn(),
     } as unknown as AppController;
+    const hide = vi.spyOn(stores.navSheet, 'hide');
     const user = userEvent.setup();
     renderNavSheet({ stores, controller });
 
@@ -244,7 +240,7 @@ describe('NavSheet (view) — handler flows', () => {
 
     expect(controller.setActiveRoute).toHaveBeenCalledTimes(1);
     expect(controller.setActiveRoute).toHaveBeenCalledWith(fakeRoute);
-    expect(controller.hideNavSheet).toHaveBeenCalledTimes(1);
+    expect(hide).toHaveBeenCalledTimes(1);
   });
 
   it('"Done" on choose-on-map → sets isLoading + chains onDestinationRoutesClick(searchResult)', async () => {

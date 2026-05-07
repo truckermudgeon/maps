@@ -14,7 +14,6 @@ export type AppClient = ReturnType<
 
 export interface AppController {
   forceRePair(): void;
-  hideNavSheet(): void;
   setDestinationNodeUid(toNodeUid: string): void;
   setActiveRoute(route: Route | undefined): void;
   setActiveRouteFromNodeUids(waypoints: bigint[]): void;

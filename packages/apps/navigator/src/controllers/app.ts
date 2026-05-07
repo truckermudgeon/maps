@@ -27,11 +27,6 @@ export class AppControllerImpl implements AppController {
     clearCredentialsAndReload();
   }
 
-  hideNavSheet() {
-    console.log('hide nav sheet');
-    this.navSheetStore.showNavSheet = false;
-  }
-
   setDestinationNodeUid(toNodeUid: string) {
     void this.routeApi.previewRoutes(toNodeUid).then(
       action(([firstRoute]) => {

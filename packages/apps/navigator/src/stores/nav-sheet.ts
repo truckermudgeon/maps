@@ -139,6 +139,10 @@ export class NavSheetStoreImpl implements NavSheetStore {
     this._pageStack[0] = initial;
   }
 
+  hide(): void {
+    this.showNavSheet = false;
+  }
+
   reset(initialPage: NavPageKey = NavPageKey.CHOOSE_DESTINATION): void {
     this.resetStack(initialPage);
     this.isLoading = false;
