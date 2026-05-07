@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type { SegmentInfo } from '@truckermudgeon/navigation/types';
 import { runInAction } from 'mobx';
 import { vi } from 'vitest';
-import type { AppControllerImpl } from '../../controllers/app';
+import type { AppController } from '../../controllers/types';
 import { RouteStoreImpl } from '../../stores/route';
 import { SegmentCompleteToast } from '../SegmentCompleteToast';
 import { renderWithApp } from './_helpers/render-with-app';
@@ -25,11 +25,11 @@ function makeRouteWithSegment(
   return route;
 }
 
-function makeFakeController(): AppControllerImpl {
+function makeFakeController(): AppController {
   return {
     unpauseRouteEvents: vi.fn(),
     setActiveRoute: vi.fn(),
-  } as unknown as AppControllerImpl;
+  } as unknown as AppController;
 }
 
 describe('SegmentCompleteToast (view)', () => {

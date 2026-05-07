@@ -1,8 +1,7 @@
 import { delay } from '@truckermudgeon/base/delay';
 import { action } from 'mobx';
 import { createContext, useCallback, useContext, type ReactNode } from 'react';
-import type { AppControllerImpl } from '../controllers/app';
-import type { NavSheetController } from '../controllers/types';
+import type { AppController, NavSheetController } from '../controllers/types';
 import { useCameraStore } from '../stores/hooks/use-camera';
 import { useNavSheetStore } from '../stores/hooks/use-nav-sheet';
 import { useRouteStore } from '../stores/hooks/use-route';
@@ -17,7 +16,7 @@ import type { RouteRenderer } from './route-renderer';
  * hooks below.
  */
 export interface AppServices {
-  controller: AppControllerImpl;
+  controller: AppController;
   mapAdapter: MapAdapter;
   routeRenderer: RouteRenderer;
   navSheetController: NavSheetController;
@@ -45,7 +44,7 @@ function useServices(): AppServices {
   return services;
 }
 
-export function useAppController(): AppControllerImpl {
+export function useAppController(): AppController {
   return useServices().controller;
 }
 

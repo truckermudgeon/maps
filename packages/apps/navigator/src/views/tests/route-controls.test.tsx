@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event';
 import type { Route } from '@truckermudgeon/navigation/types';
 import { runInAction } from 'mobx';
 import { vi } from 'vitest';
-import type { AppControllerImpl } from '../../controllers/app';
+import type { AppController } from '../../controllers/types';
 import { CameraMode, CameraStoreImpl } from '../../stores/camera';
 import { NavSheetStoreImpl } from '../../stores/nav-sheet';
 import { RouteStoreImpl } from '../../stores/route';
@@ -115,7 +115,7 @@ describe('RouteControls (view)', () => {
   it('End Route → controller.setActiveRoute(undefined)', async () => {
     const controller = {
       setActiveRoute: vi.fn(),
-    } as unknown as AppControllerImpl;
+    } as unknown as AppController;
     const user = userEvent.setup();
     renderWithApp(<RouteControls onExpandedToggle={vi.fn()} />, {
       stores: { route: makeRouteStoreWith(makeRouteWithSegments(1)) },

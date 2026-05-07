@@ -7,8 +7,9 @@ import type { TelemetryService } from '../services/telemetry';
 import type { TelemetryPlayer } from '../services/telemetry-player';
 import type { CameraStore, NavSheetStore, RouteStore } from '../stores/types';
 import { clearCredentialsAndReload } from '../util/browser';
+import type { AppController } from './types';
 
-export class AppControllerImpl {
+export class AppControllerImpl implements AppController {
   constructor(
     private readonly camera: CameraStore,
     private readonly route: RouteStore,

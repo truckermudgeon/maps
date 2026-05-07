@@ -5,8 +5,10 @@ import {
 } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { vi } from 'vitest';
-import type { AppControllerImpl } from '../../../controllers/app';
-import type { NavSheetController } from '../../../controllers/types';
+import type {
+  AppController,
+  NavSheetController,
+} from '../../../controllers/types';
 import { ServicesProvider, type AppServices } from '../../../services/context';
 import type { MapAdapter } from '../../../services/map-adapter';
 import type { RouteRenderer } from '../../../services/route-renderer';
@@ -44,7 +46,7 @@ const defaultBreakpoints: Breakpoints = {
  * a new one, add it here. Tests override individual methods (or the
  * whole service) via `services.{controller,mapAdapter,...}`.
  */
-function defaultFakeController(): AppControllerImpl {
+function defaultFakeController(): AppController {
   return {
     hideNavSheet: vi.fn(),
     setDestinationNodeUid: vi.fn(),
@@ -53,7 +55,7 @@ function defaultFakeController(): AppControllerImpl {
     synthesizeSearchResult: vi.fn().mockResolvedValue({ nodeUid: 'fake' }),
     unpauseRouteEvents: vi.fn(),
     forceRePair: vi.fn(),
-  } as unknown as AppControllerImpl;
+  } as unknown as AppController;
 }
 
 function defaultFakeMapAdapter(): MapAdapter {

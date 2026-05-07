@@ -8,9 +8,11 @@ import type {
 } from '@truckermudgeon/navigation/types';
 import { runInAction } from 'mobx';
 import { vi } from 'vitest';
-import type { AppControllerImpl } from '../../controllers/app';
 import { NavSheetControllerImpl } from '../../controllers/nav-sheet';
-import type { NavSheetController } from '../../controllers/types';
+import type {
+  AppController,
+  NavSheetController,
+} from '../../controllers/types';
 import { useHideNavSheet } from '../../services/context';
 import type { MapAdapter } from '../../services/map-adapter';
 import type { RouteApi } from '../../services/route-api';
@@ -65,7 +67,7 @@ describe('useHideNavSheet', () => {
     const setFollow = vi.spyOn(stores.camera, 'setFollow');
     const controller = {
       hideNavSheet: vi.fn(),
-    } as unknown as AppControllerImpl;
+    } as unknown as AppController;
     renderWithApp(<HideRig />, {
       stores,
       services: { controller, transitionDurationMs: 300 },
@@ -160,7 +162,7 @@ function makeFakeRoute(): RouteWithSummary {
 
 function renderNavSheet(opts: {
   stores: ReturnType<typeof setupStores>;
-  controller?: AppControllerImpl;
+  controller?: AppController;
   navSheetControllerOverride?: Partial<NavSheetController>;
   transitionDurationMs?: number;
 }) {
@@ -192,7 +194,7 @@ describe('NavSheet (view) — handler flows', () => {
     const stores = setupStores();
     const controller = {
       hideNavSheet: vi.fn(),
-    } as unknown as AppControllerImpl;
+    } as unknown as AppController;
     const user = userEvent.setup();
     renderNavSheet({ stores, controller });
 
@@ -213,7 +215,7 @@ describe('NavSheet (view) — handler flows', () => {
     const controller = {
       hideNavSheet: vi.fn(),
       setDestinationNodeUid: vi.fn(),
-    } as unknown as AppControllerImpl;
+    } as unknown as AppController;
     const user = userEvent.setup();
     renderNavSheet({ stores, controller });
 
@@ -234,7 +236,7 @@ describe('NavSheet (view) — handler flows', () => {
     const controller = {
       hideNavSheet: vi.fn(),
       setActiveRoute: vi.fn(),
-    } as unknown as AppControllerImpl;
+    } as unknown as AppController;
     const user = userEvent.setup();
     renderNavSheet({ stores, controller });
 
@@ -253,7 +255,7 @@ describe('NavSheet (view) — handler flows', () => {
     const synthResult = makeFakeDestination();
     const controller = {
       synthesizeSearchResult: vi.fn().mockResolvedValue(synthResult),
-    } as unknown as AppControllerImpl;
+    } as unknown as AppController;
     const onDestinationRoutesClick = vi.fn();
     const user = userEvent.setup();
     renderNavSheet({

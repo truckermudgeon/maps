@@ -1,12 +1,27 @@
 import type { createTRPCProxyClient } from '@trpc/client';
 import type { PoiType } from '@truckermudgeon/navigation/constants';
-import type { AppRouter, SearchResult } from '@truckermudgeon/navigation/types';
+import type {
+  AppRouter,
+  Route,
+  SearchResult,
+} from '@truckermudgeon/navigation/types';
 
 export type { NavSheetStore } from '../stores/types';
 
 export type AppClient = ReturnType<
   typeof createTRPCProxyClient<AppRouter>
 >['app'];
+
+export interface AppController {
+  forceRePair(): void;
+  hideNavSheet(): void;
+  setDestinationNodeUid(toNodeUid: string): void;
+  setActiveRoute(route: Route | undefined): void;
+  setActiveRouteFromNodeUids(waypoints: bigint[]): void;
+  startListening(): void;
+  synthesizeSearchResult(): Promise<SearchResult>;
+  unpauseRouteEvents(): void;
+}
 
 export interface NavSheetController {
   search(query: string): Promise<SearchResult[]>;
