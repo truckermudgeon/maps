@@ -1,10 +1,8 @@
 import polyline from '@mapbox/polyline';
-import { assertExists } from '@truckermudgeon/base/assert';
 import type { Route, RouteStep } from '@truckermudgeon/navigation/types';
 import bearing from '@turf/bearing';
 import { featureCollection, lineString, point } from '@turf/helpers';
 import nearestPointOnLine from '@turf/nearest-point-on-line';
-import type { GeoJSONSource } from 'maplibre-gl';
 import { lineGradientExpression } from '../components/RoutesStyle';
 import type { RouteStore } from '../stores/types';
 import { clamp } from '../util/clamp';
@@ -16,11 +14,21 @@ const emptyFeatureCollection: GeoJSON.FeatureCollection = {
   features: [],
 } as const;
 
+const ACTIVE_ROUTE_LAYERS = [
+  'activeRouteLayer',
+  'activeRouteLayer-case',
+  'activeRouteIconsLayer',
+  'activeRouteStartLayer',
+  'activeRouteStepLayer',
+  'activeRouteStepLayer-case',
+] as const;
+
 /**
  * Mutates map sources and paint properties to draw the active route,
  * the route preview list, the active step's progress gradient, and the
  * step-arrow on demand. Imperative API; callers fire render*() methods
- * when they decide to.
+ * when they decide to. All map mutations route through MapAdapter, so
+ * this file does not import maplibre.
  */
 export class RouteRenderer {
   private lastRenderedActiveStepLine:
@@ -30,27 +38,19 @@ export class RouteRenderer {
   constructor(private readonly mapAdapter: MapAdapter) {}
 
   renderActiveRoute(maybeRoute: Route | undefined): void {
-    const map = this.mapAdapter.getMap();
-    if (!map) {
-      // TODO what if map becomes defined after onData fires?
+    if (!this.mapAdapter.isMapLoaded) {
       return;
     }
 
-    const stepSource = assertExists(
-      map.getSource<GeoJSONSource>('activeRouteStep'),
-    );
-    stepSource.setData(emptyFeatureCollection);
+    this.mapAdapter.setSourceData('activeRouteStep', emptyFeatureCollection);
     this.lastRenderedActiveStepLine = undefined;
 
-    const routeSource = assertExists(
-      map.getSource<GeoJSONSource>('activeRoute'),
-    );
     if (!maybeRoute) {
-      routeSource.setData(emptyFeatureCollection);
+      this.mapAdapter.setSourceData('activeRoute', emptyFeatureCollection);
       return;
     }
 
-    routeSource.setData(toRouteFeatures(maybeRoute));
+    this.mapAdapter.setSourceData('activeRoute', toRouteFeatures(maybeRoute));
     this.toggleActiveRouteLayers(true);
   }
 
@@ -58,22 +58,17 @@ export class RouteRenderer {
     maybeRoute: Route | undefined,
     options: { highlight: boolean; index: number; animate: boolean },
   ): void {
-    const map = this.mapAdapter.getMap();
-    if (!map) {
-      // TODO what if map becomes defined after onData fires?
+    if (!this.mapAdapter.isMapLoaded) {
       return;
     }
 
-    console.log('rendering route preview');
-    const routeSource = assertExists(
-      map.getSource<GeoJSONSource>(`previewRoute-${options.index}`),
-    );
+    const sourceId = `previewRoute-${options.index}`;
     if (!maybeRoute) {
-      routeSource.setData(emptyFeatureCollection);
+      this.mapAdapter.setSourceData(sourceId, emptyFeatureCollection);
       return;
     }
 
-    routeSource.setData(toRouteFeatures(maybeRoute));
+    this.mapAdapter.setSourceData(sourceId, toRouteFeatures(maybeRoute));
     if (options.animate) {
       // The line-gradient is animated via rAF so callers don't need to
       // think about animation pacing — just pass animate:true. This is
@@ -86,28 +81,26 @@ export class RouteRenderer {
         }
         const t = (timestamp - start) / durationMs;
         const progress = Math.min(t, 1);
-        map
-          .getMap()
-          .setPaintProperty(
-            `previewRouteLayer-${options.index}`,
-            'line-gradient',
-            lineGradientExpression({
-              lineType: options.highlight
-                ? 'animatedPrimaryLine'
-                : 'animatedSecondaryLine',
-              progress,
-            }),
-          )
-          .setPaintProperty(
-            `previewRouteLayer-${options.index}-case`,
-            'line-gradient',
-            lineGradientExpression({
-              lineType: options.highlight
-                ? 'animatedPrimaryCase'
-                : 'animatedSecondaryCase',
-              progress,
-            }),
-          );
+        this.mapAdapter.setLayerPaintProperty(
+          `previewRouteLayer-${options.index}`,
+          'line-gradient',
+          lineGradientExpression({
+            lineType: options.highlight
+              ? 'animatedPrimaryLine'
+              : 'animatedSecondaryLine',
+            progress,
+          }),
+        );
+        this.mapAdapter.setLayerPaintProperty(
+          `previewRouteLayer-${options.index}-case`,
+          'line-gradient',
+          lineGradientExpression({
+            lineType: options.highlight
+              ? 'animatedPrimaryCase'
+              : 'animatedSecondaryCase',
+            progress,
+          }),
+        );
         if (progress < 1) {
           requestAnimationFrame(animate);
         }
@@ -119,9 +112,8 @@ export class RouteRenderer {
   }
 
   renderActiveRouteProgress(store: RouteStore): void {
-    const map = this.mapAdapter.getMap();
     if (
-      !map ||
+      !this.mapAdapter.isMapLoaded ||
       !store.activeRoute ||
       !store.activeRouteIndex ||
       !store.activeStepLine
@@ -149,33 +141,24 @@ export class RouteRenderer {
     const distanceAlongActiveStepLine = snapPoint.properties.lineDistance;
     distanceTraveled += distanceAlongActiveStepLine;
 
-    const stepSource = assertExists(
-      map.getSource<GeoJSONSource>('activeRouteStep'),
-    );
     if (this.lastRenderedActiveStepLine !== store.activeStepLine.line) {
-      console.log('rendering step line');
-      stepSource.setData(store.activeStepLine.line);
+      this.mapAdapter.setSourceData(
+        'activeRouteStep',
+        store.activeStepLine.line,
+      );
     }
     const stepProgress =
       distanceAlongActiveStepLine / store.activeStepLine.length;
-    map
-      .getMap()
-      .setPaintProperty(
-        `activeRouteStepLayer-case`,
-        'line-gradient',
-        lineGradientExpression({
-          lineType: 'case',
-          progress: stepProgress,
-        }),
-      )
-      .setPaintProperty(
-        'activeRouteStepLayer',
-        'line-gradient',
-        lineGradientExpression({
-          lineType: 'line',
-          progress: stepProgress,
-        }),
-      );
+    this.mapAdapter.setLayerPaintProperty(
+      'activeRouteStepLayer-case',
+      'line-gradient',
+      lineGradientExpression({ lineType: 'case', progress: stepProgress }),
+    );
+    this.mapAdapter.setLayerPaintProperty(
+      'activeRouteStepLayer',
+      'line-gradient',
+      lineGradientExpression({ lineType: 'line', progress: stepProgress }),
+    );
 
     this.lastRenderedActiveStepLine = store.activeStepLine.line;
 
@@ -184,32 +167,25 @@ export class RouteRenderer {
       0,
       1,
     );
-    map
-      .getMap()
-      .setPaintProperty(
-        'activeRouteLayer-case',
-        'line-gradient',
-        lineGradientExpression({ lineType: 'case', progress }),
-      )
-      .setPaintProperty(
-        'activeRouteLayer',
-        'line-gradient',
-        lineGradientExpression({ lineType: 'line', progress }),
-      );
+    this.mapAdapter.setLayerPaintProperty(
+      'activeRouteLayer-case',
+      'line-gradient',
+      lineGradientExpression({ lineType: 'case', progress }),
+    );
+    this.mapAdapter.setLayerPaintProperty(
+      'activeRouteLayer',
+      'line-gradient',
+      lineGradientExpression({ lineType: 'line', progress }),
+    );
   }
 
   drawStepArrow(step: RouteStep | undefined): void {
-    const map = this.mapAdapter.getMap();
-    if (!map) {
-      // TODO what if map becomes defined after onData fires?
+    if (!this.mapAdapter.isMapLoaded) {
       return;
     }
 
-    const arrowSource = assertExists(
-      map.getSource<GeoJSONSource>('previewStepArrow'),
-    );
     if (!step?.arrowPoints || step.arrowPoints < 2) {
-      arrowSource.setData(emptyFeatureCollection);
+      this.mapAdapter.setSourceData('previewStepArrow', emptyFeatureCollection);
       return;
     }
 
@@ -218,28 +194,18 @@ export class RouteRenderer {
     const bearingDegrees = bearing(points.at(-2)!, points.at(-1)!);
     const arrowHead = point(points.at(-1)!, { bearing: bearingDegrees });
 
-    arrowSource.setData(
+    this.mapAdapter.setSourceData(
+      'previewStepArrow',
       featureCollection<GeoJSON.LineString | GeoJSON.Point>([line, arrowHead]),
     );
   }
 
   private toggleActiveRouteLayers(visible: boolean): void {
-    const map = this.mapAdapter.getMap();
-    if (!map) {
-      return;
-    }
-
     // note: setting paint property by getting a reference to the style layer
     // with react-map-gl apis, then calling setpaintproperty on the style layer,
     // does *not* work.
-    const visibility = visible ? 'visible' : 'none';
-    map
-      .getMap()
-      .setLayoutProperty('activeRouteLayer', 'visibility', visibility)
-      .setLayoutProperty('activeRouteLayer-case', 'visibility', visibility)
-      .setLayoutProperty('activeRouteIconsLayer', 'visibility', visibility)
-      .setLayoutProperty('activeRouteStartLayer', 'visibility', visibility)
-      .setLayoutProperty('activeRouteStepLayer', 'visibility', visibility)
-      .setLayoutProperty('activeRouteStepLayer-case', 'visibility', visibility);
+    for (const layerId of ACTIVE_ROUTE_LAYERS) {
+      this.mapAdapter.setLayerVisibility(layerId, visible);
+    }
   }
 }

@@ -1,5 +1,6 @@
 import { center, getExtent } from '@truckermudgeon/base/geom';
 import { Preconditions } from '@truckermudgeon/base/precon';
+import type { GeoJSONSource } from 'maplibre-gl';
 import { Marker } from 'maplibre-gl';
 import { action, makeObservable, observable } from 'mobx';
 import type { MapRef } from 'react-map-gl/maplibre';
@@ -61,8 +62,41 @@ export class MapAdapter {
     this._isMapLoaded = true;
   }
 
-  getMap(): MapRef | undefined {
-    return this.map;
+  /**
+   * Replaces the data on a registered GeoJSON source. No-op if the
+   * map isn't loaded or the source doesn't exist yet.
+   */
+  setSourceData(
+    sourceId: string,
+    data: GeoJSON.Feature | GeoJSON.FeatureCollection,
+  ): void {
+    const source = this.map?.getSource<GeoJSONSource>(sourceId);
+    source?.setData(data);
+  }
+
+  /**
+   * Sets a paint property on a layer. No-op if the map isn't loaded.
+   * Used by RouteRenderer to update line-gradient stops in response
+   * to truck progress.
+   */
+  setLayerPaintProperty(layerId: string, prop: string, value: unknown): void {
+    if (!this.map) {
+      return;
+    }
+    this.map.getMap().setPaintProperty(layerId, prop, value);
+  }
+
+  /**
+   * Toggles layer visibility via the underlying `visibility` layout
+   * property. No-op if the map isn't loaded.
+   */
+  setLayerVisibility(layerId: string, visible: boolean): void {
+    if (!this.map) {
+      return;
+    }
+    this.map
+      .getMap()
+      .setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none');
   }
 
   setPadding(padding: Padding): void {
