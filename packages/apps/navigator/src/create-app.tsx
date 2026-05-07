@@ -130,10 +130,7 @@ export function createApp({
   setupDevtools({ rootStore });
   when(
     () => session.isAuthenticated,
-    () => {
-      console.log('isAuthenticated signal received.');
-      controller.startListening();
-    },
+    () => controller.startListening(),
   );
 
   const onMapLoad = (map: MapRef, marker: MapLibreGLMarker) => {
