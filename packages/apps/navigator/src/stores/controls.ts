@@ -1,12 +1,12 @@
 import { makeAutoObservable } from 'mobx';
+import { CameraMode } from '../controllers/constants';
 import type {
   CameraStore,
   ControlsStore,
   NavSheetStore,
   RouteStore,
   SessionStore,
-} from '../stores/types';
-import { CameraMode } from './constants';
+} from './types';
 
 export class ControlsStoreImpl implements ControlsStore {
   bearing = 0;

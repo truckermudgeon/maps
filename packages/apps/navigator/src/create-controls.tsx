@@ -7,7 +7,7 @@ import { Compass } from './components/Compass';
 import { Fab } from './components/Fab';
 import { HudStack } from './components/HudStack';
 import { SpeedLimit } from './components/SpeedLimit';
-import { ControlsStoreImpl } from './controllers/controls';
+import { ControlsStoreImpl } from './stores/controls';
 import type {
   CameraStore,
   ControlsStore,
