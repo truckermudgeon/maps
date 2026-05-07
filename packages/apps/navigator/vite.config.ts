@@ -30,6 +30,7 @@ export default defineConfig(() => {
       globals: true,
       environment: 'jsdom',
       reporters: ['verbose'],
+      setupFiles: ['./vitest.setup.ts'],
     },
   };
 });
