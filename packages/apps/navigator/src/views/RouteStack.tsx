@@ -6,8 +6,6 @@ import { SegmentCompleteToast } from './SegmentCompleteToast';
 
 export const RouteStack = (props: {
   routeControlsCallbacks: RouteControlsCallbacks;
-  onSegmentContinue: () => void;
-  onSegmentEnd: () => void;
 }) => (
   <RouteStackComponent
     Guidance={Directions}
@@ -17,11 +15,6 @@ export const RouteStack = (props: {
         onExpandedToggle={onExpandedToggle}
       />
     )}
-    SegmentCompleteToast={() => (
-      <SegmentCompleteToast
-        onContinue={props.onSegmentContinue}
-        onEnd={props.onSegmentEnd}
-      />
-    )}
+    SegmentCompleteToast={SegmentCompleteToast}
   />
 );

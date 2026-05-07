@@ -3,7 +3,7 @@ import { Box } from '@mui/joy';
 import { Grid, Slide, useMediaQuery, useTheme } from '@mui/material';
 import type { Marker as MapLibreGLMarker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { action, computed, when } from 'mobx';
+import { computed, when } from 'mobx';
 import { observer } from 'mobx-react-lite';
 import type { ReactElement } from 'react';
 import type { MapRef } from 'react-map-gl/maplibre';
@@ -26,6 +26,7 @@ import { setupDevtools } from './dev-tools';
 import { wireAppReactions } from './reactions';
 import { applyThemeReaction } from './reactions/theme';
 import { ChooseOnMapService } from './services/choose-on-map';
+import { ServicesProvider } from './services/context';
 import { MapAdapter } from './services/map-adapter';
 import { RouteApiImpl } from './services/route-api';
 import { RouteRenderer } from './services/route-renderer';
@@ -185,30 +186,36 @@ export function createApp({
     />
   );
   const _RouteStack = () => (
-    <RouteStack
-      routeControlsCallbacks={routeControlsCallbacks}
-      onSegmentContinue={action(() => controller.unpauseRouteEvents())}
-      onSegmentEnd={action(() => {
-        controller.unpauseRouteEvents();
-        controller.setActiveRoute(undefined);
-      })}
-    />
+    <RouteStack routeControlsCallbacks={routeControlsCallbacks} />
   );
   const _WaitingForTelemetry = () => (
     <WaitingForTelemetry onRePair={() => controller.forceRePair()} />
   );
 
+  // Hoisted out of the App() render fn so the context value reference
+  // is stable — otherwise every App render produces a new services
+  // object and forces every `useAppController` consumer to re-render.
+  const services = {
+    controller,
+    mapAdapter,
+    routeRenderer,
+    navSheetController,
+    transitionDurationMs,
+  };
+
   return {
     App: () => (
       <RootStoreProvider store={rootStore}>
-        <App
-          transitionDurationMs={transitionDurationMs}
-          SlippyMap={_SlippyMap}
-          NavSheet={_NavSheet}
-          RouteStack={_RouteStack}
-          Controls={_Controls}
-          WaitingForTelemetry={_WaitingForTelemetry}
-        />
+        <ServicesProvider services={services}>
+          <App
+            transitionDurationMs={transitionDurationMs}
+            SlippyMap={_SlippyMap}
+            NavSheet={_NavSheet}
+            RouteStack={_RouteStack}
+            Controls={_Controls}
+            WaitingForTelemetry={_WaitingForTelemetry}
+          />
+        </ServicesProvider>
       </RootStoreProvider>
     ),
     store: session,
