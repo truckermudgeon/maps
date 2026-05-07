@@ -3,6 +3,7 @@ import { Preconditions } from '@truckermudgeon/base/precon';
 import { Marker } from 'maplibre-gl';
 import { action, makeObservable, observable } from 'mobx';
 import type { MapRef } from 'react-map-gl/maplibre';
+import { calculateDelta, toCameraOptions } from '../util/camera-options';
 
 interface Padding {
   left: number;
@@ -33,6 +34,15 @@ export class MapAdapter {
     | undefined;
   private padding: Padding = { left: 0, right: 0, top: 0, bottom: 0 };
   private offset: [number, number] = [0, 0];
+  // Last pose set on the player marker. animateFollowCamera reads this
+  // as the interpolation start; setPlayerPose keeps it fresh so a
+  // FREE -> FOLLOW transition interpolates from the right pose.
+  private lastPlayerPose:
+    | { position: [number, number]; bearing: number }
+    | undefined;
+  // Reused across follow-camera frames to keep the per-frame easing
+  // callback allocation-free.
+  private readonly playerPoseBuffer: [number, number] = [0, 0];
 
   constructor() {
     makeObservable<this, '_isMapLoaded'>(this, {
@@ -55,18 +65,6 @@ export class MapAdapter {
     return this.map;
   }
 
-  getPlayerMarker(): Marker | undefined {
-    return this.playerMarker;
-  }
-
-  getPadding(): Padding {
-    return this.padding;
-  }
-
-  getOffset(): [number, number] {
-    return this.offset;
-  }
-
   setPadding(padding: Padding): void {
     this.padding = padding;
     if (this.map) {
@@ -79,6 +77,71 @@ export class MapAdapter {
     if (this.map) {
       this.map.easeTo({ offset });
     }
+  }
+
+  setPlayerPose(position: [number, number], bearing: number): void {
+    if (!this.playerMarker) {
+      return;
+    }
+    this.playerMarker.setLngLat(position);
+    this.playerMarker.setRotation(bearing);
+    this.lastPlayerPose = {
+      position: [position[0], position[1]],
+      bearing,
+    };
+  }
+
+  /**
+   * Clears the cached last-pose so the next animateFollowCamera call
+   * snaps instead of interpolating. Call this when the playback loop
+   * stops, so a later restart doesn't tween from a stale pose.
+   */
+  clearLastPlayerPose(): void {
+    this.lastPlayerPose = undefined;
+  }
+
+  /**
+   * Eases the camera into a follow-cam pose at the given player
+   * `position` / `bearing` while interpolating the player marker
+   * from its last-set pose on each animation frame. On the first
+   * call (or after `clearLastPlayerPose`), snaps without animating.
+   */
+  animateFollowCamera(opts: {
+    position: [number, number];
+    bearing: number;
+    speedMph: number;
+    isNorthLock: boolean;
+    durationMs: number;
+  }): void {
+    if (!this.map) {
+      return;
+    }
+    const prev = this.lastPlayerPose;
+    if (!prev) {
+      this.map.setCenter(opts.position);
+      this.setPlayerPose(opts.position, opts.bearing);
+      return;
+    }
+    const bearingDelta = calculateDelta(prev.bearing, opts.bearing);
+    this.map.easeTo({
+      ...toCameraOptions(opts.position, opts.bearing, opts.speedMph, {
+        isNorthLock: opts.isNorthLock,
+      }),
+      duration: opts.durationMs,
+      padding: this.padding,
+      offset: this.offset,
+      easing: t => {
+        this.playerPoseBuffer[0] =
+          prev.position[0] + t * (opts.position[0] - prev.position[0]);
+        this.playerPoseBuffer[1] =
+          prev.position[1] + t * (opts.position[1] - prev.position[1]);
+        this.setPlayerPose(
+          this.playerPoseBuffer,
+          prev.bearing + t * bearingDelta,
+        );
+        return t;
+      },
+    });
   }
 
   addMapDragEndListener(
