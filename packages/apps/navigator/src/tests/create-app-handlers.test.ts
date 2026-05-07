@@ -11,7 +11,6 @@ import type { AppControllerImpl } from '../controllers/app';
 import { BearingMode, CameraMode } from '../controllers/constants';
 import type {
   AppClient,
-  AppStore,
   NavSheetController,
   NavSheetStore,
 } from '../controllers/types';
@@ -22,6 +21,7 @@ import {
   buildRouteControlsHandlers,
 } from '../create-app-handlers';
 import type { MapPresenter } from '../services/map-presenter';
+import type { AppStore } from './util/types';
 
 function makeStore(overrides: Partial<AppStore> = {}): AppStore {
   return {
