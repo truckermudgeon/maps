@@ -6,8 +6,8 @@ import { runInAction } from 'mobx';
 import { vi } from 'vitest';
 import type { AppControllerImpl } from '../../controllers/app';
 import { RouteStoreImpl } from '../../stores/route';
-import { SegmentCompleteToast } from '../../views/SegmentCompleteToast';
-import { renderWithApp } from '../util/render-with-app';
+import { SegmentCompleteToast } from '../SegmentCompleteToast';
+import { renderWithApp } from './_helpers/render-with-app';
 
 const segmentArrived: SegmentInfo = {
   place: 'Sacramento',

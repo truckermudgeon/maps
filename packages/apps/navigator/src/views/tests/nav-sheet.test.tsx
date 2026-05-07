@@ -21,8 +21,8 @@ import { CameraStoreImpl } from '../../stores/camera';
 import { NavSheetStoreImpl } from '../../stores/nav-sheet';
 import { RouteStoreImpl } from '../../stores/route';
 import { SessionStoreImpl } from '../../stores/session';
-import { NavSheet } from '../../views/NavSheet';
-import { renderWithApp } from '../util/render-with-app';
+import { NavSheet } from '../NavSheet';
+import { renderWithApp } from './_helpers/render-with-app';
 
 const fakeRouteApi = {} as RouteApi;
 const fakeSearchApi = {} as SearchApi;

@@ -7,14 +7,14 @@ import type {
 import type { IReactionDisposer } from 'mobx';
 import { observable, runInAction } from 'mobx';
 import { vi } from 'vitest';
-import { CameraMode, NavPageKey } from '../controllers/constants';
-import { wireAppReactions } from '../reactions';
-import type { ChooseOnMapService } from '../services/choose-on-map';
-import type { MapAdapter } from '../services/map-adapter';
-import type { RouteRenderer } from '../services/route-renderer';
-import { NavSheetStoreImpl } from '../stores/nav-sheet';
-import type { MapPaddingStore } from '../stores/types';
-import type { AppStore } from './util/types';
+import { wireAppReactions } from '..';
+import { CameraMode, NavPageKey } from '../../controllers/constants';
+import type { ChooseOnMapService } from '../../services/choose-on-map';
+import type { MapAdapter } from '../../services/map-adapter';
+import type { RouteRenderer } from '../../services/route-renderer';
+import { NavSheetStoreImpl } from '../../stores/nav-sheet';
+import type { MapPaddingStore } from '../../stores/types';
+import type { AppStore } from './types';
 
 function makeObservableStore(overrides: Partial<AppStore> = {}): AppStore {
   return observable<AppStore>(

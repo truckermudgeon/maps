@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateDelta, toCameraOptions } from '../../util/camera-options';
+import { calculateDelta, toCameraOptions } from '../camera-options';
 
 describe('calculateDelta', () => {
   // Captures actual current behavior. The function is called with

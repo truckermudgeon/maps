@@ -9,8 +9,8 @@ import { NavSheetStoreImpl } from '../../stores/nav-sheet';
 import { RouteStoreImpl } from '../../stores/route';
 import { SessionStoreImpl } from '../../stores/session';
 import { requestWakeLock } from '../../util/browser';
-import { Controls } from '../../views/Controls';
-import { renderWithApp } from '../util/render-with-app';
+import { Controls } from '../Controls';
+import { renderWithApp } from './_helpers/render-with-app';
 
 vi.mock('../../util/browser', () => ({
   requestWakeLock: vi.fn(),

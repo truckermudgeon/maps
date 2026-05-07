@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clamp } from '../../util/clamp';
+import { clamp } from '../clamp';
 
 describe('clamp', () => {
   it.each([

@@ -1,7 +1,7 @@
 import { runInAction } from 'mobx';
 import { describe, expect, it } from 'vitest';
-import { SessionStoreImpl } from '../../stores/session';
-import type { TelemetryStatus } from '../../stores/types';
+import { SessionStoreImpl } from '../session';
+import type { TelemetryStatus } from '../types';
 
 describe('SessionStoreImpl', () => {
   it('seeds map from constructor argument', () => {

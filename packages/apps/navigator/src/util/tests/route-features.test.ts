@@ -1,7 +1,7 @@
 import polyline from '@mapbox/polyline';
 import type { RouteStep, StepManeuver } from '@truckermudgeon/navigation/types';
 import bearing from '@turf/bearing';
-import { bearingAfterStepManeuver } from '../util/route-features';
+import { bearingAfterStepManeuver } from '../route-features';
 
 const stubStep = (overrides: Partial<RouteStep>): RouteStep => ({
   maneuver: {} as StepManeuver,

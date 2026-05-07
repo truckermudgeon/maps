@@ -2,11 +2,8 @@ import type { RouteWithSummary } from '@truckermudgeon/navigation/types';
 import {
   defaultImperialOptions,
   defaultMetricOptions,
-} from '../components/text';
-import {
-  sortedRoutePreviewIndices,
-  toRouteSummary,
-} from '../util/route-display';
+} from '../../components/text';
+import { sortedRoutePreviewIndices, toRouteSummary } from '../route-display';
 
 const stubRoute = (id: string): RouteWithSummary =>
   ({ id }) as RouteWithSummary;

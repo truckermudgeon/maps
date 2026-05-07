@@ -1,4 +1,4 @@
-import { bboxesToCornerPairs, bboxToCornerPair } from '../util/route-bounds';
+import { bboxesToCornerPairs, bboxToCornerPair } from '../route-bounds';
 
 describe('bboxToCornerPair', () => {
   it.each([

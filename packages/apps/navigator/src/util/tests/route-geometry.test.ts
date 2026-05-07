@@ -1,6 +1,6 @@
 import type { Route, RouteStep } from '@truckermudgeon/navigation/types';
 import { describe, expect, it } from 'vitest';
-import { getNextStep, routeSummaryReducer } from '../../util/route-geometry';
+import { getNextStep, routeSummaryReducer } from '../route-geometry';
 
 function step(overrides: Partial<RouteStep> = {}): RouteStep {
   return {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BearingMode, CameraMode } from '../../controllers/constants';
-import { CameraStoreImpl } from '../../stores/camera';
+import { CameraStoreImpl } from '../camera';
 
 describe('CameraStoreImpl', () => {
   it('defaults to FOLLOW + MATCH_MAP', () => {

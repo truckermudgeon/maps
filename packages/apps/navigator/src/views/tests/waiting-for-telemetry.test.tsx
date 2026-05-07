@@ -5,8 +5,8 @@ import { runInAction } from 'mobx';
 import { vi } from 'vitest';
 import type { AppControllerImpl } from '../../controllers/app';
 import { SessionStoreImpl } from '../../stores/session';
-import { WaitingForTelemetry } from '../../views/WaitingForTelemetry';
-import { renderWithApp } from '../util/render-with-app';
+import { WaitingForTelemetry } from '../WaitingForTelemetry';
+import { renderWithApp } from './_helpers/render-with-app';
 
 function makeOrphanedSession(): SessionStoreImpl {
   const session = new SessionStoreImpl('usa');

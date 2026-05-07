@@ -6,7 +6,7 @@ import type {
 } from '@truckermudgeon/navigation/types';
 import { reaction, runInAction } from 'mobx';
 import { describe, expect, it } from 'vitest';
-import { RouteStoreImpl } from '../../stores/route';
+import { RouteStoreImpl } from '../route';
 
 function step(overrides: Partial<RouteStep> = {}): RouteStep {
   return {
