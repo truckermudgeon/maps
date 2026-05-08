@@ -12,6 +12,7 @@ import * as footprints from './commands/footprints';
 import * as graph from './commands/graph';
 import * as map from './commands/map';
 import * as prefabCurves from './commands/prefab-curves';
+import * as roundabouts from './commands/roundabouts';
 import * as search from './commands/search';
 import * as spritesheet from './commands/spritesheet';
 
@@ -28,6 +29,7 @@ async function main() {
     .command(achievements)
     .command(spritesheet)
     .command(graph)
+    .command(roundabouts)
     .command(search)
     .demandCommand()
     .check(argv => {
