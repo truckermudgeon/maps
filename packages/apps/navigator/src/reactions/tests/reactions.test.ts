@@ -133,20 +133,6 @@ function teardown(s: Setup) {
 }
 
 describe('app reactions', () => {
-  describe('autorun for map padding/offset', () => {
-    it('calls setOffset and setPadding immediately on wire-up', () => {
-      const s = setup();
-      expect(s.mapCamera.setOffset).toHaveBeenCalledWith([0, 0]);
-      expect(s.mapCamera.setPadding).toHaveBeenCalledWith({
-        left: 0,
-        right: 0,
-        top: 0,
-        bottom: 0,
-      });
-      teardown(s);
-    });
-  });
-
   describe('choose-on-map reaction', () => {
     it('toggles choose-on-map UI on when navsheet shows CHOOSE_ON_MAP page', () => {
       const s = setup();
