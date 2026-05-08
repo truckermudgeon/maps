@@ -16,7 +16,7 @@ import type { NavSheetController, NavSheetStore } from './types';
 /**
  * Coordinates the cross-domain or async-IO flows for the nav sheet —
  * search, page transitions involving tRPC calls, back-navigation
- * cleanup. Pure state mutations live as actions on NavSheetStore.
+ * cleanup.
  */
 export class NavSheetControllerImpl implements NavSheetController {
   constructor(
