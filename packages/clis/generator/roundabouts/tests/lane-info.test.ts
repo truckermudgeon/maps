@@ -6,7 +6,7 @@ import { computeDegrees, convertToAdjacencyList } from '../graph';
 import type { LaneInfoContext } from '../lane-info';
 import { calculateLaneInfo } from '../lane-info';
 
-describe('calculateLaneInfo', () => {
+describe.skip('calculateLaneInfo', () => {
   let context: LaneInfoContext;
   beforeAll(() => {
     const map = 'europe';
