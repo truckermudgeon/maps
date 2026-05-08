@@ -31,10 +31,7 @@ export class MapHandle {
   onMapLoad(map: MapRef, player: Marker): void {
     this.map = map;
     this.playerMarker = player;
-    const sub = map.on('idle', () => {
-      sub.unsubscribe();
-      this.markReady();
-    });
+    void map.once('idle', () => this.markReady());
   }
 
   private markReady(): void {
