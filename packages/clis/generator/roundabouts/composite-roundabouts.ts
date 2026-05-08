@@ -12,7 +12,7 @@ import {
 } from '@truckermudgeon/map/projections';
 import type {
   CompanyItem,
-  FerryItem,
+  Ferry,
   Neighbors,
   RoundaboutDesc,
 } from '@truckermudgeon/map/types';
@@ -304,7 +304,7 @@ export function filterCycles(
   const results: string[][] = [];
 
   // TODO precalc this lookup. And consider merging Ferry & FerryItem types.
-  const ferriesByUid = new Map<bigint, FerryItem>(
+  const ferriesByUid = new Map<bigint, Ferry & { type: ItemType.Ferry }>(
     tsMapData.ferries
       .values()
       .map(f => [f.uid, { ...f, type: ItemType.Ferry }]),
