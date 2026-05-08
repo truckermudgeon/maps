@@ -184,9 +184,6 @@ export class RouteRenderer {
   }
 
   private toggleActiveRouteLayers(visible: boolean): void {
-    // note: setting paint property by getting a reference to the style layer
-    // with react-map-gl apis, then calling setpaintproperty on the style layer,
-    // does *not* work.
     for (const layerId of ACTIVE_ROUTE_LAYERS) {
       this.mapStyle.setLayerVisibility(layerId, visible);
     }

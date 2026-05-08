@@ -38,9 +38,6 @@ const pagesRequiringMapVisibility = new Set<NavPageKey>([
 ]);
 
 export class NavSheetStoreImpl implements NavSheetStore {
-  // Underscore-prefixed so the array reference can't escape; callers
-  // mutate via the bound action methods below. Reads go through the
-  // `pageStack` getter, which returns a readonly view.
   private _pageStack: NavPageKey[] = [NavPageKey.CHOOSE_DESTINATION];
 
   showNavSheet = false;

@@ -23,10 +23,6 @@ export function wireRouteReactions(
   const { route, routeRenderer, navSheetStore, mapHandle } = deps;
   const disposers: IReactionDisposer[] = [];
 
-  // Renders the active route geometry whenever it changes — and replays
-  // it once the map's sources/layers are committed, in case
-  // routeUpdate arrived first (page reload race: telemetry reconnects
-  // faster than maplibre + react finish wiring up <Source>/<Layer>).
   disposers.push(
     reaction(
       () => (mapHandle.isMapReady ? route.activeRoute : undefined),
@@ -35,9 +31,6 @@ export function wireRouteReactions(
     ),
   );
 
-  // Render calls can also be made directly by the nav sheet controller;
-  // this reaction handles the case where the routes list changes shape
-  // (or empties) and the layer order needs to update.
   disposers.push(
     reaction(
       () => ({
