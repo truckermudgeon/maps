@@ -15,10 +15,9 @@ export function RootStoreProvider(props: {
 }
 
 /**
- * Returns the RootStore from context. Components should usually call
- * the per-domain hooks (`useRouteStore`, `useCameraStore`, etc.)
- * instead — those compose this internally and give the consumer a
- * narrower surface to read.
+ * Returns the RootStore from context. Prefer the per-domain hooks
+ * (`useRouteStore`, `useCameraStore`, etc.) — they expose a narrower
+ * surface.
  */
 export function useRootStore(): RootStore {
   const store = useContext(RootStoreContext);

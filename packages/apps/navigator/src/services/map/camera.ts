@@ -115,12 +115,11 @@ export class MapCamera {
   }
 
   /**
-   * Begins a follow-camera session. The returned `animate` is called
-   * per-tick by the playback loop with the current player pose; the
-   * first call (and the first call after `stop()`) snaps without
-   * animating, subsequent calls interpolate from the previously-set
-   * pose. `stop()` resets the cached pose so a future session
-   * re-snaps instead of tweening from a stale tick.
+   * Begins a follow-camera session. Call `animate` per-tick with the
+   * current player pose; the first call (and the first call after
+   * `stop()`) snaps without animating, subsequent calls interpolate
+   * from the previously-set pose. `stop()` resets the cached pose so
+   * a future session re-snaps instead of tweening from a stale tick.
    */
   beginFollowCamera(): {
     animate(opts: {

@@ -7,10 +7,9 @@ import { TelemetryTimeline } from '../util/telemetry-timeline';
 
 /**
  * Single subscription point for the navigator's tRPC telemetry stream.
- * Decodes each event into the right store field and exposes the
- * underlying TelemetryTimeline for consumers that need to sample
- * positionUpdates at their own cadence. Owns its subscription via
- * start()/stop().
+ * Decodes each event into the right store field, and exposes the
+ * underlying TelemetryTimeline for cadence-sensitive readers. Owns
+ * its subscription via start()/stop().
  */
 export class TelemetryService {
   readonly timeline = new TelemetryTimeline<GameState>({

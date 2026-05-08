@@ -45,7 +45,7 @@ export class MapMarkers {
 
   /**
    * Clears the cached last-pose so the next follow-camera tick snaps
-   * instead of interpolating. Called by the playback loop's stop()
+   * instead of interpolating. Call when ending a playback session,
    * so a later restart doesn't tween from a stale pose.
    */
   clearLastPlayerPose(): void {

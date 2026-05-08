@@ -12,7 +12,7 @@ const DURATION_MS = 500;
 
 /**
  * Drives the player marker and follow-camera by sampling a
- * TelemetryTimeline at a fixed interval. Owns its setInterval via
+ * TelemetryTimeline at a fixed interval. Owns its lifecycle via
  * start()/stop().
  */
 export class TelemetryPlayer {
