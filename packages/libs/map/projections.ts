@@ -59,7 +59,6 @@ const ets2 = [
 ].join(' ');
 const fromWgs84ToEts2Converter = proj4.default(ets2);
 export const fromEts2CoordsToWgs84 = ([x, y]: Position): Position => {
-  // -8, -2
   const sx = Math.floor(x / 4000);
   const sy = Math.floor(y / 4000);
   // apply mapOffset to coords before projecting.
@@ -68,11 +67,12 @@ export const fromEts2CoordsToWgs84 = ([x, y]: Position): Position => {
 
   // UK content is authored at a slightly larger scale (~14.37 vs. ~19.15)
   const ukScaleFactor = 0.75;
-  // HACK: treat all coords up-and-to-the-left of Calais (-31_100, -5500) as UK
-  // coords. Maybe there's a better point to pick than Calais, but I couldn't
-  // find any clues in the def files.
+  // HACK: treat all coords up-and-to-the-left of the sector containing Calais
+  // (-31_100, -5500) as UK coords. Maybe there's a better way to do this, but I
+  // couldn't find any clues in the def files.
   const calais = [-31100, -5500];
   const isUk = sx <= -8 && sy <= -2;
+
   if (isUk) {
     x = (x + calais[0] / 2) * ukScaleFactor;
     y = (y + calais[1] / 2) * ukScaleFactor;
@@ -94,14 +94,16 @@ export const fromWgs84ToEts2Coords = ([lon, lat]: Position): Position => {
 
   // UK content is authored at a slightly larger scale (~14.37 vs. ~19.15)
   const ukScaleFactor = 0.75;
-  // HACK: treat all coords up-and-to-the-left of Calais (-31_100, -5500) as UK
-  // coords. Maybe there's a better point to pick than Calais, but I couldn't
-  // find any clues in the def files.
+  // HACK: treat all coords up-and-to-the-left of the sector containing Calais
+  // (-31_100, -5500) as UK coords. Maybe there's a better way to do this, but I
+  // couldn't find any clues in the def files.
   const calais = [-31100, -5500];
+  const xIfUk = x / ukScaleFactor - calais[0] / 2 + ets2DefData.mapOffset[0];
+  const yIfUk = y / ukScaleFactor - calais[1] / 2 + ets2DefData.mapOffset[1];
+  const sx = Math.floor(xIfUk / 4000);
+  const sy = Math.floor(yIfUk / 4000);
+  const isUk = sx <= -8 && sy <= -2;
 
-  const isUk =
-    x < calais[0] * (1 + ukScaleFactor / 2) &&
-    y < calais[1] * (1 + ukScaleFactor / 2);
   if (isUk) {
     x = x / ukScaleFactor - calais[0] / 2;
     y = y / ukScaleFactor - calais[1] / 2;
