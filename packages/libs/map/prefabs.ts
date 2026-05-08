@@ -612,9 +612,11 @@ export interface Lane {
     curvePoints: [number, number][]; // in prefab space
     targetNodeIndex: number;
     /**
+     * Angle of lane exit, relative to lane entry, in radians [-Pi, Pi].
+     *
      * -Pi/2  means lane exits 90 degrees CCW, relative to entry
      *     0  means lane exits straight
-     * +Pi/2  means lane exits 90 degrees CW, relative to A
+     * +Pi/2  means lane exits 90 degrees CW, relative to entry
      */
     angle: number;
     semaphoresEncountered: { semaphoreId: number; curveIndex: number }[];
