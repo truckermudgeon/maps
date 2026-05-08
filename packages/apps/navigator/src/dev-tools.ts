@@ -1,5 +1,5 @@
 import { runInAction } from 'mobx';
-import type { AppStore } from './controllers/types';
+import type { RootStore } from './stores/root-store';
 
 declare global {
   interface Window {
@@ -8,17 +8,17 @@ declare global {
 }
 
 interface DevTools {
-  readonly appStore: AppStore;
+  readonly rootStore: RootStore;
   readonly runInAction: (fn: () => void) => void;
 }
 
-export function setupDevtools(opts: { appStore: AppStore }) {
+export function setupDevtools(opts: { rootStore: RootStore }) {
   if (!import.meta.env.DEV) {
     return;
   }
 
   window.__DEV__ = {
-    appStore: opts.appStore,
+    rootStore: opts.rootStore,
     runInAction: runInAction,
   };
 

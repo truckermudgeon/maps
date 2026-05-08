@@ -13,8 +13,6 @@ export const RouteStack = (props: {
 }) => {
   const { Guidance, RouteControls, SegmentCompleteToast } = props;
   const [stackRef, { height: stackHeight }] = useMeasure();
-  //const [guidanceRef, { height: guidanceHeight }] = useMeasure();
-  //const [routeControlsRef, { height: routeControlsHeight }] = useMeasure();
   const [expanded, setExpanded] = useState(false);
   // HACK until there's a nice way to figure this out for real.
   const needsExpanding = (stackHeight ?? 0) < 520;
@@ -31,7 +29,7 @@ export const RouteStack = (props: {
       >
         <Box sx={{ pointerEvents: 'none' }}>
           <Slide in={!needsExpanding || !expanded} appear={false}>
-            <Box /* ref={guidanceRef} */>
+            <Box>
               <Collapse in={!needsExpanding || !expanded} appear={false}>
                 <Guidance />
               </Collapse>
@@ -39,7 +37,6 @@ export const RouteStack = (props: {
           </Slide>
         </Box>
         <Box
-          //ref={routeControlsRef}
           sx={{
             pointerEvents: 'auto',
             maxHeight: `calc(${stackHeight}px - 1em)`,

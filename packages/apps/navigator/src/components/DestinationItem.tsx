@@ -12,7 +12,7 @@ import type {
   SearchResultWithRelativeTruckInfo,
 } from '@truckermudgeon/navigation/types';
 import type { ReactElement } from 'react';
-import { toCompassPoint } from '../base/to-compass-point';
+import { toCompassPoint } from '../util/to-compass-point';
 import { SpriteImage } from './SpriteImage';
 import {
   toLengthAndUnit as _toLengthAndUnit,

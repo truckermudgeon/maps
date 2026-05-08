@@ -1,6 +1,6 @@
 import { Sheet } from '@mui/joy';
 import { memo } from 'react';
-import { toCompassPoint } from '../base/to-compass-point';
+import { toCompassPoint } from '../util/to-compass-point';
 
 const svgSize = 105;
 const center = svgSize / 2;

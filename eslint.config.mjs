@@ -69,4 +69,152 @@ export default [
       ],
     },
   },
+  // Navigator architecture: layer-boundary enforcement. The rules
+  // below encode the dependency graph between stores / services /
+  // reactions / controllers / views / components.
+  {
+    files: ['packages/apps/navigator/src/**/*.{ts,tsx}'],
+    ignores: ['packages/apps/navigator/src/services/map/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['maplibre-gl', 'react-map-gl/maplibre'],
+              message:
+                'services/map/ is the single maplibre boundary. Add a method to MapHandle/MapMarkers/MapCamera/MapStyle and call that.',
+              allowTypeImports: true,
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['packages/apps/navigator/src/stores/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '**/controllers/**',
+                '**/services/**',
+                '**/views/**',
+                '**/components/**',
+                '**/reactions/**',
+              ],
+              message:
+                'stores/ are pure state + computeds. They must not depend on controllers/services/views/components/reactions.',
+              allowTypeImports: true,
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['packages/apps/navigator/src/services/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/controllers/**', '**/views/**', '**/components/**'],
+              message:
+                'services/ must not depend on controllers/views/components.',
+              allowTypeImports: true,
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['packages/apps/navigator/src/reactions/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/controllers/**', '**/views/**', '**/components/**'],
+              message:
+                'reactions/ wire stores → services. Controllers and views are not their concern.',
+              allowTypeImports: true,
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['packages/apps/navigator/src/components/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '**/stores/**',
+                '**/controllers/**',
+                '**/services/**',
+                '**/reactions/**',
+                'mobx',
+                'mobx-react-lite',
+              ],
+              message:
+                'components/ are pure presenters. Take everything as props; move store/controller/service/observer logic to views/.',
+              allowTypeImports: true,
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // tRPC clients live at the services boundary.
+  {
+    files: ['packages/apps/navigator/src/**/*.{ts,tsx}'],
+    ignores: [
+      'packages/apps/navigator/src/services/**',
+      'packages/apps/navigator/src/index.tsx',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@trpc/client', '@trpc/server'],
+              message:
+                'tRPC clients live in services/ (route-api, search-api, telemetry).',
+              allowTypeImports: true,
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // Production code can't import test fixtures.
+  {
+    files: ['packages/apps/navigator/src/**/*.{ts,tsx}'],
+    ignores: ['packages/apps/navigator/src/**/tests/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/tests/**'],
+              message: 'Test fixtures stay inside tests/.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 ];
