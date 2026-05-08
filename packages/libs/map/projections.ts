@@ -59,6 +59,9 @@ const ets2 = [
 ].join(' ');
 const fromWgs84ToEts2Converter = proj4.default(ets2);
 export const fromEts2CoordsToWgs84 = ([x, y]: Position): Position => {
+  // -8, -2
+  const sx = Math.floor(x / 4000);
+  const sy = Math.floor(y / 4000);
   // apply mapOffset to coords before projecting.
   x -= ets2DefData.mapOffset[0];
   y -= ets2DefData.mapOffset[1];
@@ -69,9 +72,7 @@ export const fromEts2CoordsToWgs84 = ([x, y]: Position): Position => {
   // coords. Maybe there's a better point to pick than Calais, but I couldn't
   // find any clues in the def files.
   const calais = [-31100, -5500];
-  const isUk =
-    x * ukScaleFactor < calais[0] && //
-    y * ukScaleFactor < calais[1];
+  const isUk = sx <= -8 && sy <= -2;
   if (isUk) {
     x = (x + calais[0] / 2) * ukScaleFactor;
     y = (y + calais[1] / 2) * ukScaleFactor;
