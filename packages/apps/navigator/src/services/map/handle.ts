@@ -5,30 +5,40 @@ import type { MapRef } from 'react-map-gl/maplibre';
 
 /**
  * Custodian of the imperative map ref + player marker ref. Exposes
- * `isMapLoaded` as an observable so reactions can gate on map
- * readiness, and offers low-level event-listener helpers
- * (`addMapDragEndListener`, `onBearingChange`).
+ * `isMapReady` — true after maplibre has rendered to idle once, i.e.
+ * after the React-mounted `<Source>` / `<Layer>` children have
+ * committed and any source/layer mutations are safe to make. Also
+ * offers low-level event-listener helpers (`addMapDragEndListener`,
+ * `onBearingChange`).
  */
 export class MapHandle {
-  private _isMapLoaded = false;
+  private _isMapReady = false;
   private map: MapRef | undefined;
   private playerMarker: Marker | undefined;
 
   constructor() {
-    makeObservable<this, '_isMapLoaded'>(this, {
-      _isMapLoaded: observable,
+    makeObservable<this, '_isMapReady' | 'markReady'>(this, {
+      _isMapReady: observable,
       onMapLoad: action,
+      markReady: action,
     });
   }
 
-  get isMapLoaded(): boolean {
-    return this._isMapLoaded;
+  get isMapReady(): boolean {
+    return this._isMapReady;
   }
 
   onMapLoad(map: MapRef, player: Marker): void {
     this.map = map;
     this.playerMarker = player;
-    this._isMapLoaded = true;
+    const sub = map.on('idle', () => {
+      sub.unsubscribe();
+      this.markReady();
+    });
+  }
+
+  private markReady(): void {
+    this._isMapReady = true;
   }
 
   /** @internal — for sibling adapters in services/map/ only. */

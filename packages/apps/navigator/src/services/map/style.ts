@@ -24,11 +24,12 @@ export class MapStyle {
   }
 
   /**
-   * Sets a paint property on a layer. No-op if the map isn't loaded.
+   * Sets a paint property on a layer. No-op if the map isn't loaded
+   * or the layer hasn't been registered yet.
    */
   setLayerPaintProperty(layerId: string, prop: string, value: unknown): void {
     const map = this.handle.getMap();
-    if (!map) {
+    if (!map?.getLayer(layerId)) {
       return;
     }
     map.getMap().setPaintProperty(layerId, prop, value);
@@ -36,11 +37,12 @@ export class MapStyle {
 
   /**
    * Toggles layer visibility via the underlying `visibility` layout
-   * property. No-op if the map isn't loaded.
+   * property. No-op if the map isn't loaded or the layer hasn't been
+   * registered yet.
    */
   setLayerVisibility(layerId: string, visible: boolean): void {
     const map = this.handle.getMap();
-    if (!map) {
+    if (!map?.getLayer(layerId)) {
       return;
     }
     map

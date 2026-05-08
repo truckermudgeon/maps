@@ -24,11 +24,12 @@ export function wireRouteReactions(
   const disposers: IReactionDisposer[] = [];
 
   // Renders the active route geometry whenever it changes — and replays
-  // it once the map loads, in case routeUpdate arrived first (page
-  // reload race: WS reconnects faster than MapGl's onLoad fires).
+  // it once the map's sources/layers are committed, in case
+  // routeUpdate arrived first (page reload race: telemetry reconnects
+  // faster than maplibre + react finish wiring up <Source>/<Layer>).
   disposers.push(
     reaction(
-      () => (mapHandle.isMapLoaded ? route.activeRoute : undefined),
+      () => (mapHandle.isMapReady ? route.activeRoute : undefined),
       activeRoute => routeRenderer.renderActiveRoute(activeRoute),
       { fireImmediately: true },
     ),
@@ -62,8 +63,12 @@ export function wireRouteReactions(
 
   disposers.push(
     reaction(
-      () => (navSheetStore.showNavSheet ? undefined : route.activeArrowStep),
+      () =>
+        !mapHandle.isMapReady || navSheetStore.showNavSheet
+          ? undefined
+          : route.activeArrowStep,
       step => routeRenderer.drawStepArrow(step),
+      { fireImmediately: true },
     ),
   );
 

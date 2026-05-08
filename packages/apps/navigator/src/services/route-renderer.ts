@@ -7,7 +7,7 @@ import type { RouteStore } from '../stores/types';
 import { clamp } from '../util/clamp';
 import { toRouteFeatures } from '../util/route-features';
 import { lineGradientExpression } from '../util/route-gradient';
-import type { MapHandle, MapStyle } from './map';
+import type { MapStyle } from './map';
 
 const emptyFeatureCollection: GeoJSON.FeatureCollection = {
   type: 'FeatureCollection',
@@ -34,16 +34,9 @@ export class RouteRenderer {
     | GeoJSON.Feature<GeoJSON.LineString>
     | undefined;
 
-  constructor(
-    private readonly mapHandle: MapHandle,
-    private readonly mapStyle: MapStyle,
-  ) {}
+  constructor(private readonly mapStyle: MapStyle) {}
 
   renderActiveRoute(maybeRoute: Route | undefined): void {
-    if (!this.mapHandle.isMapLoaded) {
-      return;
-    }
-
     this.mapStyle.setSourceData('activeRouteStep', emptyFeatureCollection);
     this.lastRenderedActiveStepLine = undefined;
 
@@ -60,10 +53,6 @@ export class RouteRenderer {
     maybeRoute: Route | undefined,
     options: { highlight: boolean; index: number; animate: boolean },
   ): void {
-    if (!this.mapHandle.isMapLoaded) {
-      return;
-    }
-
     const sourceId = `previewRoute-${options.index}`;
     if (!maybeRoute) {
       this.mapStyle.setSourceData(sourceId, emptyFeatureCollection);
@@ -115,7 +104,6 @@ export class RouteRenderer {
 
   renderActiveRouteProgress(store: RouteStore): void {
     if (
-      !this.mapHandle.isMapLoaded ||
       !store.activeRoute ||
       !store.activeRouteIndex ||
       !store.activeStepLine
@@ -179,10 +167,6 @@ export class RouteRenderer {
   }
 
   drawStepArrow(step: RouteStep | undefined): void {
-    if (!this.mapHandle.isMapLoaded) {
-      return;
-    }
-
     if (!step?.arrowPoints || step.arrowPoints < 2) {
       this.mapStyle.setSourceData('previewStepArrow', emptyFeatureCollection);
       return;

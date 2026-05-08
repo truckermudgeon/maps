@@ -79,7 +79,7 @@ export function createApp({
   const mapMarkers = new MapMarkers(mapHandle);
   const mapStyle = new MapStyle(mapHandle);
   const mapCamera = new MapCamera(mapHandle, mapMarkers);
-  const routeRenderer = new RouteRenderer(mapHandle, mapStyle);
+  const routeRenderer = new RouteRenderer(mapStyle);
   const routeApi = new RouteApiImpl(appClient);
   const searchApi = new SearchApiImpl(appClient);
   const telemetryService = new TelemetryService(
