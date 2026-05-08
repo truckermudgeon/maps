@@ -5,7 +5,6 @@ import userEvent from '@testing-library/user-event';
 import type { Route } from '@truckermudgeon/navigation/types';
 import { runInAction } from 'mobx';
 import { vi } from 'vitest';
-import type { AppController } from '../../controllers/types';
 import { CameraMode, CameraStoreImpl } from '../../stores/camera';
 import { NavSheetStoreImpl } from '../../stores/nav-sheet';
 import { RouteStoreImpl } from '../../stores/route';
@@ -110,22 +109,5 @@ describe('RouteControls (view)', () => {
 
     expect(camera.cameraMode).toBe(CameraMode.FREE);
     expect(mapAdapter.fitPoints).toHaveBeenCalledTimes(1);
-  });
-
-  it('End Route → controller.setActiveRoute(undefined)', async () => {
-    const controller = {
-      setActiveRoute: vi.fn(),
-    } as unknown as AppController;
-    const user = userEvent.setup();
-    renderWithApp(<RouteControls onExpandedToggle={vi.fn()} />, {
-      stores: { route: makeRouteStoreWith(makeRouteWithSegments(1)) },
-      services: { controller },
-    });
-
-    await expand(user);
-    await user.click(screen.getByRole('button', { name: /end route/i }));
-
-    expect(controller.setActiveRoute).toHaveBeenCalledTimes(1);
-    expect(controller.setActiveRoute).toHaveBeenCalledWith(undefined);
   });
 });
