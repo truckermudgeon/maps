@@ -104,7 +104,7 @@ export function parseMapFiles(
     } as const;
 
     if (mode === 'icons') {
-      const icons = parseIconMatFiles(entries);
+      const icons = parseIconMatFiles(map, entries);
       return {
         ...baseResult,
         data: 'icons',
@@ -126,7 +126,12 @@ export function parseMapFiles(
     return {
       ...baseResult,
       data: 'all',
-      ...postProcess(defData, sectorData, parseIconMatFiles(entries), l10n),
+      ...postProcess(
+        defData,
+        sectorData,
+        parseIconMatFiles(map, entries),
+        l10n,
+      ),
     };
   } finally {
     archives.forEach(a => a.dispose());
@@ -310,18 +315,18 @@ function parseLocaleFiles(entries: Entries): Map<string, Map<string, string>> {
   return l10nStrings;
 }
 
-function parseIconMatFiles(entries: Entries) {
+function parseIconMatFiles(map: 'usa' | 'europe', entries: Entries) {
   logger.log('parsing icon .mat files...');
 
-  const endsWithMat = /\.mat$/g;
+  const dotMatSuffix = /\.mat$/g;
   const tobjPaths = new Map<string, string>();
   const sdfAuxData = new Map<string, number[][]>();
   const readTobjPathsFromMatFiles = (
     dir: string,
     filenameFilter: (filename: string) => boolean = f => f.endsWith('.mat'),
-    replaceAll: RegExp = endsWithMat,
+    deleteRegex: RegExp = dotMatSuffix,
   ) => {
-    Preconditions.checkArgument(replaceAll.global);
+    Preconditions.checkArgument(deleteRegex.global);
     const dirEntry = Preconditions.checkExists(entries.directories.get(dir));
     for (const f of dirEntry.files) {
       if (!filenameFilter(f)) {
@@ -331,7 +336,13 @@ function parseIconMatFiles(entries: Entries) {
       if (Object.keys(json).length === 0) {
         continue;
       }
-      const key = f.replaceAll(replaceAll, '');
+      let key = f.replaceAll(deleteRegex, '');
+      if (/^map[0-3]$/.exec(key)) {
+        // prefix `map{0,1,2,3}` keys with usa-/europe-, so that parsing into
+        // the same output directory doesn't lead to clobbering.
+        key = `${map}-${key}`;
+      }
+
       if (json.effect) {
         const rfx = assertExists(
           json.effect['ui.rfx'] ?? json.effect['ui.sdf.rfx'],
@@ -397,7 +408,7 @@ function parseIconMatFiles(entries: Entries) {
   }
 
   const mapPngs = [0, 1, 2, 3].map(i =>
-    PNG.sync.read(assertExists(pngs.get(`map${i}`))),
+    PNG.sync.read(assertExists(pngs.get(`${map}-map${i}`))),
   );
   // verify that mapX pngs are square
   const size = mapPngs[0].width;
@@ -413,10 +424,10 @@ function parseIconMatFiles(entries: Entries) {
   PNG.bitblt(mapPngs[1], stitched, 0, 0, size, size, 0, size);
   PNG.bitblt(mapPngs[2], stitched, 0, 0, size, size, size, 0);
   PNG.bitblt(mapPngs[3], stitched, 0, 0, size, size, size, size);
-  if (pngs.has('map4k')) {
-    throw new Error('an icon with name `map4k` already exists');
+  if (pngs.has(`${map}-map4k`)) {
+    throw new Error(`an icon with name \`${map}-map4k\` already exists`);
   }
-  pngs.set('map4k', PNG.sync.write(stitched));
+  pngs.set(`${map}-map4k`, PNG.sync.write(stitched));
 
   return pngs;
 }
