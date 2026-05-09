@@ -636,11 +636,9 @@ export function convertToMapGeoJson(
 
   const debugCityAreaFeatures: DebugFeature[] = [];
   const debugNodeFeatures: DebugFeature[] = [];
-  const debugSectorFeatures: DebugFeature[] = [];
   if (options.includeDebug) {
     logger.log('creating debug features...');
     debugCityAreaFeatures.push(...rankedCities.flatMap(cityToAreaFeatures));
-    const sectorKeys = new Set<string>();
     for (const n of nodes.values()) {
       debugNodeFeatures.push(
         point([n.x, n.y], {
@@ -651,37 +649,11 @@ export function convertToMapGeoJson(
           nodeBackwardItemUid: n.backwardItemUid,
         }),
       );
-
-      const sectorX = Math.floor(n.x / 4000);
-      const sectorY = Math.floor(n.y / 4000);
-      sectorKeys.add(`${sectorX};${sectorY}`);
-    }
-
-    for (const key of sectorKeys) {
-      console.log('sector', key);
-      const [sectorX, sectorY] = key.split(';').map(v => Number(v) * 4000);
-      debugSectorFeatures.push(
-        polygon(
-          [
-            [
-              [sectorX, sectorY],
-              [sectorX + 4000, sectorY],
-              [sectorX + 4000, sectorY + 4000],
-              [sectorX, sectorY + 4000],
-              [sectorX, sectorY],
-            ],
-          ],
-          {
-            type: 'debug',
-            key,
-          },
-        ),
-      );
     }
   }
 
   const features = [
-    //...debugCityAreaFeatures,
+    ...debugCityAreaFeatures,
     ...mapAreaFeatures,
     ...prefabFeatures,
     ...processedRoadFeatures,
@@ -691,8 +663,7 @@ export function convertToMapGeoJson(
     ...trafficFeatures,
     ...exitFeatures.map(e => withDlcGuard(e, dlcGuardSpatialIndex)),
     //...dividerFeatures,
-    //...debugNodeFeatures,
-    ...debugSectorFeatures,
+    ...debugNodeFeatures,
     ...ferryFeatures,
   ]; // TODO: should `withDlcGuard` be called on all features?
 
