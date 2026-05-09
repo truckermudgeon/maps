@@ -651,8 +651,9 @@ export function convertToMapGeoJson(
           nodeBackwardItemUid: n.backwardItemUid,
         }),
       );
-      const sectorX = Math.floor(n.x / 4000);
-      const sectorY = Math.floor(n.y / 4000);
+
+      const sectorX = Math.floor((n.x + 660) / 4000);
+      const sectorY = Math.floor((n.y + 150) / 4000);
       sectorKeys.add(`${sectorX};${sectorY}`);
     }
 
@@ -690,7 +691,7 @@ export function convertToMapGeoJson(
     ...trafficFeatures,
     ...exitFeatures.map(e => withDlcGuard(e, dlcGuardSpatialIndex)),
     //...dividerFeatures,
-    ...debugNodeFeatures,
+    //...debugNodeFeatures,
     ...debugSectorFeatures,
     ...ferryFeatures,
   ]; // TODO: should `withDlcGuard` be called on all features?
