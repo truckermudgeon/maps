@@ -26,7 +26,7 @@ import {
   fromWgs84ToEts2Coords,
 } from '@truckermudgeon/map/projections';
 import { distance } from '@turf/distance';
-import { featureCollection, lineString, point } from '@turf/helpers';
+import { featureCollection, point } from '@turf/helpers';
 import type { GeoJSON } from 'geojson';
 import type {
   GeoJSONSource,
@@ -179,7 +179,13 @@ export const ContextMenu = () => {
 
     // based on https://maplibre.org/maplibre-gl-js/docs/examples/measure-distances/
 
-    const linestring = lineString(measuringPoints, { id: newId() });
+    // N.B.: don't use turf's `lineString` helper, because `measuringPoints`
+    // may transiently contain a single point, and turf validates against that.
+    const linestring: GeoJSON.Feature<GeoJSON.LineString, { id: number }> = {
+      type: 'Feature',
+      geometry: { type: 'LineString', coordinates: [...measuringPoints] },
+      properties: { id: newId() },
+    };
     const geojson = featureCollection<
       GeoJSON.Point | GeoJSON.LineString,
       { id: number }

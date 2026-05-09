@@ -652,8 +652,8 @@ export function convertToMapGeoJson(
         }),
       );
 
-      const sectorX = Math.floor((n.x + 660) / 4000);
-      const sectorY = Math.floor((n.y + 150) / 4000);
+      const sectorX = Math.floor(n.x / 4000);
+      const sectorY = Math.floor(n.y / 4000);
       sectorKeys.add(`${sectorX};${sectorY}`);
     }
 
@@ -681,7 +681,7 @@ export function convertToMapGeoJson(
   }
 
   const features = [
-    ...debugCityAreaFeatures,
+    //...debugCityAreaFeatures,
     ...mapAreaFeatures,
     ...prefabFeatures,
     ...processedRoadFeatures,

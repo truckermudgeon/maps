@@ -20,7 +20,7 @@ describe('ATS', () => {
 describe('ETS', () => {
   // somewhere south of London, England
   const londonGame: Position = [-40_169, -10_685];
-  const londonLonLat: Position = [-0.5724973119108466, 51.30079808084234];
+  const londonLonLat: Position = [-0.5943602137854889, 51.29443960532431];
 
   // somewhere between Chania and Heraklion, Greece
   const greeceGame: Position = [62_276, 84_880];
