@@ -518,6 +518,71 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           'text-color': colors.trainLabel,
         }}
       />
+      {hasPois(visibleIcons) && (
+        <Layer
+          id={game + 'poi-icons'}
+          source-layer={game}
+          type={'symbol'}
+          minzoom={enableIconAutoHide ? 7 : 0}
+          filter={[
+            'all',
+            ['==', ['geometry-type'], 'Point'],
+            ['==', ['get', 'type'], 'poi'],
+            createPoiFilter(visibleIcons),
+            dlcGuardFilter,
+            secretFilter,
+          ]}
+          layout={iconLayout(enableIconAutoHide, 0.6, 1.25, 2.5, {
+            vertical: 2,
+            horizontal: 2,
+          })}
+        />
+      )}
+      {hasPois(visibleIcons) &&
+        (visibleIcons.has(MapIcon.Viewpoint) ||
+          visibleIcons.has(MapIcon.PhotoSight) ||
+          visibleIcons.has(MapIcon.TruckDealer)) && (
+          <Layer
+            id={game + 'poi-icon-labels'}
+            source-layer={game}
+            type={'symbol'}
+            minzoom={enableIconAutoHide ? 9.5 : 0}
+            filter={[
+              'all',
+              ['==', ['geometry-type'], 'Point'],
+              ['==', ['get', 'type'], 'poi'],
+              [
+                'any',
+                [
+                  'in',
+                  ['get', 'poiType'],
+                  ['literal', ['viewpoint', 'landmark']],
+                ],
+                [
+                  'all',
+                  ['==', ['get', 'poiType'], 'facility'],
+                  ['==', ['get', 'sprite'], 'dealer_ico'],
+                ],
+              ],
+              createPoiFilter(visibleIcons),
+              dlcGuardFilter,
+              secretFilter,
+            ]}
+            layout={{
+              ...iconLayout(enableIconAutoHide, 0.6, 1.25, 2.5, {
+                vertical: 2,
+                horizontal: 2,
+              }),
+              ...baseTextLayout,
+              'text-field': '{poiName}',
+              'text-allow-overlap': !enableIconAutoHide,
+              'text-variable-anchor': ['left', 'right', 'top', 'bottom'],
+              'text-radial-offset': 1.5,
+              'text-size': 10,
+            }}
+            paint={colors.primaryTextPaint}
+          />
+        )}
       {visibleIcons.has(MapIcon.Company) && (
         <Layer
           id={game + 'company-icons'}
@@ -535,62 +600,30 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           layout={iconLayout(enableIconAutoHide, 1, 1.25, 3.5)}
         />
       )}
-      {game === 'ets2' && visibleIcons.has(MapIcon.RoadNumber) && (
+      {visibleIcons.has(MapIcon.ExitNumber) && (
         <Layer
-          id={'euro-road-overlays'}
+          id={game + 'exit-points'}
           source-layer={game}
-          minzoom={enableIconAutoHide ? 4.5 : 0}
           type={'symbol'}
+          paint={{
+            'text-color': '#fff',
+          }}
+          minzoom={enableIconAutoHide ? 10 : 0}
+          layout={{
+            ...iconLayout(enableIconAutoHide, 0.4, 0.75, 1.25),
+            ...baseTextLayout,
+            'text-field': '{name}',
+            'text-size': ['interpolate', ['linear'], ['zoom'], 4, 4, 10, 10],
+            'icon-text-fit': 'both',
+            'icon-text-fit-padding': [0, 2, 0, 2],
+            'icon-image': 'exit-sign',
+          }}
           filter={[
             'all',
             ['==', ['geometry-type'], 'Point'],
-            ['==', ['get', 'type'], 'poi'],
-            ['==', ['get', 'poiType'], 'road'],
-            ['!', ['in', ['get', 'sprite'], ['literal', allRoadFacilityIcons]]],
+            ['==', ['get', 'type'], 'exit'],
             dlcGuardFilter,
-            secretFilter,
           ]}
-          layout={iconLayout(
-            enableIconAutoHide,
-            0.4 * 1.25,
-            0.75 * 1.25,
-            1.25 * 1.25,
-          )}
-        />
-      )}
-      {game === 'ats' && visibleIcons.has(MapIcon.RoadNumber) && (
-        <Layer
-          id={game + 'road-interstate-overlays'}
-          source-layer={game}
-          type={'symbol'}
-          filter={[
-            'all',
-            ['==', ['geometry-type'], 'Point'],
-            ['==', ['get', 'type'], 'poi'],
-            ['==', ['get', 'poiType'], 'road'],
-            ['==', ['index-of', 'is', ['get', 'sprite']], 0],
-            dlcGuardFilter,
-            secretFilter,
-          ]}
-          layout={iconLayout(enableIconAutoHide, 0.4, 0.75, 1.25)}
-        />
-      )}
-      {game === 'ats' && visibleIcons.has(MapIcon.RoadNumber) && (
-        <Layer
-          id={game + 'road-us-route-overlays'}
-          source-layer={game}
-          type={'symbol'}
-          minzoom={enableIconAutoHide ? 5 : 0}
-          filter={[
-            'all',
-            ['==', ['geometry-type'], 'Point'],
-            ['==', ['get', 'type'], 'poi'],
-            ['==', ['get', 'poiType'], 'road'],
-            ['==', ['index-of', 'us', ['get', 'sprite']], 0],
-            dlcGuardFilter,
-            secretFilter,
-          ]}
-          layout={iconLayout(enableIconAutoHide, 0.4, 0.75, 1.25)}
         />
       )}
       {game === 'ats' && visibleIcons.has(MapIcon.RoadNumber) && (
@@ -619,30 +652,89 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           layout={iconLayout(enableIconAutoHide, 0.4, 0.75, 1.25)}
         />
       )}
-      {visibleIcons.has(MapIcon.ExitNumber) && (
+      {game === 'ats' && visibleIcons.has(MapIcon.RoadNumber) && (
         <Layer
-          id={game + 'exit-points'}
+          id={game + 'road-us-route-overlays'}
           source-layer={game}
           type={'symbol'}
-          paint={{
-            'text-color': '#fff',
-          }}
-          minzoom={enableIconAutoHide ? 10 : 0}
-          layout={{
-            ...iconLayout(enableIconAutoHide, 0.4, 0.75, 1.25),
-            ...baseTextLayout,
-            'text-field': '{name}',
-            'text-size': ['interpolate', ['linear'], ['zoom'], 4, 4, 10, 10],
-            'icon-text-fit': 'both',
-            'icon-text-fit-padding': [0, 2, 0, 2],
-            'icon-image': 'exit-sign',
-          }}
+          minzoom={enableIconAutoHide ? 5 : 0}
           filter={[
             'all',
             ['==', ['geometry-type'], 'Point'],
-            ['==', ['get', 'type'], 'exit'],
+            ['==', ['get', 'type'], 'poi'],
+            ['==', ['get', 'poiType'], 'road'],
+            ['==', ['index-of', 'us', ['get', 'sprite']], 0],
             dlcGuardFilter,
+            secretFilter,
           ]}
+          layout={iconLayout(enableIconAutoHide, 0.4, 0.75, 1.25)}
+        />
+      )}
+      {game === 'ats' && visibleIcons.has(MapIcon.RoadNumber) && (
+        <Layer
+          id={game + 'road-interstate-overlays'}
+          source-layer={game}
+          type={'symbol'}
+          filter={[
+            'all',
+            ['==', ['geometry-type'], 'Point'],
+            ['==', ['get', 'type'], 'poi'],
+            ['==', ['get', 'poiType'], 'road'],
+            ['==', ['index-of', 'is', ['get', 'sprite']], 0],
+            dlcGuardFilter,
+            secretFilter,
+          ]}
+          layout={iconLayout(enableIconAutoHide, 0.4, 0.75, 1.25)}
+        />
+      )}
+      {game === 'ets2' && visibleIcons.has(MapIcon.RoadNumber) && (
+        <Layer
+          id={'euro-road-overlays'}
+          source-layer={game}
+          minzoom={enableIconAutoHide ? 4.5 : 0}
+          type={'symbol'}
+          filter={[
+            'all',
+            ['==', ['geometry-type'], 'Point'],
+            ['==', ['get', 'type'], 'poi'],
+            ['==', ['get', 'poiType'], 'road'],
+            ['!', ['in', ['get', 'sprite'], ['literal', allRoadFacilityIcons]]],
+            dlcGuardFilter,
+            secretFilter,
+          ]}
+          layout={iconLayout(
+            enableIconAutoHide,
+            0.4 * 1.25,
+            0.75 * 1.25,
+            1.25 * 1.25,
+          )}
+        />
+      )}
+      {(visibleIcons.has(MapIcon.Roadwork) ||
+        visibleIcons.has(MapIcon.RailCrossing)) && (
+        <Layer
+          id={game + 'traffic-icons'}
+          source-layer={game}
+          type={'symbol'}
+          minzoom={enableIconAutoHide ? 6 : 0}
+          filter={[
+            'all',
+            ['==', ['geometry-type'], 'Point'],
+            ['==', ['get', 'type'], 'traffic'],
+            createTrafficFilter(visibleIcons),
+            dlcGuardFilter,
+            secretFilter,
+          ]}
+          layout={iconLayout(
+            enableIconAutoHide,
+            0.6 * 0.5,
+            1.25 * 0.5,
+            2.5 * 0.5,
+            {
+              vertical: 2,
+              horizontal: 2,
+            },
+          )}
         />
       )}
       {visibleIcons.has(MapIcon.CityNames) && (
@@ -724,28 +816,6 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           paint={colors.primaryTextPaint}
         />
       )}
-      {game === 'ets2' && visibleIcons.has(MapIcon.CityNames) && (
-        <Layer
-          id={game + 'country-labels'}
-          source-layer={game}
-          type={'symbol'}
-          minzoom={4}
-          maxzoom={6.5}
-          filter={[
-            'all',
-            ['==', ['geometry-type'], 'Point'],
-            ['==', ['get', 'type'], 'country'],
-          ]}
-          layout={{
-            ...baseTextLayout,
-            'text-font': ['Klokantech Noto Sans Bold'],
-            'text-field': '{name}',
-            'text-variable-anchor': textVariableAnchor,
-            'text-size': 14,
-          }}
-          paint={colors.primaryTextPaint}
-        />
-      )}
       {game === 'ats' && visibleIcons.has(MapIcon.CityNames) && (
         <Layer
           id={game + 'country-labels'}
@@ -769,96 +839,26 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           paint={colors.secondaryTextPaint}
         />
       )}
-      {hasPois(visibleIcons) && (
+      {game === 'ets2' && visibleIcons.has(MapIcon.CityNames) && (
         <Layer
-          id={game + 'poi-icons'}
+          id={game + 'country-labels'}
           source-layer={game}
           type={'symbol'}
-          minzoom={enableIconAutoHide ? 7 : 0}
+          minzoom={4}
+          maxzoom={6.5}
           filter={[
             'all',
             ['==', ['geometry-type'], 'Point'],
-            ['==', ['get', 'type'], 'poi'],
-            createPoiFilter(visibleIcons),
-            dlcGuardFilter,
-            secretFilter,
+            ['==', ['get', 'type'], 'country'],
           ]}
-          layout={iconLayout(enableIconAutoHide, 0.6, 1.25, 2.5, {
-            vertical: 2,
-            horizontal: 2,
-          })}
-        />
-      )}
-      {hasPois(visibleIcons) &&
-        (visibleIcons.has(MapIcon.Viewpoint) ||
-          visibleIcons.has(MapIcon.PhotoSight) ||
-          visibleIcons.has(MapIcon.TruckDealer)) && (
-          <Layer
-            id={game + 'poi-icon-labels'}
-            source-layer={game}
-            type={'symbol'}
-            minzoom={enableIconAutoHide ? 9.5 : 0}
-            filter={[
-              'all',
-              ['==', ['geometry-type'], 'Point'],
-              ['==', ['get', 'type'], 'poi'],
-              [
-                'any',
-                [
-                  'in',
-                  ['get', 'poiType'],
-                  ['literal', ['viewpoint', 'landmark']],
-                ],
-                [
-                  'all',
-                  ['==', ['get', 'poiType'], 'facility'],
-                  ['==', ['get', 'sprite'], 'dealer_ico'],
-                ],
-              ],
-              createPoiFilter(visibleIcons),
-              dlcGuardFilter,
-              secretFilter,
-            ]}
-            layout={{
-              ...iconLayout(enableIconAutoHide, 0.6, 1.25, 2.5, {
-                vertical: 2,
-                horizontal: 2,
-              }),
-              ...baseTextLayout,
-              'text-field': '{poiName}',
-              'text-allow-overlap': !enableIconAutoHide,
-              'text-variable-anchor': ['left', 'right', 'top', 'bottom'],
-              'text-radial-offset': 1.5,
-              'text-size': 10,
-            }}
-            paint={colors.primaryTextPaint}
-          />
-        )}
-      {(visibleIcons.has(MapIcon.Roadwork) ||
-        visibleIcons.has(MapIcon.RailCrossing)) && (
-        <Layer
-          id={game + 'traffic-icons'}
-          source-layer={game}
-          type={'symbol'}
-          minzoom={enableIconAutoHide ? 6 : 0}
-          filter={[
-            'all',
-            ['==', ['geometry-type'], 'Point'],
-            ['==', ['get', 'type'], 'traffic'],
-            createTrafficFilter(visibleIcons),
-            dlcGuardFilter,
-            secretFilter,
-          ]}
-          layout={iconLayout(
-            enableIconAutoHide,
-            0.6 * 0.5,
-            1.25 * 0.5,
-            2.5 * 0.5,
-            {
-              vertical: 2,
-              horizontal: 2,
-            },
-          )}
+          layout={{
+            ...baseTextLayout,
+            'text-font': ['Klokantech Noto Sans Bold'],
+            'text-field': '{name}',
+            'text-variable-anchor': textVariableAnchor,
+            'text-size': 14,
+          }}
+          paint={colors.primaryTextPaint}
         />
       )}
     </Source>
