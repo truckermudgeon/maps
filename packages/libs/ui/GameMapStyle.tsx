@@ -743,6 +743,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           source-layer={game}
           type={'symbol'}
           minzoom={enableIconAutoHide ? 6 : 0}
+          maxzoom={enableIconAutoHide ? 10 : undefined}
           filter={[
             'all',
             ['==', ['geometry-type'], 'Point'],
@@ -769,6 +770,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           source-layer={game}
           type={'symbol'}
           minzoom={enableIconAutoHide ? 5 : 0}
+          maxzoom={enableIconAutoHide ? 9 : undefined}
           filter={[
             'all',
             ['==', ['geometry-type'], 'Point'],
@@ -796,6 +798,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           source-layer={game}
           type={'symbol'}
           minzoom={enableIconAutoHide ? 4 : 0}
+          maxzoom={enableIconAutoHide ? 8 : undefined}
           filter={[
             'all',
             ['==', ['geometry-type'], 'Point'],

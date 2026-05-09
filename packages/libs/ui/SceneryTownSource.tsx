@@ -98,6 +98,7 @@ export const SceneryTownSource = (props: SceneryTownSourceProps) => {
         id={`${game}-scenery-towns`}
         type={'symbol'}
         minzoom={enableAutoHide ? 7 : 0}
+        maxzoom={enableAutoHide ? 11 : undefined}
         filter={filter}
         layout={{
           ...baseTextLayout,
