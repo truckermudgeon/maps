@@ -518,79 +518,30 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           'text-color': colors.trainLabel,
         }}
       />
-      {visibleIcons.has(MapIcon.Company) && (
+      {visibleIcons.has(MapIcon.ExitNumber) && (
         <Layer
-          id={game + 'company-icons'}
+          id={game + 'exit-points'}
           source-layer={game}
           type={'symbol'}
-          minzoom={enableIconAutoHide ? 8 : 0}
+          paint={{
+            'text-color': '#fff',
+          }}
+          minzoom={enableIconAutoHide ? 10 : 0}
+          layout={{
+            ...iconLayout(enableIconAutoHide, 0.4, 0.75, 1.25),
+            ...baseTextLayout,
+            'text-field': '{name}',
+            'text-size': ['interpolate', ['linear'], ['zoom'], 4, 4, 10, 10],
+            'icon-text-fit': 'both',
+            'icon-text-fit-padding': [0, 2, 0, 2],
+            'icon-image': 'exit-sign',
+          }}
           filter={[
             'all',
             ['==', ['geometry-type'], 'Point'],
-            ['==', ['get', 'type'], 'poi'],
-            ['==', ['get', 'poiType'], 'company'],
+            ['==', ['get', 'type'], 'exit'],
             dlcGuardFilter,
-            secretFilter,
           ]}
-          layout={iconLayout(enableIconAutoHide, 1, 1.25, 3.5)}
-        />
-      )}
-      {game === 'ets2' && visibleIcons.has(MapIcon.RoadNumber) && (
-        <Layer
-          id={'euro-road-overlays'}
-          source-layer={game}
-          minzoom={enableIconAutoHide ? 4.5 : 0}
-          type={'symbol'}
-          filter={[
-            'all',
-            ['==', ['geometry-type'], 'Point'],
-            ['==', ['get', 'type'], 'poi'],
-            ['==', ['get', 'poiType'], 'road'],
-            ['!', ['in', ['get', 'sprite'], ['literal', allRoadFacilityIcons]]],
-            dlcGuardFilter,
-            secretFilter,
-          ]}
-          layout={iconLayout(
-            enableIconAutoHide,
-            0.4 * 1.25,
-            0.75 * 1.25,
-            1.25 * 1.25,
-          )}
-        />
-      )}
-      {game === 'ats' && visibleIcons.has(MapIcon.RoadNumber) && (
-        <Layer
-          id={game + 'road-interstate-overlays'}
-          source-layer={game}
-          type={'symbol'}
-          filter={[
-            'all',
-            ['==', ['geometry-type'], 'Point'],
-            ['==', ['get', 'type'], 'poi'],
-            ['==', ['get', 'poiType'], 'road'],
-            ['==', ['index-of', 'is', ['get', 'sprite']], 0],
-            dlcGuardFilter,
-            secretFilter,
-          ]}
-          layout={iconLayout(enableIconAutoHide, 0.4, 0.75, 1.25)}
-        />
-      )}
-      {game === 'ats' && visibleIcons.has(MapIcon.RoadNumber) && (
-        <Layer
-          id={game + 'road-us-route-overlays'}
-          source-layer={game}
-          type={'symbol'}
-          minzoom={enableIconAutoHide ? 5 : 0}
-          filter={[
-            'all',
-            ['==', ['geometry-type'], 'Point'],
-            ['==', ['get', 'type'], 'poi'],
-            ['==', ['get', 'poiType'], 'road'],
-            ['==', ['index-of', 'us', ['get', 'sprite']], 0],
-            dlcGuardFilter,
-            secretFilter,
-          ]}
-          layout={iconLayout(enableIconAutoHide, 0.4, 0.75, 1.25)}
         />
       )}
       {game === 'ats' && visibleIcons.has(MapIcon.RoadNumber) && (
@@ -619,154 +570,62 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           layout={iconLayout(enableIconAutoHide, 0.4, 0.75, 1.25)}
         />
       )}
-      {visibleIcons.has(MapIcon.ExitNumber) && (
+      {game === 'ats' && visibleIcons.has(MapIcon.RoadNumber) && (
         <Layer
-          id={game + 'exit-points'}
-          source-layer={game}
-          type={'symbol'}
-          paint={{
-            'text-color': '#fff',
-          }}
-          minzoom={enableIconAutoHide ? 10 : 0}
-          layout={{
-            ...iconLayout(enableIconAutoHide, 0.4, 0.75, 1.25),
-            ...baseTextLayout,
-            'text-field': '{name}',
-            'text-size': ['interpolate', ['linear'], ['zoom'], 4, 4, 10, 10],
-            'icon-text-fit': 'both',
-            'icon-text-fit-padding': [0, 2, 0, 2],
-            'icon-image': 'exit-sign',
-          }}
-          filter={[
-            'all',
-            ['==', ['geometry-type'], 'Point'],
-            ['==', ['get', 'type'], 'exit'],
-            dlcGuardFilter,
-          ]}
-        />
-      )}
-      {visibleIcons.has(MapIcon.CityNames) && (
-        <Layer
-          id={game + 'city-labels-small'}
-          source-layer={game}
-          type={'symbol'}
-          minzoom={enableIconAutoHide ? 6 : 0}
-          filter={[
-            'all',
-            ['==', ['geometry-type'], 'Point'],
-            ['==', ['get', 'type'], 'city'],
-            ['>', ['get', 'scaleRank'], 6],
-            dlcGuardFilter,
-          ]}
-          layout={{
-            ...baseTextLayout,
-            'text-field': '{name}',
-            'text-allow-overlap': !enableIconAutoHide,
-            'text-variable-anchor': textVariableAnchor,
-            'text-size': 12,
-            'icon-image': cityIconImage,
-            'icon-allow-overlap': !enableIconAutoHide,
-            'icon-size': 0.6,
-          }}
-          paint={colors.primaryTextPaint}
-        />
-      )}
-      {visibleIcons.has(MapIcon.CityNames) && (
-        <Layer
-          id={game + 'city-labels-medium'}
+          id={game + 'road-us-route-overlays'}
           source-layer={game}
           type={'symbol'}
           minzoom={enableIconAutoHide ? 5 : 0}
           filter={[
             'all',
             ['==', ['geometry-type'], 'Point'],
-            ['==', ['get', 'type'], 'city'],
-            ['<=', ['get', 'scaleRank'], 6],
-            ['>', ['get', 'scaleRank'], 3],
+            ['==', ['get', 'type'], 'poi'],
+            ['==', ['get', 'poiType'], 'road'],
+            ['==', ['index-of', 'us', ['get', 'sprite']], 0],
             dlcGuardFilter,
+            secretFilter,
           ]}
-          layout={{
-            ...baseTextLayout,
-            'text-field': '{name}',
-            'text-allow-overlap': !enableIconAutoHide,
-            'text-variable-anchor': textVariableAnchor,
-            'text-size': 13,
-            'icon-image': cityIconImage,
-            'icon-allow-overlap': !enableIconAutoHide,
-            'icon-size': 0.6,
-          }}
-          paint={colors.primaryTextPaint}
+          layout={iconLayout(enableIconAutoHide, 0.4, 0.75, 1.25)}
         />
       )}
-      {visibleIcons.has(MapIcon.CityNames) && (
+      {game === 'ats' && visibleIcons.has(MapIcon.RoadNumber) && (
         <Layer
-          id={game + 'city-labels-big'}
+          id={game + 'road-interstate-overlays'}
           source-layer={game}
           type={'symbol'}
-          minzoom={enableIconAutoHide ? 4 : 0}
           filter={[
             'all',
             ['==', ['geometry-type'], 'Point'],
-            ['==', ['get', 'type'], 'city'],
-            ['<=', ['get', 'scaleRank'], 3],
+            ['==', ['get', 'type'], 'poi'],
+            ['==', ['get', 'poiType'], 'road'],
+            ['==', ['index-of', 'is', ['get', 'sprite']], 0],
             dlcGuardFilter,
+            secretFilter,
           ]}
-          layout={{
-            ...baseTextLayout,
-            'text-field': '{name}',
-            'text-allow-overlap': !enableIconAutoHide,
-            'text-variable-anchor': textVariableAnchor,
-            'text-size': 14,
-            'icon-image': cityIconImage,
-            'icon-allow-overlap': !enableIconAutoHide,
-            'icon-size': 0.8,
-          }}
-          paint={colors.primaryTextPaint}
+          layout={iconLayout(enableIconAutoHide, 0.4, 0.75, 1.25)}
         />
       )}
-      {game === 'ets2' && visibleIcons.has(MapIcon.CityNames) && (
+      {game === 'ets2' && visibleIcons.has(MapIcon.RoadNumber) && (
         <Layer
-          id={game + 'country-labels'}
+          id={'euro-road-overlays'}
           source-layer={game}
+          minzoom={enableIconAutoHide ? 4.5 : 0}
           type={'symbol'}
-          minzoom={4}
-          maxzoom={6.5}
           filter={[
             'all',
             ['==', ['geometry-type'], 'Point'],
-            ['==', ['get', 'type'], 'country'],
+            ['==', ['get', 'type'], 'poi'],
+            ['==', ['get', 'poiType'], 'road'],
+            ['!', ['in', ['get', 'sprite'], ['literal', allRoadFacilityIcons]]],
+            dlcGuardFilter,
+            secretFilter,
           ]}
-          layout={{
-            ...baseTextLayout,
-            'text-font': ['Klokantech Noto Sans Bold'],
-            'text-field': '{name}',
-            'text-variable-anchor': textVariableAnchor,
-            'text-size': 14,
-          }}
-          paint={colors.primaryTextPaint}
-        />
-      )}
-      {game === 'ats' && visibleIcons.has(MapIcon.CityNames) && (
-        <Layer
-          id={game + 'country-labels'}
-          source-layer={game}
-          type={'symbol'}
-          minzoom={4}
-          maxzoom={6.5}
-          filter={[
-            'all',
-            ['==', ['geometry-type'], 'Point'],
-            ['==', ['get', 'type'], 'country'],
-          ]}
-          layout={{
-            ...baseTextLayout,
-            'text-font': ['Open Sans Light'],
-            'text-field': '{name}',
-            'text-transform': 'uppercase',
-            'text-variable-anchor': textVariableAnchor,
-            'text-size': ['step', ['zoom'], 10, 5, 13],
-          }}
-          paint={colors.secondaryTextPaint}
+          layout={iconLayout(
+            enableIconAutoHide,
+            0.4 * 1.25,
+            0.75 * 1.25,
+            1.25 * 1.25,
+          )}
         />
       )}
       {hasPois(visibleIcons) && (
@@ -779,6 +638,28 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             'all',
             ['==', ['geometry-type'], 'Point'],
             ['==', ['get', 'type'], 'poi'],
+            ['!=', ['get', 'sprite'], 'garage_large_ico'],
+            createPoiFilter(visibleIcons),
+            dlcGuardFilter,
+            secretFilter,
+          ]}
+          layout={iconLayout(enableIconAutoHide, 0.6, 1.25, 2.5, {
+            vertical: 2,
+            horizontal: 2,
+          })}
+        />
+      )}
+      {hasPois(visibleIcons) && (
+        <Layer
+          id={game + 'poi-icons-garage'}
+          source-layer={game}
+          type={'symbol'}
+          minzoom={enableIconAutoHide ? 7 : 0}
+          filter={[
+            'all',
+            ['==', ['geometry-type'], 'Point'],
+            ['==', ['get', 'type'], 'poi'],
+            ['==', ['get', 'sprite'], 'garage_large_ico'],
             createPoiFilter(visibleIcons),
             dlcGuardFilter,
             secretFilter,
@@ -834,6 +715,23 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             paint={colors.primaryTextPaint}
           />
         )}
+      {visibleIcons.has(MapIcon.Company) && (
+        <Layer
+          id={game + 'company-icons'}
+          source-layer={game}
+          type={'symbol'}
+          minzoom={enableIconAutoHide ? 8 : 0}
+          filter={[
+            'all',
+            ['==', ['geometry-type'], 'Point'],
+            ['==', ['get', 'type'], 'poi'],
+            ['==', ['get', 'poiType'], 'company'],
+            dlcGuardFilter,
+            secretFilter,
+          ]}
+          layout={iconLayout(enableIconAutoHide, 1, 1.25, 3.5)}
+        />
+      )}
       {(visibleIcons.has(MapIcon.Roadwork) ||
         visibleIcons.has(MapIcon.RailCrossing)) && (
         <Layer
@@ -859,6 +757,133 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
               horizontal: 2,
             },
           )}
+        />
+      )}
+      {visibleIcons.has(MapIcon.CityNames) && (
+        <Layer
+          id={game + 'city-labels-small'}
+          source-layer={game}
+          type={'symbol'}
+          minzoom={enableIconAutoHide ? 6 : 0}
+          maxzoom={enableIconAutoHide ? 11 : undefined}
+          filter={[
+            'all',
+            ['==', ['geometry-type'], 'Point'],
+            ['==', ['get', 'type'], 'city'],
+            ['>', ['get', 'scaleRank'], 6],
+            dlcGuardFilter,
+          ]}
+          layout={{
+            ...baseTextLayout,
+            'text-field': '{name}',
+            'text-allow-overlap': !enableIconAutoHide,
+            'text-variable-anchor': textVariableAnchor,
+            'text-size': 12,
+            'icon-image': cityIconImage,
+            'icon-allow-overlap': !enableIconAutoHide,
+            'icon-size': 0.6,
+          }}
+          paint={colors.primaryTextPaint}
+        />
+      )}
+      {visibleIcons.has(MapIcon.CityNames) && (
+        <Layer
+          id={game + 'city-labels-medium'}
+          source-layer={game}
+          type={'symbol'}
+          minzoom={enableIconAutoHide ? 5 : 0}
+          maxzoom={enableIconAutoHide ? 10 : undefined}
+          filter={[
+            'all',
+            ['==', ['geometry-type'], 'Point'],
+            ['==', ['get', 'type'], 'city'],
+            ['<=', ['get', 'scaleRank'], 6],
+            ['>', ['get', 'scaleRank'], 3],
+            dlcGuardFilter,
+          ]}
+          layout={{
+            ...baseTextLayout,
+            'text-field': '{name}',
+            'text-allow-overlap': !enableIconAutoHide,
+            'text-variable-anchor': textVariableAnchor,
+            'text-size': 13,
+            'icon-image': cityIconImage,
+            'icon-allow-overlap': !enableIconAutoHide,
+            'icon-size': 0.6,
+          }}
+          paint={colors.primaryTextPaint}
+        />
+      )}
+      {visibleIcons.has(MapIcon.CityNames) && (
+        <Layer
+          id={game + 'city-labels-big'}
+          source-layer={game}
+          type={'symbol'}
+          minzoom={enableIconAutoHide ? 4 : 0}
+          maxzoom={enableIconAutoHide ? 9 : undefined}
+          filter={[
+            'all',
+            ['==', ['geometry-type'], 'Point'],
+            ['==', ['get', 'type'], 'city'],
+            ['<=', ['get', 'scaleRank'], 3],
+            dlcGuardFilter,
+          ]}
+          layout={{
+            ...baseTextLayout,
+            'text-field': '{name}',
+            'text-allow-overlap': !enableIconAutoHide,
+            'text-variable-anchor': textVariableAnchor,
+            'text-size': 14,
+            'icon-image': cityIconImage,
+            'icon-allow-overlap': !enableIconAutoHide,
+            'icon-size': 0.8,
+          }}
+          paint={colors.primaryTextPaint}
+        />
+      )}
+      {game === 'ats' && visibleIcons.has(MapIcon.CityNames) && (
+        <Layer
+          id={game + 'country-labels'}
+          source-layer={game}
+          type={'symbol'}
+          minzoom={4}
+          maxzoom={6.5}
+          filter={[
+            'all',
+            ['==', ['geometry-type'], 'Point'],
+            ['==', ['get', 'type'], 'country'],
+          ]}
+          layout={{
+            ...baseTextLayout,
+            'text-font': ['Open Sans Light'],
+            'text-field': '{name}',
+            'text-transform': 'uppercase',
+            'text-variable-anchor': textVariableAnchor,
+            'text-size': ['step', ['zoom'], 10, 5, 13],
+          }}
+          paint={colors.secondaryTextPaint}
+        />
+      )}
+      {game === 'ets2' && visibleIcons.has(MapIcon.CityNames) && (
+        <Layer
+          id={game + 'country-labels'}
+          source-layer={game}
+          type={'symbol'}
+          minzoom={4}
+          maxzoom={6.5}
+          filter={[
+            'all',
+            ['==', ['geometry-type'], 'Point'],
+            ['==', ['get', 'type'], 'country'],
+          ]}
+          layout={{
+            ...baseTextLayout,
+            'text-font': ['Klokantech Noto Sans Bold'],
+            'text-field': '{name}',
+            'text-variable-anchor': textVariableAnchor,
+            'text-size': 14,
+          }}
+          paint={colors.primaryTextPaint}
         />
       )}
     </Source>
