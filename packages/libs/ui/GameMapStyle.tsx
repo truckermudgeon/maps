@@ -638,6 +638,28 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
             'all',
             ['==', ['geometry-type'], 'Point'],
             ['==', ['get', 'type'], 'poi'],
+            ['!=', ['get', 'sprite'], 'garage_large_ico'],
+            createPoiFilter(visibleIcons),
+            dlcGuardFilter,
+            secretFilter,
+          ]}
+          layout={iconLayout(enableIconAutoHide, 0.6, 1.25, 2.5, {
+            vertical: 2,
+            horizontal: 2,
+          })}
+        />
+      )}
+      {hasPois(visibleIcons) && (
+        <Layer
+          id={game + 'poi-icons-garage'}
+          source-layer={game}
+          type={'symbol'}
+          minzoom={enableIconAutoHide ? 7 : 0}
+          filter={[
+            'all',
+            ['==', ['geometry-type'], 'Point'],
+            ['==', ['get', 'type'], 'poi'],
+            ['==', ['get', 'sprite'], 'garage_large_ico'],
             createPoiFilter(visibleIcons),
             dlcGuardFilter,
             secretFilter,
@@ -743,7 +765,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           source-layer={game}
           type={'symbol'}
           minzoom={enableIconAutoHide ? 6 : 0}
-          maxzoom={enableIconAutoHide ? 10 : undefined}
+          maxzoom={enableIconAutoHide ? 11 : undefined}
           filter={[
             'all',
             ['==', ['geometry-type'], 'Point'],
@@ -770,7 +792,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           source-layer={game}
           type={'symbol'}
           minzoom={enableIconAutoHide ? 5 : 0}
-          maxzoom={enableIconAutoHide ? 9 : undefined}
+          maxzoom={enableIconAutoHide ? 10 : undefined}
           filter={[
             'all',
             ['==', ['geometry-type'], 'Point'],
@@ -798,7 +820,7 @@ export const GameMapStyle = (props: GameMapStyleProps) => {
           source-layer={game}
           type={'symbol'}
           minzoom={enableIconAutoHide ? 4 : 0}
-          maxzoom={enableIconAutoHide ? 8 : undefined}
+          maxzoom={enableIconAutoHide ? 9 : undefined}
           filter={[
             'all',
             ['==', ['geometry-type'], 'Point'],
