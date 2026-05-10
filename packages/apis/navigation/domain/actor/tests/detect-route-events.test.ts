@@ -197,7 +197,7 @@ describe('arrayIndexToRouteIndex', () => {
 
 // super expensive to run; disable for now until
 // data can be constrained to minimal fixtures.
-describe.skip('detectRouteEvents bugs', () => {
+describe('detectRouteEvents bugs', () => {
   let graphAndMapData: GraphAndMapData<GraphMappedData>;
   let routingService: RoutingService;
   beforeAll(() => {
@@ -209,7 +209,7 @@ describe.skip('detectRouteEvents bugs', () => {
     );
     // routing service's thread pool ends up making copies of the routing context,
     // which takes a while.
-  }, 15_000);
+  }, 25_000);
 
   function toTruck(data: { truckGamePos: number[]; truckHeading: number }) {
     return aTruckWith({
@@ -450,6 +450,91 @@ describe.skip('detectRouteEvents bugs', () => {
       nodeIndex: 1, // GARC company node is intermediary node.
     });
     expect(segmentComplete).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not repeatedly generate the same route when truck has veered', async () => {
+    const nodes = graphAndMapData.tsMapData.nodes;
+
+    const startNode = assertExists(nodes.get(4205244538338520481n));
+    const endNode = assertExists(nodes.get(0x62889829f28526a9n));
+    let testRoute = await generateRouteFromKeys(
+      [createRouteKey(startNode.uid, endNode.uid, 'forward', 'fastest', 'usa')],
+      { graphAndMapData, routing: routingService },
+    );
+    const testTelemetry = aTelemetryWith({
+      truck: aTruckWith({
+        orientation: {
+          // west
+          heading: 0.25,
+        },
+        position: toTruckPos({
+          x: -38217.69862365723,
+          y: -24058.47294807434,
+          z: 65,
+        }),
+      }),
+    });
+
+    const setActiveRoute = vi
+      .fn()
+      .mockImplementation((route: RouteWithLookup | undefined) => {
+        if (!route) {
+          throw new Error('unexpected undefined route');
+        }
+        console.log('set route', route?.id);
+        testRoute = route;
+      });
+    const setRouteIndex = vi.fn();
+    const segmentComplete = vi.fn();
+
+    const domainEventSink: DomainEventSink = {
+      publish: () => void 0,
+    };
+
+    let { handler } = createUpdateListener(
+      testRoute,
+      setActiveRoute,
+      setRouteIndex,
+      segmentComplete,
+      { paused: false },
+      graphAndMapData,
+      routingService,
+      domainEventSink,
+    );
+
+    console.log('handler: start');
+    handler(testTelemetry);
+
+    // `handler` is sync, but it kicks off an async call to routing :grimacing:
+    await delay(1000);
+
+    // `handler` should have re-routed
+    expect(testRoute).toBeDefined();
+    expect(setActiveRoute).toHaveBeenCalledTimes(1);
+    expect(testRoute.segments.length).toBe(1);
+    expect(testRoute.segments[0].key).toBe(
+      '3a5c07a05691adb7-62889829f28526a9-forward-fastest-usa',
+    );
+
+    // simulate re-creation of update listener by the backend, when a re-route happens.
+    ({ handler } = createUpdateListener(
+      testRoute,
+      setActiveRoute,
+      setRouteIndex,
+      segmentComplete,
+      { paused: false },
+      graphAndMapData,
+      routingService,
+      domainEventSink,
+    ));
+
+    console.log('handler: after re-route');
+    handler(testTelemetry);
+
+    // `handler` is sync, but it kicks off an async call if a reroute happens...
+    await delay(1000);
+    // ...which it shouldn't have.
+    expect(setActiveRoute).toHaveBeenCalledTimes(1);
   });
 
   it('handles veering to degenerate routes (start and end are the same)', async () => {
