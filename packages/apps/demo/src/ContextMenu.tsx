@@ -31,6 +31,7 @@ import type { GeoJSON } from 'geojson';
 import type {
   GeoJSONSource,
   MapLayerMouseEvent,
+  MapLayerTouchEvent,
   MapMouseEvent,
 } from 'maplibre-gl';
 import { Fragment, memo, useCallback, useEffect, useState } from 'react';
@@ -110,7 +111,7 @@ export const ContextMenu = () => {
   }, []);
 
   useEffect(() => {
-    const showContextMenu = (e: MapLayerMouseEvent) => {
+    const showContextMenu = (e: MapLayerMouseEvent | MapLayerTouchEvent) => {
       const { x, y } = e.point;
       const lngLat = e.lngLat.toArray();
       let xz: [number, number] | undefined;
@@ -146,7 +147,12 @@ export const ContextMenu = () => {
     };
 
     let timer: number | undefined;
-    const listenForLongPress = (e: MapLayerMouseEvent) => {
+    const listenForLongPress = (e: MapLayerTouchEvent) => {
+      if (e.points.length !== 1) {
+        // ignore multitouch events (e.g., when doing a two-finger zoom); a long
+        // press should intentionally be done as a single-finger gesture.
+        return;
+      }
       timer = window.setTimeout(() => {
         timer = undefined;
         showContextMenu(e);
@@ -272,6 +278,18 @@ export const ContextMenu = () => {
     };
   }, [map, measuringPoints, measuring]);
 
+  const maybeCloseContextMenu = (e: {
+    currentTarget: EventTarget;
+    target: EventTarget;
+  }) => {
+    if (e.currentTarget === e.target) {
+      // only close if user mousedowns/touchstarts this click-away div, because
+      // we don't want bubbled events (e.g., when a gesture happens on
+      // a descendant <MenuItem>) to close the context menu.
+      closeContextMenu();
+    }
+  };
+
   return (
     <>
       <div
@@ -284,14 +302,8 @@ export const ContextMenu = () => {
           right: 0,
           bottom: 0,
         }}
-        onMouseDown={e => {
-          if (e.currentTarget === e.target) {
-            // only close if user mousedowns on this click-away div, because
-            // we don't want bubbled events (e.g., when a mousedown happens on
-            // a descendant <MenuItem>) to close the context menu.
-            closeContextMenu();
-          }
-        }}
+        onTouchStart={maybeCloseContextMenu}
+        onMouseDown={maybeCloseContextMenu}
       >
         <Menu
           size={'sm'}
