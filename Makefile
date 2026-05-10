@@ -153,7 +153,14 @@ $(GENERATOR_OUT_DIR)/europe-graph.json: $(ETS2_PARSER_JSON_FILES)
 
 ATS_NAVIGATION_FILES += $(GENERATOR_OUT_DIR)/usa-graph.json
 ETS2_NAVIGATION_FILES += $(GENERATOR_OUT_DIR)/europe-graph.json
-# TODO: add {usa,europe}-roundabouts.json once a `roundabouts` generator command exists.
+
+
+# Create ETS2 roundabouts json
+$(GENERATOR_OUT_DIR)/europe-roundabouts.json: $(ETS2_PARSER_JSON_FILES) $(GENERATOR_OUT_DIR)/europe-graph.json
+	npx generator roundabouts -m europe -i $(PARSER_OUT_DIR) -g $(GENERATOR_OUT_DIR) -o $(GENERATOR_OUT_DIR) -c
+
+ETS2_NAVIGATION_FILES += $(GENERATOR_OUT_DIR)/europe-roundabouts.json
+# TODO: add usa-roundabouts.json once `roundabouts` generator has been tweaked for ATS.
 
 
 # Create spritesheet files
