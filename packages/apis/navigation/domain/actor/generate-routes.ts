@@ -54,6 +54,11 @@ export type RouteWithLookup = Route & {
     nodeUidsFlat: readonly bigint[];
     nodeUidsSet: ReadonlySet<bigint>;
   };
+  /**
+   * Present when the route is the result of a reroute (must only be set by
+   * {@link reroute}).
+   */
+  rerouteInfo?: { fromNodeUid: bigint; direction: Direction };
 };
 
 export const generateRoutesMapDataKeys = [
@@ -333,7 +338,14 @@ export async function reroute(
     domainEventSink: DomainEventSink;
   },
 ): Promise<RouteWithLookup> {
-  return combineRoutes(await toRerouteSegments(activeRoute, context));
+  const { fromNodeUid, direction } = calculateFromNodeAndDirection(
+    context.truck,
+    context.graphAndMapData,
+    context.domainEventSink,
+  );
+  const result = combineRoutes(await toRerouteSegments(activeRoute, context));
+  result.rerouteInfo = { fromNodeUid, direction };
+  return result;
 }
 
 async function toRerouteSegments(
@@ -370,21 +382,16 @@ async function toRerouteSegments(
 
 let lastPrefabUidReported: bigint | undefined;
 
-export async function generateRoutes(
-  toNodeUid: bigint,
-  modes: Mode[],
-  context: {
-    graphAndMapData: GraphAndMapData<RouteMappedData>;
-    routing: RoutingService;
-    truck: TruckSimTelemetry['truck'];
-    domainEventSink: DomainEventSink;
-  },
-): Promise<RouteWithLookup[]> {
-  Preconditions.checkArgument(modes.length > 0, 'modes cannot be empty');
-  const { graphAndMapData, routing, truck, domainEventSink } = context;
-  const { roadRTree, signRTree, graphData, tsMapData, roundaboutData } =
-    graphAndMapData;
-  const gameContext: GameContext = { map: tsMapData.map };
+export function calculateFromNodeAndDirection(
+  truck: TruckSimTelemetry['truck'],
+  graphAndMapData: GraphAndMapData<RouteMappedData>,
+  domainEventSink: DomainEventSink,
+): {
+  fromNodeUid: bigint;
+  direction: Direction;
+  allowRetryInOppositeDirection: boolean;
+} {
+  const { roadRTree, graphData, tsMapData } = graphAndMapData;
   const truckPos: [number, number] = [truck.position.X, truck.position.Z];
 
   const location = calculateLocation(
@@ -442,10 +449,6 @@ export async function generateRoutes(
       tsMapData.map,
       domainEventSink,
     ));
-    console.log({
-      fromNodeUid,
-      direction,
-    });
 
     if (!graphData.graph.has(fromNodeUid)) {
       allowRetryInOppositeDirection = true;
@@ -464,14 +467,14 @@ export async function generateRoutes(
           Z: closestGraphNode.y,
         },
       };
-      const location = calculateLocation(
+      const fallbackLocation = calculateLocation(
         fakeTruck,
         tsMapData.nodes,
         tsMapData.roadLooks,
         graphAndMapData.roadAndPrefabRTree,
         tsMapData.map,
       );
-      if (!location) {
+      if (!fallbackLocation) {
         if (fromNodeUid !== lastPrefabUidReported) {
           domainEventSink?.publish({
             type: 'assertionFailed',
@@ -489,18 +492,20 @@ export async function generateRoutes(
           lastPrefabUidReported = fromNodeUid;
         }
         direction = 'forward';
-      } else if (location.type === ItemType.Road) {
+      } else if (fallbackLocation.type === ItemType.Road) {
         direction = getDirectionOnRoad(
           fakeTruck,
-          location,
+          fallbackLocation,
           tsMapData.nodes,
           tsMapData.map,
         );
       } else {
         direction = getDirectionOnPrefab(
           fakeTruck,
-          location,
-          assertExists(tsMapData.prefabDescriptions.get(location.token)),
+          fallbackLocation,
+          assertExists(
+            tsMapData.prefabDescriptions.get(fallbackLocation.token),
+          ),
           tsMapData.nodes,
           tsMapData.map,
           domainEventSink,
@@ -508,6 +513,27 @@ export async function generateRoutes(
       }
     }
   }
+
+  return { fromNodeUid, direction, allowRetryInOppositeDirection };
+}
+
+export async function generateRoutes(
+  toNodeUid: bigint,
+  modes: Mode[],
+  context: {
+    graphAndMapData: GraphAndMapData<RouteMappedData>;
+    routing: RoutingService;
+    truck: TruckSimTelemetry['truck'];
+    domainEventSink: DomainEventSink;
+  },
+): Promise<RouteWithLookup[]> {
+  Preconditions.checkArgument(modes.length > 0, 'modes cannot be empty');
+  const { graphAndMapData, routing, truck, domainEventSink } = context;
+  const { signRTree, graphData, tsMapData, roundaboutData } = graphAndMapData;
+  const gameContext: GameContext = { map: tsMapData.map };
+
+  const { fromNodeUid, direction, allowRetryInOppositeDirection } =
+    calculateFromNodeAndDirection(truck, graphAndMapData, domainEventSink);
 
   // TODO refactor with detect-route-events
 
@@ -584,7 +610,6 @@ export async function generateRoutes(
       fromNodeUid: fromNodeUid.toString(16),
       toNodeUid: toNodeUid.toString(16),
       direction,
-      location,
       truck: { position, orientation },
     });
   }
