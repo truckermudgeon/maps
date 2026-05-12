@@ -5,6 +5,12 @@
   },
   "data": [
     {
+      "id": "aca_book3",
+      "title": "Double Trouble",
+      "desc": "Complete at least 12 scenarios in Double Trailer Handling (Driving Academy)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/270880/882bef5401c3c002d18204679c1acb15294c4a9e.jpg"
+    },
+    {
       "id": "aca_consecutive",
       "title": "Failure Is Not an Option",
       "desc": "Complete any 5 scenarios in a row without failure from the third or fourth chapter in Truck Driving Basics (Driving Academy)",
@@ -43,7 +49,7 @@
     {
       "id": "aca_stars",
       "title": "Nerd of the Road",
-      "desc": "Obtain 3 stars in at least 23 scenarios in Truck Driving Proficiency (Driving Academy)",
+      "desc": "Obtain 3 stars in at least 15 scenarios in Truck Driving Proficiency (Driving Academy)",
       "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/270880/8a312b428b6a0c33b5f3b1fa4af32324d1930eeb.jpg"
     },
     {
@@ -291,6 +297,30 @@
       "title": "Gem State",
       "desc": "Discover at least 8 cities in Idaho (requires Idaho DLC)",
       "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/270880/ee743eff6953bd3f17662652764ea211867ac2fe.jpg"
+    },
+    {
+      "id": "il_cornfield",
+      "title": "Cornfusion",
+      "desc": "Drive to the center of the Evergreen cornfield maze (requires Illinois DLC)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/270880/3b9d2b1c00ebc41e3d658976818d6dec23470418.jpg"
+    },
+    {
+      "id": "il_cutscenes",
+      "title": "Between Two Rivers",
+      "desc": "View cutscenes from at least 12 viewpoints in Illinois (requires Illinois DLC)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/270880/b652b3daaf88470009ecf6c749eaaf55b257f7ad.jpg"
+    },
+    {
+      "id": "il_machinery",
+      "title": "Heavy Duty",
+      "desc": "Perfectly deliver any machinery: Springfield (IL) - Peoria, then Peoria - Chicago (NAMIQ quarry) (requires Illinois DLC)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/270880/ac9d0576c0f7f0b9159af99823ff120d38733018.jpg"
+    },
+    {
+      "id": "il_visit_cities",
+      "title": "The Prairie State",
+      "desc": "Discover at least 8 cities in Illinois (requires Illinois DLC)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/270880/ef2692f40979d009126a44aa6f30ce7af7562a7c.jpg"
     },
     {
       "id": "jobs15comp",

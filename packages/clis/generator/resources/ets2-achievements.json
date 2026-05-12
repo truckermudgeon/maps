@@ -17,6 +17,12 @@
       "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/c005b7fe1e6212340c2058f901312ec0d734e6d9.jpg"
     },
     {
+      "id": "aca_book3",
+      "title": "Double Trouble",
+      "desc": "Complete at least 12 scenarios in Double Trailer Handling (Driving Academy)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/882bef5401c3c002d18204679c1acb15294c4a9e.jpg"
+    },
+    {
       "id": "aca_consecutive",
       "title": "Failure Is Not an Option",
       "desc": "Complete any 5 scenarios in a row without failure from the third or fourth chapter in Truck Driving Basics (Driving Academy)",
@@ -55,7 +61,7 @@
     {
       "id": "aca_stars",
       "title": "Nerd of the Road",
-      "desc": "Obtain 3 stars in at least 23 scenarios in Truck Driving Proficiency (Driving Academy)",
+      "desc": "Obtain 3 stars in at least 15 scenarios in Truck Driving Proficiency (Driving Academy)",
       "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/8a312b428b6a0c33b5f3b1fa4af32324d1930eeb.jpg"
     },
     {
