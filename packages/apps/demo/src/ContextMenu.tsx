@@ -312,6 +312,9 @@ export const ContextMenu = () => {
           placement={'bottom-start'}
           onClick={closeContextMenu}
           onContextMenu={e => e.preventDefault()}
+          style={{
+            touchAction: 'pan-x pan-y',
+          }}
         >
           {clickContext ? (
             <>
