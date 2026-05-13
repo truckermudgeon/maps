@@ -433,7 +433,7 @@ const MeasuringToast = memo(
           horizontal: 'center',
         }}
         size={'sm'}
-        sx={{ alignItems: 'baseline', mb: 4 }}
+        sx={{ alignItems: 'baseline', mb: 4, touchAction: 'pan-x pan-y' }}
         endDecorator={
           <IconButton onClick={props.close}>
             <Close />
