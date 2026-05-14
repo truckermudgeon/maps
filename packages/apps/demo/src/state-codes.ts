@@ -17,6 +17,8 @@ function toStateCode(atsDlc: AtsSelectableDlc): StateCode {
       return StateCode.CO;
     case AtsDlc.Idaho:
       return StateCode.ID;
+    case AtsDlc.Illinois:
+      return StateCode.IL;
     case AtsDlc.Iowa:
       return StateCode.IA;
     case AtsDlc.Kansas:

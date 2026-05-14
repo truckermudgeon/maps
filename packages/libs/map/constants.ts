@@ -23,10 +23,7 @@ export enum AtsDlc {
   Washington,
   Wyoming,
 }
-export type AtsSelectableDlc = Exclude<
-  AtsDlc,
-  AtsDlc.Illinois | AtsDlc.SouthDakota
->;
+export type AtsSelectableDlc = Exclude<AtsDlc, AtsDlc.SouthDakota>;
 export const AtsSelectableDlcs: ReadonlySet<AtsSelectableDlc> = new Set([
   AtsDlc.Nevada,
   AtsDlc.Arizona,
@@ -46,6 +43,7 @@ export const AtsSelectableDlcs: ReadonlySet<AtsSelectableDlc> = new Set([
   AtsDlc.Missouri,
   AtsDlc.Iowa,
   AtsDlc.Louisiana,
+  AtsDlc.Illinois,
 ]);
 function isAtsSelectableDlc(dlc: AtsDlc): dlc is AtsSelectableDlc {
   return AtsSelectableDlcs.has(dlc as AtsSelectableDlc);
@@ -69,6 +67,7 @@ export const AtsDlcInfo: Record<AtsSelectableDlc, string> = {
   [AtsDlc.Missouri]: 'Missouri',
   [AtsDlc.Iowa]: 'Iowa',
   [AtsDlc.Louisiana]: 'Louisiana',
+  [AtsDlc.Illinois]: 'Illinois',
 };
 
 // values are based on country_id values in def/country/<state>.sui files.
@@ -92,6 +91,7 @@ export enum AtsCountryId {
   Missouri = 26,
   Iowa = 21,
   Lousiana = 22,
+  Illinois = 14,
 }
 
 export type AtsDlcGuard = Range<0, 58>; // [start, end)
@@ -182,6 +182,7 @@ export const AtsCountryIdToDlcGuard: Record<AtsCountryId, AtsDlcGuard> = {
   [AtsCountryId.Missouri]: 39,
   [AtsCountryId.Iowa]: 44,
   [AtsCountryId.Lousiana]: 47,
+  [AtsCountryId.Illinois]: 50,
 };
 
 // sanity check to ensure values in record above refer to singleton sets.
@@ -213,6 +214,7 @@ export const AtsScsSourceToDlcGuard: Record<string, AtsDlcGuard> = {
   'dlc_mo.scs': 39,
   'dlc_ia.scs': 44,
   'dlc_la.scs': 47,
+  'dlc_il.scs': 50,
 };
 
 export function toAtsDlcGuards(
