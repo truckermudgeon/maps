@@ -21,7 +21,7 @@ import type { GameContext } from '../game-context';
 import type { GraphAndMapData } from '../lookup-data';
 import type { TelemetryEventEmitter } from '../session-actor';
 import type { RouteWithLookup, RoutingService } from './generate-routes';
-import { reroute } from './generate-routes';
+import { calculateFromNodeAndDirection, reroute } from './generate-routes';
 import { scoreLine } from './score-line';
 
 export type RouteEventEmitter = EventEmitter<{
@@ -174,7 +174,6 @@ interface IsTruckOnRouteContext {
 
 function isTruckOnRoute(
   truck: TruckSimTelemetry['truck'],
-  activeRoute: RouteWithLookup,
   context: IsTruckOnRouteContext,
 ): boolean {
   const { roadAndPrefabRTree, nodes, expectedItems } = context;
@@ -216,27 +215,6 @@ function isTruckOnRoute(
     expectedItems.shift();
     expectedItems.shift();
     return true;
-  }
-
-  // HACK special-case: look to see if we've just rerouted.
-  // rerouting can produce routes starting at the road/prefab _following_ the
-  // truck's current location. if the truck is stationary in this case, then we
-  // end up in a loop where we're always recalculating the same route, over and
-  // over again.
-  if (activeRoute.lookup.nodeUidsFlat.length === expectedItems.length + 1) {
-    const firstNodeUid = activeRoute.lookup.nodeUidsFlat[0];
-    if (location.type === ItemType.Road) {
-      if (
-        firstNodeUid === location.startNodeUid ||
-        firstNodeUid === location.endNodeUid
-      ) {
-        return true;
-      }
-    } else if (location.type === ItemType.Prefab) {
-      if (location.nodeUids.includes(firstNodeUid)) {
-        return true;
-      }
-    }
   }
 
   console.log(
@@ -344,7 +322,7 @@ function createUpdateListener(
 
     const curRouteStepIndex =
       activeRoute.lookup.nodeUidsFlat.length - 1 - expectedItems.length;
-    if (isTruckOnRoute(telemetry.truck, activeRoute, detectionContext)) {
+    if (isTruckOnRoute(telemetry.truck, detectionContext)) {
       const newRouteStepIndex =
         activeRoute.lookup.nodeUidsFlat.length - 1 - expectedItems.length;
       if (curRouteStepIndex !== newRouteStepIndex) {
@@ -437,8 +415,27 @@ function createUpdateListener(
         activeRoute.lookup.nodeUidsFlat.length > 0,
         'activeRoute cannot be empty',
       );
-      const destNodeUid = activeRoute.lookup.nodeUidsFlat.at(-1)!;
 
+      // check if we've already rerouted from the same fromNode + direction
+      if (activeRoute.rerouteInfo) {
+        const current = calculateFromNodeAndDirection(
+          telemetry.truck,
+          graphAndMapData,
+          domainEventSink,
+        );
+        if (
+          current.fromNodeUid === activeRoute.rerouteInfo.fromNodeUid &&
+          current.direction === activeRoute.rerouteInfo.direction
+        ) {
+          console.log(
+            'reroute redundant: same fromNodeUid/direction as active route',
+            `${current.fromNodeUid.toString(16)}-${current.direction}`,
+          );
+          return;
+        }
+      }
+
+      const destNodeUid = activeRoute.lookup.nodeUidsFlat.at(-1)!;
       console.log(`rerouting to ${destNodeUid.toString(16)}`);
       isReRouting = true;
       const routePromise = reroute(activeRoute, {
