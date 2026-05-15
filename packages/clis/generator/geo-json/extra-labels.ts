@@ -382,6 +382,7 @@ export class AtsLabel extends TargetLabel {
       .replace(/ Ck$/, ' Creek')
       .replace(/^Ft\.? /, 'Fort ')
       .replace(/ Jct$/, ' Junction')
+      .replace(/^Mt\.? /, 'Mount ')
       .replace(/ Mtn$/, ' Mountain')
       .replace(/^St\.? /, 'Saint ')
       .replace(/^So /, 'South ')
