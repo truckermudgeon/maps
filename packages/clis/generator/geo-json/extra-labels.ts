@@ -403,7 +403,7 @@ export class AtsLabel extends TargetLabel {
     // numbers. Many such cases should be excluded, but there are exceptions,
     // e.g. Ritzville, WA. These must be fixed manually through metadata.
     analysis.excludeNumber = new RegExp(
-      `\\b(?:US|I|Hwy|${analysis.countryCode})[- ]?[1-9][0-9]*[ENSW]?\\b`,
+      `\\b(?:US|I|Interstate|Hwy|${analysis.countryCode})[- ]?[1-9][0-9]*[ENSW]?\\b`,
     ).test(this.target.editorName);
   }
 
