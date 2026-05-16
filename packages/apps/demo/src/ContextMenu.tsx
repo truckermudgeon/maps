@@ -19,12 +19,14 @@ import {
   center,
   contains,
   distance as euclideanDistance,
+  grow,
 } from '@truckermudgeon/base/geom';
 import { UnreachableError } from '@truckermudgeon/base/precon';
 import {
   fromWgs84ToAtsCoords,
   fromWgs84ToEts2Coords,
 } from '@truckermudgeon/map/projections';
+import { getPmTilesBounds } from '@truckermudgeon/ui';
 import { distance } from '@turf/distance';
 import { featureCollection, point } from '@turf/helpers';
 import type { GeoJSON } from 'geojson';
@@ -50,20 +52,17 @@ interface ClickContext {
 
 type PointFeature = GeoJSON.Feature<GeoJSON.Point, { id: number }>;
 
-// TODO read these values from the .pmtiles files at runtime.
-const extents = {
-  ats: [
-    [-124.477162, 25.767968].map(n => Math.floor(n)),
-    [-88.928336, 49.122384].map(n => Math.ceil(n)),
-  ].flat() as Extent,
-  ets2: [
-    [-10.025698, 34.897275].map(n => Math.floor(n)),
-    [33.284941, 71.573102].map(n => Math.ceil(n)),
-  ].flat() as Extent,
-};
+interface ContextMenuProps {
+  tileRootUrl: string;
+}
 
-export const ContextMenu = () => {
+export const ContextMenu = memo((props: ContextMenuProps) => {
+  const { tileRootUrl } = props;
   const map = assertExists(useMap().current);
+  const [extents, setExtents] = useState<{ ats: Extent; ets2: Extent }>({
+    ats: [0, 0, 0, 0],
+    ets2: [0, 0, 0, 0],
+  });
   const [clickContext, setClickContext] = useState<ClickContext | null>(null);
   const [showClipboardToast, setShowClipboardToast] = useState<boolean>(false);
   const [measuring, setMeasuring] = useState<'ats' | 'ets2' | false>(false);
@@ -109,6 +108,17 @@ export const ContextMenu = () => {
     setClickContext(null);
     map.off('move', closeContextMenu);
   }, []);
+
+  useEffect(() => {
+    Promise.all([
+      getPmTilesBounds(`${tileRootUrl}/ats.pmtiles`),
+      getPmTilesBounds(`${tileRootUrl}/ets2.pmtiles`),
+    ])
+      .then(([ats, ets2]) =>
+        setExtents({ ats: grow(ats, 0.5), ets2: grow(ets2, 0.5) }),
+      )
+      .catch(() => console.error('Error fetching pmtiles bounds'));
+  }, [tileRootUrl]);
 
   useEffect(() => {
     const showContextMenu = (e: MapLayerMouseEvent | MapLayerTouchEvent) => {
@@ -172,7 +182,7 @@ export const ContextMenu = () => {
       map.off('touchend', cancelLongPressTimer);
       map.off('touchmove', cancelLongPressTimer);
     };
-  }, [map]);
+  }, [map, extents]);
 
   useEffect(() => {
     if (!measuring) {
@@ -276,7 +286,7 @@ export const ContextMenu = () => {
         features: [],
       });
     };
-  }, [map, measuringPoints, measuring]);
+  }, [map, extents, measuringPoints, measuring]);
 
   const maybeCloseContextMenu = (e: {
     currentTarget: EventTarget;
@@ -397,7 +407,7 @@ export const ContextMenu = () => {
       />
     </>
   );
-};
+});
 
 const LabeledCoordinates = (props: {
   /** map of component label to value */

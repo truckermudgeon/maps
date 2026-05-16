@@ -1,3 +1,4 @@
+import type { Extent } from '@truckermudgeon/base/geom';
 import maplibregl from 'maplibre-gl';
 import * as pmtiles from 'pmtiles';
 
@@ -11,4 +12,25 @@ export function addPmTilesProtocol() {
   const protocol = new pmtiles.Protocol();
   maplibregl.addProtocol('pmtiles', protocol.tile);
   pmTilesProtocolAdded = true;
+}
+
+const boundsCache = new Map<string, Promise<Extent>>();
+
+export function getPmTilesBounds(url: string): Promise<Extent> {
+  if (boundsCache.has(url)) {
+    return boundsCache.get(url)!;
+  }
+
+  const extentPromise = new pmtiles.PMTiles(url)
+    .getHeader()
+    .then(
+      ({ minLon, minLat, maxLon, maxLat }): Extent => [
+        minLon,
+        minLat,
+        maxLon,
+        maxLat,
+      ],
+    );
+  boundsCache.set(url, extentPromise);
+  return extentPromise;
 }
