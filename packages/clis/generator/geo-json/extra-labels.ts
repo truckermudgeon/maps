@@ -382,6 +382,7 @@ export class AtsLabel extends TargetLabel {
       .replace(/ Ck$/, ' Creek')
       .replace(/^Ft\.? /, 'Fort ')
       .replace(/ Jct$/, ' Junction')
+      .replace(/^Mt\.? /, 'Mount ')
       .replace(/ Mtn$/, ' Mountain')
       .replace(/^St\.? /, 'Saint ')
       .replace(/^So /, 'South ')
@@ -403,7 +404,7 @@ export class AtsLabel extends TargetLabel {
     // numbers. Many such cases should be excluded, but there are exceptions,
     // e.g. Ritzville, WA. These must be fixed manually through metadata.
     analysis.excludeNumber = new RegExp(
-      `\\b(?:US|I|Hwy|${analysis.countryCode})[- ]?[1-9][0-9]*[ENSW]?\\b`,
+      `\\b(?:US|I|Interstate|Hwy|${analysis.countryCode})[- ]?[1-9][0-9]*[ENSW]?\\b`,
     ).test(this.target.editorName);
   }
 
