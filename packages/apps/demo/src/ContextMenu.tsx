@@ -19,6 +19,7 @@ import {
   center,
   contains,
   distance as euclideanDistance,
+  grow,
 } from '@truckermudgeon/base/geom';
 import { UnreachableError } from '@truckermudgeon/base/precon';
 import {
@@ -113,7 +114,9 @@ export const ContextMenu = memo((props: ContextMenuProps) => {
       getPmTilesBounds(`${tileRootUrl}/ats.pmtiles`),
       getPmTilesBounds(`${tileRootUrl}/ets2.pmtiles`),
     ])
-      .then(([ats, ets2]) => setExtents({ ats, ets2 }))
+      .then(([ats, ets2]) =>
+        setExtents({ ats: grow(ats, 0.5), ets2: grow(ets2, 0.5) }),
+      )
       .catch(() => console.error('Error fetching pmtiles bounds'));
   }, [tileRootUrl]);
 
