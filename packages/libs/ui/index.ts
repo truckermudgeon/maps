@@ -12,6 +12,7 @@ export {
   trafficMapIcons,
 } from './GameMapStyle';
 export type { GameMapStyleProps, SecretDisplay } from './GameMapStyle';
+export { getPmTilesBounds } from './pmtiles';
 export {
   atsSceneryTownsUrl,
   ets2SceneryTownsUrl,

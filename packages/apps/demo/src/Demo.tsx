@@ -587,7 +587,7 @@ const Demo = (props: {
           />
         </Popup>
       )}
-      <ContextMenu />
+      <ContextMenu tileRootUrl={tileRootUrl} />
       <Snackbar
         open={gameMap === 'usa' && showStreetViewLayer}
         anchorOrigin={{
