@@ -186,6 +186,7 @@ export class SessionActorImpl implements SessionActor {
   dispose() {
     this.telemetryEventEmitter.off('telemetry', this.onTelemetryHandler);
     this.jobEventEmitter.removeAllListeners();
+    this.mapEventEmitter.removeAllListeners();
     this.routeEventEmitter.removeAllListeners();
     this.trailerEventEmitter.removeAllListeners();
     this.themeModeEventEmitter.removeAllListeners();
