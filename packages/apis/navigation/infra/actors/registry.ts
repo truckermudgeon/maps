@@ -20,6 +20,7 @@ import type { MetricsService } from '../metrics/service';
 interface Entry {
   actor: SessionActor;
   lastTouched: number;
+  dispose: () => void;
 }
 
 export interface ReadonlySessionActorRegistry {
@@ -79,7 +80,7 @@ export class SessionActorRegistryImpl implements SessionActorRegistry {
 
       let lastEmit: number | undefined;
 
-      this.opts.kv.onSet(event => {
+      const offSet = this.opts.kv.onSet(event => {
         if (event.key === navigatorKeys.telemetry(telemetryId)) {
           if (lastEmit == null) {
             lastEmit = Date.now();
@@ -110,7 +111,14 @@ export class SessionActorRegistryImpl implements SessionActorRegistry {
         this.opts.routing,
         this.opts.maxClientsPerActor,
       );
-      entry = { actor, lastTouched: Date.now() };
+      entry = {
+        actor,
+        lastTouched: Date.now(),
+        dispose: () => {
+          actor.dispose();
+          offSet();
+        },
+      };
       this.actors.set(telemetryId, entry);
       this.opts.onCreate?.(actor);
     }
@@ -125,7 +133,7 @@ export class SessionActorRegistryImpl implements SessionActorRegistry {
       return;
     }
 
-    entry.actor.dispose();
+    entry.dispose();
     this.actors.delete(code);
 
     this.opts.onDelete?.(entry.actor, reason);

@@ -20,23 +20,22 @@ export function subscribeSession(
   generator: AsyncGenerator<ActorEvent, void, void>;
   unsubscribe: () => void;
 } {
-  const queue: Exclude<ActorEvent, ActorEvent & { type: 'positionUpdate' }>[] =
-    [];
-  let resolve: (() => void) | null = null;
-
-  // derived events (buffered)
-  // TODO do these need to be buffered? are latest-values enough?
+  const sparseEventQueue: Exclude<
+    ActorEvent,
+    ActorEvent & { type: 'positionUpdate' }
+  >[] = [];
+  let wake: (() => void) | null = null;
 
   const onRouteUpdate = (data: Route | undefined) => {
-    queue.push({ type: 'routeUpdate', data });
-    resolve?.();
-    resolve = null;
+    sparseEventQueue.push({ type: 'routeUpdate', data });
+    wake?.();
+    wake = null;
   };
 
   const onRouteProgress = (data: RouteIndex | undefined) => {
-    queue.push({ type: 'routeProgress', data });
-    resolve?.();
-    resolve = null;
+    sparseEventQueue.push({ type: 'routeProgress', data });
+    wake?.();
+    wake = null;
   };
 
   const onSegmentComplete = (index: number) => {
@@ -62,47 +61,50 @@ export function subscribeSession(
       };
     }
 
-    queue.push({
+    sparseEventQueue.push({
       type: 'segmentComplete',
       data: segmentInfo,
     });
-    resolve?.();
-    resolve = null;
+    wake?.();
+    wake = null;
   };
 
   const onJobUpdate = (data: JobState | undefined) => {
-    queue.push({ type: 'jobUpdate', data });
-    resolve?.();
-    resolve = null;
+    sparseEventQueue.push({ type: 'jobUpdate', data });
+    wake?.();
+    wake = null;
   };
 
   const onMapUpdate = (data: 'usa' | 'europe') => {
-    queue.push({ type: 'mapUpdate', data });
-    resolve?.();
-    resolve = null;
+    sparseEventQueue.push({ type: 'mapUpdate', data });
+    wake?.();
+    wake = null;
   };
 
   const onTrailerUpdate = (data: TrailerState | undefined) => {
-    queue.push({ type: 'trailerUpdate', data });
-    resolve?.();
-    resolve = null;
+    sparseEventQueue.push({ type: 'trailerUpdate', data });
+    wake?.();
+    wake = null;
   };
 
   const onThemeModeUpdate = (data: 'light' | 'dark') => {
-    queue.push({ type: 'themeModeUpdate', data });
-    resolve?.();
-    resolve = null;
+    sparseEventQueue.push({ type: 'themeModeUpdate', data });
+    wake?.();
+    wake = null;
   };
 
-  // Starts clean: yielding the actor's cached telemetry on subscribe would
-  // mask a dead device by satisfying the staleBinding timer with stale data
-  // from a prior session.
-  let stateDirty = false;
+  let hasTelemetry = false;
   const offLatest = actor.getLatestTelemetry().subscribe(() => {
-    stateDirty = true;
-    resolve?.();
-    resolve = null;
+    hasTelemetry = true;
+    wake?.();
+    wake = null;
   });
+
+  const onAbort = () => {
+    wake?.();
+    wake = null;
+  };
+  signal?.addEventListener('abort', onAbort, { once: true });
 
   const unsubscribe = () => {
     console.log('actor unsubscribe');
@@ -113,6 +115,7 @@ export function subscribeSession(
     actor.mapEventEmitter.off('update', onMapUpdate);
     actor.trailerEventEmitter.off('update', onTrailerUpdate);
     actor.themeModeEventEmitter.off('update', onThemeModeUpdate);
+    signal?.removeEventListener('abort', onAbort);
     offLatest();
   };
 
@@ -125,39 +128,49 @@ export function subscribeSession(
     actor.trailerEventEmitter.on('update', onTrailerUpdate);
     actor.themeModeEventEmitter.on('update', onThemeModeUpdate);
 
-    console.log(
-      'actor subscriptions',
-      actor.routeEventEmitter.listeners.length,
-    );
-
     // eagerly queue up certain states, so clients connecting mid-session see
     // the current "snapshot" of things, without having to wait for state-
     // changes to take effect
 
-    queue.push({ type: 'themeModeUpdate', data: actor.readThemeMode() });
-    queue.push({ type: 'jobUpdate', data: actor.readJobState() });
-    queue.push({ type: 'trailerUpdate', data: actor.readTrailerState() });
+    sparseEventQueue.push({
+      type: 'themeModeUpdate',
+      data: actor.readThemeMode(),
+    });
+    sparseEventQueue.push({ type: 'jobUpdate', data: actor.readJobState() });
+    sparseEventQueue.push({
+      type: 'trailerUpdate',
+      data: actor.readTrailerState(),
+    });
     if (actor.gameContext != null) {
-      queue.push({ type: 'mapUpdate', data: actor.gameContext.map });
+      sparseEventQueue.push({ type: 'mapUpdate', data: actor.gameContext.map });
     }
 
     const rwl = actor.readActiveRoute();
     if (rwl == null) {
-      queue.push({ type: 'routeUpdate', data: undefined });
+      sparseEventQueue.push({ type: 'routeUpdate', data: undefined });
     } else {
       const { lookup, ...route } = rwl;
-      queue.push({ type: 'routeUpdate', data: route });
-      queue.push({ type: 'routeProgress', data: actor.readRouteIndex() });
+      sparseEventQueue.push({ type: 'routeUpdate', data: route });
+      sparseEventQueue.push({
+        type: 'routeProgress',
+        data: actor.readRouteIndex(),
+      });
     }
 
     while (!signal?.aborted) {
-      if (queue.length === 0 && !stateDirty) {
-        await new Promise<void>(r => (resolve = r));
+      if (sparseEventQueue.length === 0 && !hasTelemetry) {
+        // If there's no data from sparse events or from telemetry, then sleep
+        // until `wake` is called from:
+        // - telemetry data being received
+        // - some sparse-event data being received
+        // - `subscribeSession`'s caller unsubscribing
+        // - the subscription being aborted
+        await new Promise<void>(r => (wake = r));
       }
 
-      // always emit latest telemetry first if updated
-      if (stateDirty) {
-        stateDirty = false;
+      // always emit latest telemetry first
+      if (hasTelemetry) {
+        hasTelemetry = false;
         const telemetry = actor.getLatestTelemetry().get();
         if (telemetry) {
           yield { type: 'positionUpdate', data: toGameState(telemetry) };
@@ -165,8 +178,8 @@ export function subscribeSession(
       }
 
       // then drain sparse events
-      while (queue.length) {
-        yield queue.shift()!;
+      while (sparseEventQueue.length) {
+        yield sparseEventQueue.shift()!;
       }
     }
   };
