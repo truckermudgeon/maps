@@ -419,15 +419,24 @@ function processSpeedLimitJson(obj: SpeedLimitsSii) {
 
   // HACK: extra validation that isn't expressed in schema
   assert(
-    [limit, maxLimit, urbanLimit].every(
+    [limit /* maxLimit */, urbanLimit].every(
       array => array.length === laneSpeedClass.length,
     ),
   );
+  // HACK on top of a HACK: Idaho's def files have changed so that it only
+  // defines 2 maxLimit values... for some reason.
+  assert(
+    maxLimit.length === laneSpeedClass.length ||
+      maxLimit.length === laneSpeedClass.length - 1,
+  );
+  if (maxLimit.length !== laneSpeedClass.length) {
+    logger.warn('maxLimit length warning');
+  }
 
   return laneSpeedClass.reduce((obj, className, index) => {
     obj[toLaneSpeedClass(className)] = {
       limit: limit[index],
-      maxLimit: maxLimit[index],
+      maxLimit: maxLimit[index] ?? maxLimit.at(-1)!,
       urbanLimit: urbanLimit[index],
     };
     return obj;

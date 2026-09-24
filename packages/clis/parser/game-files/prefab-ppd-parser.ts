@@ -379,7 +379,7 @@ export function parsePrefabPpd(buffer: Buffer): PrefabDescription {
             const key = roadOffset as keyof typeof roadOffsetToOffset;
             offset = roadOffsetToOffset[key];
           } else {
-            logger.warn('unknown road size', roadSize);
+            logger.warn('unknown road offset', roadOffset);
           }
 
           if (lanesLeft === 'auto' && lanesRight === 'auto') {
