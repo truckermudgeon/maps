@@ -39,6 +39,8 @@ function toStateCode(atsDlc: AtsSelectableDlc): StateCode {
       return StateCode.OK;
     case AtsDlc.Oregon:
       return StateCode.OR;
+    case AtsDlc.SouthDakota:
+      return StateCode.SD;
     case AtsDlc.Texas:
       return StateCode.TX;
     case AtsDlc.Utah:
