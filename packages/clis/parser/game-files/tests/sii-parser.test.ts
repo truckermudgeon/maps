@@ -19,6 +19,27 @@ SiiNunit
     expectToParse(text);
   });
 
+  it('parses a file with /* ... */ comment', () => {
+    const text = `
+SiiNunit
+{
+/*
+Comment
+*/
+
+model_def : model.1140
+{
+\tmodel_desc: "/model/props/street/burning_barrel.pmd"
+\tdrop_sun_shadows: 1
+}
+}   
+    `;
+    expectToParse(text);
+    const res = parseSii(text);
+    expect(res.input[2].tokenType.name).toBe('Property');
+    expect(res.input[2].image).toBe('model_def');
+  });
+
   it('parses a single-entry sui file', () => {
     const text = `
 cargo_data: cargo.bottles
