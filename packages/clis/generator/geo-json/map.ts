@@ -228,6 +228,13 @@ export function convertToMapGeoJson(
     countriesByCityName.set('Vestnes', no);
     countriesByCityName.set('Skutvik', no);
   }
+  if (countries.has('iceland')) {
+    const is = countries.get('iceland')!;
+    countriesByCityName.set('Þorlákshöfn', is);
+    countriesByCityName.set('Seyðisfjörður', is);
+    countriesByCityName.set('Stykkishólmur', is);
+    countriesByCityName.set('Brjánslækur', is);
+  }
   const ferryFeatures: FerryFeature[] = uniqFerries.map(f =>
     ferryToFeature(map, f, cities, countries, countriesByCityName),
   );
