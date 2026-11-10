@@ -155,6 +155,30 @@
       "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/aa5c81b012cd288a56f955f905920d214ac4a232.jpg"
     },
     {
+      "id": "bus_job_satisfaction",
+      "title": "Smooth Start",
+      "desc": "Hidden achievement:  Complete a coach job with 90% or higher passenger satisfaction (requires Coaches DLC)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/0ca1f5cc7a7a28fa584b501d1d8ad6eb3b00b951.jpg"
+    },
+    {
+      "id": "bus_jobs_consecutive",
+      "title": "Rule of Threes",
+      "desc": "Hidden achievement:  Complete 3 consecutive jobs of at least 300 kilometers each with 100% satisfaction (requires Coaches DLC)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/9c43ae2c0bf2b784aa1c2188d7331f15010342ad.jpg"
+    },
+    {
+      "id": "bus_jobs_owned_distance",
+      "title": "Seasoned Traveller",
+      "desc": "Hidden achievement:  Drive a total of 5,000 kilometers in your own vehicle during a coach job (requires Coaches DLC)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/4ef826a6b50466520ee196d59d4f5974a839a4d2.jpg"
+    },
+    {
+      "id": "bus_skills",
+      "title": "Multitalented Driver",
+      "desc": "Hidden achievement:  Spend at least one skill point in each coach skill (requires Coaches DLC)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/3f1b0f1f9e4dc4e68de889024589700bcf40f314.jpg"
+    },
+    {
       "id": "buy_truck_online",
       "title": "From the Comfort of Your Home",
       "desc": "Buy a truck online",
@@ -345,6 +369,30 @@
       "title": "Conquistador",
       "desc": "Discover at least 30 cities in Iberia (requires Iberia DLC)",
       "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/35afb1d45e8842a77e94b6cf1138f4c7b1d214f2.jpg"
+    },
+    {
+      "id": "is_cutscenes",
+      "title": "Saga Sights",
+      "desc": "Hidden achievement:  View cutscenes from at least 8 viewpoints in Iceland (requires Iceland DLC)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/daec3e7f42b518768ef733aba5ed78dea8159981.jpg"
+    },
+    {
+      "id": "is_ringroad",
+      "title": "Lord of the Ringroad",
+      "desc": "Hidden achievement:  Complete 3 excellent deliveries in this order: Reykjavík - Höfn - Akureyri - Reykjavík (requires Iceland DLC)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/143bef7235f2a0f29ca08fdc0dea146f9abeec2f.jpg"
+    },
+    {
+      "id": "is_sheep",
+      "title": "Outrun the Yule Cat",
+      "desc": "Hidden achievement:  Complete 3 livestock deliveries of sheep to or from 3 different farms in Iceland (requires Iceland DLC)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/266540ff3ad969fdc6ec4422892a97cb1c185faa.jpg"
+    },
+    {
+      "id": "is_visit_cities",
+      "title": "Land of Fire and Ice",
+      "desc": "Hidden achievement:  Discover at least 12 cities in Iceland (requires Iceland DLC)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/227300/a9beda0115e12ef2bf411c547a1480e4ec0fa059.jpg"
     },
     {
       "id": "it_garages",
