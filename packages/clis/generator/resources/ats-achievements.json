@@ -137,6 +137,42 @@
       "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/270880/00fed66d1153fdb8a71ab93c66ef06ae99d15f29.jpg"
     },
     {
+      "id": "car_bought",
+      "title": "Keys in Hand",
+      "desc": "Own your first car (requires Road Trip DLC)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/270880/d9fc63dd7f155b0c532dc3d125b1a457896b6eff.jpg"
+    },
+    {
+      "id": "car_distance_or_jobs_reward",
+      "title": "Interstate Legend",
+      "desc": "Drive 5,000 miles or earn 50,000 dollars using any car (requires Road Trip DLC)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/270880/1dc7232fd69695570b081e01efc2a4b3ec701acc.jpg"
+    },
+    {
+      "id": "car_jobs_no_fines",
+      "title": "Nowhere to Rush",
+      "desc": "Complete 20 consecutive jobs without a fine in any car (requires Road Trip DLC)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/270880/b61568bd00ee6f66fcb77cc9934e04493907bc7d.jpg"
+    },
+    {
+      "id": "car_jobs_rating_level",
+      "title": "Not a Scratch",
+      "desc": "Deliver cargo with a 5-star rating 5 times in a row using any car (requires Road Trip DLC)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/270880/d5cd0c080a7166056aa18e6a30871d439a180da9.jpg"
+    },
+    {
+      "id": "car_jobs_unique_cargos",
+      "title": "Jack of All Trades",
+      "desc": "Deliver 5 unique cargoes using a car (requires Road Trip DLC)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/270880/7eaed9919954a1bac527363734cd9806415cc658.jpg"
+    },
+    {
+      "id": "car_tb_completed",
+      "title": "Worth the Detour",
+      "desc": "Earn a Postcard by completing a Tourist Board (requires Road Trip DLC)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/270880/cba3e23739ca86aa5aed7940c61baef7b92ee48c.jpg"
+    },
+    {
       "id": "co_denver_airport",
       "title": "Up and Away",
       "desc": "Complete 10 deliveries to Denver Airport (requires Colorado DLC)",
@@ -579,6 +615,30 @@
       "title": "High Five",
       "desc": "Complete a perfect delivery (no damage, no fines, in-time) for a job that is at least 600 miles",
       "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/270880/4e858a5aa7d4ff2b545a0adddfa62ede5b046f6a.jpg"
+    },
+    {
+      "id": "sd_cutscenes",
+      "title": "Great Faces, Great Places",
+      "desc": "View cutscenes from at least 10 viewpoints in South Dakota (requires South Dakota DLC)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/270880/e6ab5b290fd48f39cf0094298952f44dd2a872d4.jpg"
+    },
+    {
+      "id": "sd_no_damage",
+      "title": "Big Muddy Run",
+      "desc": "Complete two undamaged deliveries in this order: Mobridge - Pierre, Pierre - Yankton (requires South Dakota DLC)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/270880/03b6bf53e806e752bbb5ac031244e011c65ef1f7.jpg"
+    },
+    {
+      "id": "sd_unique_cargos",
+      "title": "Who Says You Can’t Go Home?",
+      "desc": "Deliver two different types of cargo to the residential construction sites in Watertown or Spearfish (requires South Dakota DLC)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/270880/a1c867e579e6a84231e4e910667d95425dc23fa5.jpg"
+    },
+    {
+      "id": "sd_visit_cities",
+      "title": "Mount Rushmore State",
+      "desc": "Discover at least 10 cities in South Dakota (requires South Dakota DLC)",
+      "imgUrl": "https://shared.fastly.steamstatic.com/community_assets/images/apps/270880/488f4a577f693b8f407f344054731fa23202554b.jpg"
     },
     {
       "id": "st_aircondition",

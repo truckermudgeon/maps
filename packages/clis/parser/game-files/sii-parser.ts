@@ -58,6 +58,11 @@ const Comment = createToken({
   pattern: /(\/\/|#).*/,
   group: Lexer.SKIPPED,
 });
+const MultiLineComment = createToken({
+  name: 'MultiLineComment',
+  pattern: /\/\*[\s\S]*?\*\//,
+  group: Lexer.SKIPPED,
+});
 
 const allTokens = [
   SiiNunit,
@@ -78,6 +83,7 @@ const allTokens = [
   Property,
   WhiteSpace,
   Comment,
+  MultiLineComment,
 ];
 
 const SiiLexer = new Lexer(allTokens);
