@@ -253,6 +253,7 @@ enum Ets2Dlc {
   Feldbinder,
   Greece,
   NordicHorizons,
+  Iceland,
 }
 export type Ets2SelectableDlc = Exclude<Ets2Dlc, Ets2Dlc.HeartOfRussia>;
 export const Ets2SelectableDlcs: ReadonlySet<Ets2SelectableDlc> = new Set([
@@ -266,6 +267,7 @@ export const Ets2SelectableDlcs: ReadonlySet<Ets2SelectableDlc> = new Set([
   Ets2Dlc.WestBalkans,
   Ets2Dlc.Greece,
   Ets2Dlc.NordicHorizons,
+  Ets2Dlc.Iceland,
   Ets2Dlc.Krone,
   Ets2Dlc.Feldbinder,
 ]);
@@ -284,11 +286,12 @@ export const Ets2DlcInfo: Record<Ets2SelectableDlc, string> = {
   [Ets2Dlc.WestBalkans]: 'West Balkans',
   [Ets2Dlc.Greece]: 'Greece',
   [Ets2Dlc.NordicHorizons]: 'Nordic Horizons',
+  [Ets2Dlc.Iceland]: 'Iceland',
   [Ets2Dlc.Krone]: 'Krone Trailer Pack',
   [Ets2Dlc.Feldbinder]: 'Feldbinder Trailer Pack',
 };
 
-export type Ets2DlcGuard = Range<0, 26>;
+export type Ets2DlcGuard = Range<0, 27>;
 
 export const Ets2DlcGuards: Record<number, ReadonlySet<Ets2Dlc>> = {
   0: new Set(),
@@ -317,6 +320,8 @@ export const Ets2DlcGuards: Record<number, ReadonlySet<Ets2Dlc>> = {
   23: new Set([Ets2Dlc.NordicHorizons]),
   24: new Set([Ets2Dlc.NordicHorizons, Ets2Dlc.BeyondTheBalticSea]),
   25: new Set([Ets2Dlc.NordicHorizons, Ets2Dlc.Scandinavia]),
+  26: new Set([Ets2Dlc.Iceland]),
+  27: new Set([Ets2Dlc.Iceland, Ets2Dlc.NordicHorizons]),
 };
 
 export const Ets2ScsSourceToDlcGuard: Record<string, Ets2DlcGuard> = {
@@ -331,6 +336,7 @@ export const Ets2ScsSourceToDlcGuard: Record<string, Ets2DlcGuard> = {
   'dlc_balkan_w.scs': 16,
   'dlc_greece.scs': 20,
   'dlc_polar.scs': 23,
+  'dlc_iceland.scs': 26,
   // cargo
   'dlc_feldbinder.scs': 19,
   'dlc_krone.scs': 15,
