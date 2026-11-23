@@ -55,6 +55,7 @@ $(GENERATOR_OUT_DIR)/ets2.pmtiles: $(ETS2_PARSER_JSON_FILES) $(RESOURCES_DIR)/tr
 DEMO_FILES += $(GENERATOR_OUT_DIR)/ats.pmtiles
 DEMO_FILES += $(GENERATOR_OUT_DIR)/ets2.pmtiles
 NAVIGATOR_FILES += $(GENERATOR_OUT_DIR)/ats.pmtiles
+NAVIGATOR_FILES += $(GENERATOR_OUT_DIR)/ets2.pmtiles
 
 
 # Create ATS and ETS2 footprints pmtiles files
@@ -66,6 +67,7 @@ $(GENERATOR_OUT_DIR)/ets2-footprints.pmtiles: $(ETS2_PARSER_JSON_FILES)
 DEMO_FILES += $(GENERATOR_OUT_DIR)/ats-footprints.pmtiles
 DEMO_FILES += $(GENERATOR_OUT_DIR)/ets2-footprints.pmtiles
 NAVIGATOR_FILES += $(GENERATOR_OUT_DIR)/ats-footprints.pmtiles
+NAVIGATOR_FILES += $(GENERATOR_OUT_DIR)/ets2-footprints.pmtiles
 
 
 # Create ATS and ETS2 contours (aka elevations) pmtiles files
