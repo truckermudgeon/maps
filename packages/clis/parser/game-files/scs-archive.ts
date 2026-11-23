@@ -547,25 +547,26 @@ class ScsArchiveTobjFile extends ScsArchiveFile {
       // 93: B8G8R8X8_UNORM_SRGB;
       // 88: B8G8R8X8_UNORM
 
-      // fudge widths/heights. seems to fix problem with ETS2's sr_e763 icon.
-      width = closestPowerOf2(this.imageMetadata.width);
-      height = closestPowerOf2(this.imageMetadata.height);
+      // DDS dimensions must be in powers of 2.
+      width = closestPowerOf2(this.imageMetadata.width, 'floor');
+      height = closestPowerOf2(this.imageMetadata.height, 'floor');
+      // calculate offsets so images from larger source textures are centered
+      // within smaller target textures
+      const xOffset = Math.floor((this.imageMetadata.width - width) / 2);
+      const yOffset = Math.floor((this.imageMetadata.height - height) / 2);
 
       ddsBytes = Buffer.alloc(4 * width * height);
       const rawData = super.read();
-      // Is there a nicer way to figure out pitch?
-      const factor = Math.ceil(rawData.length / ddsBytes.length);
-      for (let i = 0; i < height; i++) {
-        if (i * 4 * width * factor > rawData.length) {
-          // some image data seems to be incomplete, or pitch is
-          // incorrect. abort copying of image data instead of erroring out.
-          break;
-        }
+      const pitch = closestPowerOf2(
+        rawData.length / this.imageMetadata.height,
+        'ceil',
+      );
+      for (let rowIdx = 0; rowIdx < height; rowIdx++) {
         rawData.copy(
-          ddsBytes,
-          i * 4 * width,
-          i * 4 * width * factor,
-          (i + 1) * 4 * width * factor,
+          ddsBytes, // target buffer
+          rowIdx * 4 * width, // target start
+          (rowIdx + yOffset) * pitch + 4 * xOffset, // source start
+          (rowIdx + yOffset) * pitch + 4 * xOffset + 4 * width, // source end
         );
       }
     } else {
@@ -619,8 +620,9 @@ class ScsArchiveTobjFile extends ScsArchiveFile {
   }
 }
 
-function closestPowerOf2(n: number): number {
-  const lg = Math.floor(Math.log2(n));
+function closestPowerOf2(n: number, mode: 'floor' | 'ceil'): number {
+  const lg =
+    mode === 'floor' ? Math.floor(Math.log2(n)) : Math.ceil(Math.log2(n));
   return Math.pow(2, lg);
 }
 
