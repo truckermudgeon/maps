@@ -566,7 +566,7 @@ class ScsArchiveTobjFile extends ScsArchiveFile {
           ddsBytes, // target buffer
           rowIdx * 4 * width, // target start
           (rowIdx + yOffset) * pitch + 4 * xOffset, // source start
-          (rowIdx + yOffset) * pitch + 4 * width, // source end
+          (rowIdx + yOffset) * pitch + 4 * xOffset + 4 * width, // source end
         );
       }
     } else {
