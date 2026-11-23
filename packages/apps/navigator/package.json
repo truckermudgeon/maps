@@ -14,6 +14,7 @@
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^3.2.3",
+    "@nabla/vite-plugin-eslint": "^3.0.1",
     "@storybook/addon-essentials": "^8.5.0",
     "@storybook/addon-interactions": "^8.5.0",
     "@storybook/addon-onboarding": "^8.5.0",
@@ -33,7 +34,6 @@
     "storybook": "^8.5.0",
     "typescript": "^5.9.2",
     "vite": "^7.1.5",
-    "vite-plugin-eslint": "^1.8.1",
     "vite-plugin-pwa": "^1.2.0",
     "vite-tsconfig-paths": "^5.1.4"
   },

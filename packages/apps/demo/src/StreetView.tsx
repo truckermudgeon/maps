@@ -18,13 +18,13 @@ import '@photo-sphere-viewer/virtual-tour-plugin/index.css';
 import { assertExists } from '@truckermudgeon/base/assert';
 import { debounce } from '@truckermudgeon/base/debounce';
 import { AtsSelectableDlcs } from '@truckermudgeon/map/constants';
+import type { Mode } from '@truckermudgeon/ui';
 import {
   atsIcons,
   BaseMapStyle,
   defaultMapStyle,
   GameMapStyle,
 } from '@truckermudgeon/ui';
-import type { Mode } from '@truckermudgeon/ui/colors';
 import type { Marker as MapLibreGLMarker } from 'maplibre-gl';
 import { memo, useMemo, useRef, useState } from 'react';
 import type { MapRef } from 'react-map-gl/maplibre';

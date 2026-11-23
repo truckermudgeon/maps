@@ -1,6 +1,6 @@
 import type { StyleSpecification } from 'maplibre-gl';
 export { BaseMapStyle } from './BaseMapStyle';
-export { modeColors } from './colors';
+export { modeColors, type Mode } from './colors';
 export { ContoursStyle } from './Contours';
 export {
   atsIcons,

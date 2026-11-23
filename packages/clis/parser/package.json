@@ -26,7 +26,7 @@
     "@truckermudgeon/map": "0.0.0",
     "ajv": "^8.18.0",
     "ajv-keywords": "^5.1.0",
-    "binary-parser": "^2.3.0",
+    "binary-parser": "^3.0.0",
     "bindings": "^1.5.0",
     "chevrotain": "^10.5.0",
     "cli-progress": "^3.12.0",

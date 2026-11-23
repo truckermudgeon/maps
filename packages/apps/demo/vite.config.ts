@@ -1,5 +1,5 @@
+import eslint from '@nabla/vite-plugin-eslint';
 import react from '@vitejs/plugin-react';
-import eslint from 'vite-plugin-eslint';
 import viteTsconfigPaths from 'vite-tsconfig-paths';
 import { defineConfig } from 'vitest/config';
 

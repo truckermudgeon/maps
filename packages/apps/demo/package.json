@@ -10,6 +10,7 @@
     "serve": "vite preview"
   },
   "devDependencies": {
+    "@nabla/vite-plugin-eslint": "^3.0.1",
     "@types/object.groupby": "^1.0.4",
     "@types/react": "^18.2.47",
     "@types/react-dom": "^18.2.18",
@@ -17,7 +18,6 @@
     "jsdom": "^25.0.1",
     "typescript": "^5.9.2",
     "vite": "^7.1.5",
-    "vite-plugin-eslint": "^1.8.1",
     "vite-tsconfig-paths": "^5.1.4"
   },
   "dependencies": {
