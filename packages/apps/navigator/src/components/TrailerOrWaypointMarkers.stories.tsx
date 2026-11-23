@@ -3,7 +3,7 @@ import type { Meta, StoryContext, StoryObj } from '@storybook/react';
 import type { Position } from '@truckermudgeon/base/geom';
 import { BranchType } from '@truckermudgeon/navigation/constants';
 import type { RouteStep } from '@truckermudgeon/navigation/types';
-import * as React from 'react';
+import type * as React from 'react';
 import { SlippyMap } from './SlippyMap';
 import { Default as SlippyMapDefault } from './SlippyMap.stories';
 import { TrailerOrWaypointMarkers } from './TrailerOrWaypointMarkers';
@@ -15,7 +15,7 @@ const meta = {
     (Story: () => React.JSX.Element, context: StoryContext) => (
       <SlippyMap
         {...SlippyMapDefault.args}
-        mode={context.globals['theme'] as 'light' | 'dark'}
+        mode={context.globals.theme as 'light' | 'dark'}
         TrailerOrWaypointMarkers={Story}
       />
     ),

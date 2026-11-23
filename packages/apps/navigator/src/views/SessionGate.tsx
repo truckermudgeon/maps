@@ -15,7 +15,8 @@ import {
   Typography,
 } from '@mui/joy';
 import { action, runInAction } from 'mobx';
-import React, { memo, useEffect, useRef, useState } from 'react';
+import type React from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import OtpInput from 'react-otp-input';
 import type { AppClient } from '../controllers/types';
 import './SessionGate.css';

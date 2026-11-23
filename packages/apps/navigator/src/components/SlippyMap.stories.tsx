@@ -28,6 +28,6 @@ export const Default: Story = {
     ),
   },
   render: (args, context) => (
-    <SlippyMap {...args} mode={context.globals['theme'] as 'light' | 'dark'} />
+    <SlippyMap {...args} mode={context.globals.theme as 'light' | 'dark'} />
   ),
 };

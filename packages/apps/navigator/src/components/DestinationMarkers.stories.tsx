@@ -1,6 +1,6 @@
 import type { Meta, StoryContext, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
-import * as React from 'react';
+import type * as React from 'react';
 import { DestinationMarkers } from './DestinationMarkers';
 import { SlippyMap } from './SlippyMap';
 import { Default as SlippyMapDefault } from './SlippyMap.stories';
@@ -13,7 +13,7 @@ const meta = {
     (Story: () => React.JSX.Element, context: StoryContext) => (
       <SlippyMap
         {...SlippyMapDefault.args}
-        mode={context.globals['theme'] as 'light' | 'dark'}
+        mode={context.globals.theme as 'light' | 'dark'}
         Destinations={Story}
       />
     ),

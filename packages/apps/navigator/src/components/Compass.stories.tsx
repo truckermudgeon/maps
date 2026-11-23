@@ -19,7 +19,7 @@ export const TwoLetter: Story = {
     onClick: fn(),
   },
   render: (args, context) => (
-    <Compass {...args} mode={context.globals['theme'] as 'light' | 'dark'} />
+    <Compass {...args} mode={context.globals.theme as 'light' | 'dark'} />
   ),
 };
 

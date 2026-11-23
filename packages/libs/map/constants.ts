@@ -47,7 +47,7 @@ export const AtsSelectableDlcs: ReadonlySet<AtsSelectableDlc> = new Set([
   AtsDlc.SouthDakota,
 ]);
 function isAtsSelectableDlc(dlc: AtsDlc): dlc is AtsSelectableDlc {
-  return AtsSelectableDlcs.has(dlc as AtsSelectableDlc);
+  return AtsSelectableDlcs.has(dlc);
 }
 export const AtsDlcInfo: Record<AtsSelectableDlc, string> = {
   [AtsDlc.Nevada]: 'Nevada',

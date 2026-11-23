@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { BranchType } from '@truckermudgeon/navigation/constants';
-import * as React from 'react';
+import type * as React from 'react';
 
 import { LaneIcon } from './LaneIcon';
 

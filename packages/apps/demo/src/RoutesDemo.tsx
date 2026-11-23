@@ -238,7 +238,7 @@ const RouteControl = (props: { dlcs: ReadonlySet<AtsSelectableDlc> }) => {
         routeSource.setData({
           type: 'FeatureCollection',
           features: [],
-        } as GeoJSON.FeatureCollection);
+        });
         setEnd(undefined);
       }
 
@@ -293,7 +293,7 @@ const RouteControl = (props: { dlcs: ReadonlySet<AtsSelectableDlc> }) => {
         routeSource.setData({
           type: 'FeatureCollection',
           features: lineStrings,
-        } as GeoJSON.FeatureCollection);
+        });
         map.fitBounds(
           getExtent(
             lineStrings.flatMap(

@@ -1,5 +1,5 @@
 import type { Meta, StoryContext, StoryObj } from '@storybook/react';
-import * as React from 'react';
+import type * as React from 'react';
 import { Compass } from './Compass';
 import { TwoLetter as TextCompassPrimary } from './Compass.stories';
 import { Fab } from './Fab';
@@ -24,7 +24,7 @@ const meta = {
           width: '100vh',
           height: '100vh',
           backgroundColor:
-            context.globals['theme'] === 'dark' ? '#1a1a1a' : '#f8f8f8',
+            context.globals.theme === 'dark' ? '#1a1a1a' : '#f8f8f8',
         }}
       >
         <Story />
