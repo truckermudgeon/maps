@@ -57,6 +57,7 @@ DEMO_FILES += $(GENERATOR_OUT_DIR)/ets2.pmtiles
 NAVIGATOR_FILES += $(GENERATOR_OUT_DIR)/ats.pmtiles
 NAVIGATOR_FILES += $(GENERATOR_OUT_DIR)/ets2.pmtiles
 
+
 # Create ATS and ETS2 footprints pmtiles files
 $(GENERATOR_OUT_DIR)/ats-footprints.pmtiles: $(ATS_PARSER_JSON_FILES)
 	npx generator footprints -m usa -i $(PARSER_OUT_DIR) -o $(GENERATOR_OUT_DIR)
@@ -67,6 +68,7 @@ DEMO_FILES += $(GENERATOR_OUT_DIR)/ats-footprints.pmtiles
 DEMO_FILES += $(GENERATOR_OUT_DIR)/ets2-footprints.pmtiles
 NAVIGATOR_FILES += $(GENERATOR_OUT_DIR)/ats-footprints.pmtiles
 NAVIGATOR_FILES += $(GENERATOR_OUT_DIR)/ets2-footprints.pmtiles
+
 
 # Create ATS and ETS2 contours (aka elevations) pmtiles files
 $(GENERATOR_OUT_DIR)/ats-contours.pmtiles: $(ATS_PARSER_JSON_FILES)
