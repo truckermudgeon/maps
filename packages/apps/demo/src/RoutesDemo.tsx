@@ -80,8 +80,10 @@ const RoutesDemo = (props: { tileRootUrl: string }) => {
       minZoom={4}
       maxZoom={15}
       maxBounds={[
-        [-135, 21], // southwest corner (lon, lat)
-        [-84, 54], // northeast corner (lon, lat)
+        // southwest corner (lon, lat)
+        -135, 21,
+        // northeast corner (lon, lat)
+        -84, 54,
       ]}
       mapStyle={defaultMapStyle}
       attributionControl={false}
@@ -235,7 +237,7 @@ const RouteControl = (props: { dlcs: ReadonlySet<AtsSelectableDlc> }) => {
         const routeSource = assertExists(
           map.getSource<GeoJSONSource>('route1'),
         );
-        routeSource.setData({
+        void routeSource.setData({
           type: 'FeatureCollection',
           features: [],
         });
@@ -285,12 +287,12 @@ const RouteControl = (props: { dlcs: ReadonlySet<AtsSelectableDlc> }) => {
         );
         if (maybeLineStrings.some(s => s == null)) {
           alert('Cannot calculate a route 🙁');
-          routeSource.setData(featureCollection([]));
+          void routeSource.setData(featureCollection([]));
           return;
         }
         const lineStrings =
           maybeLineStrings as GeoJSON.Feature<GeoJSON.LineString>[];
-        routeSource.setData({
+        void routeSource.setData({
           type: 'FeatureCollection',
           features: lineStrings,
         });

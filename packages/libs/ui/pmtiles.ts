@@ -1,5 +1,5 @@
 import type { Extent } from '@truckermudgeon/base/geom';
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import * as pmtiles from 'pmtiles';
 
 let pmTilesProtocolAdded = false;

@@ -1,4 +1,4 @@
-import type { GeoJSONSource } from 'maplibre-gl';
+import type { AllPaintProperties, GeoJSONSource } from 'maplibre-gl';
 import type { MapHandle } from './handle';
 
 /**
@@ -20,14 +20,18 @@ export class MapStyle {
     if (!map) {
       return;
     }
-    map.getSource<GeoJSONSource>(sourceId)?.setData(data);
+    void map.getSource<GeoJSONSource>(sourceId)?.setData(data);
   }
 
   /**
    * Sets a paint property on a layer. No-op if the map isn't loaded
    * or the layer hasn't been registered yet.
    */
-  setLayerPaintProperty(layerId: string, prop: string, value: unknown): void {
+  setLayerPaintProperty<K extends keyof AllPaintProperties>(
+    layerId: string,
+    prop: K,
+    value: AllPaintProperties[K],
+  ): void {
     const map = this.handle.getMap();
     if (!map?.getLayer(layerId)) {
       return;
