@@ -1,5 +1,6 @@
 import type { Position } from '@truckermudgeon/base/geom';
 import { lineString } from '@turf/helpers';
+import { describe, expect, it } from 'vitest';
 import type { TruckSimTelemetry } from '../../../types';
 import { fromPosAndBearing } from '../game-state';
 import { scoreLine } from '../score-line';

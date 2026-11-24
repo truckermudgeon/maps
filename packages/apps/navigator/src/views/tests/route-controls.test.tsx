@@ -4,7 +4,6 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Route } from '@truckermudgeon/navigation/types';
 import { runInAction } from 'mobx';
-import { vi } from 'vitest';
 import { CameraMode, CameraStoreImpl } from '../../stores/camera';
 import { NavSheetStoreImpl } from '../../stores/nav-sheet';
 import { RouteStoreImpl } from '../../stores/route';

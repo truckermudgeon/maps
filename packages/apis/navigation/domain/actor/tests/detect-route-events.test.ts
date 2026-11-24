@@ -4,7 +4,7 @@ import { ItemType } from '@truckermudgeon/map/constants';
 import { fromAtsCoordsToWgs84 } from '@truckermudgeon/map/projections';
 import { createRouteKey } from '@truckermudgeon/map/routing';
 import type { Road } from '@truckermudgeon/map/types';
-import { beforeAll, vi } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { BranchType } from '../../../constants';
 import { ConsoleWorkerMetrics } from '../../../infra/metrics/worker';
 import { createRoutingService } from '../../../infra/routing/service';

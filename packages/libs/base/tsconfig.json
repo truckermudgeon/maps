@@ -2,6 +2,6 @@
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
-    "types": ["vitest/globals", "node"]
+    "types": ["node"]
   }
 }

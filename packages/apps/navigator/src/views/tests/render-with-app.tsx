@@ -4,7 +4,6 @@ import {
   type RenderResult,
 } from '@testing-library/react';
 import type { ReactElement } from 'react';
-import { vi } from 'vitest';
 import type {
   AppController,
   NavSheetController,

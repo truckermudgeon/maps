@@ -7,7 +7,6 @@ import type {
   SearchResult,
 } from '@truckermudgeon/navigation/types';
 import { runInAction } from 'mobx';
-import { vi } from 'vitest';
 import { NavSheetControllerImpl } from '../../controllers/nav-sheet';
 import type {
   AppController,

@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { calculateNodeConnections } from '../prefabs';
 import {
   prefab_2k031,

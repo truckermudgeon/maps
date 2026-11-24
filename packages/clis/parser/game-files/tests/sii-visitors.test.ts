@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { parseSii } from '../sii-parser';
 import { jsonConverter } from '../sii-visitors';
 

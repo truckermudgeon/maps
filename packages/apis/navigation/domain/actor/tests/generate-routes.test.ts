@@ -8,7 +8,7 @@ import { toStepText } from '@truckermudgeon/navigator-app/src/components/text';
 import { EventEmitter } from 'events';
 import * as path from 'node:path';
 import * as url from 'node:url';
-import { beforeAll } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { ConsoleWorkerMetrics } from '../../../infra/metrics/worker';
 import { createRoutingService } from '../../../infra/routing/service';
 import type { DomainEventSink } from '../../events';

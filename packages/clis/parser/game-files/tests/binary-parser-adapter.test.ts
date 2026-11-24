@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { r, token64, uint64String } from '../binary-parser-adapter';
 
 const bufferFromHex = (hexString: string) =>

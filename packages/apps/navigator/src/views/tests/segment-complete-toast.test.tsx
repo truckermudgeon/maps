@@ -3,7 +3,6 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { SegmentInfo } from '@truckermudgeon/navigation/types';
 import { runInAction } from 'mobx';
-import { vi } from 'vitest';
 import type { AppController } from '../../controllers/types';
 import { RouteStoreImpl } from '../../stores/route';
 import { SegmentCompleteToast } from '../SegmentCompleteToast';
