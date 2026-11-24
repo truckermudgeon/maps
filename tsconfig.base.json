@@ -23,6 +23,7 @@
     "allowSyntheticDefaultImports": true,
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "noEmit": true
+    "noEmit": true,
+    "types": ["vitest/globals"]
   }
 }

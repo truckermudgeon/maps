@@ -32,7 +32,7 @@
     "@vitejs/plugin-react": "^6.3.0",
     "jsdom": "^25.0.1",
     "storybook": "^8.5.0",
-    "typescript": "^5.9.2",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vite": "^8.3.8"
   },
   "dependencies": {

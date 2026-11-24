@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import type { webcrypto } from 'node:crypto';
 import { navigatorKeys } from '../../../infra/kv/store';
 import { MockKvStore } from '../../../trpc/routers/tests/mocks';
 import {
@@ -8,14 +8,14 @@ import {
 
 const TELEMETRY_ID = '00000000-0000-0000-0000-000000000001';
 
-let publicKey: CryptoKey;
-let privateKey: CryptoKey;
+let publicKey: webcrypto.CryptoKey;
+let privateKey: webcrypto.CryptoKey;
 
 beforeAll(async () => {
   const pair = (await crypto.subtle.generateKey('Ed25519', true, [
     'sign',
     'verify',
-  ])) as CryptoKeyPair;
+  ])) as webcrypto.CryptoKeyPair;
   publicKey = pair.publicKey;
   privateKey = pair.privateKey;
 });
@@ -136,7 +136,7 @@ describe('verifyReconnectSignature', () => {
         const otherPair = (await crypto.subtle.generateKey('Ed25519', true, [
           'sign',
           'verify',
-        ])) as CryptoKeyPair;
+        ])) as webcrypto.CryptoKeyPair;
         const timestamp = Date.now();
         const sigBytes = await crypto.subtle.sign(
           'Ed25519',

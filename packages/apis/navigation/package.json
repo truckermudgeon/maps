@@ -18,7 +18,7 @@
     "@types/rbush": "^4.0.0",
     "@types/suncalc": "^1.9.2",
     "@types/ws": "^8.5.13",
-    "typescript": "^5.9.2"
+    "typescript": "npm:@typescript/typescript6@^6.0.2"
   },
   "dependencies": {
     "@mapbox/polyline": "^1.2.1",

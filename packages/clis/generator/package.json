@@ -17,7 +17,7 @@
     "@types/proj4": "^2.5.5",
     "@types/rbush": "^4.0.0",
     "@types/yargs": "^17.0.33",
-    "typescript": "^5.9.2"
+    "typescript": "npm:@typescript/typescript6@^6.0.2"
   },
   "dependencies": {
     "@truckermudgeon/base": "0.0.0",

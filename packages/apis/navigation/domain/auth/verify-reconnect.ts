@@ -1,3 +1,4 @@
+import type { webcrypto } from 'node:crypto';
 import type { KvStore } from '../../infra/kv/store';
 import { navigatorKeys } from '../../infra/kv/store';
 
@@ -8,7 +9,7 @@ export enum ReconnectRejectionReason {
 }
 
 export type ReconnectVerification =
-  | { ok: true; publicKey: CryptoKey }
+  | { ok: true; publicKey: webcrypto.CryptoKey }
   | { ok: false; reason: ReconnectRejectionReason };
 
 const TIMESTAMP_WINDOW_MS = 300_000;

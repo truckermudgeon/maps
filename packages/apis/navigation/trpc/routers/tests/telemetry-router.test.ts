@@ -1,3 +1,4 @@
+import type { webcrypto } from 'node:crypto';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { AuthState } from '../../../domain/auth/auth-state';
 import { navigatorKeys } from '../../../infra/kv/store';
@@ -7,14 +8,14 @@ import { MockKvStore, mockTelemetryContext } from './mocks';
 
 const createCaller = createCallerFactory(telemetryRouter);
 
-let publicKey: CryptoKey;
-let privateKey: CryptoKey;
+let publicKey: webcrypto.CryptoKey;
+let privateKey: webcrypto.CryptoKey;
 
 beforeAll(async () => {
   const pair = (await crypto.subtle.generateKey('Ed25519', true, [
     'sign',
     'verify',
-  ])) as CryptoKeyPair;
+  ])) as webcrypto.CryptoKeyPair;
   publicKey = pair.publicKey;
   privateKey = pair.privateKey;
 });
@@ -37,7 +38,7 @@ async function signNonce(nonce: string): Promise<string> {
 interface ChallengeOverrides {
   expiresAt?: number;
   used?: boolean;
-  publicKey?: CryptoKey;
+  publicKey?: webcrypto.CryptoKey;
 }
 
 function kvWithChallenge(
@@ -118,7 +119,7 @@ describe('telemetryRouter', () => {
           const otherPair = (await crypto.subtle.generateKey('Ed25519', true, [
             'sign',
             'verify',
-          ])) as CryptoKeyPair;
+          ])) as webcrypto.CryptoKeyPair;
           const sigBytes = await crypto.subtle.sign(
             'Ed25519',
             otherPair.privateKey,

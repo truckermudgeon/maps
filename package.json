@@ -23,7 +23,7 @@
     "prettier": "^3.1.1",
     "prettier-plugin-organize-imports": "^3.2.4",
     "syncpack": "^14.0.0-alpha.23",
-    "typescript": "^5.9.2",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vitest": "^5.1.1"
   },
   "scripts": {
