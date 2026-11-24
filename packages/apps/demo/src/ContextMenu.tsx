@@ -266,7 +266,9 @@ export const ContextMenu = memo((props: ContextMenuProps) => {
         geojson.features.push(linestring);
       }
 
-      assertExists(map.getSource<GeoJSONSource>('measure')).setData(geojson);
+      void assertExists(map.getSource<GeoJSONSource>('measure')).setData(
+        geojson,
+      );
       setMeasuringPoints(
         geojson.features
           .filter(f => f.geometry.type === 'Point')
@@ -276,12 +278,12 @@ export const ContextMenu = memo((props: ContextMenuProps) => {
 
     map.on('mousemove', setCursor);
     map.on('click', addOrDeletePoint);
-    assertExists(map.getSource<GeoJSONSource>('measure')).setData(geojson);
+    void assertExists(map.getSource<GeoJSONSource>('measure')).setData(geojson);
 
     return () => {
       map.off('mousemove', setCursor);
       map.off('click', addOrDeletePoint);
-      assertExists(map.getSource<GeoJSONSource>('measure')).setData({
+      void assertExists(map.getSource<GeoJSONSource>('measure')).setData({
         type: 'FeatureCollection',
         features: [],
       });
