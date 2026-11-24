@@ -443,7 +443,7 @@ describe('error checks', () => {
 });
 
 describe('command-line interface', () => {
-  let cli: yargs.Argv;
+  let cli: ReturnType<typeof yargs>;
   let tmpDir: string;
   let metaInPath: string;
   let metaOutPath: string;

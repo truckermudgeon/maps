@@ -22,7 +22,7 @@
     "lib": ["ESNext"],
     "allowSyntheticDefaultImports": true,
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "noEmit": true
   }
 }
