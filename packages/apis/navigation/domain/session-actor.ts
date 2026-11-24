@@ -1,5 +1,4 @@
 import type { EventEmitter } from 'events';
-import { util } from 'zod';
 import type {
   JobState,
   RouteIndex,
@@ -20,7 +19,6 @@ import type { RouteWithLookup, RoutingService } from './actor/generate-routes';
 import type { DomainEventSink } from './events';
 import type { GameContext } from './game-context';
 import type { GraphAndMapData, GraphMappedData } from './lookup-data';
-import Omit = util.Omit;
 
 export type TelemetryEventEmitter = EventEmitter<{
   telemetry: [TruckSimTelemetry];
