@@ -1,5 +1,5 @@
 import { CircularProgress } from '@mui/joy';
-import React from 'react';
+import type React from 'react';
 
 export function withLoading<P>(
   BaseComponent: React.ComponentType<P>,

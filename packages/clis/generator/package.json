@@ -12,12 +12,12 @@
     "@types/bin-pack": "^1.0.3",
     "@types/cli-progress": "^3.11.5",
     "@types/d3-quadtree": "^3.0.6",
-    "@types/jest": "^29.5.11",
     "@types/node": "^22.7.4",
     "@types/proj4": "^2.5.5",
     "@types/rbush": "^4.0.0",
     "@types/yargs": "^17.0.33",
-    "typescript": "^5.9.2"
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "vitest": "^5.1.1"
   },
   "dependencies": {
     "@truckermudgeon/base": "0.0.0",
@@ -35,7 +35,7 @@
     "polygon-clipping": "^0.15.7",
     "rbush": "^4.0.1",
     "tinypool": "^2.1.0",
-    "tsx": "^4.7.0",
+    "tsx": "^4.23.15",
     "yargs": "^17.7.2"
   }
 }

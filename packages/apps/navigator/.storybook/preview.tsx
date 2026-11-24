@@ -6,8 +6,8 @@ import {
   extendTheme as materialExtendTheme,
 } from '@mui/material/styles';
 import type { Preview, StoryContext } from '@storybook/react';
+import type * as React from 'react';
 import type { ReactNode } from 'react';
-import * as React from 'react';
 import { useEffect } from 'react';
 import { SpriteProvider } from '../src/components/SpriteProvider';
 

@@ -10,7 +10,7 @@ const EnvSchema = z.object({
     .enum(['true', 'false'])
     .default('false')
     .transform(val => val === 'true'),
-  ALLOWED_ORIGIN: z.coerce.string().url().default('http://localhost:5173'),
+  ALLOWED_ORIGIN: z.httpUrl().default('http://localhost:5173'),
 
   RATE_LIMIT_ENABLED: z
     .enum(['true', 'false'])
@@ -27,7 +27,7 @@ const EnvSchema = z.object({
     .enum(['true', 'false'])
     .default('false')
     .transform(val => val === 'true'),
-  LOKI_HOST: z.coerce.string().default('http://localhost:3100'),
+  LOKI_HOST: z.httpUrl().default('http://localhost:3100'),
   LOKI_USER_ID: z.coerce.string().default('admin'),
   LOKI_PASSWORD: z.coerce.string().default('admin'),
   LOG_LEVEL: z
@@ -39,7 +39,7 @@ console.log('raw, process.env', process.env);
 const parsed = EnvSchema.safeParse(process.env);
 if (!parsed.success) {
   console.error('Invalid environment variables');
-  console.error(parsed.error.format());
+  console.error(z.treeifyError(parsed.error));
   process.exit(1);
 }
 

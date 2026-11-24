@@ -45,12 +45,10 @@ export const RoutesStyle = memo(() => {
         id={'activeRouteStep'}
         type={'geojson'}
         lineMetrics={true}
-        data={
-          {
-            type: 'FeatureCollection',
-            features: [],
-          } as GeoJSON.FeatureCollection
-        }
+        data={{
+          type: 'FeatureCollection',
+          features: [],
+        }}
       >
         <Layer
           id={'activeRouteStepLayer-case'}
@@ -157,12 +155,10 @@ export const RoutesStyle = memo(() => {
         key={`previewStepArrow`}
         id={`previewStepArrow`}
         type={'geojson'}
-        data={
-          {
-            type: 'FeatureCollection',
-            features: [],
-          } as GeoJSON.FeatureCollection
-        }
+        data={{
+          type: 'FeatureCollection',
+          features: [],
+        }}
       >
         <Layer
           id={`previewStepArrowCase`}

@@ -43,7 +43,7 @@ export const Directions = memo(
               <Box width={'6em'}>
                 <LaneIcon
                   // TODO take into account 'depart' and 'arrive'
-                  branches={[props.direction as unknown as BranchType]}
+                  branches={[props.direction]}
                   highlightColor={
                     isRoundaboutBranchType(props.direction) ||
                     props.direction === BranchType.ROUND_EXIT

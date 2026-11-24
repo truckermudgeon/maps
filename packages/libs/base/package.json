@@ -12,6 +12,8 @@
     "test": "vitest"
   },
   "devDependencies": {
-    "typescript": "^5.9.2"
+    "@types/node": "^22.7.4",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "vitest": "^5.1.1"
   }
 }

@@ -43,7 +43,7 @@ export const builder = (yargs: Argv) =>
       //  source map options.
       describe: 'Source map. Can only specify one.',
       choices: ['usa', 'europe'] as const,
-      default: 'usa' as 'usa' | 'europe',
+      default: 'usa' as const,
       defaultDescription: 'usa',
     })
     .option('inputDir', {
@@ -112,6 +112,7 @@ export function handler(args: BuilderArguments<typeof builder>) {
   let sceneryTowns: ExtraLabelsGeoJSON;
   switch (args.map) {
     case 'usa':
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
       sceneryTowns = JSON.parse(
         fs.readFileSync(assertExists(args.extraLabels), 'utf-8'),
       ) as unknown as ExtraLabelsGeoJSON;

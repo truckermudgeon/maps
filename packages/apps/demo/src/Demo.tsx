@@ -298,7 +298,7 @@ const Demo = (props: {
       map.getCanvas().style.cursor =
         panoFeature || streetFeature ? 'pointer' : '';
       if (panoFeature) {
-        if (panoramaPreview?.id !== panoFeature.properties['id']) {
+        if (panoramaPreview?.id !== panoFeature.properties.id) {
           const pointFeature = panoFeature as unknown as GeoJSON.Feature<
             GeoJSON.Point,
             PhotoSphereProperties
@@ -320,7 +320,7 @@ const Demo = (props: {
       const panoFeature = map.queryRenderedFeatures(e.point, {
         layers: ['photo-spheres'],
       })[0];
-      if (panoFeature && panoFeature.properties['cluster'] !== true) {
+      if (panoFeature && panoFeature.properties.cluster !== true) {
         setPanoramaPreview(null);
         setPanorama(panoramaPreview == null ? null : [panoramaPreview]);
         return;

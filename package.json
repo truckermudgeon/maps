@@ -15,7 +15,7 @@
     "@eslint/js": "^9.35.0",
     "@typescript-eslint/eslint-plugin": "^8.44.0",
     "@typescript-eslint/parser": "^8.44.0",
-    "@vitest/coverage-v8": "^3.2.4",
+    "@vitest/coverage-v8": "^5.1.1",
     "eslint": "^9.35.0",
     "eslint-config-prettier": "^10.1.8",
     "husky": "^8.0.3",
@@ -23,8 +23,8 @@
     "prettier": "^3.1.1",
     "prettier-plugin-organize-imports": "^3.2.4",
     "syncpack": "^14.0.0-alpha.23",
-    "typescript": "^5.9.2",
-    "vitest": "^3.2.4"
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "vitest": "^5.1.1"
   },
   "scripts": {
     "prepare": "husky install",

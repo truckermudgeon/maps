@@ -1,7 +1,7 @@
 import { readGraphData, readMapData } from '@truckermudgeon/io';
 import path from 'path';
 import url from 'url';
-import { beforeAll } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { computeDegrees, convertToAdjacencyList } from '../graph';
 import type { LaneInfoContext } from '../lane-info';
 import { calculateLaneInfo } from '../lane-info';

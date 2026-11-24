@@ -12,6 +12,7 @@ import type {
   RoadLook,
   WithToken,
 } from '@truckermudgeon/map/types';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { generateGraph } from '../graph';
 import { d_farm_grg, d_oil_gst3, prefab_us_405 } from './fixtures';
 

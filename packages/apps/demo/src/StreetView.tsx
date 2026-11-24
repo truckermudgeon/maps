@@ -275,10 +275,12 @@ export const StreetView = memo(
           }}
           minZoom={9}
           maxZoom={14}
-          maxBounds={[
-            currentPano.point.map(v => v - 1) as [number, number], // southwest corner (lon, lat)
-            currentPano.point.map(v => v + 1) as [number, number], // southwest corner (lon, lat)
-          ]}
+          maxBounds={
+            [
+              currentPano.point.map(v => v - 1), // southwest corner (lon, lat)
+              currentPano.point.map(v => v + 1), // northeast corner (lon, lat)
+            ].flat() as [number, number, number, number]
+          }
           mapStyle={defaultMapStyle}
           attributionControl={false}
           initialViewState={{

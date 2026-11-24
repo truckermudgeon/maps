@@ -13,7 +13,6 @@ import {
   Typography,
 } from '@mui/joy';
 import { assertExists } from '@truckermudgeon/base/assert';
-import type { LngLatLike } from 'maplibre-gl';
 import { Marker as MapLibreGLMarker } from 'maplibre-gl';
 import { useEffect, useRef, useState } from 'react';
 import { useControl, useMap } from 'react-map-gl/maplibre';
@@ -64,7 +63,7 @@ export const ShareControl = () => {
     };
 
     let marker: MapLibreGLMarker | undefined;
-    let syncMarkerToMap: ((lngLatLike: LngLatLike) => void) | undefined;
+    let syncMarkerToMap: (() => void) | undefined;
     if (includeMarker) {
       marker = new MapLibreGLMarker();
       marker.setLngLat(map.getCenter()).setDraggable(true).addTo(map.getMap());

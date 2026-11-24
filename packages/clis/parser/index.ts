@@ -44,7 +44,7 @@ function main() {
       alias: 'm',
       describe: 'The type of data to parse',
       choices: ['defs', 'icons', 'all'] as const,
-      default: 'all' as 'defs' | 'icons' | 'all',
+      default: 'all' as const,
     })
     .option('dryRun', {
       describe: "Don't write out any files",

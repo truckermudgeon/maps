@@ -21,7 +21,7 @@ export const builder = (yargs: Argv) =>
       //  source map options.
       describe: 'Source map. Can only specify one.',
       choices: ['usa', 'europe'] as const,
-      default: 'usa' as 'usa' | 'europe',
+      default: 'usa' as const,
       defaultDescription: 'usa',
     })
     .option('focusCity', {

@@ -192,7 +192,7 @@ class Optional<T, P> extends BinaryParserBase<T | undefined> {
   }
 
   override bind(name: string, parser: Parser): Parser {
-    const itemType = this.type as unknown as BinaryParserBase<T>;
+    const itemType = this.type;
     let type;
     if (itemType instanceof NumberBase) {
       type = itemType.primitiveType;
@@ -228,7 +228,7 @@ class VersionedStruct<
     super();
     const { header, ...types } = headerAndTypes;
     this.types = types;
-    this.headerStruct = new Struct(header as Record<string, unknown>);
+    this.headerStruct = new Struct(header);
   }
 
   override bind(name: string, parser: Parser): Parser {

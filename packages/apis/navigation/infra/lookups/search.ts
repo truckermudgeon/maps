@@ -90,8 +90,9 @@ export function readAndProcessSearchData(
 
           const prefab = context.tsMapData.prefabs.get(company.prefabUid);
           if (
-            prefab &&
-            prefab.nodeUids.some(nid => context.graphData.serviceAreas.has(nid))
+            prefab?.nodeUids.some(nid =>
+              context.graphData.serviceAreas.has(nid),
+            )
           ) {
             const serviceArea = assertExists(
               prefab.nodeUids

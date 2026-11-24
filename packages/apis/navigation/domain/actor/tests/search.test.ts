@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { beforeAll } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { PoiType, ScopeType } from '../../../constants';
 import { ConsoleWorkerMetrics } from '../../../infra/metrics/worker';
 import { createRoutingService } from '../../../infra/routing/service';

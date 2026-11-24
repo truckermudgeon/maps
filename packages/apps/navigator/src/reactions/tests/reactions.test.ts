@@ -22,7 +22,7 @@ function makeObservableStore(overrides: Partial<AppStore> = {}): AppStore {
       themeMode: 'light',
       map: 'usa',
       cameraMode: CameraMode.FOLLOW,
-      bearingMode: 0 as never,
+      bearingMode: 0,
       setFollow: vi.fn(),
       setFree: vi.fn(),
       setNorthLock: vi.fn(),
@@ -211,7 +211,7 @@ describe('app reactions', () => {
       const r2 = { id: 'r2' } as RouteWithSummary;
       runInAction(() => {
         s.navSheetStore.routes = [r0, r1, r2];
-        s.navSheetStore.selectedRoute = r1 as unknown as Route;
+        s.navSheetStore.selectedRoute = r1;
       });
 
       const calls = (

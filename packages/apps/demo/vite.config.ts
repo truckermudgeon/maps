@@ -1,7 +1,6 @@
 import eslint from '@nabla/vite-plugin-eslint';
 import react from '@vitejs/plugin-react';
-import viteTsconfigPaths from 'vite-tsconfig-paths';
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vite';
 
 export default defineConfig(() => {
   return {
@@ -12,7 +11,7 @@ export default defineConfig(() => {
     server: {
       open: true,
     },
-    plugins: [react(), viteTsconfigPaths(), eslint()],
+    plugins: [react(), eslint()],
     test: {
       globals: true,
       environment: 'jsdom',

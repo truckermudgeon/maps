@@ -1,4 +1,5 @@
 import type { Position } from '@truckermudgeon/base/geom';
+import { describe, expect, it } from 'vitest';
 import {
   fromAtsCoordsToWgs84,
   fromEts2CoordsToWgs84,

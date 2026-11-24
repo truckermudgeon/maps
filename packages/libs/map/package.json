@@ -12,7 +12,8 @@
     "test": "vitest"
   },
   "devDependencies": {
-    "typescript": "^5.9.2"
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "vitest": "^5.1.1"
   },
   "dependencies": {
     "@truckermudgeon/base": "0.0.0",
