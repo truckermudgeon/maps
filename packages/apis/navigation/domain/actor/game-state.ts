@@ -1,4 +1,4 @@
-import { assert, assertExists } from '@truckermudgeon/base/assert';
+import { assertExists } from '@truckermudgeon/base/assert';
 import type { Position } from '@truckermudgeon/base/geom';
 import { contains, toRadians } from '@truckermudgeon/base/geom';
 import type { PointRBush } from '@truckermudgeon/map/point-rbush';
@@ -10,7 +10,7 @@ import {
 } from '@truckermudgeon/map/projections';
 import type { Country, Node } from '@truckermudgeon/map/types';
 import bearing from '@turf/bearing';
-import SunCalc from 'suncalc';
+import { getTimes } from 'suncalc';
 import type { GameState, TruckSimTelemetry } from '../../types';
 
 export function toGameState(telemetry: TruckSimTelemetry): GameState {
@@ -94,23 +94,25 @@ export function toThemeMode(
     `June 21, 2025 ${hour}:${minute} GMT${hourOffset >= 0 ? '+' : ''}${hourOffset}`,
   );
 
-  const { sunset, dawn } = SunCalc.getTimes(now, lat, lng);
-  const nowTime = now.getTime();
-  const sunsetTime = sunset.getTime();
-  const dawnTime = dawn.getTime();
-
-  // sanity check: suncalc always returns times where dawn < sunset
-  // (i.e., it never returns a dawn for the next day, after sunset)
-  assert(
-    dawnTime < sunsetTime,
-    `dawnTime(${dawnTime}) unexpectedly >= sunsetTime(${sunsetTime})`,
+  const { sunrise, sunset, dawn, alwaysUp, alwaysDown } = getTimes(
+    now,
+    lat,
+    lng,
   );
+  const nowTime = now.getTime();
 
-  if (nowTime < dawnTime) {
-    // before dawn
+  if (alwaysUp) return 'light';
+  if (alwaysDown) return 'dark';
+
+  // fall back to sunrise when no astronomical dawn, e.g., in iceland during the summer
+  const lightTime = assertExists(dawn ?? sunrise).getTime();
+  const darkTime = assertExists(sunset).getTime();
+
+  if (nowTime < lightTime) {
+    // before dawn/sunrise
     return 'dark';
-  } else if (nowTime < sunsetTime) {
-    // after dawn and before sunset
+  } else if (nowTime < darkTime) {
+    // after dawn/sunrise and before sunset
     return 'light';
   } else {
     // after sunset

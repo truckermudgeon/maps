@@ -73,8 +73,8 @@ describe('toThemeMode', () => {
     it.each([
       [120, 'dark'], // 02:00 - before sunrise
       [720, 'light'], // 12:00 - midday
-      [23 * 60 + 59, 'light'], // 23:59 - a few seconds before sunset
-      [24 * 60, 'dark'], // 24:00 - let's call this 'after sunset'.
+      [23 * 60 + 59, 'light'], // 23:59 - a few seconds before sunset (23:59:06)
+      [0, 'dark'], // 00:00 - let's call this 'right after sunset', since we can't specify a time with seconds resolution.
     ])('at %i min, returns "%s"', (minutes, expected) => {
       expect(
         toThemeMode(
