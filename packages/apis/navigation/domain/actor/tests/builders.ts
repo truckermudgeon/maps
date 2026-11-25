@@ -1,7 +1,7 @@
 import polyline from '@mapbox/polyline';
 import type { Position } from '@truckermudgeon/base/geom';
 import { ItemType } from '@truckermudgeon/map/constants';
-import type { Node, Road } from '@truckermudgeon/map/types';
+import type { Country, Node, Road } from '@truckermudgeon/map/types';
 import { BranchType } from '../../../constants';
 import type {
   Route,
@@ -132,6 +132,24 @@ export function aNodeWith(node: Partial<Node>): Node {
     y: 0,
     z: 0,
     ...node,
+  };
+}
+
+export function aCountryWith(country: Partial<Country>): Country {
+  return {
+    token: 'country',
+    name: 'Country',
+    nameLocalized: undefined,
+    id: 1,
+    x: 0,
+    y: 0,
+    code: 'XX',
+    fuelPrice: 1,
+    timeZone: 0,
+    timeZoneName: 'UTC',
+    secondaryTimeZones: [],
+    truckSpeedLimits: {},
+    ...country,
   };
 }
 
